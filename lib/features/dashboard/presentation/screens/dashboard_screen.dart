@@ -100,6 +100,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).toList();
   }
 
+  Future<List<Map<String, dynamic>>> _loadMemberHistory(String memberId) async {
+    final res = await Supabase.instance.client
+        .from('class_bookings')
+        .select('status, created_at, classes(title, starts_at)')
+        .eq('user_id', memberId)
+        .neq('status', 'cancelled')
+        .order('created_at', ascending: false)
+        .limit(10);
+
+    return List<Map<String, dynamic>>.from(res);
+  }
+
   void _openMember(Map<String, dynamic> member) {
     showModalBottomSheet(
       context: context,
@@ -112,33 +124,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final active = member['is_active'] == true;
         final birthDate = member['birth_date']?.toString() ?? 'Not set';
 
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
+        return FutureBuilder(
+          future: _loadMemberHistory(member['id']),
+          builder: (context, snapshot) {
+            final history = snapshot.data as List<Map<String, dynamic>>? ?? [];
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(email),
+                    const SizedBox(height: 24),
+                    _DetailRow(label: 'Role', value: role),
+                    _DetailRow(
+                      label: 'Status',
+                      value: active ? 'Active' : 'Inactive',
+                    ),
+                    _DetailRow(label: 'Birth date', value: birthDate),
+
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Recent classes',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (!snapshot.hasData)
+                      const CircularProgressIndicator()
+                    else if (history.isEmpty)
+                      const Text('No classes')
+                    else
+                      ...history.map((h) {
+                        final klass = h['classes'];
+                        final status = h['status'];
+
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(klass['title'] ?? 'Class'),
+                          subtitle: Text(klass['starts_at'] ?? ''),
+                          trailing: Text(
+                            status == 'attended'
+                                ? '✓'
+                                : status == 'no_show'
+                                ? '✗'
+                                : '',
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 12),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(email),
-                const SizedBox(height: 24),
-                _DetailRow(label: 'Role', value: role),
-                _DetailRow(
-                  label: 'Status',
-                  value: active ? 'Active' : 'Inactive',
-                ),
-                _DetailRow(label: 'Birth date', value: birthDate),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
