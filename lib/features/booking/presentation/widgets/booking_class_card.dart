@@ -1,0 +1,71 @@
+import 'package:flutter/material.dart';
+
+class BookingClassCard extends StatelessWidget {
+  const BookingClassCard({
+    super.key,
+    required this.klass,
+    required this.bookedCount,
+    required this.capacity,
+    required this.buttonLabel,
+    required this.buttonAction,
+    required this.canManageAttendance,
+    required this.onOpenAttendance,
+    required this.formatDateTime,
+  });
+
+  final Map<String, dynamic> klass;
+  final int bookedCount;
+  final int capacity;
+  final String buttonLabel;
+  final VoidCallback? buttonAction;
+  final bool canManageAttendance;
+  final VoidCallback? onOpenAttendance;
+  final String Function(String raw) formatDateTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: canManageAttendance ? onOpenAttendance : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                klass['title']?.toString() ?? 'Class',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(formatDateTime(klass['starts_at'])),
+              const SizedBox(height: 6),
+              Text(
+                '$bookedCount/$capacity spots · ${klass['duration_minutes'] ?? 60} min',
+              ),
+              if (canManageAttendance) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Tap card to manage attendance',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: buttonAction,
+                  child: Text(buttonLabel),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
