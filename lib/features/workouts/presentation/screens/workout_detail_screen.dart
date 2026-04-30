@@ -18,6 +18,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   Map<String, String> _authorNames = {};
 
   final _commentCtrl = TextEditingController();
+  final _commentFocus = FocusNode();
 
   SupabaseClient get _client => Supabase.instance.client;
   String? get _userId => _client.auth.currentUser?.id;
@@ -33,6 +34,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   @override
   void dispose() {
     _commentCtrl.dispose();
+    _commentFocus.dispose();
     super.dispose();
   }
 
@@ -159,6 +161,21 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     return '${parts[2]}/${parts[1]}/${parts[0]}';
   }
 
+  String _timeAgo(String? raw) {
+    if (raw == null) return '';
+    final createdAt = DateTime.tryParse(raw)?.toLocal();
+    if (createdAt == null) return '';
+
+    final diff = DateTime.now().difference(createdAt);
+
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+
+    return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final workout = _workout;
@@ -199,26 +216,34 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 const SizedBox(height: 18),
                 Row(
                   children: [
-                    IconButton(
+                    FilledButton.icon(
                       onPressed: _toggleLike,
                       icon: Icon(
                         _liked ? Icons.favorite : Icons.favorite_border,
-                        color: _liked ? Colors.red : null,
                       ),
+                      label: Text('${_likes.length} likes'),
                     ),
-                    Text('${_likes.length} likes'),
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => _commentFocus.requestFocus(),
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: Text('${_comments.length} comments'),
+                    ),
                   ],
                 ),
-                const Divider(height: 28),
+                const Divider(height: 32),
                 const Text(
-                  'Comments',
+                  'Post score / comments',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _commentCtrl,
+                  focusNode: _commentFocus,
+                  minLines: 1,
+                  maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Add a comment...',
+                    hintText: 'How did it go?',
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.send),
                       onPressed: _addComment,
@@ -234,24 +259,39 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     final userId = comment['user_id']?.toString();
                     final name = _authorNames[userId] ?? 'User';
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF111318),
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '$name  ',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE8E8E8)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                               ),
-                            ),
-                            TextSpan(text: comment['body']?.toString() ?? ''),
-                          ],
-                        ),
+                              Text(
+                                _timeAgo(comment['created_at']?.toString()),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF777777),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(comment['body']?.toString() ?? ''),
+                        ],
                       ),
                     );
                   }),
