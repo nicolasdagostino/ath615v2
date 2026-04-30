@@ -16,6 +16,7 @@ class WorkoutCard extends StatefulWidget {
     this.canManage = false,
     this.onEdit,
     this.onDelete,
+    this.onChanged,
   });
 
   final String workoutId;
@@ -28,6 +29,7 @@ class WorkoutCard extends StatefulWidget {
   final bool canManage;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final Future<void> Function()? onChanged;
 
   @override
   State<WorkoutCard> createState() => _WorkoutCardState();
@@ -76,12 +78,20 @@ class _WorkoutCardState extends State<WorkoutCard> {
     }
   }
 
-  void _openDetail() {
-    Navigator.of(context).push(
+  Future<void> _openDetail() async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => WorkoutDetailScreen(workoutId: widget.workoutId),
       ),
     );
+
+    await widget.onChanged?.call();
+  }
+
+  String get _commentsLabel {
+    if (_comments.isEmpty) return 'Post score  ·  Be the first to comment';
+    if (_comments.length == 1) return 'Post score  ·  1 comment';
+    return 'Post score  ·  ${_comments.length} comments';
   }
 
   @override
@@ -156,7 +166,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                 child: FilledButton.icon(
                   onPressed: _openDetail,
                   icon: const Icon(Icons.chat_bubble_outline),
-                  label: Text('Post score  ·  ${_comments.length} comments'),
+                  label: Text(_commentsLabel),
                 ),
               ),
             ],

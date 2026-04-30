@@ -190,9 +190,14 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   workout['workout_likes'] ?? [],
                 );
 
-                final comments = List<Map<String, dynamic>>.from(
-                  workout['workout_comments'] ?? [],
-                );
+                final comments =
+                    List<Map<String, dynamic>>.from(
+                      workout['workout_comments'] ?? [],
+                    )..sort(
+                      (a, b) => (b['created_at'] ?? '').toString().compareTo(
+                        (a['created_at'] ?? '').toString(),
+                      ),
+                    );
 
                 return WorkoutCard(
                   workoutId: workout['id'].toString(),
@@ -205,6 +210,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   canManage: _canManage,
                   onEdit: () => _editWorkout(workout),
                   onDelete: () => _deleteWorkout(workout['id'].toString()),
+                  onChanged: _load,
                 );
               },
             ),
