@@ -37,11 +37,11 @@ class _WorkoutCardState extends State<WorkoutCard> {
   late List<Map<String, dynamic>> _likes;
   late List<Map<String, dynamic>> _comments;
 
-  final _commentCtrl = TextEditingController();
-
   SupabaseClient get _client => Supabase.instance.client;
 
   String? get _userId => _client.auth.currentUser?.id;
+
+  bool get _liked => _likes.any((l) => l['user_id'].toString() == _userId);
 
   @override
   void initState() {
@@ -49,8 +49,6 @@ class _WorkoutCardState extends State<WorkoutCard> {
     _likes = widget.likes;
     _comments = widget.comments;
   }
-
-  bool get _liked => _likes.any((l) => l['user_id'].toString() == _userId);
 
   Future<void> _toggleLike() async {
     final userId = _userId;
@@ -78,10 +76,12 @@ class _WorkoutCardState extends State<WorkoutCard> {
     }
   }
 
-  @override
-  void dispose() {
-    _commentCtrl.dispose();
-    super.dispose();
+  void _openDetail() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorkoutDetailScreen(workoutId: widget.workoutId),
+      ),
+    );
   }
 
   @override
@@ -90,13 +90,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => WorkoutDetailScreen(workoutId: widget.workoutId),
-            ),
-          );
-        },
+        onTap: _openDetail,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -142,9 +136,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
               ],
               const SizedBox(height: 10),
               Text(widget.description),
-
               const SizedBox(height: 12),
-
               Row(
                 children: [
                   IconButton(
@@ -157,21 +149,12 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   Text('${_likes.length}'),
                 ],
               ),
-
               const SizedBox(height: 8),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            WorkoutDetailScreen(workoutId: widget.workoutId),
-                      ),
-                    );
-                  },
+                  onPressed: _openDetail,
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: Text('Post score  ·  ${_comments.length} comments'),
                 ),
