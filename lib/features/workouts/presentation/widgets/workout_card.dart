@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../screens/workout_detail_screen.dart';
+
 class WorkoutCard extends StatefulWidget {
   const WorkoutCard({
     super.key,
@@ -76,29 +78,6 @@ class _WorkoutCardState extends State<WorkoutCard> {
     }
   }
 
-  Future<void> _addComment() async {
-    final text = _commentCtrl.text.trim();
-    if (text.isEmpty) return;
-
-    final userId = _userId;
-    if (userId == null) return;
-
-    final res = await _client
-        .from('workout_comments')
-        .insert({
-          'workout_id': widget.workoutId,
-          'user_id': userId,
-          'body': text,
-        })
-        .select('id, body, user_id, created_at')
-        .single();
-
-    setState(() {
-      _comments.insert(0, res);
-      _commentCtrl.clear();
-    });
-  }
-
   @override
   void dispose() {
     _commentCtrl.dispose();
@@ -109,97 +88,96 @@ class _WorkoutCardState extends State<WorkoutCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.program,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => WorkoutDetailScreen(workoutId: widget.workoutId),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.program,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                ),
-                if (widget.canManage)
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') widget.onEdit?.call();
-                      if (value == 'delete') widget.onDelete?.call();
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
+                  if (widget.canManage)
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') widget.onEdit?.call();
+                        if (value == 'delete') widget.onDelete?.call();
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(widget.date),
+              if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    widget.imageUrl!,
+                    width: double.infinity,
+                    height: 220,
+                    fit: BoxFit.cover,
                   ),
+                ),
               ],
-            ),
-            const SizedBox(height: 4),
-            Text(widget.date),
-            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(widget.description),
+
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  widget.imageUrl!,
-                  width: double.infinity,
-                  height: 220,
-                  fit: BoxFit.cover,
+
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: _toggleLike,
+                    icon: Icon(
+                      _liked ? Icons.favorite : Icons.favorite_border,
+                      color: _liked ? Colors.red : null,
+                    ),
+                  ),
+                  Text('${_likes.length}'),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            WorkoutDetailScreen(workoutId: widget.workoutId),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: Text('Post score  ·  ${_comments.length} comments'),
                 ),
               ),
             ],
-            const SizedBox(height: 10),
-            Text(widget.description),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _toggleLike,
-                  icon: Icon(
-                    _liked ? Icons.favorite : Icons.favorite_border,
-                    color: _liked ? Colors.red : null,
-                  ),
-                ),
-                Text('${_likes.length}'),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            TextField(
-              controller: _commentCtrl,
-              decoration: const InputDecoration(hintText: 'Add a comment...'),
-              onSubmitted: (_) => _addComment(),
-            ),
-
-            const SizedBox(height: 8),
-
-            ..._comments.take(3).map((c) {
-              final name = c['author_name']?.toString() ?? 'User';
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: RichText(
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: [
-                      TextSpan(
-                        text: '$name  ',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      TextSpan(text: c['body']?.toString() ?? ''),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
+          ),
         ),
       ),
     );
