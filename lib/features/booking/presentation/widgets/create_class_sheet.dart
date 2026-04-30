@@ -9,185 +9,285 @@ Future<void> showCreateClassSheet({
   required String gymId,
   required Future<void> Function() onCreated,
 }) async {
-  final title = TextEditingController(text: 'CrossFit');
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-  final duration = TextEditingController(text: '60');
-  final capacity = TextEditingController(text: '12');
-  bool saving = false;
-
   await showModalBottomSheet(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (sheetContext) {
-      return StatefulBuilder(
-        builder: (context, setSheetState) {
-          final selectedStartsAt = selectedDate == null || selectedTime == null
-              ? null
-              : DateTime(
-                  selectedDate!.year,
-                  selectedDate!.month,
-                  selectedDate!.day,
-                  selectedTime!.hour,
-                  selectedTime!.minute,
-                );
+    builder: (_) =>
+        _CreateClassSheet(client: client, gymId: gymId, onCreated: onCreated),
+  );
+}
 
-          final isPastClass =
-              selectedStartsAt != null &&
-              !selectedStartsAt.isAfter(DateTime.now());
+class _CreateClassSheet extends StatefulWidget {
+  const _CreateClassSheet({
+    required this.client,
+    required this.gymId,
+    required this.onCreated,
+  });
 
-          final canCreate = selectedStartsAt != null && !isPastClass && !saving;
+  final SupabaseClient client;
+  final String gymId;
+  final Future<void> Function() onCreated;
 
-          Future<void> save() async {
-            setSheetState(() => saving = true);
+  @override
+  State<_CreateClassSheet> createState() => _CreateClassSheetState();
+}
 
-            try {
-              if (selectedStartsAt == null) {
-                throw Exception('Select date and time');
-              }
+class _CreateClassSheetState extends State<_CreateClassSheet> {
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  final _duration = TextEditingController(text: '60');
+  final _capacity = TextEditingController(text: '12');
 
-              if (!selectedStartsAt.isAfter(DateTime.now())) {
-                throw Exception('Class date and time must be in the future');
-              }
+  bool _loadingPrograms = true;
+  bool _saving = false;
+  List<Map<String, dynamic>> _programs = [];
+  String? _selectedProgramId;
 
-              await client.from('classes').insert({
-                'gym_id': gymId,
-                'title': title.text.trim().isEmpty
-                    ? 'Class'
-                    : title.text.trim(),
-                'starts_at': selectedStartsAt.toUtc().toIso8601String(),
-                'duration_minutes': int.tryParse(duration.text.trim()) ?? 60,
-                'capacity': int.tryParse(capacity.text.trim()) ?? 12,
-                'created_by': client.auth.currentUser?.id,
-              });
+  @override
+  void initState() {
+    super.initState();
+    _loadPrograms();
+  }
 
-              if (!sheetContext.mounted) return;
-              Navigator.of(sheetContext).pop();
-              await onCreated();
-            } catch (e) {
-              if (!sheetContext.mounted) return;
+  @override
+  void dispose() {
+    _duration.dispose();
+    _capacity.dispose();
+    super.dispose();
+  }
 
-              await showDialog<void>(
-                context: sheetContext,
-                builder: (dialogContext) {
-                  return AlertDialog(
-                    title: const Text('Error'),
-                    content: Text(e.toString().replaceFirst('Exception: ', '')),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('OK'),
-                      ),
-                    ],
-                  );
-                },
-              );
-            } finally {
-              if (sheetContext.mounted) {
-                setSheetState(() => saving = false);
-              }
-            }
-          }
+  Future<void> _loadPrograms() async {
+    setState(() => _loadingPrograms = true);
+    try {
+      final rows = await widget.client
+          .from('programs')
+          .select('id, name')
+          .eq('gym_id', widget.gymId)
+          .eq('is_active', true)
+          .order('name');
 
-          return SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                top: 8,
+      final programs = List<Map<String, dynamic>>.from(rows);
+
+      if (!mounted) return;
+      setState(() {
+        _programs = programs;
+        _selectedProgramId = programs.isEmpty
+            ? null
+            : programs.first['id'].toString();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Programs load error: $e')));
+    } finally {
+      if (mounted) setState(() => _loadingPrograms = false);
+    }
+  }
+
+  DateTime? get _selectedStartsAt {
+    final date = _selectedDate;
+    final time = _selectedTime;
+    if (date == null || time == null) return null;
+
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  Map<String, dynamic>? get _selectedProgram {
+    final id = _selectedProgramId;
+    if (id == null) return null;
+
+    for (final program in _programs) {
+      if (program['id'].toString() == id) return program;
+    }
+
+    return null;
+  }
+
+  bool get _isPastClass {
+    final startsAt = _selectedStartsAt;
+    return startsAt != null && !startsAt.isAfter(DateTime.now());
+  }
+
+  bool get _canCreate {
+    return !_loadingPrograms &&
+        !_saving &&
+        _selectedProgram != null &&
+        _selectedStartsAt != null &&
+        !_isPastClass;
+  }
+
+  Future<void> _save() async {
+    if (!_canCreate) return;
+
+    setState(() => _saving = true);
+
+    try {
+      final startsAt = _selectedStartsAt;
+      final program = _selectedProgram;
+
+      if (startsAt == null) throw Exception('Select date and time');
+      if (program == null) throw Exception('Select a program');
+      if (!startsAt.isAfter(DateTime.now())) {
+        throw Exception('Class date and time must be in the future');
+      }
+
+      final programName = program['name']?.toString() ?? 'Class';
+
+      await widget.client.from('classes').insert({
+        'gym_id': widget.gymId,
+        'program_id': program['id'],
+        'title': programName,
+        'starts_at': startsAt.toUtc().toIso8601String(),
+        'duration_minutes': int.tryParse(_duration.text.trim()) ?? 60,
+        'capacity': int.tryParse(_capacity.text.trim()) ?? 12,
+        'created_by': widget.client.auth.currentUser?.id,
+      });
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      await widget.onCreated();
+    } catch (e) {
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
               ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  const Text(
-                    'Create class',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: title,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Date'),
-                    subtitle: Text(
-                      selectedDate == null
-                          ? 'Select date'
-                          : '${selectedDate!.day.toString().padLeft(2, '0')}/${selectedDate!.month.toString().padLeft(2, '0')}/${selectedDate!.year}',
-                    ),
-                    trailing: const Icon(Icons.calendar_month),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (picked != null) {
-                        setSheetState(() => selectedDate = picked);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Time'),
-                    subtitle: Text(
-                      selectedTime == null
-                          ? 'Select time'
-                          : selectedTime!.format(context),
-                    ),
-                    trailing: const Icon(Icons.schedule),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (picked != null) {
-                        setSheetState(() => selectedTime = picked);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: duration,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Duration minutes',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: capacity,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Capacity'),
-                  ),
-                  if (isPastClass) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Choose a future date and time.',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 18),
-                  AppButton(
-                    label: 'Create class',
-                    loading: saving,
-                    onPressed: canCreate ? save : null,
-                  ),
-                ],
-              ),
-            ),
+            ],
           );
         },
       );
-    },
-  );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (picked != null) setState(() => _selectedTime = picked);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          top: 8,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Text(
+              'Create class',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 18),
+            if (_loadingPrograms)
+              const Center(child: CircularProgressIndicator())
+            else if (_programs.isEmpty)
+              const Text(
+                'Create at least one active program before creating classes.',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              )
+            else
+              DropdownButtonFormField<String>(
+                initialValue: _selectedProgramId,
+                decoration: const InputDecoration(labelText: 'Program'),
+                items: _programs.map((program) {
+                  return DropdownMenuItem<String>(
+                    value: program['id'].toString(),
+                    child: Text(program['name']?.toString() ?? 'Program'),
+                  );
+                }).toList(),
+                onChanged: (value) =>
+                    setState(() => _selectedProgramId = value),
+              ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Date'),
+              subtitle: Text(
+                _selectedDate == null
+                    ? 'Select date'
+                    : _formatDate(_selectedDate!),
+              ),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: _pickDate,
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Time'),
+              subtitle: Text(
+                _selectedTime == null
+                    ? 'Select time'
+                    : _selectedTime!.format(context),
+              ),
+              trailing: const Icon(Icons.schedule),
+              onTap: _pickTime,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _duration,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Duration minutes'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _capacity,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Capacity'),
+            ),
+            if (_isPastClass) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Choose a future date and time.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            AppButton(
+              label: 'Create class',
+              loading: _saving,
+              onPressed: _canCreate ? _save : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
