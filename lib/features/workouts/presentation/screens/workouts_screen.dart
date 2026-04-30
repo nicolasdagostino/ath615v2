@@ -51,8 +51,11 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   'id, workout_date, description, image_url, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
                 )
                 .eq('gym_id', gymId)
-                .order('workout_date', ascending: false)
-                .limit(30);
+                .eq(
+                  'workout_date',
+                  DateTime.now().toIso8601String().split('T').first,
+                )
+                .order('workout_date', ascending: false);
 
       if (!mounted) return;
       setState(() {
@@ -123,7 +126,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _workouts.isEmpty
-          ? const Center(child: Text('No workouts yet.'))
+          ? const Center(child: Text('No workouts for today yet.'))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _workouts.length,
