@@ -82,7 +82,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
           'user_id': userId,
           'body': text,
         })
-        .select()
+        .select('id, body, user_id, created_at')
         .single();
 
     setState(() {
@@ -140,14 +140,25 @@ class _WorkoutCardState extends State<WorkoutCard> {
 
             const SizedBox(height: 8),
 
-            ..._comments
-                .take(3)
-                .map(
-                  (c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(c['body'] ?? ''),
+            ..._comments.take(3).map((c) {
+              final name = c['author_name']?.toString() ?? 'User';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: RichText(
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style,
+                    children: [
+                      TextSpan(
+                        text: '$name  ',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      TextSpan(text: c['body']?.toString() ?? ''),
+                    ],
                   ),
                 ),
+              );
+            }),
           ],
         ),
       ),
