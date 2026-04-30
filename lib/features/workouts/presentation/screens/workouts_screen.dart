@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/create_workout_sheet.dart';
+import '../widgets/edit_workout_sheet.dart';
 import '../widgets/manage_programs_sheet.dart';
 import '../widgets/workout_card.dart';
 
@@ -48,7 +49,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           : await _client
                 .from('workouts')
                 .select(
-                  'id, workout_date, description, image_url, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
+                  'id, workout_date, description, image_url, program_id, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
                 )
                 .eq('gym_id', gymId)
                 .eq(
@@ -93,6 +94,57 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       client: _client,
       gymId: gymId,
       onCreated: _load,
+    );
+  }
+
+  Future<void> _deleteWorkout(String workoutId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete workout?'),
+          content: const Text('This cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _client.from('workouts').delete().eq('id', workoutId);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete workout error: $e')));
+    }
+  }
+
+  Future<void> _editWorkout(Map<String, dynamic> workout) async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    await showEditWorkoutSheet(
+      context: context,
+      client: _client,
+      workoutId: workout['id'].toString(),
+      gymId: gymId,
+      currentProgramId: workout['program_id'].toString(),
+      currentDescription: workout['description']?.toString() ?? '',
+      currentDate: workout['workout_date'].toString(),
+      currentImageUrl: workout['image_url']?.toString(),
+      onUpdated: _load,
     );
   }
 
@@ -150,6 +202,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   imageUrl: workout['image_url']?.toString(),
                   likes: likes,
                   comments: comments,
+                  canManage: _canManage,
+                  onEdit: () => _editWorkout(workout),
+                  onDelete: () => _deleteWorkout(workout['id'].toString()),
                 );
               },
             ),

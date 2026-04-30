@@ -11,6 +11,9 @@ class WorkoutCard extends StatefulWidget {
     required this.likes,
     required this.comments,
     this.imageUrl,
+    this.canManage = false,
+    this.onEdit,
+    this.onDelete,
   });
 
   final String workoutId;
@@ -20,6 +23,9 @@ class WorkoutCard extends StatefulWidget {
   final List<Map<String, dynamic>> likes;
   final List<Map<String, dynamic>> comments;
   final String? imageUrl;
+  final bool canManage;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   State<WorkoutCard> createState() => _WorkoutCardState();
@@ -108,9 +114,29 @@ class _WorkoutCardState extends State<WorkoutCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.program,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.program,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (widget.canManage)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') widget.onEdit?.call();
+                      if (value == 'delete') widget.onDelete?.call();
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(widget.date),
