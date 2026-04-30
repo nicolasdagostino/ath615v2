@@ -47,7 +47,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ? <Map<String, dynamic>>[]
           : await _client
                 .from('workouts')
-                .select('id, workout_date, description, programs(name)')
+                .select(
+                  'id, workout_date, description, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
+                )
                 .eq('gym_id', gymId)
                 .order('workout_date', ascending: false)
                 .limit(30);
@@ -129,10 +131,21 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                 final workout = _workouts[index];
                 final program = workout['programs'] as Map<String, dynamic>?;
 
+                final likes = List<Map<String, dynamic>>.from(
+                  workout['workout_likes'] ?? [],
+                );
+
+                final comments = List<Map<String, dynamic>>.from(
+                  workout['workout_comments'] ?? [],
+                );
+
                 return WorkoutCard(
+                  workoutId: workout['id'].toString(),
                   program: program?['name']?.toString() ?? 'Workout',
                   description: workout['description']?.toString() ?? '',
                   date: _formatDate(workout['workout_date'].toString()),
+                  likes: likes,
+                  comments: comments,
                 );
               },
             ),
