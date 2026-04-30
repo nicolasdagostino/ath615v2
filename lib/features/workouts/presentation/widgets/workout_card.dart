@@ -10,6 +10,7 @@ class WorkoutCard extends StatefulWidget {
     required this.date,
     required this.likes,
     required this.comments,
+    this.imageUrl,
   });
 
   final String workoutId;
@@ -18,6 +19,7 @@ class WorkoutCard extends StatefulWidget {
   final String date;
   final List<Map<String, dynamic>> likes;
   final List<Map<String, dynamic>> comments;
+  final String? imageUrl;
 
   @override
   State<WorkoutCard> createState() => _WorkoutCardState();
@@ -112,6 +114,18 @@ class _WorkoutCardState extends State<WorkoutCard> {
             ),
             const SizedBox(height: 4),
             Text(widget.date),
+            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  widget.imageUrl!,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Text(widget.description),
 

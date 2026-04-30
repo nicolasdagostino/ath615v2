@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../../../../core/widgets/app_button.dart';
 
@@ -42,6 +44,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
 
   DateTime _date = DateTime.now();
   final _description = TextEditingController();
+  File? _image;
 
   @override
   void initState() {
@@ -84,17 +87,41 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   bool get _canSave =>
       !_saving && _program != null && _description.text.trim().isNotEmpty;
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
   Future<void> _save() async {
     if (!_canSave) return;
 
     setState(() => _saving = true);
 
     try {
+      String? imageUrl;
+
+      if (_image != null) {
+        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        final path = 'workouts/$fileName.jpg';
+
+        await widget.client.storage
+            .from('workout-images')
+            .upload(path, _image!);
+
+        imageUrl = widget.client.storage
+            .from('workout-images')
+            .getPublicUrl(path);
+      }
+
       await widget.client.from('workouts').insert({
         'gym_id': widget.gymId,
         'program_id': _program!['id'],
         'workout_date': _date.toIso8601String().split('T').first,
         'description': _description.text.trim(),
+        'image_url': imageUrl,
         'created_by': widget.client.auth.currentUser?.id,
       });
 
@@ -167,6 +194,18 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                 if (picked != null) setState(() => _date = picked);
               },
             ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _pickImage,
+              child: const Text('Select image'),
+            ),
+
+            if (_image != null) ...[
+              const SizedBox(height: 8),
+              Image.file(_image!, height: 150),
+            ],
+
             const SizedBox(height: 12),
             TextField(
               controller: _description,

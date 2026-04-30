@@ -48,7 +48,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           : await _client
                 .from('workouts')
                 .select(
-                  'id, workout_date, description, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
+                  'id, workout_date, description, image_url, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
                 )
                 .eq('gym_id', gymId)
                 .order('workout_date', ascending: false)
@@ -144,6 +144,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   program: program?['name']?.toString() ?? 'Workout',
                   description: workout['description']?.toString() ?? '',
                   date: _formatDate(workout['workout_date'].toString()),
+                  imageUrl: workout['image_url']?.toString(),
                   likes: likes,
                   comments: comments,
                 );
