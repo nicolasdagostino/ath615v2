@@ -15,14 +15,40 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool _loading = true;
   String? _role;
   String? _gymId;
-  List<Map<String, dynamic>> _workouts = [];
-  List<Map<String, dynamic>> _programs = [];
   String _search = '';
   String? _selectedProgramId;
+
+  List<Map<String, dynamic>> _workouts = [];
+  List<Map<String, dynamic>> _programs = [];
 
   SupabaseClient get _client => Supabase.instance.client;
 
   bool get _canManage => _role == 'admin' || _role == 'owner';
+
+  List<Map<String, dynamic>> get _filteredWorkouts {
+    final query = _search.trim().toLowerCase();
+
+    return _workouts.where((workout) {
+      final description =
+          workout['description']?.toString().toLowerCase() ?? '';
+      final programName =
+          (workout['programs'] as Map<String, dynamic>?)?['name']
+              ?.toString()
+              .toLowerCase() ??
+          '';
+      final programId = workout['program_id']?.toString();
+
+      final matchesSearch =
+          query.isEmpty ||
+          description.contains(query) ||
+          programName.contains(query);
+
+      final matchesProgram =
+          _selectedProgramId == null || programId == _selectedProgramId;
+
+      return matchesSearch && matchesProgram;
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -52,6 +78,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 .from('programs')
                 .select('id, name')
                 .eq('gym_id', gymId)
+                .eq('is_active', true)
                 .order('name');
 
       final workouts = gymId == null
@@ -138,24 +165,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final parts = raw.split('-');
     if (parts.length != 3) return raw;
     return '${parts[2]}/${parts[1]}/${parts[0]}';
-  }
-
-  List<Map<String, dynamic>> get _filteredWorkouts {
-    final normalizedSearch = _search.trim().toLowerCase();
-
-    return _workouts.where((workout) {
-      final description =
-          workout['description']?.toString().toLowerCase() ?? '';
-      final programId = workout['program_id']?.toString();
-
-      final matchesSearch =
-          normalizedSearch.isEmpty || description.contains(normalizedSearch);
-
-      final matchesProgram =
-          _selectedProgramId == null || programId == _selectedProgramId;
-
-      return matchesSearch && matchesProgram;
-    }).toList();
   }
 
   @override
