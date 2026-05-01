@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "581680144365",
+    "project_id": "ath615-6d786",
+    "storage_bucket": "ath615-6d786.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:581680144365:android:13288222887cd61845d1e4",
+        "android_client_info": {
+          "package_name": "com.athlete615.ath615v2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7DVQkoCYLNA3Mdsgvx3q7wqInq02ABGA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

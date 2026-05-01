@@ -116,14 +116,23 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             .getPublicUrl(path);
       }
 
-      await widget.client.from('workouts').insert({
-        'gym_id': widget.gymId,
-        'program_id': _program!['id'],
-        'workout_date': _date.toIso8601String().split('T').first,
-        'description': _description.text.trim(),
-        'image_url': imageUrl,
-        'created_by': widget.client.auth.currentUser?.id,
-      });
+      final workout = await widget.client
+          .from('workouts')
+          .insert({
+            'gym_id': widget.gymId,
+            'program_id': _program!['id'],
+            'workout_date': _date.toIso8601String().split('T').first,
+            'description': _description.text.trim(),
+            'image_url': imageUrl,
+            'created_by': widget.client.auth.currentUser?.id,
+          })
+          .select('id')
+          .single();
+
+      await widget.client.rpc(
+        'schedule_workout_notifications',
+        params: {'w_id': workout['id']},
+      );
 
       if (!mounted) return;
       final navigator = Navigator.of(context);

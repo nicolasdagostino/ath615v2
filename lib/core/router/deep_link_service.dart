@@ -49,6 +49,19 @@ class DeepLinkService {
 
     print('ATH615 IS AUTH LINK => $isAuthLink');
 
+    final workoutId =
+        uri.queryParameters['id'] ??
+        uri.queryParameters['workoutId'] ??
+        uri.queryParameters['workout_id'];
+
+    final isWorkoutLink =
+        lower.contains('workout') && workoutId != null && workoutId.isNotEmpty;
+
+    if (isWorkoutLink) {
+      _router.go('/workout/$workoutId');
+      return;
+    }
+
     if (!isAuthLink) return;
 
     final fragmentParams = uri.fragment.isEmpty

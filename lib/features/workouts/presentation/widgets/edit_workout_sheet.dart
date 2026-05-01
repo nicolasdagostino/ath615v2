@@ -144,6 +144,11 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
           })
           .eq('id', widget.workoutId);
 
+      await widget.client.rpc(
+        'schedule_workout_notifications',
+        params: {'w_id': widget.workoutId},
+      );
+
       if (!mounted) return;
       final navigator = Navigator.of(context);
       navigator.pop();
