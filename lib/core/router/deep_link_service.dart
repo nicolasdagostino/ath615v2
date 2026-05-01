@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:app_links/app_links.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,10 +14,10 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSub;
 
   Future<void> start() async {
-    print('ATH615 DEEPLINK SERVICE STARTED');
+    debugPrint('ATH615 DEEPLINK SERVICE STARTED');
 
     final initialUri = await _appLinks.getInitialLink();
-    print('ATH615 INITIAL LINK => $initialUri');
+    debugPrint('ATH615 INITIAL LINK => $initialUri');
 
     if (initialUri != null) {
       await _handle(initialUri);
@@ -24,11 +25,11 @@ class DeepLinkService {
 
     _linkSub = _appLinks.uriLinkStream.listen(
       (uri) async {
-        print('ATH615 STREAM LINK => $uri');
+        debugPrint('ATH615 STREAM LINK => $uri');
         await _handle(uri);
       },
       onError: (e) {
-        print('ATH615 STREAM ERROR => $e');
+        debugPrint('ATH615 STREAM ERROR => $e');
       },
     );
   }
@@ -37,7 +38,7 @@ class DeepLinkService {
     final raw = uri.toString();
     final lower = raw.toLowerCase();
 
-    print('ATH615 DEEPLINK RAW => $raw');
+    debugPrint('ATH615 DEEPLINK RAW => $raw');
 
     final isAuthLink =
         lower.contains('reset-password') ||
@@ -47,7 +48,7 @@ class DeepLinkService {
         lower.contains('refresh_token') ||
         lower.contains('code=');
 
-    print('ATH615 IS AUTH LINK => $isAuthLink');
+    debugPrint('ATH615 IS AUTH LINK => $isAuthLink');
 
     final workoutId =
         uri.queryParameters['id'] ??
@@ -80,18 +81,18 @@ class DeepLinkService {
       final auth = Supabase.instance.client.auth;
 
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        print('ATH615 DEEPLINK => setSession with refresh_token');
+        debugPrint('ATH615 DEEPLINK => setSession with refresh_token');
         await auth.setSession(refreshToken, accessToken: accessToken);
-        print('ATH615 DEEPLINK SESSION OK');
+        debugPrint('ATH615 DEEPLINK SESSION OK');
       } else if (code != null && code.isNotEmpty) {
-        print('ATH615 DEEPLINK => exchangeCodeForSession');
+        debugPrint('ATH615 DEEPLINK => exchangeCodeForSession');
         await auth.exchangeCodeForSession(code);
-        print('ATH615 DEEPLINK SESSION OK');
+        debugPrint('ATH615 DEEPLINK SESSION OK');
       } else {
-        print('ATH615 DEEPLINK SESSION ERROR => no refresh_token or code');
+        debugPrint('ATH615 DEEPLINK SESSION ERROR => no refresh_token or code');
       }
     } catch (e) {
-      print('ATH615 DEEPLINK SESSION ERROR => $e');
+      debugPrint('ATH615 DEEPLINK SESSION ERROR => $e');
     }
 
     _router.go('/reset-password');

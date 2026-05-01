@@ -19,20 +19,20 @@ Future<void> setupPush() async {
       await Future.delayed(const Duration(seconds: 1));
     }
 
-    print('PUSH APNS TOKEN => $apnsToken');
+    debugPrint('PUSH APNS TOKEN => $apnsToken');
 
     if (apnsToken == null) {
-      print('PUSH SKIPPED => APNS token null');
+      debugPrint('PUSH SKIPPED => APNS token null');
       return;
     }
 
     final token = await messaging.getToken();
-    print('PUSH TOKEN => $token');
+    debugPrint('PUSH TOKEN => $token');
 
     final user = Supabase.instance.client.auth.currentUser;
 
     if (token == null || user == null) {
-      print('PUSH SKIPPED => user or token null');
+      debugPrint('PUSH SKIPPED => user or token null');
       return;
     }
 
@@ -42,9 +42,9 @@ Future<void> setupPush() async {
       'platform': 'ios',
     });
 
-    print('PUSH TOKEN SAVED');
+    debugPrint('PUSH TOKEN SAVED');
   } catch (e) {
-    print('PUSH SETUP ERROR => $e');
+    debugPrint('PUSH SETUP ERROR => $e');
   }
 }
 
@@ -65,7 +65,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
         message.data['workout_id'] ??
         message.data['id'];
 
-    print('PUSH OPEN DATA => ${message.data}');
+    debugPrint('PUSH OPEN DATA => ${message.data}');
 
     if (workoutId == null || workoutId.toString().isEmpty) return;
 
@@ -75,9 +75,9 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   @override
   void initState() {
     super.initState();
-    print('ATH615 APP INIT');
+    debugPrint('ATH615 APP INIT');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('ATH615 STARTING DEEPLINK SERVICE');
+      debugPrint('ATH615 STARTING DEEPLINK SERVICE');
       _deepLinks.start();
 
       Future.delayed(const Duration(seconds: 2), () {

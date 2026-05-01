@@ -5,6 +5,7 @@ import '../../../booking/presentation/screens/booking_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../explore/presentation/screens/explore_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../workouts/presentation/screens/workouts_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -17,11 +18,13 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _loadRole();
+    _loadUnreadNotifications();
   }
 
   Future<void> _loadRole() async {
@@ -37,6 +40,34 @@ class _AppShellState extends State<AppShell> {
     if (!mounted) return;
 
     setState(() => _role = profile['role'] as String?);
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user.id)
+          .isFilter('read_at', null)
+          .not('sent_at', 'is', null);
+
+      if (!mounted) return;
+      setState(() => _unreadNotifications = List.from(rows).length);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _unreadNotifications = 0);
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+
+    await _loadUnreadNotifications();
   }
 
   @override
@@ -78,6 +109,23 @@ class _AppShellState extends State<AppShell> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Athlete 615'),
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: _unreadNotifications > 0,
+              label: Text(
+                _unreadNotifications > 99
+                    ? '99+'
+                    : _unreadNotifications.toString(),
+              ),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: _openNotifications,
+          ),
+        ],
+      ),
       body: screens[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
