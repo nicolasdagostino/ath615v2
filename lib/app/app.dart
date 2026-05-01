@@ -58,6 +58,7 @@ class AthleteLabApp extends StatefulWidget {
 class _AthleteLabAppState extends State<AthleteLabApp> {
   late final _router = AppRouter.router;
   late final _deepLinks = DeepLinkService(_router);
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   void _openWorkoutFromPush(RemoteMessage message) {
     final workoutId =
@@ -65,11 +66,49 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
         message.data['workout_id'] ??
         message.data['id'];
 
+    final notificationId = message.data['notificationId'];
+
+    if (notificationId != null) {
+      Supabase.instance.client
+          .from('notifications')
+          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('id', notificationId)
+          .ignore();
+    }
+
     debugPrint('PUSH OPEN DATA => ${message.data}');
 
     if (workoutId == null || workoutId.toString().isEmpty) return;
 
-    _router.go('/workout/${workoutId.toString()}');
+    _router.push('/workout/${workoutId.toString()}');
+  }
+
+  void _showForegroundPush(RemoteMessage message) {
+    final title = message.notification?.title ?? 'Notification';
+    final body = message.notification?.body ?? '';
+
+    final messenger = _messengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 6),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+            if (body.isNotEmpty) Text(body),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'Open',
+          onPressed: () => _openWorkoutFromPush(message),
+        ),
+      ),
+    );
   }
 
   @override
@@ -83,6 +122,8 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       Future.delayed(const Duration(seconds: 2), () {
         setupPush();
       });
+
+      FirebaseMessaging.onMessage.listen(_showForegroundPush);
 
       FirebaseMessaging.onMessageOpenedApp.listen(_openWorkoutFromPush);
 
@@ -106,6 +147,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       debugShowCheckedModeBanner: false,
       title: 'Athlete 615',
       theme: AppTheme.light,
+      scaffoldMessengerKey: _messengerKey,
       routerConfig: _router,
     );
   }
