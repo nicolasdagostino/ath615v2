@@ -40,7 +40,7 @@ Future<void> setupPush() async {
       'user_id': user.id,
       'token': token,
       'platform': 'ios',
-    });
+    }, onConflict: 'user_id,token');
 
     debugPrint('PUSH TOKEN SAVED');
   } catch (e) {
