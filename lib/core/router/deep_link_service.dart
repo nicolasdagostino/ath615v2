@@ -59,7 +59,7 @@ class DeepLinkService {
         lower.contains('workout') && workoutId != null && workoutId.isNotEmpty;
 
     if (isWorkoutLink) {
-      _router.go('/workout/$workoutId');
+      _router.push('/workout/$workoutId');
       return;
     }
 

@@ -14,6 +14,7 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  static const int _cancelMinutes = 60;
   bool _loading = true;
   String? _role;
   String? _gymId;
@@ -164,6 +165,11 @@ class _BookingScreenState extends State<BookingScreen> {
       });
 
       await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Booking confirmed')));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -174,6 +180,13 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _cancelBooking(Map<String, dynamic> klass) async {
+    if (!_canCancelClass(klass)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Too late to cancel')));
+      return;
+    }
+
     final classId = klass['id'].toString();
     final bookedCount = klass['booked_count'] as int? ?? 0;
 
@@ -185,6 +198,11 @@ class _BookingScreenState extends State<BookingScreen> {
     try {
       await _client.rpc('cancel_my_booking', params: {'p_class_id': classId});
       await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Booking cancelled')));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -228,6 +246,15 @@ class _BookingScreenState extends State<BookingScreen> {
     if (now.isBefore(startsAt)) return 'upcoming';
     if (now.isBefore(endsAt)) return 'in_progress';
     return 'finished';
+  }
+
+  bool _canCancelClass(Map<String, dynamic> klass) {
+    final startsAt = DateTime.parse(klass['starts_at']).toLocal();
+    final cancelLimit = startsAt.subtract(
+      const Duration(minutes: _cancelMinutes),
+    );
+
+    return DateTime.now().isBefore(cancelLimit);
   }
 
   String _prettyStatus(String status) {
@@ -311,8 +338,13 @@ class _BookingScreenState extends State<BookingScreen> {
                         buttonLabel = 'Membership required';
                         buttonAction = null;
                       } else if (booked) {
-                        buttonLabel = 'Cancel';
-                        buttonAction = () => _cancelBooking(klass);
+                        if (_canCancelClass(klass)) {
+                          buttonLabel = 'Cancel';
+                          buttonAction = () => _cancelBooking(klass);
+                        } else {
+                          buttonLabel = 'Booked';
+                          buttonAction = null;
+                        }
                       } else if (full) {
                         buttonLabel = 'Full';
                         buttonAction = null;
