@@ -41,6 +41,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
   bool _loadingPrograms = true;
   bool _saving = false;
+  bool _repeatWeekly = false;
   List<Map<String, dynamic>> _programs = [];
   String? _selectedProgramId;
 
@@ -134,16 +135,33 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       }
 
       final programName = program['name']?.toString() ?? 'Class';
+      final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
+      final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 
-      await widget.client.from('classes').insert({
-        'gym_id': widget.gymId,
-        'program_id': program['id'],
-        'title': programName,
-        'starts_at': startsAt.toUtc().toIso8601String(),
-        'duration_minutes': int.tryParse(_duration.text.trim()) ?? 60,
-        'capacity': int.tryParse(_capacity.text.trim()) ?? 12,
-        'created_by': widget.client.auth.currentUser?.id,
-      });
+      if (_repeatWeekly) {
+        await widget.client.rpc(
+          'create_recurring_classes',
+          params: {
+            'p_gym_id': widget.gymId,
+            'p_program_id': program['id'],
+            'p_title': programName,
+            'p_starts_at': startsAt.toUtc().toIso8601String(),
+            'p_duration_minutes': durationMinutes,
+            'p_capacity': capacity,
+            'p_weeks': 8,
+          },
+        );
+      } else {
+        await widget.client.from('classes').insert({
+          'gym_id': widget.gymId,
+          'program_id': program['id'],
+          'title': programName,
+          'starts_at': startsAt.toUtc().toIso8601String(),
+          'duration_minutes': durationMinutes,
+          'capacity': capacity,
+          'created_by': widget.client.auth.currentUser?.id,
+        });
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -256,6 +274,14 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
               ),
               trailing: const Icon(Icons.schedule),
               onTap: _pickTime,
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _repeatWeekly,
+              onChanged: (value) => setState(() => _repeatWeekly = value),
+              title: const Text('Repeat weekly'),
+              subtitle: const Text('Creates this class for the next 8 weeks.'),
             ),
             const SizedBox(height: 12),
             TextField(

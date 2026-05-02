@@ -224,6 +224,43 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Future<void> _deleteClassOptions(Map<String, dynamic> klass) async {
+    final recurringId = klass['recurring_id'];
+    final startsAt = klass['starts_at'];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Delete this class'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _client.from('classes').delete().eq('id', klass['id']);
+                _load();
+              },
+            ),
+            if (recurringId != null)
+              ListTile(
+                title: const Text('Delete this + future'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _client
+                      .from('classes')
+                      .delete()
+                      .eq('recurring_id', recurringId)
+                      .gte('starts_at', startsAt);
+                  _load();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openAttendanceSheet(Map<String, dynamic> klass) async {
     if (!_canManageAttendance) return;
 
@@ -353,15 +390,20 @@ class _BookingScreenState extends State<BookingScreen> {
                         buttonAction = () => _bookClass(klass);
                       }
 
-                      return BookingClassCard(
-                        klass: klass,
-                        bookedCount: bookedCount,
-                        capacity: capacity,
-                        buttonLabel: buttonLabel,
-                        buttonAction: buttonAction,
-                        canManageAttendance: _canManageAttendance,
-                        onOpenAttendance: () => _openAttendanceSheet(klass),
-                        formatDateTime: _formatDateTime,
+                      return GestureDetector(
+                        onLongPress: _canCreateClass
+                            ? () => _deleteClassOptions(klass)
+                            : null,
+                        child: BookingClassCard(
+                          klass: klass,
+                          bookedCount: bookedCount,
+                          capacity: capacity,
+                          buttonLabel: buttonLabel,
+                          buttonAction: buttonAction,
+                          canManageAttendance: _canManageAttendance,
+                          onOpenAttendance: () => _openAttendanceSheet(klass),
+                          formatDateTime: _formatDateTime,
+                        ),
                       );
                     },
                   ),
