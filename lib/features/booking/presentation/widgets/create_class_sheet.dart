@@ -42,6 +42,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   bool _loadingPrograms = true;
   bool _saving = false;
   bool _repeatWeekly = false;
+  final List<int> _selectedDays = [];
   List<Map<String, dynamic>> _programs = [];
   String? _selectedProgramId;
 
@@ -138,7 +139,24 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
       final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 
-      if (_repeatWeekly) {
+      if (_repeatWeekly && _selectedDays.isNotEmpty) {
+        final time = TimeOfDay.fromDateTime(startsAt);
+
+        await widget.client.rpc(
+          'create_recurring_classes_multi',
+          params: {
+            'p_gym_id': widget.gymId,
+            'p_program_id': program['id'],
+            'p_title': programName,
+            'p_time':
+                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00',
+            'p_days': _selectedDays,
+            'p_duration_minutes': durationMinutes,
+            'p_capacity': capacity,
+            'p_weeks': 8,
+          },
+        );
+      } else if (_repeatWeekly) {
         await widget.client.rpc(
           'create_recurring_classes',
           params: {
@@ -283,6 +301,43 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
               title: const Text('Repeat weekly'),
               subtitle: const Text('Creates this class for the next 8 weeks.'),
             ),
+            if (_repeatWeekly) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Repeat on',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final day in [
+                    {'label': 'L', 'value': 1},
+                    {'label': 'M', 'value': 2},
+                    {'label': 'X', 'value': 3},
+                    {'label': 'J', 'value': 4},
+                    {'label': 'V', 'value': 5},
+                    {'label': 'S', 'value': 6},
+                    {'label': 'D', 'value': 7},
+                  ])
+                    ChoiceChip(
+                      label: Text(day['label'] as String),
+                      selected: _selectedDays.contains(day['value']),
+                      onSelected: (selected) {
+                        final value = day['value'] as int;
+                        setState(() {
+                          if (selected) {
+                            _selectedDays.add(value);
+                            _selectedDays.sort();
+                          } else {
+                            _selectedDays.remove(value);
+                          }
+                        });
+                      },
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _duration,

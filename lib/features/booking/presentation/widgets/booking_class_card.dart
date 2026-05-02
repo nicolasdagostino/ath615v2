@@ -10,6 +10,7 @@ class BookingClassCard extends StatelessWidget {
     required this.buttonAction,
     required this.canManageAttendance,
     required this.onOpenAttendance,
+    this.onMorePressed,
     required this.formatDateTime,
   });
 
@@ -20,6 +21,7 @@ class BookingClassCard extends StatelessWidget {
   final VoidCallback? buttonAction;
   final bool canManageAttendance;
   final VoidCallback? onOpenAttendance;
+  final VoidCallback? onMorePressed;
   final String Function(String raw) formatDateTime;
 
   @override
@@ -34,12 +36,23 @@ class BookingClassCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                klass['title']?.toString() ?? 'Class',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      klass['title']?.toString() ?? 'Class',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  if (onMorePressed != null)
+                    IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      onPressed: onMorePressed,
+                    ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(formatDateTime(klass['starts_at'])),

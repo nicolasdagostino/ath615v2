@@ -80,7 +80,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final classes = await _client
           .from('classes')
           .select(
-            'id, title, starts_at, duration_minutes, capacity, created_at',
+            'id, title, starts_at, duration_minutes, capacity, recurring_id, created_at',
           )
           .eq('gym_id', gymId)
           .gte('starts_at', dayStart.toUtc().toIso8601String())
@@ -390,20 +390,18 @@ class _BookingScreenState extends State<BookingScreen> {
                         buttonAction = () => _bookClass(klass);
                       }
 
-                      return GestureDetector(
-                        onLongPress: _canCreateClass
+                      return BookingClassCard(
+                        klass: klass,
+                        bookedCount: bookedCount,
+                        capacity: capacity,
+                        buttonLabel: buttonLabel,
+                        buttonAction: buttonAction,
+                        canManageAttendance: _canManageAttendance,
+                        onOpenAttendance: () => _openAttendanceSheet(klass),
+                        onMorePressed: _canCreateClass
                             ? () => _deleteClassOptions(klass)
                             : null,
-                        child: BookingClassCard(
-                          klass: klass,
-                          bookedCount: bookedCount,
-                          capacity: capacity,
-                          buttonLabel: buttonLabel,
-                          buttonAction: buttonAction,
-                          canManageAttendance: _canManageAttendance,
-                          onOpenAttendance: () => _openAttendanceSheet(klass),
-                          formatDateTime: _formatDateTime,
-                        ),
+                        formatDateTime: _formatDateTime,
                       );
                     },
                   ),
