@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/workout_detail_screen.dart';
@@ -96,82 +98,76 @@ class _WorkoutCardState extends State<WorkoutCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _openDetail,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      onTap: _openDetail,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.program,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  if (widget.canManage)
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') widget.onEdit?.call();
-                        if (value == 'delete') widget.onDelete?.call();
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(widget.date),
-              if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    widget.imageUrl!,
-                    width: double.infinity,
-                    height: 220,
-                    fit: BoxFit.cover,
+              Expanded(
+                child: Text(
+                  widget.program,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ],
-              const SizedBox(height: 10),
-              Text(widget.description),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _toggleLike,
-                    icon: Icon(
-                      _liked ? Icons.favorite : Icons.favorite_border,
-                      color: _liked ? Colors.red : null,
-                    ),
-                  ),
-                  Text('${_likes.length}'),
-                ],
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: _openDetail,
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: Text(_commentsLabel),
+              if (widget.canManage)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') widget.onEdit?.call();
+                    if (value == 'delete') widget.onDelete?.call();
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
                 ),
-              ),
             ],
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(widget.date),
+          if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                widget.imageUrl!,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(widget.description),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              IconButton(
+                onPressed: _toggleLike,
+                icon: Icon(
+                  _liked ? Icons.favorite : Icons.favorite_border,
+                  color: _liked ? Colors.red : null,
+                ),
+              ),
+              Text('${_likes.length}'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: _openDetail,
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text(_commentsLabel),
+            ),
+          ),
+        ],
       ),
     );
   }

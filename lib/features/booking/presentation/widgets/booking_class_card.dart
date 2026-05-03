@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_outlined_button.dart';
 
 class BookingClassCard extends StatelessWidget {
@@ -28,52 +29,45 @@ class BookingClassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: canManageAttendance ? onOpenAttendance : null,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppCard(
+      onTap: canManageAttendance ? onOpenAttendance : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      klass['title']?.toString() ?? 'Class',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+              Expanded(
+                child: Text(
+                  klass['title']?.toString() ?? 'Class',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                   ),
-                  if (onMorePressed != null)
-                    IconButton(
-                      icon: const Icon(Icons.more_horiz),
-                      onPressed: onMorePressed,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(formatDateTime(klass['starts_at'])),
-              const SizedBox(height: 6),
-              Text(
-                '$bookedCount/$capacity spots · ${klass['duration_minutes'] ?? 60} min',
-              ),
-              if (canManageAttendance) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Tap card to manage attendance',
-                  style: TextStyle(fontSize: 12),
                 ),
-              ],
-              const SizedBox(height: 14),
-              AppOutlinedButton(label: buttonLabel, onPressed: buttonAction),
+              ),
+              if (onMorePressed != null)
+                IconButton(
+                  icon: const Icon(Icons.more_horiz),
+                  onPressed: onMorePressed,
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(formatDateTime(klass['starts_at'])),
+          const SizedBox(height: 6),
+          Text(
+            '$bookedCount/$capacity spots · ${klass['duration_minutes'] ?? 60} min',
+          ),
+          if (canManageAttendance) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Tap card to manage attendance',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 14),
+          AppOutlinedButton(label: buttonLabel, onPressed: buttonAction),
+        ],
       ),
     );
   }
