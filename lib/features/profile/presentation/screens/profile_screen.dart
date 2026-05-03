@@ -14,8 +14,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _password = TextEditingController();
+  final _gymName = TextEditingController();
   bool _loading = false;
   Map<String, dynamic>? _profile;
+  String? _gymId;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
@@ -27,7 +29,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _load() async {
     final profile = await _repo.myProfile();
-    if (mounted) setState(() => _profile = profile);
+    final gymId = profile?['gym_id'] as String?;
+
+    String gymName = '';
+    if (gymId != null) {
+      final gym = await Supabase.instance.client
+          .from('gyms')
+          .select('name')
+          .eq('id', gymId)
+          .maybeSingle();
+
+      gymName = gym?['name']?.toString() ?? '';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _gymId = gymId;
+      _gymName.text = gymName;
+    });
   }
 
   Future<void> _changePassword() async {
@@ -39,6 +59,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Password updated.')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _saveGymName() async {
+    final gymId = _gymId;
+    final name = _gymName.text.trim();
+
+    if (gymId == null || name.isEmpty) return;
+
+    setState(() => _loading = true);
+
+    try {
+      await Supabase.instance.client
+          .from('gyms')
+          .update({'name': name})
+          .eq('id', gymId);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gym name updated.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update gym error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -69,16 +117,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
+    final role = _profile?['role']?.toString();
+    final canEditGym = role == 'admin' || role == 'owner';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           Text(email, style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Text('Role: ${_profile?['role'] ?? '-'}'),
-          Text('Gym: ${_profile?['gym_id'] ?? '-'}'),
+          const SizedBox(height: 18),
+          TextField(
+            controller: _gymName,
+            readOnly: !canEditGym,
+            decoration: const InputDecoration(labelText: 'Gym name'),
+          ),
+          if (canEditGym) ...[
+            const SizedBox(height: 12),
+            AppButton(
+              label: 'Save gym name',
+              loading: _loading,
+              onPressed: _saveGymName,
+            ),
+          ],
           const SizedBox(height: 32),
           TextField(
             controller: _password,

@@ -18,6 +18,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
+  String _gymName = 'Athlete 615';
   int _unreadNotifications = 0;
 
   @override
@@ -33,13 +34,29 @@ class _AppShellState extends State<AppShell> {
 
     final profile = await Supabase.instance.client
         .from('profiles')
-        .select('role')
+        .select('role, gym_id')
         .eq('id', user.id)
         .single();
 
     if (!mounted) return;
 
-    setState(() => _role = profile['role'] as String?);
+    String gymName = 'Athlete 615';
+    final gymId = profile['gym_id'] as String?;
+
+    if (gymId != null) {
+      final gym = await Supabase.instance.client
+          .from('gyms')
+          .select('name')
+          .eq('id', gymId)
+          .maybeSingle();
+
+      gymName = gym?['name']?.toString() ?? gymName;
+    }
+
+    setState(() {
+      _role = profile['role'] as String?;
+      _gymName = gymName;
+    });
   }
 
   Future<void> _loadUnreadNotifications() async {
@@ -110,7 +127,7 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Athlete 615'),
+        title: Text(_gymName),
         actions: [
           IconButton(
             icon: Badge(

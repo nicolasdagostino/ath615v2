@@ -172,97 +172,119 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final filteredWorkouts = _filteredWorkouts;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Explore'),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Search workouts...',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (value) => setState(() => _search = value),
-                  ),
+                const Text(
+                  'Explore',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: _selectedProgramId,
-                    decoration: const InputDecoration(labelText: 'Program'),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('All programs'),
-                      ),
-                      ..._programs.map(
-                        (program) => DropdownMenuItem<String?>(
-                          value: program['id'].toString(),
-                          child: Text(program['name']?.toString() ?? 'Program'),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedProgramId = value);
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: filteredWorkouts.isEmpty
-                      ? const Center(child: Text('No workouts found.'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: filteredWorkouts.length,
-                          itemBuilder: (context, index) {
-                            final workout = filteredWorkouts[index];
-                            final program =
-                                workout['programs'] as Map<String, dynamic>?;
-
-                            final likes = List<Map<String, dynamic>>.from(
-                              workout['workout_likes'] ?? [],
-                            );
-
-                            final comments =
-                                List<Map<String, dynamic>>.from(
-                                  workout['workout_comments'] ?? [],
-                                )..sort(
-                                  (a, b) => (b['created_at'] ?? '')
-                                      .toString()
-                                      .compareTo(
-                                        (a['created_at'] ?? '').toString(),
-                                      ),
-                                );
-
-                            return WorkoutCard(
-                              workoutId: workout['id'].toString(),
-                              program:
-                                  program?['name']?.toString() ?? 'Workout',
-                              description:
-                                  workout['description']?.toString() ?? '',
-                              date: _formatDate(
-                                workout['workout_date'].toString(),
-                              ),
-                              imageUrl: workout['image_url']?.toString(),
-                              likes: likes,
-                              comments: comments,
-                              canManage: _canManage,
-                              onEdit: () => _editWorkout(workout),
-                              onDelete: () =>
-                                  _deleteWorkout(workout['id'].toString()),
-                              onChanged: _load,
-                            );
-                          },
-                        ),
-                ),
+                const Spacer(),
+                IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
               ],
             ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: 'Search workouts...',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                          onChanged: (value) => setState(() => _search = value),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _selectedProgramId,
+                          decoration: const InputDecoration(
+                            labelText: 'Program',
+                          ),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('All programs'),
+                            ),
+                            ..._programs.map(
+                              (program) => DropdownMenuItem<String?>(
+                                value: program['id'].toString(),
+                                child: Text(
+                                  program['name']?.toString() ?? 'Program',
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _selectedProgramId = value);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: filteredWorkouts.isEmpty
+                            ? const Center(child: Text('No workouts found.'))
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: filteredWorkouts.length,
+                                itemBuilder: (context, index) {
+                                  final workout = filteredWorkouts[index];
+                                  final program =
+                                      workout['programs']
+                                          as Map<String, dynamic>?;
+
+                                  final likes = List<Map<String, dynamic>>.from(
+                                    workout['workout_likes'] ?? [],
+                                  );
+
+                                  final comments =
+                                      List<Map<String, dynamic>>.from(
+                                        workout['workout_comments'] ?? [],
+                                      )..sort(
+                                        (a, b) => (b['created_at'] ?? '')
+                                            .toString()
+                                            .compareTo(
+                                              (a['created_at'] ?? '')
+                                                  .toString(),
+                                            ),
+                                      );
+
+                                  return WorkoutCard(
+                                    workoutId: workout['id'].toString(),
+                                    program:
+                                        program?['name']?.toString() ??
+                                        'Workout',
+                                    description:
+                                        workout['description']?.toString() ??
+                                        '',
+                                    date: _formatDate(
+                                      workout['workout_date'].toString(),
+                                    ),
+                                    imageUrl: workout['image_url']?.toString(),
+                                    likes: likes,
+                                    comments: comments,
+                                    canManage: _canManage,
+                                    onEdit: () => _editWorkout(workout),
+                                    onDelete: () => _deleteWorkout(
+                                      workout['id'].toString(),
+                                    ),
+                                    onChanged: _load,
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

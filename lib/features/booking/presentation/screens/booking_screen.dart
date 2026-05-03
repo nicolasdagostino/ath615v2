@@ -316,12 +316,6 @@ class _BookingScreenState extends State<BookingScreen> {
         '${_selectedDay.day.toString().padLeft(2, '0')}/${_selectedDay.month.toString().padLeft(2, '0')}';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Booking'),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
-      ),
       floatingActionButton: _canCreateClass
           ? FloatingActionButton(
               onPressed: _showCreateClassSheet,
@@ -330,6 +324,19 @@ class _BookingScreenState extends State<BookingScreen> {
           : null,
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                const Text(
+                  'Booking',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+              ],
+            ),
+          ),
           BookingDayChips(
             selectedDay: _selectedDay,
             onSelected: (day) {

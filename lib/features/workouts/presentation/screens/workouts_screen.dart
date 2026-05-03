@@ -157,63 +157,78 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workouts'),
-        actions: [
-          if (_canManage)
-            IconButton(
-              tooltip: 'Programs',
-              onPressed: _openPrograms,
-              icon: const Icon(Icons.category_outlined),
-            ),
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
-      ),
       floatingActionButton: _canManage
           ? FloatingActionButton(
               onPressed: _openCreateWorkout,
               child: const Icon(Icons.add),
             )
           : null,
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _workouts.isEmpty
-          ? const Center(child: Text('No workouts for today yet.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _workouts.length,
-              itemBuilder: (context, index) {
-                final workout = _workouts[index];
-                final program = workout['programs'] as Map<String, dynamic>?;
-
-                final likes = List<Map<String, dynamic>>.from(
-                  workout['workout_likes'] ?? [],
-                );
-
-                final comments =
-                    List<Map<String, dynamic>>.from(
-                      workout['workout_comments'] ?? [],
-                    )..sort(
-                      (a, b) => (b['created_at'] ?? '').toString().compareTo(
-                        (a['created_at'] ?? '').toString(),
-                      ),
-                    );
-
-                return WorkoutCard(
-                  workoutId: workout['id'].toString(),
-                  program: program?['name']?.toString() ?? 'Workout',
-                  description: workout['description']?.toString() ?? '',
-                  date: _formatDate(workout['workout_date'].toString()),
-                  imageUrl: workout['image_url']?.toString(),
-                  likes: likes,
-                  comments: comments,
-                  canManage: _canManage,
-                  onEdit: () => _editWorkout(workout),
-                  onDelete: () => _deleteWorkout(workout['id'].toString()),
-                  onChanged: _load,
-                );
-              },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                const Text(
+                  'Workouts',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                if (_canManage)
+                  IconButton(
+                    tooltip: 'Programs',
+                    onPressed: _openPrograms,
+                    icon: const Icon(Icons.category_outlined),
+                  ),
+                IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+              ],
             ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _workouts.isEmpty
+                ? const Center(child: Text('No workouts for today yet.'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _workouts.length,
+                    itemBuilder: (context, index) {
+                      final workout = _workouts[index];
+                      final program =
+                          workout['programs'] as Map<String, dynamic>?;
+
+                      final likes = List<Map<String, dynamic>>.from(
+                        workout['workout_likes'] ?? [],
+                      );
+
+                      final comments =
+                          List<Map<String, dynamic>>.from(
+                            workout['workout_comments'] ?? [],
+                          )..sort(
+                            (a, b) => (b['created_at'] ?? '')
+                                .toString()
+                                .compareTo((a['created_at'] ?? '').toString()),
+                          );
+
+                      return WorkoutCard(
+                        workoutId: workout['id'].toString(),
+                        program: program?['name']?.toString() ?? 'Workout',
+                        description: workout['description']?.toString() ?? '',
+                        date: _formatDate(workout['workout_date'].toString()),
+                        imageUrl: workout['image_url']?.toString(),
+                        likes: likes,
+                        comments: comments,
+                        canManage: _canManage,
+                        onEdit: () => _editWorkout(workout),
+                        onDelete: () =>
+                            _deleteWorkout(workout['id'].toString()),
+                        onChanged: _load,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

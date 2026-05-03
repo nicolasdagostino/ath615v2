@@ -127,7 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return FutureBuilder(
           future: _loadMemberHistory(member['id']),
           builder: (context, snapshot) {
-            final history = snapshot.data as List<Map<String, dynamic>>? ?? [];
+            final history = snapshot.data ?? [];
 
             return SafeArea(
               child: Padding(
@@ -200,57 +200,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final members = _filteredMembers;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(onPressed: _loadMembers, icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+      body: Column(
         children: [
-          const Text(
-            'Invite athlete',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 8),
-          const Text('Send an invitation email to a new athlete.'),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _inviteEmail,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Athlete email'),
-          ),
-          const SizedBox(height: 16),
-          AppButton(
-            label: 'Invite athlete',
-            loading: _loading,
-            onPressed: _inviteAthlete,
-          ),
-          const SizedBox(height: 34),
-          const Text(
-            'Members',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _search,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Search member',
-              prefixIcon: Icon(Icons.search),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                const Text(
+                  'Dashboard',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: _loadMembers,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          if (_loadingMembers)
-            const Center(child: CircularProgressIndicator())
-          else if (members.isEmpty)
-            const Text('No members found.')
-          else
-            ...members.map(
-              (member) =>
-                  _MemberTile(member: member, onTap: () => _openMember(member)),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                const Text(
+                  'Invite athlete',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                const Text('Send an invitation email to a new athlete.'),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _inviteEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Athlete email'),
+                ),
+                const SizedBox(height: 16),
+                AppButton(
+                  label: 'Invite athlete',
+                  loading: _loading,
+                  onPressed: _inviteAthlete,
+                ),
+                const SizedBox(height: 34),
+                const Text(
+                  'Members',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _search,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Search member',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_loadingMembers)
+                  const Center(child: CircularProgressIndicator())
+                else if (members.isEmpty)
+                  const Text('No members found.')
+                else
+                  ...members.map(
+                    (member) => _MemberTile(
+                      member: member,
+                      onTap: () => _openMember(member),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
