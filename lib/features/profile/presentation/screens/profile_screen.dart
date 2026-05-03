@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Password updated.')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdated)));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -82,12 +84,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Gym name updated.')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.gymNameUpdated)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Update gym error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.updateGymError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -109,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Delete account error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.deleteAccountError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -127,17 +129,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(email, style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          Text('Role: ${_profile?['role'] ?? '-'}'),
+          Text('${appStrings.profileRole}: ${_profile?['role'] ?? '-'}'),
           const SizedBox(height: 18),
           TextField(
             controller: _gymName,
             readOnly: !canEditGym,
-            decoration: const InputDecoration(labelText: 'Gym name'),
+            decoration: InputDecoration(labelText: appStrings.profileGymName),
           ),
           if (canEditGym) ...[
             const SizedBox(height: 12),
             AppButton(
-              label: 'Save gym name',
+              label: appStrings.profileSaveGymName,
               loading: _loading,
               onPressed: _saveGymName,
             ),
@@ -146,18 +148,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'New password'),
+            decoration: InputDecoration(
+              labelText: appStrings.profileNewPassword,
+            ),
           ),
           const SizedBox(height: 14),
           AppButton(
-            label: 'Change password',
+            label: appStrings.profileChangePassword,
             loading: _loading,
             onPressed: _changePassword,
           ),
           const SizedBox(height: 24),
-          AppOutlinedButton(label: 'Logout', onPressed: _logout),
+          AppOutlinedButton(
+            label: appStrings.profileLogout,
+            onPressed: _logout,
+          ),
           const SizedBox(height: 12),
-          AppOutlinedButton(label: 'Delete account', onPressed: _deleteAccount),
+          AppOutlinedButton(
+            label: appStrings.profileDeleteAccount,
+            onPressed: _deleteAccount,
+          ),
         ],
       ),
     );
