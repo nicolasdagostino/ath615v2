@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_outlined_button.dart';
 import 'dart:io';
 
@@ -159,7 +161,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Update workout error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.workoutUpdateError(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -182,8 +184,8 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text(
-              'Edit workout',
+            Text(
+              appStrings.workoutEditTitle,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
@@ -192,7 +194,9 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
             else
               DropdownButtonFormField<String>(
                 initialValue: _programId,
-                decoration: const InputDecoration(labelText: 'Program'),
+                decoration: InputDecoration(
+                  labelText: appStrings.workoutProgram,
+                ),
                 items: _programs
                     .map(
                       (p) => DropdownMenuItem(
@@ -234,13 +238,13 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
             TextField(
               controller: _description,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Workout description',
+              decoration: InputDecoration(
+                labelText: appStrings.workoutDescription,
               ),
             ),
             const SizedBox(height: 18),
             AppButton(
-              label: 'Save changes',
+              label: appStrings.workoutSaveChanges,
               loading: _saving,
               onPressed: _canSave ? _save : null,
             ),

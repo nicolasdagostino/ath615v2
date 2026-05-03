@@ -43,6 +43,10 @@ class AppStrings {
   String get workoutWriteWod => 'Write the WOD...';
   String get workoutCreate => 'Create workout';
 
+  String get workoutEditTitle => 'Edit workout';
+  String get workoutSaveChanges => 'Save changes';
+  String workoutUpdateError(Object e) => 'Update workout error: $e';
+
   String get workoutsPrograms => 'Programs';
   String get workoutsDeleteTitle => 'Delete workout?';
   String get workoutsDeleteMessage => 'This cannot be undone.';
