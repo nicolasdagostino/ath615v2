@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_small_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> showAttendanceSheet({
@@ -122,18 +124,18 @@ Future<void> showAttendanceSheet({
                               Row(
                                 children: [
                                   Expanded(
-                                    child: OutlinedButton(
+                                    child: AppSmallOutlinedButton(
+                                      label: 'Attended',
                                       onPressed: () =>
                                           updateStatus(booking, 'attended'),
-                                      child: const Text('Attended'),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: OutlinedButton(
+                                    child: AppSmallOutlinedButton(
+                                      label: 'No show',
                                       onPressed: () =>
                                           updateStatus(booking, 'no_show'),
-                                      child: const Text('No show'),
                                     ),
                                   ),
                                 ],

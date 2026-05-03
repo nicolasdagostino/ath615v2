@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_outlined_button.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -154,12 +155,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: _changePassword,
           ),
           const SizedBox(height: 24),
-          OutlinedButton(onPressed: _logout, child: const Text('Logout')),
+          AppOutlinedButton(label: 'Logout', onPressed: _logout),
           const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: _deleteAccount,
-            child: const Text('Delete account'),
-          ),
+          AppOutlinedButton(label: 'Delete account', onPressed: _deleteAccount),
         ],
       ),
     );

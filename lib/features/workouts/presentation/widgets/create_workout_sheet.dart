@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -205,10 +207,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             ),
             const SizedBox(height: 12),
 
-            OutlinedButton(
-              onPressed: _pickImage,
-              child: const Text('Select image'),
-            ),
+            AppOutlinedButton(label: 'Select image', onPressed: _pickImage),
 
             if (_image != null) ...[
               const SizedBox(height: 8),

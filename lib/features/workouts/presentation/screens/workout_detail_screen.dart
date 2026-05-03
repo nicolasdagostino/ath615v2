@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_small_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -224,10 +226,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       label: Text('${_likes.length} likes'),
                     ),
                     const SizedBox(width: 10),
-                    OutlinedButton.icon(
+                    AppSmallOutlinedButton(
+                      label: '${_comments.length} comments',
+                      icon: Icons.chat_bubble_outline,
                       onPressed: () => _commentFocus.requestFocus(),
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: Text('${_comments.length} comments'),
                     ),
                   ],
                 ),

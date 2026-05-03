@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_outlined_button.dart';
 import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
@@ -220,10 +222,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
               },
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _pickImage,
-              child: const Text('Change image'),
-            ),
+            AppOutlinedButton(label: 'Change image', onPressed: _pickImage),
             if (_image != null) ...[
               const SizedBox(height: 8),
               Image.file(_image!, height: 150),

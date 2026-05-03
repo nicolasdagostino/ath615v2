@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_outlined_button.dart';
+
 class BookingClassCard extends StatelessWidget {
   const BookingClassCard({
     super.key,
@@ -68,13 +70,7 @@ class BookingClassCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: buttonAction,
-                  child: Text(buttonLabel),
-                ),
-              ),
+              AppOutlinedButton(label: buttonLabel, onPressed: buttonAction),
             ],
           ),
         ),
