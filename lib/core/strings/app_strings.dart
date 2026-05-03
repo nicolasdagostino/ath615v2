@@ -47,42 +47,57 @@ class AppStrings {
     'Necesitas una membresía activa para reservar clases.',
   );
 
-  String get workoutsTitle => 'Workouts';
+  String get workoutsTitle => pick('Workouts', 'WODs');
 
-  String get workoutCreateTitle => 'Create workout';
-  String get workoutNeedProgram =>
-      'Create at least one active program before creating workouts.';
-  String get workoutProgram => 'Program';
-  String get workoutDate => 'Date';
-  String get workoutSelectImage => 'Select image';
-  String get workoutDescription => 'Workout description';
-  String get workoutWriteWod => 'Write the WOD...';
-  String get workoutCreate => 'Create workout';
+  String get workoutCreateTitle => pick('Create workout', 'Crear WOD');
+  String get workoutNeedProgram => pick(
+    'Create at least one active program before creating workouts.',
+    'Crea al menos un programa activo antes de crear WODs.',
+  );
+  String get workoutProgram => pick('Program', 'Programa');
+  String get workoutDate => pick('Date', 'Fecha');
+  String get workoutSelectImage => pick('Select image', 'Seleccionar imagen');
+  String get workoutDescription =>
+      pick('Workout description', 'Descripción del WOD');
+  String get workoutWriteWod => pick('Write the WOD...', 'Escribe el WOD...');
+  String get workoutCreate => pick('Create workout', 'Crear WOD');
 
-  String get workoutFallbackTitle => 'Workout';
-  String get workoutEdit => 'Edit';
-  String get workoutDelete => 'Delete';
-  String get workoutPostScore => 'Post score';
-  String get workoutFirstComment => 'Be the first to comment';
-  String workoutCommentCount(int count) =>
-      count == 1 ? '1 comment' : '$count comments';
-  String workoutLikesCount(int count) => count == 1 ? '1 like' : '$count likes';
-  String get workoutNotFound => 'Workout not found.';
-  String get workoutPostScoreComments => 'Post score / comments';
-  String get workoutCommentHint => 'How did it go?';
-  String get workoutNoComments => 'No comments yet.';
-  String get userFallbackName => 'User';
+  String get workoutFallbackTitle => pick('Workout', 'WOD');
+  String get workoutEdit => pick('Edit', 'Editar');
+  String get workoutDelete => pick('Delete', 'Eliminar');
+  String get workoutPostScore => pick('Post score', 'Sube tu resultado');
+  String get workoutFirstComment =>
+      pick('Be the first to comment', 'Sé el primero en comentar');
+  String workoutCommentCount(int count) => count == 1
+      ? pick('1 comment', '1 comentario')
+      : pick('$count comments', '$count comentarios');
+  String workoutLikesCount(int count) => count == 1
+      ? pick('1 like', '1 me gusta')
+      : pick('$count likes', '$count me gusta');
+  String get workoutNotFound =>
+      pick('Workout not found.', 'WOD no encontrado.');
+  String get workoutPostScoreComments =>
+      pick('Post score / comments', 'Resultado / comentarios');
+  String get workoutCommentHint => pick('How did it go?', '¿Cómo te fue?');
+  String get workoutNoComments =>
+      pick('No comments yet.', 'Aún no hay comentarios.');
+  String get userFallbackName => pick('User', 'Usuario');
 
-  String get workoutEditTitle => 'Edit workout';
-  String get workoutSaveChanges => 'Save changes';
-  String workoutUpdateError(Object e) => 'Update workout error: $e';
+  String get workoutEditTitle => pick('Edit workout', 'Editar WOD');
+  String get workoutSaveChanges => pick('Save changes', 'Guardar cambios');
+  String workoutUpdateError(Object e) =>
+      pick('Update workout error: $e', 'Error al actualizar WOD: $e');
 
-  String get workoutsPrograms => 'Programs';
-  String get workoutsDeleteTitle => 'Delete workout?';
-  String get workoutsDeleteMessage => 'This cannot be undone.';
-  String get workoutsNoToday => 'No workouts for today yet.';
-  String workoutsLoadError(Object e) => 'Workouts load error: $e';
-  String workoutsDeleteError(Object e) => 'Delete workout error: $e';
+  String get workoutsPrograms => pick('Programs', 'Programas');
+  String get workoutsDeleteTitle => pick('Delete workout?', '¿Eliminar WOD?');
+  String get workoutsDeleteMessage =>
+      pick('This cannot be undone.', 'Esta acción no se puede deshacer.');
+  String get workoutsNoToday =>
+      pick('No workouts for today yet.', 'Todavía no hay WODs para hoy.');
+  String workoutsLoadError(Object e) =>
+      pick('Workouts load error: $e', 'Error cargando WODs: $e');
+  String workoutsDeleteError(Object e) =>
+      pick('Delete workout error: $e', 'Error al eliminar WOD: $e');
 
   String get exploreTitle => 'Explore';
   String get exploreSearchWorkouts => 'Search workouts...';
