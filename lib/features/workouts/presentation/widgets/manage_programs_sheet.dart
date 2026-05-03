@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_button.dart';
 
 Future<void> showManageProgramsSheet({
@@ -140,7 +141,8 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
             else
               ..._programs.map((program) {
                 final active = program['is_active'] == true;
-                return Card(
+                return AppCard(
+                  padding: EdgeInsets.zero,
                   child: ListTile(
                     title: Text(program['name']?.toString() ?? 'Program'),
                     subtitle: Text(active ? 'Active' : 'Inactive'),
