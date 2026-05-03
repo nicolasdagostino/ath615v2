@@ -123,6 +123,10 @@ class AppStrings {
   String notificationsMarkReadError(Object e) =>
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
+  String get profileLanguage => pick('Language', 'Idioma');
+  String get profileEnglish => pick('English', 'Inglés');
+  String get profileSpanish => pick('Spanish', 'Español');
+
   String get profileRole => 'Role';
   String get profileGymName => 'Gym name';
   String get profileSaveGymName => 'Save gym name';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -130,6 +131,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(email, style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Text('${appStrings.profileRole}: ${_profile?['role'] ?? '-'}'),
+          const SizedBox(height: 18),
+          Text(
+            appStrings.profileLanguage,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'en',
+                label: Text(appStrings.profileEnglish),
+              ),
+              ButtonSegment(
+                value: 'es',
+                label: Text(appStrings.profileSpanish),
+              ),
+            ],
+            selected: {localeController.locale.languageCode},
+            onSelectionChanged: (values) {
+              localeController.setLanguage(values.first);
+              setState(() {});
+            },
+          ),
           const SizedBox(height: 18),
           TextField(
             controller: _gymName,
