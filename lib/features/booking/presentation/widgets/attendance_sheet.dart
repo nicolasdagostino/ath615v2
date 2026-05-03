@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_small_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -104,44 +105,41 @@ Future<void> showAttendanceSheet({
                       final email = (profile?['email'] ?? '').toString();
                       final status = booking['status'].toString();
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
+                      return AppCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            if (email.isNotEmpty) Text(email),
+                            const SizedBox(height: 8),
+                            Text('Status: ${prettyStatus(status)}'),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppSmallOutlinedButton(
+                                    label: 'Attended',
+                                    onPressed: () =>
+                                        updateStatus(booking, 'attended'),
+                                  ),
                                 ),
-                              ),
-                              if (email.isNotEmpty) Text(email),
-                              const SizedBox(height: 8),
-                              Text('Status: ${prettyStatus(status)}'),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: AppSmallOutlinedButton(
-                                      label: 'Attended',
-                                      onPressed: () =>
-                                          updateStatus(booking, 'attended'),
-                                    ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: AppSmallOutlinedButton(
+                                    label: 'No show',
+                                    onPressed: () =>
+                                        updateStatus(booking, 'no_show'),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: AppSmallOutlinedButton(
-                                      label: 'No show',
-                                      onPressed: () =>
-                                          updateStatus(booking, 'no_show'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     }),

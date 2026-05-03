@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -135,8 +137,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 final isSent = sentAt != null && sentAt.isNotEmpty;
                 final isUnread = isSent && (readAt == null || readAt.isEmpty);
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                return AppCard(
+                  padding: EdgeInsets.zero,
+                  onTap: () => _openNotification(notification),
                   child: ListTile(
                     leading: Icon(
                       isUnread
@@ -168,7 +171,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ],
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _openNotification(notification),
                   ),
                 );
               },
