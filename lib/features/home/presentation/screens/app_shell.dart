@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../booking/presentation/screens/booking_screen.dart';
@@ -18,7 +20,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
-  String _gymName = 'Athlete 615';
+  String _gymName = appStrings.defaultGymName;
   int _unreadNotifications = 0;
 
   @override
@@ -40,7 +42,7 @@ class _AppShellState extends State<AppShell> {
 
     if (!mounted) return;
 
-    String gymName = 'Athlete 615';
+    String gymName = appStrings.defaultGymName;
     final gymId = profile['gym_id'] as String?;
 
     if (gymId != null) {
@@ -104,20 +106,26 @@ class _AppShellState extends State<AppShell> {
     ];
 
     final destinations = [
-      const NavigationDestination(
+      NavigationDestination(
         icon: Icon(Icons.fitness_center),
-        label: 'Workout',
+        label: appStrings.navWorkout,
       ),
-      const NavigationDestination(
+      NavigationDestination(
         icon: Icon(Icons.calendar_month),
-        label: 'Booking',
+        label: appStrings.navBooking,
       ),
-      const NavigationDestination(icon: Icon(Icons.search), label: 'Explore'),
-      const NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+      NavigationDestination(
+        icon: Icon(Icons.search),
+        label: appStrings.navExplore,
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.person),
+        label: appStrings.navProfile,
+      ),
       if (canSeeDashboard)
-        const NavigationDestination(
+        NavigationDestination(
           icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+          label: appStrings.navDashboard,
         ),
     ];
 

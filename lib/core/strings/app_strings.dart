@@ -1,6 +1,14 @@
 class AppStrings {
   const AppStrings();
 
+  String get defaultGymName => 'Athlete 615';
+
+  String get navWorkout => 'Workout';
+  String get navBooking => 'Booking';
+  String get navExplore => 'Explore';
+  String get navProfile => 'Profile';
+  String get navDashboard => 'Dashboard';
+
   String get profileRole => 'Role';
   String get profileGymName => 'Gym name';
   String get profileSaveGymName => 'Save gym name';
