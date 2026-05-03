@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
@@ -104,7 +106,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Explore load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.exploreLoadError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -138,9 +140,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Delete workout error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.exploreDeleteWorkoutError(e))),
+      );
     }
   }
 
@@ -178,8 +180,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
-                const Text(
-                  'Explore',
+                Text(
+                  appStrings.exploreTitle,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const Spacer(),
@@ -195,8 +197,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                         child: TextField(
-                          decoration: const InputDecoration(
-                            hintText: 'Search workouts...',
+                          decoration: InputDecoration(
+                            hintText: appStrings.exploreSearchWorkouts,
                             prefixIcon: Icon(Icons.search),
                           ),
                           onChanged: (value) => setState(() => _search = value),
@@ -210,9 +212,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             labelText: 'Program',
                           ),
                           items: [
-                            const DropdownMenuItem<String?>(
+                            DropdownMenuItem<String?>(
                               value: null,
-                              child: Text('All programs'),
+                              child: Text(appStrings.exploreAllPrograms),
                             ),
                             ..._programs.map(
                               (program) => DropdownMenuItem<String?>(
@@ -230,7 +232,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ),
                       Expanded(
                         child: filteredWorkouts.isEmpty
-                            ? const Center(child: Text('No workouts found.'))
+                            ? Center(
+                                child: Text(appStrings.exploreNoWorkoutsFound),
+                              )
                             : ListView.builder(
                                 padding: const EdgeInsets.all(16),
                                 itemCount: filteredWorkouts.length,

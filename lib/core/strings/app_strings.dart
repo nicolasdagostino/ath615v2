@@ -31,6 +31,13 @@ class AppStrings {
   String get bookingActiveMembershipRequiredToBook =>
       'Active membership required to book classes.';
 
+  String get exploreTitle => 'Explore';
+  String get exploreSearchWorkouts => 'Search workouts...';
+  String get exploreAllPrograms => 'All programs';
+  String get exploreNoWorkoutsFound => 'No workouts found.';
+  String exploreLoadError(Object e) => 'Explore load error: $e';
+  String exploreDeleteWorkoutError(Object e) => 'Delete workout error: $e';
+
   String get notificationsTitle => 'Notifications';
   String get notificationsMarkRead => 'Mark read';
   String get notificationsEmpty => 'No notifications yet.';
