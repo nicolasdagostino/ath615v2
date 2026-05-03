@@ -124,7 +124,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Booking load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingLoadError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -177,7 +177,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Book class error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingBookError(e))));
     }
   }
 
@@ -210,7 +210,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Cancel booking error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingCancelError(e))));
     }
   }
 

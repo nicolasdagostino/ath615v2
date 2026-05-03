@@ -9,6 +9,28 @@ class AppStrings {
   String get navProfile => 'Profile';
   String get navDashboard => 'Dashboard';
 
+  String get bookingTitle => 'Booking';
+  String get bookingBook => 'Book';
+  String get bookingCancel => 'Cancel';
+  String get bookingBooked => 'Booked';
+  String get bookingFull => 'Full';
+  String get bookingMembershipRequired => 'Membership required';
+  String get bookingInProgress => 'Class in progress';
+  String get bookingFinished => 'Finished';
+
+  String get bookingConfirmed => 'Booking confirmed';
+  String get bookingCancelled => 'Booking cancelled';
+  String get bookingClassFull => 'Class is full';
+  String get bookingTooLateCancel => 'Too late to cancel';
+  String get bookingActiveMembershipRequired => 'Active membership required';
+
+  String bookingLoadError(Object e) => 'Booking load error: $e';
+  String bookingBookError(Object e) => 'Book class error: $e';
+  String bookingCancelError(Object e) => 'Cancel booking error: $e';
+
+  String get bookingActiveMembershipRequiredToBook =>
+      'Active membership required to book classes.';
+
   String get profileRole => 'Role';
   String get profileGymName => 'Gym name';
   String get profileSaveGymName => 'Save gym name';
