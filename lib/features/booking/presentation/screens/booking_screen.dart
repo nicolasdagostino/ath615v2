@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_sheet.dart';
@@ -134,7 +136,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
     if (!_hasActiveMembership) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Active membership required')),
+        SnackBar(content: Text(appStrings.bookingActiveMembershipRequired)),
       );
       return;
     }
@@ -148,7 +150,7 @@ class _BookingScreenState extends State<BookingScreen> {
     if (bookedCount >= capacity) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Class is full')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingClassFull)));
       return;
     }
 
@@ -169,7 +171,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Booking confirmed')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingConfirmed)));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -183,7 +185,7 @@ class _BookingScreenState extends State<BookingScreen> {
     if (!_canCancelClass(klass)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Too late to cancel')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingTooLateCancel)));
       return;
     }
 
@@ -202,7 +204,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Booking cancelled')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingCancelled)));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -297,7 +299,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String _prettyStatus(String status) {
     if (status == 'no_show') return 'No show';
     if (status == 'attended') return 'Attended';
-    if (status == 'booked') return 'Booked';
+    if (status == 'booked') return appStrings.bookingBooked;
     return status;
   }
 
@@ -328,8 +330,8 @@ class _BookingScreenState extends State<BookingScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
-                const Text(
-                  'Booking',
+                Text(
+                  appStrings.bookingTitle,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const Spacer(),
@@ -345,10 +347,10 @@ class _BookingScreenState extends State<BookingScreen> {
             },
           ),
           if (_role == 'athlete' && !_hasActiveMembership)
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Text(
-                'Active membership required to book classes.',
+                appStrings.bookingActiveMembershipRequiredToBook,
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -373,27 +375,27 @@ class _BookingScreenState extends State<BookingScreen> {
                       VoidCallback? buttonAction;
 
                       if (state == 'in_progress') {
-                        buttonLabel = 'Class in progress';
+                        buttonLabel = appStrings.bookingInProgress;
                         buttonAction = null;
                       } else if (state == 'finished') {
-                        buttonLabel = 'Finished';
+                        buttonLabel = appStrings.bookingFinished;
                         buttonAction = null;
                       } else if (!_hasActiveMembership) {
-                        buttonLabel = 'Membership required';
+                        buttonLabel = appStrings.bookingMembershipRequired;
                         buttonAction = null;
                       } else if (booked) {
                         if (_canCancelClass(klass)) {
-                          buttonLabel = 'Cancel';
+                          buttonLabel = appStrings.bookingCancel;
                           buttonAction = () => _cancelBooking(klass);
                         } else {
-                          buttonLabel = 'Booked';
+                          buttonLabel = appStrings.bookingBooked;
                           buttonAction = null;
                         }
                       } else if (full) {
-                        buttonLabel = 'Full';
+                        buttonLabel = appStrings.bookingFull;
                         buttonAction = null;
                       } else {
-                        buttonLabel = 'Book';
+                        buttonLabel = appStrings.bookingBook;
                         buttonAction = () => _bookClass(klass);
                       }
 
