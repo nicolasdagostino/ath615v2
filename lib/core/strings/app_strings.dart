@@ -99,21 +99,29 @@ class AppStrings {
   String workoutsDeleteError(Object e) =>
       pick('Delete workout error: $e', 'Error al eliminar WOD: $e');
 
-  String get exploreTitle => 'Explore';
-  String get exploreSearchWorkouts => 'Search workouts...';
-  String get exploreAllPrograms => 'All programs';
-  String get exploreNoWorkoutsFound => 'No workouts found.';
-  String exploreLoadError(Object e) => 'Explore load error: $e';
-  String exploreDeleteWorkoutError(Object e) => 'Delete workout error: $e';
+  String get exploreTitle => pick('Explore', 'Explorar');
+  String get exploreSearchWorkouts =>
+      pick('Search workouts...', 'Buscar WODs...');
+  String get exploreAllPrograms => pick('All programs', 'Todos los programas');
+  String get exploreNoWorkoutsFound =>
+      pick('No workouts found.', 'No se encontraron WODs.');
+  String exploreLoadError(Object e) =>
+      pick('Explore load error: $e', 'Error cargando explorar: $e');
+  String exploreDeleteWorkoutError(Object e) =>
+      pick('Delete workout error: $e', 'Error al eliminar WOD: $e');
 
-  String get notificationsTitle => 'Notifications';
-  String get notificationsMarkRead => 'Mark read';
-  String get notificationsEmpty => 'No notifications yet.';
-  String get notificationFallbackTitle => 'Notification';
-  String notificationSent(String date) => 'Sent $date';
-  String notificationScheduled(String date) => 'Scheduled $date';
-  String notificationsLoadError(Object e) => 'Notifications error: $e';
-  String notificationsMarkReadError(Object e) => 'Mark read error: $e';
+  String get notificationsTitle => pick('Notifications', 'Notificaciones');
+  String get notificationsMarkRead => pick('Mark read', 'Marcar como leídas');
+  String get notificationsEmpty =>
+      pick('No notifications yet.', 'Aún no hay notificaciones.');
+  String get notificationFallbackTitle => pick('Notification', 'Notificación');
+  String notificationSent(String date) => pick('Sent $date', 'Enviado $date');
+  String notificationScheduled(String date) =>
+      pick('Scheduled $date', 'Programado $date');
+  String notificationsLoadError(Object e) =>
+      pick('Notifications error: $e', 'Error en notificaciones: $e');
+  String notificationsMarkReadError(Object e) =>
+      pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
   String get profileRole => 'Role';
   String get profileGymName => 'Gym name';
