@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,9 +47,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Notifications error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationsLoadError(e))),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -92,9 +94,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Mark read error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationsMarkReadError(e))),
+      );
     }
   }
 
@@ -113,10 +115,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(appStrings.notificationsTitle),
         actions: [
           IconButton(
-            tooltip: 'Mark read',
+            tooltip: appStrings.notificationsMarkRead,
             onPressed: _markAllAsRead,
             icon: const Icon(Icons.done_all),
           ),
@@ -126,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _notifications.isEmpty
-          ? const Center(child: Text('No notifications yet.'))
+          ? Center(child: Text(appStrings.notificationsEmpty))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _notifications.length,
@@ -149,7 +151,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           : Icons.schedule,
                     ),
                     title: Text(
-                      notification['title']?.toString() ?? 'Notification',
+                      notification['title']?.toString() ??
+                          appStrings.notificationFallbackTitle,
                       style: TextStyle(
                         fontWeight: isUnread
                             ? FontWeight.w900
@@ -164,8 +167,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(height: 4),
                         Text(
                           isSent
-                              ? 'Sent ${_formatDate(sentAt)}'
-                              : 'Scheduled ${_formatDate(notification['scheduled_for']?.toString())}',
+                              ? appStrings.notificationSent(_formatDate(sentAt))
+                              : appStrings.notificationScheduled(
+                                  _formatDate(
+                                    notification['scheduled_for']?.toString(),
+                                  ),
+                                ),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],

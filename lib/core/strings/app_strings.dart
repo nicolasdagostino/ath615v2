@@ -31,6 +31,15 @@ class AppStrings {
   String get bookingActiveMembershipRequiredToBook =>
       'Active membership required to book classes.';
 
+  String get notificationsTitle => 'Notifications';
+  String get notificationsMarkRead => 'Mark read';
+  String get notificationsEmpty => 'No notifications yet.';
+  String get notificationFallbackTitle => 'Notification';
+  String notificationSent(String date) => 'Sent $date';
+  String notificationScheduled(String date) => 'Scheduled $date';
+  String notificationsLoadError(Object e) => 'Notifications error: $e';
+  String notificationsMarkReadError(Object e) => 'Mark read error: $e';
+
   String get profileRole => 'Role';
   String get profileGymName => 'Gym name';
   String get profileSaveGymName => 'Save gym name';
