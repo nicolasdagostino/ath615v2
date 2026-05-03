@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_button.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -288,10 +289,10 @@ class _MemberTile extends StatelessWidget {
     final role = (member['role'] ?? '-').toString();
     final active = member['is_active'] == true;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return AppCard(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
       child: ListTile(
-        onTap: onTap,
         title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('$email\n${active ? 'Active' : 'Inactive'} · $role'),
         isThreeLine: true,
