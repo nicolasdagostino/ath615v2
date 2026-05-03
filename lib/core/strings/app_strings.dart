@@ -32,6 +32,17 @@ class AppStrings {
       'Active membership required to book classes.';
 
   String get workoutsTitle => 'Workouts';
+
+  String get workoutCreateTitle => 'Create workout';
+  String get workoutNeedProgram =>
+      'Create at least one active program before creating workouts.';
+  String get workoutProgram => 'Program';
+  String get workoutDate => 'Date';
+  String get workoutSelectImage => 'Select image';
+  String get workoutDescription => 'Workout description';
+  String get workoutWriteWod => 'Write the WOD...';
+  String get workoutCreate => 'Create workout';
+
   String get workoutsPrograms => 'Programs';
   String get workoutsDeleteTitle => 'Delete workout?';
   String get workoutsDeleteMessage => 'This cannot be undone.';

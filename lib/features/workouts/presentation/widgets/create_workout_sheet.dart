@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -163,22 +165,24 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text(
-              'Create workout',
+            Text(
+              appStrings.workoutCreateTitle,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
             if (_loadingPrograms)
               const Center(child: CircularProgressIndicator())
             else if (_programs.isEmpty)
-              const Text(
-                'Create at least one active program before creating workouts.',
+              Text(
+                appStrings.workoutNeedProgram,
                 style: TextStyle(fontWeight: FontWeight.w700),
               )
             else
               DropdownButtonFormField<String>(
                 initialValue: _programId,
-                decoration: const InputDecoration(labelText: 'Program'),
+                decoration: InputDecoration(
+                  labelText: appStrings.workoutProgram,
+                ),
                 items: _programs
                     .map(
                       (p) => DropdownMenuItem(
@@ -192,7 +196,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
+              title: Text(appStrings.workoutDate),
               subtitle: Text('${_date.day}/${_date.month}/${_date.year}'),
               trailing: const Icon(Icons.calendar_month),
               onTap: () async {
@@ -207,7 +211,10 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             ),
             const SizedBox(height: 12),
 
-            AppOutlinedButton(label: 'Select image', onPressed: _pickImage),
+            AppOutlinedButton(
+              label: appStrings.workoutSelectImage,
+              onPressed: _pickImage,
+            ),
 
             if (_image != null) ...[
               const SizedBox(height: 8),
@@ -218,14 +225,14 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             TextField(
               controller: _description,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Workout description',
-                hintText: 'Write the WOD...',
+              decoration: InputDecoration(
+                labelText: appStrings.workoutDescription,
+                hintText: appStrings.workoutWriteWod,
               ),
             ),
             const SizedBox(height: 18),
             AppButton(
-              label: 'Create workout',
+              label: appStrings.workoutCreateTitle,
               loading: _saving,
               onPressed: _canSave ? _save : null,
             ),
