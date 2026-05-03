@@ -113,7 +113,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         title: const Text('Notifications'),
         actions: [
-          TextButton(onPressed: _markAllAsRead, child: const Text('Mark read')),
+          IconButton(
+            tooltip: 'Mark read',
+            onPressed: _markAllAsRead,
+            icon: const Icon(Icons.done_all),
+          ),
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],
       ),
