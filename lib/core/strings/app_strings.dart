@@ -1,13 +1,19 @@
+import '../locale/locale_controller.dart';
+
 class AppStrings {
   const AppStrings();
 
+  bool get isEs => localeController.locale.languageCode == 'es';
+
+  String pick(String en, String es) => isEs ? es : en;
+
   String get defaultGymName => 'Athlete 615';
 
-  String get navWorkout => 'Workout';
-  String get navBooking => 'Booking';
-  String get navExplore => 'Explore';
-  String get navProfile => 'Profile';
-  String get navDashboard => 'Dashboard';
+  String get navWorkout => pick('Workout', 'WOD');
+  String get navBooking => pick('Booking', 'Reservas');
+  String get navExplore => pick('Explore', 'Explorar');
+  String get navProfile => pick('Profile', 'Perfil');
+  String get navDashboard => pick('Dashboard', 'Panel');
 
   String get bookingTitle => 'Booking';
   String get bookingBook => 'Book';
