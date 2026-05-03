@@ -31,6 +31,14 @@ class AppStrings {
   String get bookingActiveMembershipRequiredToBook =>
       'Active membership required to book classes.';
 
+  String get workoutsTitle => 'Workouts';
+  String get workoutsPrograms => 'Programs';
+  String get workoutsDeleteTitle => 'Delete workout?';
+  String get workoutsDeleteMessage => 'This cannot be undone.';
+  String get workoutsNoToday => 'No workouts for today yet.';
+  String workoutsLoadError(Object e) => 'Workouts load error: $e';
+  String workoutsDeleteError(Object e) => 'Delete workout error: $e';
+
   String get exploreTitle => 'Explore';
   String get exploreSearchWorkouts => 'Search workouts...';
   String get exploreAllPrograms => 'All programs';

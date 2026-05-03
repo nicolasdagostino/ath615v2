@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/create_workout_sheet.dart';
@@ -68,7 +70,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Workouts load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.workoutsLoadError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -102,8 +104,8 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Delete workout?'),
-          content: const Text('This cannot be undone.'),
+          title: Text(appStrings.workoutsDeleteTitle),
+          content: Text(appStrings.workoutsDeleteMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -125,9 +127,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Delete workout error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.workoutsDeleteError(e))),
+      );
     }
   }
 
@@ -169,14 +171,14 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
-                const Text(
-                  'Workouts',
+                Text(
+                  appStrings.workoutsTitle,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const Spacer(),
                 if (_canManage)
                   IconButton(
-                    tooltip: 'Programs',
+                    tooltip: appStrings.workoutsPrograms,
                     onPressed: _openPrograms,
                     icon: const Icon(Icons.category_outlined),
                   ),
@@ -188,7 +190,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _workouts.isEmpty
-                ? const Center(child: Text('No workouts for today yet.'))
+                ? Center(child: Text(appStrings.workoutsNoToday))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _workouts.length,
