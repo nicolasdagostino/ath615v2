@@ -43,6 +43,20 @@ class AppStrings {
   String get workoutWriteWod => 'Write the WOD...';
   String get workoutCreate => 'Create workout';
 
+  String get workoutFallbackTitle => 'Workout';
+  String get workoutEdit => 'Edit';
+  String get workoutDelete => 'Delete';
+  String get workoutPostScore => 'Post score';
+  String get workoutFirstComment => 'Be the first to comment';
+  String workoutCommentCount(int count) =>
+      count == 1 ? '1 comment' : '$count comments';
+  String workoutLikesCount(int count) => count == 1 ? '1 like' : '$count likes';
+  String get workoutNotFound => 'Workout not found.';
+  String get workoutPostScoreComments => 'Post score / comments';
+  String get workoutCommentHint => 'How did it go?';
+  String get workoutNoComments => 'No comments yet.';
+  String get userFallbackName => 'User';
+
   String get workoutEditTitle => 'Edit workout';
   String get workoutSaveChanges => 'Save changes';
   String workoutUpdateError(Object e) => 'Update workout error: $e';

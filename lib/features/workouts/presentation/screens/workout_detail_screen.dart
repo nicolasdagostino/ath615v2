@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_small_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -78,7 +80,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
         for (final profile in List<Map<String, dynamic>>.from(profiles)) {
           authors[profile['id'].toString()] =
-              profile['full_name']?.toString() ?? 'User';
+              profile['full_name']?.toString() ?? appStrings.userFallbackName;
         }
       }
 
@@ -152,7 +154,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     if (!mounted) return;
     setState(() {
       _comments.insert(0, Map<String, dynamic>.from(res));
-      _authorNames[userId] = profile['full_name']?.toString() ?? 'User';
+      _authorNames[userId] =
+          profile['full_name']?.toString() ?? appStrings.userFallbackName;
       _commentCtrl.clear();
     });
   }
@@ -184,16 +187,21 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final program = workout?['programs'] as Map<String, dynamic>?;
 
     return Scaffold(
-      appBar: AppBar(title: Text(program?['name']?.toString() ?? 'Workout')),
+      appBar: AppBar(
+        title: Text(
+          program?['name']?.toString() ?? appStrings.workoutFallbackTitle,
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : workout == null
-          ? const Center(child: Text('Workout not found.'))
+          ? Center(child: Text(appStrings.workoutNotFound))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  program?['name']?.toString() ?? 'Workout',
+                  program?['name']?.toString() ??
+                      appStrings.workoutFallbackTitle,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -223,19 +231,19 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       icon: Icon(
                         _liked ? Icons.favorite : Icons.favorite_border,
                       ),
-                      label: Text('${_likes.length} likes'),
+                      label: Text(appStrings.workoutLikesCount(_likes.length)),
                     ),
                     const SizedBox(width: 10),
                     AppSmallOutlinedButton(
-                      label: '${_comments.length} comments',
+                      label: appStrings.workoutCommentCount(_comments.length),
                       icon: Icons.chat_bubble_outline,
                       onPressed: () => _commentFocus.requestFocus(),
                     ),
                   ],
                 ),
                 const Divider(height: 32),
-                const Text(
-                  'Post score / comments',
+                Text(
+                  appStrings.workoutPostScoreComments,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 12),
@@ -245,7 +253,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   minLines: 1,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'How did it go?',
+                    hintText: appStrings.workoutCommentHint,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.send),
                       onPressed: _addComment,
@@ -255,11 +263,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (_comments.isEmpty)
-                  const Text('No comments yet.')
+                  Text(appStrings.workoutNoComments)
                 else
                   ..._comments.map((comment) {
                     final userId = comment['user_id']?.toString();
-                    final name = _authorNames[userId] ?? 'User';
+                    final name =
+                        _authorNames[userId] ?? appStrings.userFallbackName;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),

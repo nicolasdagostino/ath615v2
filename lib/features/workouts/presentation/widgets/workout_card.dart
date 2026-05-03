@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -91,9 +93,15 @@ class _WorkoutCardState extends State<WorkoutCard> {
   }
 
   String get _commentsLabel {
-    if (_comments.isEmpty) return 'Post score  ·  Be the first to comment';
-    if (_comments.length == 1) return 'Post score  ·  1 comment';
-    return 'Post score  ·  ${_comments.length} comments';
+    if (_comments.isEmpty) {
+      return '${appStrings.workoutPostScore}  ·  ${appStrings.workoutFirstComment}';
+    }
+
+    if (_comments.length == 1) {
+      return '${appStrings.workoutPostScore}  ·  ${appStrings.workoutCommentCount(1)}';
+    }
+
+    return '${appStrings.workoutPostScore}  ·  ${appStrings.workoutCommentCount(_comments.length)}';
   }
 
   @override
@@ -121,9 +129,15 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     if (value == 'edit') widget.onEdit?.call();
                     if (value == 'delete') widget.onDelete?.call();
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(appStrings.workoutEdit),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(appStrings.workoutDelete),
+                    ),
                   ],
                 ),
             ],
