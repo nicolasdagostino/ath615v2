@@ -15,27 +15,37 @@ class AppStrings {
   String get navProfile => pick('Profile', 'Perfil');
   String get navDashboard => pick('Dashboard', 'Panel');
 
-  String get bookingTitle => 'Booking';
-  String get bookingBook => 'Book';
-  String get bookingCancel => 'Cancel';
-  String get bookingBooked => 'Booked';
-  String get bookingFull => 'Full';
-  String get bookingMembershipRequired => 'Membership required';
-  String get bookingInProgress => 'Class in progress';
-  String get bookingFinished => 'Finished';
+  String get bookingTitle => pick('Booking', 'Reservas');
+  String get bookingBook => pick('Book', 'Reservar');
+  String get bookingCancel => pick('Cancel', 'Cancelar');
+  String get bookingBooked => pick('Booked', 'Reservada');
+  String get bookingFull => pick('Full', 'Completa');
+  String get bookingMembershipRequired =>
+      pick('Membership required', 'Membresía requerida');
+  String get bookingInProgress => pick('Class in progress', 'Clase en curso');
+  String get bookingFinished => pick('Finished', 'Finalizada');
 
-  String get bookingConfirmed => 'Booking confirmed';
-  String get bookingCancelled => 'Booking cancelled';
-  String get bookingClassFull => 'Class is full';
-  String get bookingTooLateCancel => 'Too late to cancel';
-  String get bookingActiveMembershipRequired => 'Active membership required';
+  String get bookingConfirmed =>
+      pick('Booking confirmed', 'Reserva confirmada');
+  String get bookingCancelled => pick('Booking cancelled', 'Reserva cancelada');
+  String get bookingClassFull =>
+      pick('Class is full', 'La clase está completa');
+  String get bookingTooLateCancel =>
+      pick('Too late to cancel', 'Demasiado tarde para cancelar');
+  String get bookingActiveMembershipRequired =>
+      pick('Active membership required', 'Membresía activa requerida');
 
-  String bookingLoadError(Object e) => 'Booking load error: $e';
-  String bookingBookError(Object e) => 'Book class error: $e';
-  String bookingCancelError(Object e) => 'Cancel booking error: $e';
+  String bookingLoadError(Object e) =>
+      pick('Booking load error: $e', 'Error cargando reservas: $e');
+  String bookingBookError(Object e) =>
+      pick('Book class error: $e', 'Error al reservar clase: $e');
+  String bookingCancelError(Object e) =>
+      pick('Cancel booking error: $e', 'Error al cancelar reserva: $e');
 
-  String get bookingActiveMembershipRequiredToBook =>
-      'Active membership required to book classes.';
+  String get bookingActiveMembershipRequiredToBook => pick(
+    'Active membership required to book classes.',
+    'Necesitas una membresía activa para reservar clases.',
+  );
 
   String get workoutsTitle => 'Workouts';
 
