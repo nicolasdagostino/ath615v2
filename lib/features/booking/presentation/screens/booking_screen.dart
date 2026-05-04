@@ -358,7 +358,9 @@ class _BookingScreenState extends State<BookingScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _classes.isEmpty
-                ? Center(child: Text('No classes on $selectedLabel.'))
+                ? Center(
+                    child: Text('${appStrings.noClassesOn} $selectedLabel.'),
+                  )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _classes.length,

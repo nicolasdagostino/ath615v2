@@ -208,8 +208,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: DropdownButtonFormField<String?>(
                           initialValue: _selectedProgramId,
-                          decoration: const InputDecoration(
-                            labelText: 'Program',
+                          decoration: InputDecoration(
+                            labelText: appStrings.workoutProgram,
                           ),
                           items: [
                             DropdownMenuItem<String?>(
@@ -220,7 +220,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               (program) => DropdownMenuItem<String?>(
                                 value: program['id'].toString(),
                                 child: Text(
-                                  program['name']?.toString() ?? 'Program',
+                                  program['name']?.toString() ??
+                                      appStrings.workoutProgram,
                                 ),
                               ),
                             ),
