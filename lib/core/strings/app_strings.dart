@@ -123,22 +123,79 @@ class AppStrings {
   String notificationsMarkReadError(Object e) =>
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
+  String get manageProgramsTitle =>
+      pick('Manage programs', 'Gestionar programas');
+  String get programName => pick('Program name', 'Nombre del programa');
+  String get createProgram => pick('Create program', 'Crear programa');
+  String get noProgramsYet => pick('No programs yet.', 'Aún no hay programas.');
+  String get active => pick('Active', 'Activo');
+  String get inactive => pick('Inactive', 'Inactivo');
+
+  String get createClassTitle => pick('Create class', 'Crear clase');
+  String get classNeedProgram => pick(
+    'Create at least one active program before creating classes.',
+    'Crea al menos un programa activo antes de crear clases.',
+  );
+  String get selectDate => pick('Select date', 'Seleccionar fecha');
+  String get selectTime => pick('Select time', 'Seleccionar hora');
+  String get time => pick('Time', 'Hora');
+  String get repeatWeekly => pick('Repeat weekly', 'Repetir semanalmente');
+  String get repeatWeeklyDescription => pick(
+    'Creates this class for the next 8 weeks.',
+    'Crea esta clase durante las próximas 8 semanas.',
+  );
+  String get repeatOn => pick('Repeat on', 'Repetir en');
+  String get durationMinutes => pick('Duration minutes', 'Duración en minutos');
+  String get capacity => pick('Capacity', 'Capacidad');
+  String get chooseFutureDateTime =>
+      pick('Choose a future date and time.', 'Elige una fecha y hora futuras.');
+  String get noClassesOn => pick('No classes on', 'No hay clases el');
+
+  List<String> get weekdayInitials => isEs
+      ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+      : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  String get dashboardTitle => pick('Dashboard', 'Panel');
+  String get inviteAthlete => pick('Invite athlete', 'Invitar atleta');
+  String get inviteAthleteDescription => pick(
+    'Send an invitation email to a new athlete.',
+    'Envía una invitación por email a un nuevo atleta.',
+  );
+  String get athleteEmail => pick('Athlete email', 'Email del atleta');
+  String get members => pick('Members', 'Miembros');
+  String get searchMember => pick('Search member', 'Buscar miembro');
+  String get noMembersFound =>
+      pick('No members found.', 'No se encontraron miembros.');
+
   String get profileLanguage => pick('Language', 'Idioma');
   String get profileEnglish => pick('English', 'Inglés');
   String get profileSpanish => pick('Spanish', 'Español');
 
-  String get profileRole => 'Role';
-  String get profileGymName => 'Gym name';
-  String get profileSaveGymName => 'Save gym name';
-  String get profileNewPassword => 'New password';
-  String get profileChangePassword => 'Change password';
-  String get profileLogout => 'Logout';
-  String get profileDeleteAccount => 'Delete account';
+  String get profileRole => pick('Role', 'Rol');
+  String get profileGymName => pick('Gym name', 'Nombre del gym');
+  String get profileSaveGymName =>
+      pick('Save gym name', 'Guardar nombre del gym');
+  String get profileNewPassword => pick('New password', 'Nueva contraseña');
+  String get profileChangePassword =>
+      pick('Change password', 'Cambiar contraseña');
+  String get profileLogout => pick('Logout', 'Cerrar sesión');
+  
+  String get profilePrivacyPolicy => pick('Privacy Policy', 'Política de privacidad');
+  String get profileTerms => pick('Terms of Service', 'Términos de servicio');
+  String get profileHelp => pick('Help Center', 'Centro de ayuda');
 
-  String get passwordUpdated => 'Password updated.';
-  String get gymNameUpdated => 'Gym name updated.';
-  String updateGymError(Object error) => 'Update gym error: $error';
-  String deleteAccountError(Object error) => 'Delete account error: $error';
+  String get profileDeleteAccount => pick('Delete account', 'Eliminar cuenta');
+
+  String get passwordUpdated =>
+      pick('Password updated.', 'Contraseña actualizada.');
+  String get gymNameUpdated =>
+      pick('Gym name updated.', 'Nombre del gym actualizado.');
+  String updateGymError(Object error) =>
+      pick('Update gym error: $error', 'Error al actualizar el gym: $error');
+  String deleteAccountError(Object error) => pick(
+    'Delete account error: $error',
+    'Error al eliminar la cuenta: $error',
+  );
 }
 
 const appStrings = AppStrings();

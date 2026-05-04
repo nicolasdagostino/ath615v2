@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
-import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_outlined_button.dart';
+import '../../../../core/widgets/app_small_outlined_button.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -118,6 +119,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
@@ -191,6 +202,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           AppOutlinedButton(
             label: appStrings.profileDeleteAccount,
             onPressed: _deleteAccount,
+          ),
+          const SizedBox(height: 24),
+          AppSmallOutlinedButton(
+            label: appStrings.profilePrivacyPolicy,
+            onPressed: () => _openUrl('https://TU_URL_PRIVACY'),
+          ),
+          const SizedBox(height: 10),
+          AppSmallOutlinedButton(
+            label: appStrings.profileTerms,
+            onPressed: () => _openUrl('https://TU_URL_TERMS'),
+          ),
+          const SizedBox(height: 10),
+          AppSmallOutlinedButton(
+            label: appStrings.profileHelp,
+            onPressed: () => _openUrl('https://TU_URL_HELP'),
           ),
         ],
       ),
