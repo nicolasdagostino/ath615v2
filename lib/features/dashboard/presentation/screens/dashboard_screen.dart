@@ -124,6 +124,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).toList();
   }
 
+  String _formatDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '-';
+    final date = DateTime.tryParse(raw)?.toLocal();
+    if (date == null) return raw;
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _creditReasonLabel(String reason) {
+    if (reason == 'assigned') return appStrings.assigned;
+    if (reason == 'booked') return appStrings.booked;
+    if (reason == 'cancelled') return appStrings.cancelled;
+    return reason;
+  }
+
+  Future<Map<String, dynamic>> _loadMemberMembershipData(
+    String memberId,
+  ) async {
+    final membership = await Supabase.instance.client
+        .from('member_memberships')
+        .select(
+          'id, credits_remaining, expires_at, membership_plans(name, plan_type)',
+        )
+        .eq('user_id', memberId)
+        .eq('is_active', true)
+        .eq('status', 'active')
+        .order('created_at', ascending: false)
+        .maybeSingle();
+
+    final logs = await Supabase.instance.client
+        .from('membership_credit_logs')
+        .select('amount, reason, created_at')
+        .eq('user_id', memberId)
+        .order('created_at', ascending: false)
+        .limit(12);
+
+    return {
+      'membership': membership,
+      'logs': List<Map<String, dynamic>>.from(logs),
+    };
+  }
+
   Future<List<Map<String, dynamic>>> _loadMemberHistory(String memberId) async {
     final res = await Supabase.instance.client
         .from('class_bookings')
@@ -163,20 +204,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Assign plan',
+                  Text(
+                    appStrings.assignPlan,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: selectedPlanId,
-                    hint: const Text('Select plan'),
+                    hint: Text(appStrings.selectPlan),
                     items: List<Map<String, dynamic>>.from(plans).map((plan) {
-                      final name = plan['name']?.toString() ?? 'Plan';
+                      final name = plan['name']?.toString() ?? appStrings.plan;
                       final credits = plan['credits'];
                       final label = credits == null
-                          ? '$name · unlimited'
-                          : '$name · $credits credits';
+                          ? '$name · ${appStrings.unlimited}'
+                          : '$name · $credits ${appStrings.creditsLower}';
 
                       return DropdownMenuItem<String>(
                         value: plan['id'].toString(),
@@ -189,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 16),
                   AppButton(
-                    label: 'Assign',
+                    label: appStrings.assign,
                     onPressed: selectedPlanId == null
                         ? null
                         : () async {
@@ -205,12 +246,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               if (!context.mounted) return;
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Plan assigned')),
+                                SnackBar(
+                                  content: Text(appStrings.planAssigned),
+                                ),
                               );
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Assign plan error: $e'),
+                                  content: Text(appStrings.assignPlanError(e)),
                                 ),
                               );
                             }
@@ -235,77 +278,150 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final name = (member['full_name'] ?? email).toString();
         final role = (member['role'] ?? '-').toString();
         final active = member['is_active'] == true;
-        final birthDate = member['birth_date']?.toString() ?? 'Not set';
+        final birthDate = member['birth_date']?.toString() ?? appStrings.notSet;
 
-        return FutureBuilder(
-          future: _loadMemberHistory(member['id']),
+        return FutureBuilder<List<dynamic>>(
+          future: Future.wait([
+            _loadMemberHistory(member['id']),
+            _loadMemberMembershipData(member['id']),
+          ]),
           builder: (context, snapshot) {
-            final history = snapshot.data ?? [];
+            final history = snapshot.hasData
+                ? List<Map<String, dynamic>>.from(snapshot.data![0] as List)
+                : <Map<String, dynamic>>[];
+            final membershipData = snapshot.hasData
+                ? snapshot.data![1] as Map<String, dynamic>
+                : <String, dynamic>{};
+            final membership =
+                membershipData['membership'] as Map<String, dynamic>?;
+            final creditLogs = List<Map<String, dynamic>>.from(
+              membershipData['logs'] ?? [],
+            );
 
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(email),
-                    const SizedBox(height: 24),
-                    _DetailRow(label: 'Role', value: role),
-                    _DetailRow(
-                      label: 'Status',
-                      value: active ? appStrings.active : appStrings.inactive,
-                    ),
-                    _DetailRow(label: 'Birth date', value: birthDate),
+                      const SizedBox(height: 6),
+                      Text(email),
+                      const SizedBox(height: 24),
+                      _DetailRow(label: appStrings.role, value: role),
+                      _DetailRow(
+                        label: appStrings.status,
+                        value: active ? appStrings.active : appStrings.inactive,
+                      ),
+                      _DetailRow(label: appStrings.birthDate, value: birthDate),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                      AppCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appStrings.membershipTitle,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (membership == null)
+                              Text(appStrings.noActivePlan)
+                            else ...[
+                              Text(
+                                '${appStrings.activePlan}: ${(membership['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${appStrings.credits}: ${membership['credits_remaining'] ?? appStrings.unlimited}',
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${appStrings.expires}: ${_formatDate(membership['expires_at']?.toString())}',
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            Text(
+                              appStrings.creditHistory,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (creditLogs.isEmpty)
+                              Text(appStrings.noCreditHistory)
+                            else
+                              ...creditLogs.map((log) {
+                                final amount = log['amount'];
+                                final sign = (amount is int && amount > 0)
+                                    ? '+'
+                                    : '';
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    '$sign$amount · ${_creditReasonLabel(log['reason']?.toString() ?? '')} · ${_formatDate(log['created_at']?.toString())}',
+                                  ),
+                                );
+                              }),
+                          ],
+                        ),
+                      ),
 
-                    AppButton(
-                      label: 'Assign plan',
-                      onPressed: () => _openAssignPlan(member['id']),
-                    ),
+                      const SizedBox(height: 16),
 
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Recent classes',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
+                      AppButton(
+                        label: appStrings.assignPlan,
+                        onPressed: () => _openAssignPlan(member['id']),
+                      ),
 
-                    if (!snapshot.hasData)
-                      const CircularProgressIndicator()
-                    else if (history.isEmpty)
-                      const Text('No classes')
-                    else
-                      ...history.map((h) {
-                        final klass = h['classes'];
-                        final status = h['status'];
+                      const SizedBox(height: 16),
+                      Text(
+                        appStrings.recentClasses,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
 
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(klass['title'] ?? 'Class'),
-                          subtitle: Text(klass['starts_at'] ?? ''),
-                          trailing: Text(
-                            status == 'attended'
-                                ? '✓'
-                                : status == 'no_show'
-                                ? '✗'
-                                : '',
-                          ),
-                        );
-                      }),
+                      if (!snapshot.hasData)
+                        const CircularProgressIndicator()
+                      else if (history.isEmpty)
+                        Text(appStrings.noClasses)
+                      else
+                        ...history.map((h) {
+                          final klass = h['classes'];
+                          final status = h['status'];
 
-                    const SizedBox(height: 12),
-                  ],
+                          return ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              klass['title'] ?? appStrings.classFallback,
+                            ),
+                            subtitle: Text(klass['starts_at'] ?? ''),
+                            trailing: Text(
+                              status == 'attended'
+                                  ? '✓'
+                                  : status == 'no_show'
+                                  ? '✗'
+                                  : '',
+                            ),
+                          );
+                        }),
+
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             );

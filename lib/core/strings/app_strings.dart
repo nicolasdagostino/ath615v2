@@ -172,6 +172,20 @@ class AppStrings {
       ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
       : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+  String get assignPlan => pick('Assign plan', 'Asignar plan');
+  String get selectPlan => pick('Select plan', 'Seleccionar plan');
+  String get assign => pick('Assign', 'Asignar');
+  String get planAssigned => pick('Plan assigned', 'Plan asignado');
+  String assignPlanError(Object e) =>
+      pick('Assign plan error: $e', 'Error al asignar plan: $e');
+  String get role => pick('Role', 'Rol');
+  String get status => pick('Status', 'Estado');
+  String get birthDate => pick('Birth date', 'Fecha de nacimiento');
+  String get notSet => pick('Not set', 'Sin completar');
+  String get recentClasses => pick('Recent classes', 'Clases recientes');
+  String get noClasses => pick('No classes', 'Sin clases');
+  String get classFallback => pick('Class', 'Clase');
+
   String get dashboardTitle => pick('Dashboard', 'Panel');
   String get inviteAthlete => pick('Invite athlete', 'Invitar atleta');
   String get inviteAthleteDescription => pick(
