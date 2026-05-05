@@ -233,6 +233,40 @@ class AppStrings {
   String get profileTerms => pick('Terms of Service', 'Términos de servicio');
   String get profileHelp => pick('Help Center', 'Centro de ayuda');
 
+  String get error => pick('Error', 'Error');
+  String get cancel => pick('Cancel', 'Cancelar');
+  String get delete => pick('Delete', 'Eliminar');
+  String get deleteWorkoutTitle => pick('Delete workout?', '¿Eliminar WOD?');
+  String get deleteWorkoutMsg =>
+      pick('This cannot be undone.', 'Esta acción no se puede deshacer.');
+
+  String get selectDateTime =>
+      pick('Select date and time', 'Selecciona fecha y hora');
+  String get selectProgram =>
+      pick('Select a program', 'Selecciona un programa');
+  String get classFuture => pick(
+    'Class date and time must be in the future',
+    'La clase debe ser en el futuro',
+  );
+
+  String get attended => pick(appStrings.attended, 'Asistió');
+  String get noShow => pick(appStrings.noShow, 'No asistió');
+
+  String workoutDetailError(Object e) =>
+      pick('Workout detail error: $e', 'Error detalle WOD: $e');
+  String programsLoadError(Object e) =>
+      pick('Programs load error: $e', 'Error cargando programas: $e');
+  String createProgramError(Object e) =>
+      pick('Create program error: $e', 'Error creando programa: $e');
+  String createWorkoutError(Object e) =>
+      pick('Create workout error: $e', 'Error creando WOD: $e');
+  String attendanceError(Object e) =>
+      pick('Attendance error: $e', 'Error en asistencia: $e');
+  String loadMembersError(Object e) =>
+      pick('Load members error: $e', 'Error cargando miembros: $e');
+  String inviteAthleteError(Object e) =>
+      pick('Invite athlete error: $e', 'Error invitando atleta: $e');
+
   String get profileDeleteAccount => pick('Delete account', 'Eliminar cuenta');
 
   String get passwordUpdated =>

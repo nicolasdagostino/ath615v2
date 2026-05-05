@@ -117,16 +117,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Delete workout?'),
-          content: const Text('This cannot be undone.'),
+          title: Text(appStrings.deleteWorkoutTitle),
+          content: Text(appStrings.deleteWorkoutMsg),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+              child: Text(appStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Delete'),
+              child: Text(appStrings.delete),
             ),
           ],
         );

@@ -193,7 +193,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
         context: context,
         builder: (dialogContext) {
           return AlertDialog(
-            title: const Text('Error'),
+            title: Text(appStrings.error),
             content: Text(e.toString().replaceFirst('Exception: ', '')),
             actions: [
               TextButton(

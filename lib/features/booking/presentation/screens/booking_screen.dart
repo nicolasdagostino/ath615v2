@@ -295,8 +295,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   String _prettyStatus(String status) {
-    if (status == 'no_show') return 'No show';
-    if (status == 'attended') return 'Attended';
+    if (status == 'no_show') return appStrings.noShow;
+    if (status == 'attended') return appStrings.attended;
     if (status == 'booked') return appStrings.bookingBooked;
     return status;
   }

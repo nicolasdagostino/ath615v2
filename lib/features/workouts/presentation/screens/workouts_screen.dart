@@ -109,11 +109,11 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+              child: Text(appStrings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Delete'),
+              child: Text(appStrings.delete),
             ),
           ],
         );

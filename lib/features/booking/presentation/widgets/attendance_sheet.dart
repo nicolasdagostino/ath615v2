@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_small_outlined_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -124,7 +126,7 @@ Future<void> showAttendanceSheet({
                               children: [
                                 Expanded(
                                   child: AppSmallOutlinedButton(
-                                    label: 'Attended',
+                                    label: appStrings.attended,
                                     onPressed: () =>
                                         updateStatus(booking, 'attended'),
                                   ),
@@ -132,7 +134,7 @@ Future<void> showAttendanceSheet({
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: AppSmallOutlinedButton(
-                                    label: 'No show',
+                                    label: appStrings.noShow,
                                     onPressed: () =>
                                         updateStatus(booking, 'no_show'),
                                   ),
