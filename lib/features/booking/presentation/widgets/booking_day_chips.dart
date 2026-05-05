@@ -21,12 +21,12 @@ class BookingDayChips extends StatelessWidget {
     final today = DateTime.now();
 
     return SizedBox(
-      height: 74,
+      height: 84,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         itemCount: 14,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 7),
         itemBuilder: (context, index) {
           final day = DateTime(
             today.year,
@@ -39,23 +39,43 @@ class BookingDayChips extends StatelessWidget {
               day.month == selectedDay.month &&
               day.day == selectedDay.day;
 
-          return ChoiceChip(
-            selected: selected,
-            onSelected: (_) => onSelected(day),
-            label: SizedBox(
-              width: 54,
+          return GestureDetector(
+            onTap: () => onSelected(day),
+            child: SizedBox(
+              width: 46,
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     _weekdayLabel(day),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  Text(
-                    day.day.toString(),
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      color: selected
+                          ? const Color(0xFFB69B63)
+                          : const Color(0xFF8E94A1),
+                      fontSize: 13,
                       fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 46,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFFBCA36D)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      day.day.toString(),
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF090B12),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],

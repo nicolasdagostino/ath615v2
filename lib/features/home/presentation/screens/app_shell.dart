@@ -133,24 +133,28 @@ class _AppShellState extends State<AppShell> {
       _index = 0;
     }
 
+    final hideAppBar = _index == 1;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_gymName),
-        actions: [
-          IconButton(
-            icon: Badge(
-              isLabelVisible: _unreadNotifications > 0,
-              label: Text(
-                _unreadNotifications > 99
-                    ? '99+'
-                    : _unreadNotifications.toString(),
-              ),
-              child: const Icon(Icons.notifications_outlined),
+      appBar: hideAppBar
+          ? null
+          : AppBar(
+              title: Text(_gymName),
+              actions: [
+                IconButton(
+                  icon: Badge(
+                    isLabelVisible: _unreadNotifications > 0,
+                    label: Text(
+                      _unreadNotifications > 99
+                          ? '99+'
+                          : _unreadNotifications.toString(),
+                    ),
+                    child: const Icon(Icons.notifications_outlined),
+                  ),
+                  onPressed: _openNotifications,
+                ),
+              ],
             ),
-            onPressed: _openNotifications,
-          ),
-        ],
-      ),
       body: screens[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

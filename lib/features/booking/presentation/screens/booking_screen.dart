@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/attendance_sheet.dart';
 import '../widgets/booking_class_card.dart';
 import '../widgets/booking_day_chips.dart';
+import '../widgets/booking_header.dart';
+import '../widgets/membership_status_card.dart';
 import '../widgets/create_class_sheet.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _role;
   String? _gymId;
   bool _hasActiveMembership = false;
+  int? _creditsRemaining;
 
   DateTime _selectedDay = DateTime.now();
 
@@ -55,9 +58,37 @@ class _BookingScreenState extends State<BookingScreen> {
       final role = profile['role'] as String?;
 
       bool hasActiveMembership = true;
+      int? creditsRemaining;
+
       if (role == 'athlete') {
-        hasActiveMembership =
-            await _client.rpc('has_active_membership') == true;
+        final memberships = await _client
+            .from('member_memberships')
+            .select('credits_remaining, expires_at')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .eq('status', 'active')
+            .order('created_at', ascending: false);
+
+        final now = DateTime.now();
+        final activeMemberships = List<Map<String, dynamic>>.from(memberships)
+            .where((membership) {
+              final rawExpiresAt = membership['expires_at']?.toString();
+              if (rawExpiresAt == null || rawExpiresAt.isEmpty) return true;
+              final expiresAt = DateTime.tryParse(rawExpiresAt)?.toLocal();
+              return expiresAt != null && expiresAt.isAfter(now);
+            })
+            .toList();
+
+        final membership = activeMemberships.isEmpty
+            ? null
+            : activeMemberships.first;
+
+        hasActiveMembership = membership != null;
+        creditsRemaining = membership?['credits_remaining'] as int?;
+
+        debugPrint(
+          'BOOKING MEMBERSHIP DEBUG => membership=$membership credits=$creditsRemaining has=$hasActiveMembership',
+        );
       }
 
       if (gymId == null) {
@@ -68,6 +99,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _classes = [];
           _myBookedClassIds = {};
           _hasActiveMembership = hasActiveMembership;
+          _creditsRemaining = creditsRemaining;
         });
         return;
       }
@@ -119,6 +151,7 @@ class _BookingScreenState extends State<BookingScreen> {
         _classes = classRows;
         _myBookedClassIds = bookedIds;
         _hasActiveMembership = hasActiveMembership;
+        _creditsRemaining = creditsRemaining;
       });
     } catch (e) {
       if (!mounted) return;
@@ -322,100 +355,93 @@ class _BookingScreenState extends State<BookingScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Text(
-                  appStrings.bookingTitle,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
-                IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-              ],
+      backgroundColor: const Color(0xFFF4F5F7),
+      body: SafeArea(
+        child: Column(
+          children: [
+            BookingHeader(selectedDay: _selectedDay, onRefresh: _load),
+            BookingDayChips(
+              selectedDay: _selectedDay,
+              onSelected: (day) {
+                setState(() => _selectedDay = day);
+                _load();
+              },
             ),
-          ),
-          BookingDayChips(
-            selectedDay: _selectedDay,
-            onSelected: (day) {
-              setState(() => _selectedDay = day);
-              _load();
-            },
-          ),
-          if (_role == 'athlete' && !_hasActiveMembership)
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Text(
-                appStrings.bookingActiveMembershipRequiredToBook,
-                style: TextStyle(fontWeight: FontWeight.w700),
+            if (_role == 'athlete')
+              MembershipStatusCard(
+                hasActiveMembership: _hasActiveMembership,
+                creditsRemaining: _creditsRemaining,
               ),
-            ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _classes.isEmpty
-                ? Center(
-                    child: Text('${appStrings.noClassesOn} $selectedLabel.'),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _classes.length,
-                    itemBuilder: (context, index) {
-                      final klass = _classes[index];
-                      final id = klass['id'].toString();
-                      final booked = _myBookedClassIds.contains(id);
-                      final bookedCount = klass['booked_count'] as int? ?? 0;
-                      final capacity = klass['capacity'] as int? ?? 0;
-                      final full = bookedCount >= capacity;
-                      final state = _classState(klass);
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _classes.isEmpty
+                  ? Center(
+                      child: Text('${appStrings.noClassesOn} $selectedLabel.'),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      itemCount: _classes.length,
+                      itemBuilder: (context, index) {
+                        final klass = _classes[index];
+                        final id = klass['id'].toString();
+                        final booked = _myBookedClassIds.contains(id);
+                        final bookedCount = klass['booked_count'] as int? ?? 0;
+                        final capacity = klass['capacity'] as int? ?? 0;
+                        final full = bookedCount >= capacity;
+                        final state = _classState(klass);
 
-                      String buttonLabel;
-                      VoidCallback? buttonAction;
+                        String buttonLabel;
+                        VoidCallback? buttonAction;
 
-                      if (state == 'in_progress') {
-                        buttonLabel = appStrings.bookingInProgress;
-                        buttonAction = null;
-                      } else if (state == 'finished') {
-                        buttonLabel = appStrings.bookingFinished;
-                        buttonAction = null;
-                      } else if (!_hasActiveMembership) {
-                        buttonLabel = appStrings.bookingMembershipRequired;
-                        buttonAction = null;
-                      } else if (booked) {
-                        if (_canCancelClass(klass)) {
-                          buttonLabel = appStrings.bookingCancel;
-                          buttonAction = () => _cancelBooking(klass);
-                        } else {
-                          buttonLabel = appStrings.bookingBooked;
+                        if (state == 'in_progress') {
+                          buttonLabel = appStrings.bookingInProgress;
                           buttonAction = null;
+                        } else if (state == 'finished') {
+                          buttonLabel = appStrings.bookingFinished;
+                          buttonAction = null;
+                        } else if (booked) {
+                          if (_canCancelClass(klass)) {
+                            buttonLabel = appStrings.bookingCancel;
+                            buttonAction = () => _cancelBooking(klass);
+                          } else {
+                            buttonLabel = appStrings.bookingBooked;
+                            buttonAction = null;
+                          }
+                        } else if (!_hasActiveMembership) {
+                          buttonLabel = appStrings.bookingMembershipRequired;
+                          buttonAction = null;
+                        } else if (_role == 'athlete' &&
+                            _creditsRemaining != null &&
+                            _creditsRemaining! <= 0) {
+                          buttonLabel = appStrings.bookingNoCreditsButton;
+                          buttonAction = null;
+                        } else if (full) {
+                          buttonLabel = appStrings.bookingFull;
+                          buttonAction = null;
+                        } else {
+                          buttonLabel = appStrings.bookingBook;
+                          buttonAction = () => _bookClass(klass);
                         }
-                      } else if (full) {
-                        buttonLabel = appStrings.bookingFull;
-                        buttonAction = null;
-                      } else {
-                        buttonLabel = appStrings.bookingBook;
-                        buttonAction = () => _bookClass(klass);
-                      }
 
-                      return BookingClassCard(
-                        klass: klass,
-                        bookedCount: bookedCount,
-                        capacity: capacity,
-                        buttonLabel: buttonLabel,
-                        buttonAction: buttonAction,
-                        canManageAttendance: _canManageAttendance,
-                        onOpenAttendance: () => _openAttendanceSheet(klass),
-                        onMorePressed: _canCreateClass
-                            ? () => _deleteClassOptions(klass)
-                            : null,
-                        formatDateTime: _formatDateTime,
-                      );
-                    },
-                  ),
-          ),
-        ],
+                        return BookingClassCard(
+                          klass: klass,
+                          bookedCount: bookedCount,
+                          capacity: capacity,
+                          buttonLabel: buttonLabel,
+                          buttonAction: buttonAction,
+                          canManageAttendance: _canManageAttendance,
+                          onOpenAttendance: () => _openAttendanceSheet(klass),
+                          onMorePressed: _canCreateClass
+                              ? () => _deleteClassOptions(klass)
+                              : null,
+                          formatDateTime: _formatDateTime,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
