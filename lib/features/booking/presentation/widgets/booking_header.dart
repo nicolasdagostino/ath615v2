@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import 'booking_text_styles.dart';
 
 class BookingHeader extends StatelessWidget {
   const BookingHeader({
@@ -77,34 +78,18 @@ class BookingHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              'ATHLETE LAB',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
-              ),
-            ),
+            child: Text('ATHLETE LAB', style: BookingTextStyles.headerBrand),
           ),
           Column(
             children: [
               Text(
                 '$month ${selectedDay.year}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.8,
-                ),
+                style: BookingTextStyles.headerMonth,
               ),
               const SizedBox(height: 8),
               Text(
                 '$weekday, ${selectedDay.day}',
-                style: const TextStyle(
-                  color: Color(0xFF8E94A1),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: BookingTextStyles.headerSubtitle,
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import 'booking_text_styles.dart';
 
 class BookingClassCard extends StatelessWidget {
   const BookingClassCard({
@@ -43,7 +44,7 @@ class BookingClassCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -54,12 +55,12 @@ class BookingClassCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(28),
           onTap: canManageAttendance ? onOpenAttendance : null,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -68,12 +69,7 @@ class BookingClassCard extends StatelessWidget {
                   children: [
                     Text(
                       _timeLabel(klass['starts_at']),
-                      style: const TextStyle(
-                        fontSize: 31,
-                        height: 0.95,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1.0,
-                      ),
+                      style: BookingTextStyles.displayTime,
                     ),
                     const Spacer(),
                     if (_isBooked)
@@ -88,16 +84,8 @@ class BookingClassCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFFB69B63),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.35,
-                  ),
-                ),
+                const SizedBox(height: 20),
+                Text(title, style: BookingTextStyles.classTitle),
                 const SizedBox(height: 14),
                 const Divider(height: 1, color: Color(0xFFEDEFF3)),
                 const SizedBox(height: 14),
@@ -185,24 +173,9 @@ class _MetaBlock extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF9AA0AD),
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.35,
-          ),
-        ),
+        Text(label, style: BookingTextStyles.metaLabel),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFF090B12),
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        Text(value, style: BookingTextStyles.metaValue),
       ],
     );
   }
@@ -222,7 +195,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: 64,
       width: double.infinity,
       child: FilledButton(
         onPressed: onPressed,
@@ -238,14 +211,7 @@ class _ActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.1,
-          ),
-        ),
+        child: Text(label, style: BookingTextStyles.button),
       ),
     );
   }

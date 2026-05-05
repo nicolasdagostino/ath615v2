@@ -38,6 +38,8 @@ class AppStrings {
   String bookingLoadError(Object e) =>
       pick('Booking load error: $e', 'Error cargando reservas: $e');
 
+  String get bookingNoCreditsButton => pick('No credits', 'Sin créditos');
+
   String get bookingNoCreditsRemaining =>
       pick('No credits remaining', 'No te quedan créditos disponibles.');
   String get bookingGenericError =>
@@ -51,6 +53,17 @@ class AppStrings {
   String get bookingActiveMembershipRequiredToBook => pick(
     'Active membership required to book classes.',
     'Necesitas una membresía activa para reservar clases.',
+  );
+
+  String get bookingLoadingClasses =>
+      pick('Loading classes...', 'Cargando clases...');
+
+  String get bookingEmptyTitle =>
+      pick('No classes for this day', 'No hay clases este día');
+
+  String get bookingEmptyMessage => pick(
+    'Try another day or check again later.',
+    'Prueba otro día o vuelve a revisar más tarde.',
   );
 
   String get workoutsTitle => pick('Workouts', 'WODs');
@@ -249,8 +262,8 @@ class AppStrings {
     'La clase debe ser en el futuro',
   );
 
-  String get attended => pick(appStrings.attended, 'Asistió');
-  String get noShow => pick(appStrings.noShow, 'No asistió');
+  String get attended => pick('Attended', 'Asistió');
+  String get noShow => pick('No show', 'No asistió');
 
   String workoutDetailError(Object e) =>
       pick('Workout detail error: $e', 'Error detalle WOD: $e');

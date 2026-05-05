@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import 'booking_text_styles.dart';
 
 class MembershipStatusCard extends StatelessWidget {
   const MembershipStatusCard({
@@ -22,10 +23,10 @@ class MembershipStatusCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -37,11 +38,11 @@ class MembershipStatusCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
               color: const Color(0xFFF4EFE6),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
               hasActiveMembership
@@ -50,20 +51,17 @@ class MembershipStatusCard extends StatelessWidget {
               color: hasActiveMembership
                   ? const Color(0xFF149651)
                   : const Color(0xFFB69B63),
-              size: 26,
+              size: 34,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 20),
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
+              style: BookingTextStyles.membership.copyWith(
                 color: hasActiveMembership
                     ? const Color(0xFF149651)
                     : const Color(0xFFB45309),
-                fontSize: 16,
-                height: 1.15,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
