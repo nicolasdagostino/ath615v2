@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_outlined_button.dart';
 import '../../../../core/widgets/app_small_outlined_button.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -22,6 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _gymName = TextEditingController();
   bool _loading = false;
   Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _membership;
+  List<Map<String, dynamic>> _creditLogs = [];
   String? _gymId;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
@@ -32,9 +35,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
+  String _formatDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '-';
+    final date = DateTime.tryParse(raw)?.toLocal();
+    if (date == null) return raw;
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _creditReasonLabel(String reason) {
+    if (reason == 'assigned') return appStrings.assigned;
+    if (reason == 'booked') return appStrings.booked;
+    if (reason == 'cancelled') return appStrings.cancelled;
+    return reason;
+  }
+
+  Future<void> _loadMembership(String userId) async {
+    final membership = await Supabase.instance.client
+        .from('member_memberships')
+        .select(
+          'id, credits_remaining, expires_at, membership_plans(name, plan_type)',
+        )
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .eq('status', 'active')
+        .order('created_at', ascending: false)
+        .maybeSingle();
+
+    final logs = await Supabase.instance.client
+        .from('membership_credit_logs')
+        .select('amount, reason, created_at')
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(8);
+
+    _membership = membership;
+    _creditLogs = List<Map<String, dynamic>>.from(logs);
+  }
+
   Future<void> _load() async {
     final profile = await _repo.myProfile();
+    final userId = Supabase.instance.client.auth.currentUser?.id;
     final gymId = profile?['gym_id'] as String?;
+
+    if (userId != null) {
+      await _loadMembership(userId);
+    }
 
     String gymName = '';
     if (gymId != null) {
@@ -165,6 +210,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
               setState(() {});
             },
           ),
+
+          const SizedBox(height: 24),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appStrings.membershipTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (_membership == null)
+                  Text(appStrings.noActivePlan)
+                else ...[
+                  Text(
+                    '${appStrings.activePlan}: ${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${appStrings.credits}: ${_membership?['credits_remaining'] ?? appStrings.unlimited}',
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${appStrings.expires}: ${_formatDate(_membership?['expires_at']?.toString())}',
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text(
+                  appStrings.creditHistory,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                if (_creditLogs.isEmpty)
+                  Text(appStrings.noCreditHistory)
+                else ...[
+                  _CreditLogSection(
+                    title: appStrings.assignedCredits,
+                    logs: _creditLogs
+                        .where((log) => log['reason'] == 'assigned')
+                        .toList(),
+                    formatDate: _formatDate,
+                    reasonLabel: _creditReasonLabel,
+                  ),
+                  _CreditLogSection(
+                    title: appStrings.bookedCredits,
+                    logs: _creditLogs
+                        .where((log) => log['reason'] == 'booked')
+                        .toList(),
+                    formatDate: _formatDate,
+                    reasonLabel: _creditReasonLabel,
+                  ),
+                  _CreditLogSection(
+                    title: appStrings.cancelledCredits,
+                    logs: _creditLogs
+                        .where((log) => log['reason'] == 'cancelled')
+                        .toList(),
+                    formatDate: _formatDate,
+                    reasonLabel: _creditReasonLabel,
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 18),
           TextField(
             controller: _gymName,
@@ -218,6 +330,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: appStrings.profileHelp,
             onPressed: () => _openUrl('https://TU_URL_HELP'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreditLogSection extends StatelessWidget {
+  const _CreditLogSection({
+    required this.title,
+    required this.logs,
+    required this.formatDate,
+    required this.reasonLabel,
+  });
+
+  final String title;
+  final List<Map<String, dynamic>> logs;
+  final String Function(String? raw) formatDate;
+  final String Function(String reason) reasonLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (logs.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          ...logs.map((log) {
+            final amount = log['amount'];
+            final sign = (amount is int && amount > 0) ? '+' : '';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '$sign$amount · ${reasonLabel(log['reason']?.toString() ?? '')} · ${formatDate(log['created_at']?.toString())}',
+              ),
+            );
+          }),
         ],
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
@@ -244,26 +246,30 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text(
-              'Create class',
+            Text(
+              appStrings.createClassTitle,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 18),
             if (_loadingPrograms)
               const Center(child: CircularProgressIndicator())
             else if (_programs.isEmpty)
-              const Text(
-                'Create at least one active program before creating classes.',
+              Text(
+                appStrings.classNeedProgram,
                 style: TextStyle(fontWeight: FontWeight.w700),
               )
             else
               DropdownButtonFormField<String>(
                 initialValue: _selectedProgramId,
-                decoration: const InputDecoration(labelText: 'Program'),
+                decoration: InputDecoration(
+                  labelText: appStrings.workoutProgram,
+                ),
                 items: _programs.map((program) {
                   return DropdownMenuItem<String>(
                     value: program['id'].toString(),
-                    child: Text(program['name']?.toString() ?? 'Program'),
+                    child: Text(
+                      program['name']?.toString() ?? appStrings.workoutProgram,
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) =>
@@ -272,10 +278,10 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
+              title: Text(appStrings.workoutDate),
               subtitle: Text(
                 _selectedDate == null
-                    ? 'Select date'
+                    ? appStrings.selectDate
                     : _formatDate(_selectedDate!),
               ),
               trailing: const Icon(Icons.calendar_month),
@@ -284,10 +290,10 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Time'),
+              title: Text(appStrings.time),
               subtitle: Text(
                 _selectedTime == null
-                    ? 'Select time'
+                    ? appStrings.selectTime
                     : _selectedTime!.format(context),
               ),
               trailing: const Icon(Icons.schedule),
@@ -298,13 +304,13 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
               contentPadding: EdgeInsets.zero,
               value: _repeatWeekly,
               onChanged: (value) => setState(() => _repeatWeekly = value),
-              title: const Text('Repeat weekly'),
-              subtitle: const Text('Creates this class for the next 8 weeks.'),
+              title: Text(appStrings.repeatWeekly),
+              subtitle: Text(appStrings.repeatWeeklyDescription),
             ),
             if (_repeatWeekly) ...[
               const SizedBox(height: 8),
-              const Text(
-                'Repeat on',
+              Text(
+                appStrings.repeatOn,
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
@@ -342,18 +348,20 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             TextField(
               controller: _duration,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Duration minutes'),
+              decoration: InputDecoration(
+                labelText: appStrings.durationMinutes,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _capacity,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Capacity'),
+              decoration: InputDecoration(labelText: appStrings.capacity),
             ),
             if (_isPastClass) ...[
               const SizedBox(height: 12),
-              const Text(
-                'Choose a future date and time.',
+              Text(
+                appStrings.chooseFutureDateTime,
                 style: TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w700,
@@ -362,7 +370,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             ],
             const SizedBox(height: 18),
             AppButton(
-              label: 'Create class',
+              label: appStrings.createClassTitle,
               loading: _saving,
               onPressed: _canCreate ? _save : null,
             ),

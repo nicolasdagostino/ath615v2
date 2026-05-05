@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_card.dart';
@@ -114,22 +116,22 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text(
-              'Manage programs',
+            Text(
+              appStrings.manageProgramsTitle,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Program name',
+              decoration: InputDecoration(
+                labelText: appStrings.programName,
                 hintText: 'CrossFit, Hyrox, Funcional...',
               ),
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             AppButton(
-              label: 'Create program',
+              label: appStrings.createProgram,
               loading: _saving,
               onPressed: _create,
             ),
@@ -137,15 +139,19 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
             if (_loading)
               const Center(child: CircularProgressIndicator())
             else if (_programs.isEmpty)
-              const Text('No programs yet.')
+              Text(appStrings.noProgramsYet)
             else
               ..._programs.map((program) {
                 final active = program['is_active'] == true;
                 return AppCard(
                   padding: EdgeInsets.zero,
                   child: ListTile(
-                    title: Text(program['name']?.toString() ?? 'Program'),
-                    subtitle: Text(active ? 'Active' : 'Inactive'),
+                    title: Text(
+                      program['name']?.toString() ?? appStrings.workoutProgram,
+                    ),
+                    subtitle: Text(
+                      active ? appStrings.active : appStrings.inactive,
+                    ),
                     trailing: Switch(
                       value: active,
                       onChanged: (_) => _toggle(program),

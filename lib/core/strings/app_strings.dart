@@ -37,6 +37,12 @@ class AppStrings {
 
   String bookingLoadError(Object e) =>
       pick('Booking load error: $e', 'Error cargando reservas: $e');
+
+  String get bookingNoCreditsRemaining =>
+      pick('No credits remaining', 'No te quedan créditos disponibles.');
+  String get bookingGenericError =>
+      pick('Could not book class.', 'No se pudo reservar la clase.');
+
   String bookingBookError(Object e) =>
       pick('Book class error: $e', 'Error al reservar clase: $e');
   String bookingCancelError(Object e) =>
@@ -123,6 +129,17 @@ class AppStrings {
   String notificationsMarkReadError(Object e) =>
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
+  String get managePlans => pick('Manage plans', 'Gestionar planes');
+  String get plan => pick('Plan', 'Plan');
+  String get planName => pick('Plan name', 'Nombre del plan');
+  String get planType => pick('Plan type', 'Tipo de plan');
+  String get classPack => pick('Class pack', 'Pack de clases');
+  String get unlimited => pick('Unlimited', 'Ilimitado');
+  String get credits => pick('Credits', 'Créditos');
+  String get creditsLower => pick('credits', 'créditos');
+  String get createPlan => pick('Create plan', 'Crear plan');
+  String get noPlansYet => pick('No plans yet.', 'Aún no hay planes.');
+
   String get manageProgramsTitle =>
       pick('Manage programs', 'Gestionar programas');
   String get programName => pick('Program name', 'Nombre del programa');
@@ -167,6 +184,23 @@ class AppStrings {
   String get noMembersFound =>
       pick('No members found.', 'No se encontraron miembros.');
 
+  String get membershipTitle => pick('Membership', 'Membresía');
+  String get activePlan => pick('Active plan', 'Plan activo');
+  String get noActivePlan => pick('No active plan', 'Sin plan activo');
+  String get expires => pick('Expires', 'Vence');
+
+  String get assignedCredits => pick('Assigned credits', 'Créditos asignados');
+  String get bookedCredits => pick('Booked credits', 'Créditos usados');
+  String get cancelledCredits =>
+      pick('Cancelled credits', 'Créditos devueltos');
+
+  String get creditHistory => pick('Credit history', 'Historial de créditos');
+  String get noCreditHistory =>
+      pick('No credit history yet.', 'Aún no hay historial de créditos.');
+  String get assigned => pick('Assigned', 'Asignado');
+  String get booked => pick('Booked', 'Reservado');
+  String get cancelled => pick('Cancelled', 'Cancelado');
+
   String get profileLanguage => pick('Language', 'Idioma');
   String get profileEnglish => pick('English', 'Inglés');
   String get profileSpanish => pick('Spanish', 'Español');
@@ -179,8 +213,9 @@ class AppStrings {
   String get profileChangePassword =>
       pick('Change password', 'Cambiar contraseña');
   String get profileLogout => pick('Logout', 'Cerrar sesión');
-  
-  String get profilePrivacyPolicy => pick('Privacy Policy', 'Política de privacidad');
+
+  String get profilePrivacyPolicy =>
+      pick('Privacy Policy', 'Política de privacidad');
   String get profileTerms => pick('Terms of Service', 'Términos de servicio');
   String get profileHelp => pick('Help Center', 'Centro de ayuda');
 

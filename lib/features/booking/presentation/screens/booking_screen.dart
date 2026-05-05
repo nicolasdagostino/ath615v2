@@ -154,17 +154,11 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
-    setState(() {
-      _myBookedClassIds.add(classId);
-      klass['booked_count'] = bookedCount + 1;
-    });
-
     try {
-      await _client.from('class_bookings').insert({
-        'class_id': classId,
-        'user_id': user.id,
-        'status': 'booked',
-      });
+      await _client.rpc(
+        'book_class_with_membership',
+        params: {'p_class_id': classId},
+      );
 
       await _load();
 
@@ -175,9 +169,13 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       await _load();
       if (!mounted) return;
+      final message = e.toString().contains('No credits remaining')
+          ? appStrings.bookingNoCreditsRemaining
+          : appStrings.bookingGenericError;
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.bookingBookError(e))));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

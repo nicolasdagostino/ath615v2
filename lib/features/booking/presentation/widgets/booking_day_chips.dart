@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 class BookingDayChips extends StatelessWidget {
   const BookingDayChips({
     super.key,
@@ -11,8 +13,7 @@ class BookingDayChips extends StatelessWidget {
   final ValueChanged<DateTime> onSelected;
 
   String _weekdayLabel(DateTime day) {
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return labels[day.weekday - 1];
+    return appStrings.weekdayInitials[day.weekday - 1];
   }
 
   @override

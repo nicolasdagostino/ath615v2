@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../widgets/manage_plans_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = false;
   bool _loadingMembers = true;
   List<Map<String, dynamic>> _members = [];
+  String? _gymId;
 
   @override
   void initState() {
@@ -38,7 +42,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .eq('id', user.id)
           .single();
 
-      final gymId = myProfile['gym_id'];
+      final gymId = myProfile['gym_id']?.toString();
+
+      if (gymId == null) {
+        if (!mounted) return;
+        setState(() {
+          _gymId = null;
+          _members = [];
+        });
+        return;
+      }
 
       final data = await Supabase.instance.client
           .from('profiles')
@@ -50,7 +63,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .order('created_at', ascending: false);
 
       if (!mounted) return;
-      setState(() => _members = List<Map<String, dynamic>>.from(data));
+      setState(() {
+        _gymId = gymId;
+        _members = List<Map<String, dynamic>>.from(data);
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -90,6 +106,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _openPlans() async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    await showManagePlansSheet(context: context, gymId: gymId);
+  }
+
   List<Map<String, dynamic>> get _filteredMembers {
     final q = _search.text.trim().toLowerCase();
     if (q.isEmpty) return _members;
@@ -111,6 +134,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .limit(10);
 
     return List<Map<String, dynamic>>.from(res);
+  }
+
+  Future<void> _openAssignPlan(String userId) async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    final client = Supabase.instance.client;
+
+    final plans = await client
+        .from('membership_plans')
+        .select('id, name, plan_type, credits')
+        .eq('gym_id', gymId)
+        .eq('is_active', true);
+
+    String? selectedPlanId;
+
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Assign plan',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedPlanId,
+                    hint: const Text('Select plan'),
+                    items: List<Map<String, dynamic>>.from(plans).map((plan) {
+                      final name = plan['name']?.toString() ?? 'Plan';
+                      final credits = plan['credits'];
+                      final label = credits == null
+                          ? '$name · unlimited'
+                          : '$name · $credits credits';
+
+                      return DropdownMenuItem<String>(
+                        value: plan['id'].toString(),
+                        child: Text(label),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setSheetState(() => selectedPlanId = value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: 'Assign',
+                    onPressed: selectedPlanId == null
+                        ? null
+                        : () async {
+                            try {
+                              await client.rpc(
+                                'assign_membership_plan',
+                                params: {
+                                  'p_user_id': userId,
+                                  'p_plan_id': selectedPlanId,
+                                },
+                              );
+
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Plan assigned')),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Assign plan error: $e'),
+                                ),
+                              );
+                            }
+                          },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _openMember(Map<String, dynamic> member) {
@@ -150,9 +262,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _DetailRow(label: 'Role', value: role),
                     _DetailRow(
                       label: 'Status',
-                      value: active ? 'Active' : 'Inactive',
+                      value: active ? appStrings.active : appStrings.inactive,
                     ),
                     _DetailRow(label: 'Birth date', value: birthDate),
+
+                    const SizedBox(height: 16),
+
+                    AppButton(
+                      label: 'Assign plan',
+                      onPressed: () => _openAssignPlan(member['id']),
+                    ),
 
                     const SizedBox(height: 16),
                     const Text(
@@ -207,11 +326,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
               children: [
-                const Text(
-                  'Dashboard',
+                Text(
+                  appStrings.dashboardTitle,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const Spacer(),
+                IconButton(
+                  tooltip: appStrings.managePlans,
+                  onPressed: _openPlans,
+                  icon: const Icon(Icons.card_membership),
+                ),
                 IconButton(
                   onPressed: _loadMembers,
                   icon: const Icon(Icons.refresh),
@@ -223,35 +347,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                const Text(
-                  'Invite athlete',
+                Text(
+                  appStrings.inviteAthlete,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
-                const Text('Send an invitation email to a new athlete.'),
+                Text(appStrings.inviteAthleteDescription),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _inviteEmail,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Athlete email'),
+                  decoration: InputDecoration(
+                    labelText: appStrings.athleteEmail,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 AppButton(
-                  label: 'Invite athlete',
+                  label: appStrings.inviteAthlete,
                   loading: _loading,
                   onPressed: _inviteAthlete,
                 ),
                 const SizedBox(height: 34),
-                const Text(
-                  'Members',
+                Text(
+                  appStrings.members,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _search,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: 'Search member',
+                  decoration: InputDecoration(
+                    labelText: appStrings.searchMember,
                     prefixIcon: Icon(Icons.search),
                   ),
                 ),
@@ -259,7 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (_loadingMembers)
                   const Center(child: CircularProgressIndicator())
                 else if (members.isEmpty)
-                  const Text('No members found.')
+                  Text(appStrings.noMembersFound)
                 else
                   ...members.map(
                     (member) => _MemberTile(
@@ -294,7 +420,9 @@ class _MemberTile extends StatelessWidget {
       onTap: onTap,
       child: ListTile(
         title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('$email\n${active ? 'Active' : 'Inactive'} · $role'),
+        subtitle: Text(
+          '$email\n${active ? appStrings.active : appStrings.inactive} · $role',
+        ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
       ),

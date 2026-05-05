@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/router/app_router.dart';
@@ -153,6 +154,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
           theme: AppTheme.light,
           locale: localeController.locale,
           supportedLocales: const [Locale('en'), Locale('es')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           scaffoldMessengerKey: _messengerKey,
           routerConfig: _router,
         );
