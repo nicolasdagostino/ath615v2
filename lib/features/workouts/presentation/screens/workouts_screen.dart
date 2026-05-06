@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,12 +8,18 @@ import '../widgets/create_workout_sheet.dart';
 import '../widgets/edit_workout_sheet.dart';
 import '../widgets/manage_programs_sheet.dart';
 import '../widgets/workout_card.dart';
-import '../widgets/workouts_empty_state.dart';
 import '../widgets/workouts_header.dart';
 import '../widgets/workouts_loading_state.dart';
 
 class WorkoutsScreen extends StatefulWidget {
-  const WorkoutsScreen({super.key});
+  const WorkoutsScreen({
+    super.key,
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
 
   @override
   State<WorkoutsScreen> createState() => _WorkoutsScreenState();
@@ -185,7 +192,12 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            WorkoutsHeader(canManage: _canManage, onPrograms: _openPrograms),
+            WorkoutsHeader(
+              canManage: _canManage,
+              onPrograms: _openPrograms,
+              unreadNotifications: widget.unreadNotifications,
+              onOpenNotifications: widget.onOpenNotifications,
+            ),
             Expanded(
               child: RefreshIndicator(
                 color: const Color(0xFFB59B6A),
@@ -193,10 +205,16 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                 child: _loading
                     ? const WorkoutsLoadingState()
                     : _workouts.isEmpty
-                    ? const WorkoutsEmptyState()
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
+                        children: const [
+                          _RestDayEmptyState(),
+                        ],
+                      )
                     : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        padding: const EdgeInsets.fromLTRB(24, 34, 24, 24),
                         itemCount: _workouts.length,
                         itemBuilder: (context, index) {
                           final workout = _workouts[index];
@@ -263,3 +281,54 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
     );
   }
 }
+
+class _RestDayEmptyState extends StatelessWidget {
+  const _RestDayEmptyState();
+
+  TextStyle _font(
+    double size, {
+    FontWeight weight = FontWeight.w500,
+    Color color = const Color(0xFF111318),
+    double letterSpacing = 0,
+    double height = 1.0,
+  }) {
+    return GoogleFonts.barlowCondensed(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'REST DAY',
+          textAlign: TextAlign.center,
+          style: _font(
+            30,
+            weight: FontWeight.w800,
+            color: const Color(0xFF0E0E11),
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 22),
+        Text(
+          "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
+          textAlign: TextAlign.center,
+          style: _font(
+            12,
+            weight: FontWeight.w500,
+            color: const Color(0xFF8F96A3),
+            height: 1.35,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+}
+

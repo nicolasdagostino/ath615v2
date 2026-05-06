@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -98,9 +99,18 @@ class _AppShellState extends State<AppShell> {
     final canSeeDashboard = _role == 'admin' || _role == 'owner';
 
     final screens = [
-      const WorkoutsScreen(),
-      const BookingScreen(),
-      const ExploreScreen(),
+      WorkoutsScreen(
+        unreadNotifications: _unreadNotifications,
+        onOpenNotifications: _openNotifications,
+      ),
+      BookingScreen(
+        unreadNotifications: _unreadNotifications,
+        onOpenNotifications: _openNotifications,
+      ),
+      ExploreScreen(
+        unreadNotifications: _unreadNotifications,
+        onOpenNotifications: _openNotifications,
+      ),
       const ProfileScreen(),
       if (canSeeDashboard) const DashboardScreen(),
     ];
@@ -133,7 +143,7 @@ class _AppShellState extends State<AppShell> {
       _index = 0;
     }
 
-    final hideAppBar = _index == 0 || _index == 1;
+    final hideAppBar = _index == 0 || _index == 1 || _index == 2;
 
     return Scaffold(
       appBar: hideAppBar
@@ -156,10 +166,38 @@ class _AppShellState extends State<AppShell> {
               ],
             ),
       body: screens[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: destinations,
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          height: 88,
+          backgroundColor: Colors.white,
+          indicatorColor: Colors.transparent,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return GoogleFonts.barlowCondensed(
+              fontSize: 15,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected
+                  ? const Color(0xFF111318)
+                  : const Color(0xFF8F96A3),
+              letterSpacing: 0.1,
+              height: 1.0,
+            );
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(
+              size: 25,
+              color: selected
+                  ? const Color(0xFF111318)
+                  : const Color(0xFF8F96A3),
+            );
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (value) => setState(() => _index = value),
+          destinations: destinations,
+        ),
       ),
     );
   }

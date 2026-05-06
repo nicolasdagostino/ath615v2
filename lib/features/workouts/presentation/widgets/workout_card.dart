@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import '../screens/workout_detail_screen.dart';
 import '../../../booking/presentation/widgets/booking_text_styles.dart';
+import '../screens/workout_detail_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'workout_text_styles.dart';
 
 class WorkoutCard extends StatefulWidget {
@@ -171,7 +172,13 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     Expanded(
                       child: Text(
                         widget.program.toUpperCase(),
-                        style: BookingTextStyles.classTitle,
+                        style: GoogleFonts.barlowCondensed(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0E0E11),
+                          letterSpacing: -0.3,
+                          height: 1.0,
+                        ),
                       ),
                     ),
                     if (widget.canManage)
@@ -183,7 +190,16 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(widget.date, style: BookingTextStyles.metaLabel),
+                Text(
+                  widget.date,
+                  style: GoogleFonts.barlowCondensed(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF8F96A3),
+                    letterSpacing: 0.3,
+                    height: 1.0,
+                  ),
+                ),
                 if (hasImage) ...[
                   const SizedBox(height: 18),
                   ClipRRect(

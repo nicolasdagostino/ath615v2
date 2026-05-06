@@ -45,11 +45,11 @@ class WorkoutTextStyles {
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF111318),
-    fontSize: 18,
+    color: const Color(0xFF384152),
+    fontSize: 16,
     fontWeight: FontWeight.w500,
-    letterSpacing: -0.1,
-    height: 1.16,
+    letterSpacing: 0.0,
+    height: 1.3,
   );
 
   static TextStyle stat = GoogleFonts.barlowCondensed(
