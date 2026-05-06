@@ -133,7 +133,7 @@ class _AppShellState extends State<AppShell> {
       _index = 0;
     }
 
-    final hideAppBar = _index == 1;
+    final hideAppBar = _index == 0 || _index == 1;
 
     return Scaffold(
       appBar: hideAppBar

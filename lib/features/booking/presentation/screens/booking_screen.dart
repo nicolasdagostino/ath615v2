@@ -359,6 +359,13 @@ class _BookingScreenState extends State<BookingScreen> {
     return Scaffold(
       floatingActionButton: _canCreateClass
           ? FloatingActionButton(
+              heroTag: 'create-class',
+              backgroundColor: const Color(0xFFB59B6A),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
               onPressed: _showCreateClassSheet,
               child: const Icon(Icons.add),
             )

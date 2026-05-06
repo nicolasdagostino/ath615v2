@@ -13,66 +13,8 @@ class BookingHeader extends StatelessWidget {
   final DateTime selectedDay;
   final VoidCallback onRefresh;
 
-  static const _monthsEn = [
-    'JANUARY',
-    'FEBRUARY',
-    'MARCH',
-    'APRIL',
-    'MAY',
-    'JUNE',
-    'JULY',
-    'AUGUST',
-    'SEPTEMBER',
-    'OCTOBER',
-    'NOVEMBER',
-    'DECEMBER',
-  ];
-
-  static const _monthsEs = [
-    'ENERO',
-    'FEBRERO',
-    'MARZO',
-    'ABRIL',
-    'MAYO',
-    'JUNIO',
-    'JULIO',
-    'AGOSTO',
-    'SEPTIEMBRE',
-    'OCTUBRE',
-    'NOVIEMBRE',
-    'DICIEMBRE',
-  ];
-
-  static const _weekdaysEn = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-
-  static const _weekdaysEs = [
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-    'Domingo',
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final isEs = appStrings.isEs;
-    final month = isEs
-        ? _monthsEs[selectedDay.month - 1]
-        : _monthsEn[selectedDay.month - 1];
-    final weekday = isEs
-        ? _weekdaysEs[selectedDay.weekday - 1]
-        : _weekdaysEn[selectedDay.weekday - 1];
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: Row(
@@ -80,18 +22,9 @@ class BookingHeader extends StatelessWidget {
           Expanded(
             child: Text('ATHLETE LAB', style: BookingTextStyles.headerBrand),
           ),
-          Column(
-            children: [
-              Text(
-                '$month ${selectedDay.year}',
-                style: BookingTextStyles.headerMonth,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$weekday, ${selectedDay.day}',
-                style: BookingTextStyles.headerSubtitle,
-              ),
-            ],
+          Text(
+            appStrings.bookingTitle.toUpperCase(),
+            style: BookingTextStyles.headerMonth,
           ),
           Expanded(
             child: Align(
