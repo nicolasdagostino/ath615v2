@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,13 +7,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/app_outlined_button.dart';
-import '../../../../core/widgets/app_small_outlined_button.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -100,6 +105,147 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+
+  Future<bool> _confirmAction({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    bool danger = false,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(appStrings.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                confirmLabel,
+                style: danger
+                    ? const TextStyle(color: Color(0xFFB42318))
+                    : null,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result == true;
+  }
+
+  Future<void> _openChangePasswordSheet() async {
+    _password.clear();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appStrings.profileChangePassword.toUpperCase(),
+                    style: _ProfileText.sectionTitle,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _password,
+                    obscureText: true,
+                    style: _ProfileText.input,
+                    decoration: _inputDecoration(appStrings.profileNewPassword),
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: appStrings.profileChangePassword,
+                    loading: _loading,
+                    onPressed: () async {
+                      final navigator = Navigator.of(sheetContext);
+                      await _changePassword();
+                      if (mounted) navigator.pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+  Future<void> _openGymNameSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appStrings.profileGymName.toUpperCase(),
+                    style: _ProfileText.sectionTitle,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _gymName,
+                    style: _ProfileText.input,
+                    decoration: _inputDecoration(appStrings.profileGymName),
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: appStrings.profileSaveGymName,
+                    loading: _loading,
+                    onPressed: () async {
+                      final navigator = Navigator.of(sheetContext);
+                      await _saveGymName();
+                      if (mounted) navigator.pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _changePassword() async {
     setState(() => _loading = true);
     try {
@@ -143,12 +289,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final confirmed = await _confirmAction(
+      title: appStrings.profileLogout,
+      message: 'Are you sure you want to log out?',
+      confirmLabel: appStrings.profileLogout,
+    );
+
+    if (!confirmed) return;
+
     await _repo.signOut();
     if (!mounted) return;
     context.go('/login');
   }
 
   Future<void> _deleteAccount() async {
+    final confirmed = await _confirmAction(
+      title: appStrings.profileDeleteAccount,
+      message: 'This action cannot be undone. Are you sure?',
+      confirmLabel: appStrings.profileDeleteAccount,
+      danger: true,
+    );
+
+    if (!confirmed) return;
+
     setState(() => _loading = true);
     try {
       await _repo.deleteMyAccount();
@@ -181,156 +344,601 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final canEditGym = role == 'admin' || role == 'owner';
 
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          Text(email, style: const TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          Text('${appStrings.profileRole}: ${_profile?['role'] ?? '-'}'),
-          const SizedBox(height: 18),
-          Text(
-            appStrings.profileLanguage,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: [
-              ButtonSegment(
-                value: 'en',
-                label: Text(appStrings.profileEnglish),
+      backgroundColor: const Color(0xFFF4F5F7),
+      body: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _ProfileHeader(
+              unreadNotifications: widget.unreadNotifications,
+              onOpenNotifications: widget.onOpenNotifications,
+            ),
+            if (_profile == null)
+              const _ProfileSkeleton()
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  _ProfileCard(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F3EA),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text(
+                            email.isNotEmpty ? email[0].toUpperCase() : 'A',
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFFB59B6A),
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(email, style: _ProfileText.title),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${appStrings.profileRole}: ${_profile?['role'] ?? '-'}',
+                                style: _ProfileText.subtle,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _ProfileCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(appStrings.membershipTitle.toUpperCase(), style: _ProfileText.sectionTitle),
+                        const SizedBox(height: 14),
+                        if (_membership == null)
+                          Text(appStrings.noActivePlan, style: _ProfileText.body)
+                        else ...[
+                          _InfoRow(
+                            label: appStrings.activePlan,
+                            value: '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                          ),
+                          _InfoRow(
+                            label: appStrings.credits,
+                            value: '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
+                          ),
+                          _InfoRow(
+                            label: appStrings.expires,
+                            value: _formatDate(_membership?['expires_at']?.toString()),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        Text(appStrings.creditHistory.toUpperCase(), style: _ProfileText.sectionTitle),
+                        const SizedBox(height: 10),
+                        if (_creditLogs.isEmpty)
+                          Text(appStrings.noCreditHistory, style: _ProfileText.subtle)
+                        else ...[
+                          _CreditLogSection(
+                            title: appStrings.assignedCredits,
+                            logs: _creditLogs.where((log) => log['reason'] == 'assigned').toList(),
+                            formatDate: _formatDate,
+                            reasonLabel: _creditReasonLabel,
+                          ),
+                          _CreditLogSection(
+                            title: appStrings.bookedCredits,
+                            logs: _creditLogs.where((log) => log['reason'] == 'booked').toList(),
+                            formatDate: _formatDate,
+                            reasonLabel: _creditReasonLabel,
+                          ),
+                          _CreditLogSection(
+                            title: appStrings.cancelledCredits,
+                            logs: _creditLogs.where((log) => log['reason'] == 'cancelled').toList(),
+                            formatDate: _formatDate,
+                            reasonLabel: _creditReasonLabel,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _ProfileListCard(
+                    children: [
+                      _ProfileMenuRow(
+                        icon: Icons.language_rounded,
+                        title: '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
+                        onTap: () {
+                          final next = localeController.locale.languageCode == 'en' ? 'es' : 'en';
+                          localeController.setLanguage(next);
+                          setState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _ProfileListCard(
+                    children: [
+                      if (canEditGym)
+                        _ProfileMenuRow(
+                          icon: Icons.business_rounded,
+                          title: appStrings.profileGymName,
+                          onTap: _openGymNameSheet,
+                        ),
+                      _ProfileMenuRow(
+                        icon: Icons.lock_outline_rounded,
+                        title: appStrings.profileChangePassword,
+                        onTap: _openChangePasswordSheet,
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.privacy_tip_outlined,
+                        title: appStrings.profilePrivacyPolicy,
+                        onTap: () => _openUrl('https://TU_URL_PRIVACY'),
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.description_outlined,
+                        title: appStrings.profileTerms,
+                        onTap: () => _openUrl('https://TU_URL_TERMS'),
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.help_outline_rounded,
+                        title: appStrings.profileHelp,
+                        onTap: () => _openUrl('https://TU_URL_HELP'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _ProfileListCard(
+                    children: [
+                      _ProfileMenuRow(
+                        icon: Icons.logout_rounded,
+                        title: appStrings.profileLogout,
+                        onTap: _logout,
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.delete_outline_rounded,
+                        title: appStrings.profileDeleteAccount,
+                        danger: true,
+                        onTap: _deleteAccount,
+                      ),
+                    ],
+                  ),
+                  ],
+                ),
               ),
-              ButtonSegment(
-                value: 'es',
-                label: Text(appStrings.profileSpanish),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+InputDecoration _inputDecoration(String hint) {
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: GoogleFonts.barlowCondensed(
+      color: const Color(0xFF8F96A3),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    filled: true,
+    fillColor: const Color(0xFFF4F5F7),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+class _ProfileText {
+  const _ProfileText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1.0,
+  );
+
+  static TextStyle sectionTitle = GoogleFonts.barlowCondensed(
+    fontSize: 13,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: 0.8,
+    height: 1.0,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.0,
+    height: 1.3,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1.0,
+  );
+
+  static TextStyle input = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+  );
+}
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
+
+  TextStyle _font(
+    double size, {
+    FontWeight weight = FontWeight.w500,
+    Color color = const Color(0xFF111318),
+    double? letterSpacing,
+    double? height,
+  }) {
+    return GoogleFonts.barlowCondensed(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 132,
+                    child: Text(
+                      'ATHLETE LAB',
+                      style: _font(
+                        18,
+                        weight: FontWeight.w800,
+                        color: const Color(0xFF0E0E11),
+                        letterSpacing: -0.3,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'PROFILE',
+                      style: _font(
+                        18,
+                        weight: FontWeight.w800,
+                        color: const Color(0xFF0E0E11),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Account & settings',
+                      style: _font(
+                        12,
+                        weight: FontWeight.w500,
+                        color: const Color(0xFF8F96A3),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 132,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: onOpenNotifications,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F3EA),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Badge(
+                          isLabelVisible: unreadNotifications > 0,
+                          label: Text(
+                            unreadNotifications > 99
+                                ? '99+'
+                                : unreadNotifications.toString(),
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            size: 18,
+                            color: Color(0xFFB59B6A),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
-            selected: {localeController.locale.languageCode},
-            onSelectionChanged: (values) {
-              localeController.setLanguage(values.first);
-              setState(() {});
-            },
           ),
+        ),
+      ),
+    );
+  }
+}
 
-          const SizedBox(height: 24),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appStrings.membershipTitle,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (_membership == null)
-                  Text(appStrings.noActivePlan)
-                else ...[
-                  Text(
-                    '${appStrings.activePlan}: ${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${appStrings.credits}: ${_membership?['credits_remaining'] ?? appStrings.unlimited}',
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${appStrings.expires}: ${_formatDate(_membership?['expires_at']?.toString())}',
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Text(
-                  appStrings.creditHistory,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                if (_creditLogs.isEmpty)
-                  Text(appStrings.noCreditHistory)
-                else ...[
-                  _CreditLogSection(
-                    title: appStrings.assignedCredits,
-                    logs: _creditLogs
-                        .where((log) => log['reason'] == 'assigned')
-                        .toList(),
-                    formatDate: _formatDate,
-                    reasonLabel: _creditReasonLabel,
-                  ),
-                  _CreditLogSection(
-                    title: appStrings.bookedCredits,
-                    logs: _creditLogs
-                        .where((log) => log['reason'] == 'booked')
-                        .toList(),
-                    formatDate: _formatDate,
-                    reasonLabel: _creditReasonLabel,
-                  ),
-                  _CreditLogSection(
-                    title: appStrings.cancelledCredits,
-                    logs: _creditLogs
-                        .where((log) => log['reason'] == 'cancelled')
-                        .toList(),
-                    formatDate: _formatDate,
-                    reasonLabel: _creditReasonLabel,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          TextField(
-            controller: _gymName,
-            readOnly: !canEditGym,
-            decoration: InputDecoration(labelText: appStrings.profileGymName),
-          ),
-          if (canEditGym) ...[
-            const SizedBox(height: 12),
-            AppButton(
-              label: appStrings.profileSaveGymName,
-              loading: _loading,
-              onPressed: _saveGymName,
-            ),
-          ],
-          const SizedBox(height: 32),
-          TextField(
-            controller: _password,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: appStrings.profileNewPassword,
-            ),
-          ),
-          const SizedBox(height: 14),
-          AppButton(
-            label: appStrings.profileChangePassword,
-            loading: _loading,
-            onPressed: _changePassword,
-          ),
-          const SizedBox(height: 24),
-          AppOutlinedButton(
-            label: appStrings.profileLogout,
-            onPressed: _logout,
-          ),
-          const SizedBox(height: 12),
-          AppOutlinedButton(
-            label: appStrings.profileDeleteAccount,
-            onPressed: _deleteAccount,
-          ),
-          const SizedBox(height: 24),
-          AppSmallOutlinedButton(
-            label: appStrings.profilePrivacyPolicy,
-            onPressed: () => _openUrl('https://TU_URL_PRIVACY'),
-          ),
-          const SizedBox(height: 10),
-          AppSmallOutlinedButton(
-            label: appStrings.profileTerms,
-            onPressed: () => _openUrl('https://TU_URL_TERMS'),
-          ),
-          const SizedBox(height: 10),
-          AppSmallOutlinedButton(
-            label: appStrings.profileHelp,
-            onPressed: () => _openUrl('https://TU_URL_HELP'),
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        children: [
+          Expanded(child: Text(label.toUpperCase(), style: _ProfileText.subtle)),
+          const SizedBox(width: 12),
+          Text(value, style: _ProfileText.body),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _ProfileListCard extends StatelessWidget {
+  const _ProfileListCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _ProfileMenuRow extends StatelessWidget {
+  const _ProfileMenuRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? const Color(0xFFB42318) : const Color(0xFF0E0E11);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(28),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F5F7),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE8EAF0)),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: danger ? const Color(0xFFB42318) : const Color(0xFF8F96A3),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  letterSpacing: -0.1,
+                  height: 1.0,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 24,
+              color: Color(0xFF8F96A3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+      child: Column(
+        children: const [
+          _SkeletonCard(lines: 2, avatar: true),
+          SizedBox(height: 18),
+          _SkeletonCard(lines: 4),
+          SizedBox(height: 18),
+          _SkeletonCard(lines: 3),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({required this.lines, this.avatar = false});
+
+  final int lines;
+  final bool avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (avatar) ...[
+            Row(
+              children: [
+                const _SkeletonBox(width: 54, height: 54, radius: 18),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      _SkeletonBox(width: double.infinity, height: 18, radius: 999),
+                      SizedBox(height: 10),
+                      _SkeletonBox(width: 150, height: 14, radius: 999),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            for (var i = 0; i < lines; i++) ...[
+              _SkeletonBox(
+                width: i == 0 ? 130 : double.infinity,
+                height: i == 0 ? 14 : 18,
+                radius: 999,
+              ),
+              if (i != lines - 1) const SizedBox(height: 14),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({
+    required this.width,
+    required this.height,
+    required this.radius,
+  });
+
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8EAF0),
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
@@ -358,7 +966,7 @@ class _CreditLogSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(title.toUpperCase(), style: _ProfileText.sectionTitle),
           const SizedBox(height: 6),
           ...logs.map((log) {
             final amount = log['amount'];
@@ -368,6 +976,7 @@ class _CreditLogSection extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 '$sign$amount · ${reasonLabel(log['reason']?.toString() ?? '')} · ${formatDate(log['created_at']?.toString())}',
+                style: _ProfileText.subtle,
               ),
             );
           }),

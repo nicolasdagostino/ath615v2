@@ -40,6 +40,9 @@ class AppTheme {
         seedColor: const Color(0xFF111111),
         brightness: Brightness.light,
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFFB59B6A),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,

@@ -93,7 +93,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     if (_role == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))));
     }
 
     final canSeeDashboard = _role == 'admin' || _role == 'owner';
@@ -111,7 +111,10 @@ class _AppShellState extends State<AppShell> {
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
-      const ProfileScreen(),
+      ProfileScreen(
+        unreadNotifications: _unreadNotifications,
+        onOpenNotifications: _openNotifications,
+      ),
       if (canSeeDashboard) const DashboardScreen(),
     ];
 
@@ -143,7 +146,7 @@ class _AppShellState extends State<AppShell> {
       _index = 0;
     }
 
-    final hideAppBar = _index == 0 || _index == 1 || _index == 2;
+    final hideAppBar = _index == 0 || _index == 1 || _index == 2 || _index == 3;
 
     return Scaffold(
       appBar: hideAppBar
