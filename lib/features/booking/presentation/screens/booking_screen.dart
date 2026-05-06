@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,14 +7,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/attendance_sheet.dart';
 import '../widgets/booking_class_card.dart';
 import '../widgets/booking_day_chips.dart';
-import '../widgets/booking_empty_state.dart';
 import '../widgets/booking_loading_state.dart';
 import '../widgets/booking_header.dart';
 import '../widgets/membership_status_card.dart';
 import '../widgets/create_class_sheet.dart';
 
 class BookingScreen extends StatefulWidget {
-  const BookingScreen({super.key});
+  const BookingScreen({
+    super.key,
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -374,7 +381,12 @@ class _BookingScreenState extends State<BookingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            BookingHeader(selectedDay: _selectedDay, onRefresh: _refresh),
+            BookingHeader(
+              selectedDay: _selectedDay,
+              unreadNotifications: widget.unreadNotifications,
+              onOpenNotifications: widget.onOpenNotifications,
+            ),
+            const SizedBox(height: 18),
             BookingDayChips(
               selectedDay: _selectedDay,
               onSelected: (day) {
@@ -394,10 +406,16 @@ class _BookingScreenState extends State<BookingScreen> {
                 child: _loading
                     ? const BookingLoadingState()
                     : _classes.isEmpty
-                    ? const BookingEmptyState()
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(28, 115, 28, 24),
+                        children: const [
+                          _BookingRestDayEmptyState(),
+                        ],
+                      )
                     : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                         itemCount: _classes.length,
                         itemBuilder: (context, index) {
                           final klass = _classes[index];
@@ -485,3 +503,39 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
+
+class _BookingRestDayEmptyState extends StatelessWidget {
+  const _BookingRestDayEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'REST DAY',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0E0E11),
+            letterSpacing: -0.3,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 22),
+        Text(
+          "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF8F96A3),
+            letterSpacing: 0.3,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+

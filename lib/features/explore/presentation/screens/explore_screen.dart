@@ -5,9 +5,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
 import '../../../workouts/presentation/widgets/workout_card.dart';
+import '../../../workouts/presentation/widgets/workouts_empty_state.dart';
+import '../../../workouts/presentation/widgets/workouts_loading_state.dart';
+import '../widgets/explore_header.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key});
+  const ExploreScreen({
+    super.key,
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -58,8 +68,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _load({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() => _loading = true);
+    }
 
     try {
       final user = _client.auth.currentUser;
@@ -108,8 +120,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.exploreLoadError(e))));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && showLoading) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _refresh() async {
+    await _load(showLoading: false);
   }
 
   Future<void> _deleteWorkout(String workoutId) async {
@@ -174,121 +190,128 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final filteredWorkouts = _filteredWorkouts;
 
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Text(
-                  appStrings.exploreTitle,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
-                IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-              ],
+      backgroundColor: const Color(0xFFF4F5F7),
+      body: SafeArea(
+        child: Column(
+          children: [
+            ExploreHeader(
+              unreadNotifications: widget.unreadNotifications,
+              onOpenNotifications: widget.onOpenNotifications,
             ),
-          ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: appStrings.exploreSearchWorkouts,
-                            prefixIcon: Icon(Icons.search),
-                          ),
-                          onChanged: (value) => setState(() => _search = value),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: DropdownButtonFormField<String?>(
-                          initialValue: _selectedProgramId,
-                          decoration: InputDecoration(
-                            labelText: appStrings.workoutProgram,
-                          ),
-                          items: [
-                            DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text(appStrings.exploreAllPrograms),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: appStrings.exploreSearchWorkouts,
+                  prefixIcon: const Icon(Icons.search),
+                ),
+                onChanged: (value) => setState(() => _search = value),
+              ),
+            ),
+            SizedBox(
+              height: 48,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: _programs.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final all = index == 0;
+                  final program = all ? null : _programs[index - 1];
+                  final id = program?['id']?.toString();
+                  final selected = all
+                      ? _selectedProgramId == null
+                      : _selectedProgramId == id;
+
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text(
+                      all
+                          ? appStrings.exploreAllPrograms
+                          : program?['name']?.toString() ??
+                                appStrings.workoutProgram,
+                    ),
+                    onSelected: (_) {
+                      setState(() => _selectedProgramId = all ? null : id);
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: RefreshIndicator(
+                color: const Color(0xFFB59B6A),
+                onRefresh: _refresh,
+                child: _loading
+                    ? const WorkoutsLoadingState()
+                    : filteredWorkouts.isEmpty
+                    ? const WorkoutsEmptyState()
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        itemCount: filteredWorkouts.length,
+                        itemBuilder: (context, index) {
+                          final workout = filteredWorkouts[index];
+                          final program =
+                              workout['programs'] as Map<String, dynamic>?;
+
+                          final likes = List<Map<String, dynamic>>.from(
+                            workout['workout_likes'] ?? [],
+                          );
+
+                          final comments =
+                              List<Map<String, dynamic>>.from(
+                                workout['workout_comments'] ?? [],
+                              )..sort(
+                                (a, b) => (b['created_at'] ?? '')
+                                    .toString()
+                                    .compareTo(
+                                      (a['created_at'] ?? '').toString(),
+                                    ),
+                              );
+
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey(workout['id'].toString()),
+                            tween: Tween(begin: 0, end: 1),
+                            duration: Duration(
+                              milliseconds: 220 + (index * 35).clamp(0, 220),
                             ),
-                            ..._programs.map(
-                              (program) => DropdownMenuItem<String?>(
-                                value: program['id'].toString(),
-                                child: Text(
-                                  program['name']?.toString() ??
-                                      appStrings.workoutProgram,
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 18 * (1 - value)),
+                                  child: child,
                                 ),
+                              );
+                            },
+                            child: WorkoutCard(
+                              workoutId: workout['id'].toString(),
+                              program:
+                                  program?['name']?.toString() ?? 'Workout',
+                              description:
+                                  workout['description']?.toString() ?? '',
+                              date: _formatDate(
+                                workout['workout_date'].toString(),
                               ),
+                              imageUrl: workout['image_url']?.toString(),
+                              likes: likes,
+                              comments: comments,
+                              canManage: _canManage,
+                              onEdit: () => _editWorkout(workout),
+                              onDelete: () =>
+                                  _deleteWorkout(workout['id'].toString()),
+                              onChanged: _load,
                             ),
-                          ],
-                          onChanged: (value) {
-                            setState(() => _selectedProgramId = value);
-                          },
-                        ),
+                          );
+                        },
                       ),
-                      Expanded(
-                        child: filteredWorkouts.isEmpty
-                            ? Center(
-                                child: Text(appStrings.exploreNoWorkoutsFound),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: filteredWorkouts.length,
-                                itemBuilder: (context, index) {
-                                  final workout = filteredWorkouts[index];
-                                  final program =
-                                      workout['programs']
-                                          as Map<String, dynamic>?;
-
-                                  final likes = List<Map<String, dynamic>>.from(
-                                    workout['workout_likes'] ?? [],
-                                  );
-
-                                  final comments =
-                                      List<Map<String, dynamic>>.from(
-                                        workout['workout_comments'] ?? [],
-                                      )..sort(
-                                        (a, b) => (b['created_at'] ?? '')
-                                            .toString()
-                                            .compareTo(
-                                              (a['created_at'] ?? '')
-                                                  .toString(),
-                                            ),
-                                      );
-
-                                  return WorkoutCard(
-                                    workoutId: workout['id'].toString(),
-                                    program:
-                                        program?['name']?.toString() ??
-                                        'Workout',
-                                    description:
-                                        workout['description']?.toString() ??
-                                        '',
-                                    date: _formatDate(
-                                      workout['workout_date'].toString(),
-                                    ),
-                                    imageUrl: workout['image_url']?.toString(),
-                                    likes: likes,
-                                    comments: comments,
-                                    canManage: _canManage,
-                                    onEdit: () => _editWorkout(workout),
-                                    onDelete: () => _deleteWorkout(
-                                      workout['id'].toString(),
-                                    ),
-                                    onChanged: _load,
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
