@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
 
-import '../../../../core/widgets/app_small_outlined_button.dart';
+import '../widgets/workout_text_styles.dart';
+import '../../../booking/presentation/widgets/booking_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
@@ -181,133 +182,343 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
   }
 
+  String _displayAuthorName(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty || value.contains('@')) {
+      return appStrings.userFallbackName;
+    }
+    return value;
+  }
+
   @override
   Widget build(BuildContext context) {
     final workout = _workout;
     final program = workout?['programs'] as Map<String, dynamic>?;
+    final programName =
+        program?['name']?.toString() ?? appStrings.workoutFallbackTitle;
+    final imageUrl = workout?['image_url']?.toString();
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          program?['name']?.toString() ?? appStrings.workoutFallbackTitle,
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : workout == null
-          ? Center(child: Text(appStrings.workoutNotFound))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  program?['name']?.toString() ??
-                      appStrings.workoutFallbackTitle,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
+      backgroundColor: const Color(0xFFF4F5F7),
+      body: SafeArea(
+        child: _loading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+              )
+            : workout == null
+            ? Center(
+                child: Text(
+                  appStrings.workoutNotFound,
+                  style: WorkoutTextStyles.emptyMessage,
                 ),
-                const SizedBox(height: 4),
-                Text(_formatDate(workout['workout_date'].toString())),
-                if (workout['image_url'] != null &&
-                    workout['image_url'].toString().isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: Image.network(
-                      workout['image_url'].toString(),
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                children: [
+                  Row(
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: Navigator.of(context).pop,
+                        icon: const Icon(Icons.arrow_back),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFF4EFE6),
+                          foregroundColor: const Color(0xFFB59B6A),
+                          fixedSize: const Size(44, 44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        appStrings.workoutsTitle.toUpperCase(),
+                        style: BookingTextStyles.headerMonth,
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 44),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          programName.toUpperCase(),
+                          style: BookingTextStyles.classTitle,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _formatDate(workout['workout_date'].toString()),
+                          style: BookingTextStyles.metaLabel,
+                        ),
+                        if (hasImage) ...[
+                          const SizedBox(height: 18),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: Image.network(
+                              imageUrl,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        Text(
+                          workout['description']?.toString() ?? '',
+                          style: BookingTextStyles.metaValue,
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            _DetailStatButton(
+                              icon: _liked
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              label: appStrings.workoutLikesCount(
+                                _likes.length,
+                              ),
+                              active: _liked,
+                              onTap: _toggleLike,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _DetailActionButton(
+                                label: appStrings.workoutCommentCount(
+                                  _comments.length,
+                                ),
+                                icon: Icons.chat_bubble_outline,
+                                onTap: () => _commentFocus.requestFocus(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  if (_comments.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Text(
+                        appStrings.workoutNoComments,
+                        textAlign: TextAlign.center,
+                        style: WorkoutTextStyles.emptyMessage,
+                      ),
+                    )
+                  else
+                    ..._comments.map((comment) {
+                      final userId = comment['user_id']?.toString();
+                      final name = _displayAuthorName(_authorNames[userId]);
+
+                      final initial = name.trim().isEmpty
+                          ? '?'
+                          : name.trim()[0].toUpperCase();
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF4EFE6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                initial,
+                                style: BookingTextStyles.metaValue.copyWith(
+                                  color: const Color(0xFFB59B6A),
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: BookingTextStyles.metaValue
+                                              .copyWith(fontSize: 15),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _timeAgo(
+                                          comment['created_at']?.toString(),
+                                        ),
+                                        style: BookingTextStyles.metaLabel,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    comment['body']?.toString() ?? '',
+                                    style: const TextStyle(
+                                      color: Color(0xFF111318),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appStrings.workoutPostScoreComments.toUpperCase(),
+                          style: BookingTextStyles.metaLabel.copyWith(
+                            color: const Color(0xFF111318),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _commentCtrl,
+                          focusNode: _commentFocus,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: appStrings.workoutCommentHint,
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.send),
+                              color: const Color(0xFFB59B6A),
+                              onPressed: _addComment,
+                            ),
+                          ),
+                          onSubmitted: (_) => _addComment(),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                Text(workout['description']?.toString() ?? ''),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _toggleLike,
-                      icon: Icon(
-                        _liked ? Icons.favorite : Icons.favorite_border,
-                      ),
-                      label: Text(appStrings.workoutLikesCount(_likes.length)),
-                    ),
-                    const SizedBox(width: 10),
-                    AppSmallOutlinedButton(
-                      label: appStrings.workoutCommentCount(_comments.length),
-                      icon: Icons.chat_bubble_outline,
-                      onPressed: () => _commentFocus.requestFocus(),
-                    ),
-                  ],
-                ),
-                const Divider(height: 32),
-                Text(
-                  appStrings.workoutPostScoreComments,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _commentCtrl,
-                  focusNode: _commentFocus,
-                  minLines: 1,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: appStrings.workoutCommentHint,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _addComment,
-                    ),
-                  ),
-                  onSubmitted: (_) => _addComment(),
-                ),
-                const SizedBox(height: 16),
-                if (_comments.isEmpty)
-                  Text(appStrings.workoutNoComments)
-                else
-                  ..._comments.map((comment) {
-                    final userId = comment['user_id']?.toString();
-                    final name =
-                        _authorNames[userId] ?? appStrings.userFallbackName;
+              ),
+      ),
+    );
+  }
+}
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE8E8E8)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                _timeAgo(comment['created_at']?.toString()),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF777777),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(comment['body']?.toString() ?? ''),
-                        ],
-                      ),
-                    );
-                  }),
-              ],
-            ),
+class _DetailStatButton extends StatelessWidget {
+  const _DetailStatButton({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: active ? const Color(0xFFFFEEF1) : const Color(0xFFF2F3F6),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: active
+                    ? const Color(0xFFE11D48)
+                    : const Color(0xFF667085),
+              ),
+              const SizedBox(width: 8),
+              Text(label, style: WorkoutTextStyles.stat),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailActionButton extends StatelessWidget {
+  const _DetailActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label.toUpperCase(), style: BookingTextStyles.button),
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFFB59B6A),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
     );
   }
 }
