@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 
@@ -17,8 +18,8 @@ Future<void> showCreateWorkoutSheet({
 }) async {
   await showModalBottomSheet(
     context: context,
-    showDragHandle: true,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (_) =>
         _CreateWorkoutSheet(client: client, gymId: gymId, onCreated: onCreated),
   );
@@ -154,20 +155,30 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          top: 8,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
             Text(
               appStrings.workoutCreateTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0E0E11),
+                letterSpacing: -0.3,
+                height: 1.0,
+              ),
             ),
             const SizedBox(height: 16),
             if (_loadingPrograms)
@@ -175,7 +186,12 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             else if (_programs.isEmpty)
               Text(
                 appStrings.workoutNeedProgram,
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF384152),
+                  height: 1.3,
+                ),
               )
             else
               DropdownButtonFormField<String>(
@@ -236,7 +252,8 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
               loading: _saving,
               onPressed: _canSave ? _save : null,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

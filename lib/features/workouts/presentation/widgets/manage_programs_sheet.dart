@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,8 +14,8 @@ Future<void> showManageProgramsSheet({
 }) async {
   await showModalBottomSheet(
     context: context,
-    showDragHandle: true,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => _ManageProgramsSheet(client: client, gymId: gymId),
   );
 }
@@ -105,61 +106,72 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Text(
-              appStrings.manageProgramsTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: appStrings.programName,
-                hintText: 'CrossFit, Hyrox, Funcional...',
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(
+                appStrings.manageProgramsTitle,
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0E0E11),
+                  letterSpacing: -0.3,
+                  height: 1.0,
+                ),
               ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 12),
-            AppButton(
-              label: appStrings.createProgram,
-              loading: _saving,
-              onPressed: _create,
-            ),
-            const SizedBox(height: 20),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else if (_programs.isEmpty)
-              Text(appStrings.noProgramsYet)
-            else
-              ..._programs.map((program) {
-                final active = program['is_active'] == true;
-                return AppCard(
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    title: Text(
-                      program['name']?.toString() ?? appStrings.workoutProgram,
+              const SizedBox(height: 16),
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(
+                  labelText: appStrings.programName,
+                  hintText: 'CrossFit, Hyrox, Funcional...',
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 12),
+              AppButton(
+                label: appStrings.createProgram,
+                loading: _saving,
+                onPressed: _create,
+              ),
+              const SizedBox(height: 20),
+              if (_loading)
+                const Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A)))
+              else if (_programs.isEmpty)
+                Text(appStrings.noProgramsYet)
+              else
+                ..._programs.map((program) {
+                  final active = program['is_active'] == true;
+                  return AppCard(
+                    padding: EdgeInsets.zero,
+                    child: ListTile(
+                      title: Text(
+                        program['name']?.toString() ?? appStrings.workoutProgram,
+                      ),
+                      subtitle: Text(
+                        active ? appStrings.active : appStrings.inactive,
+                      ),
+                      trailing: Switch(
+                        value: active,
+                        onChanged: (_) => _toggle(program),
+                      ),
                     ),
-                    subtitle: Text(
-                      active ? appStrings.active : appStrings.inactive,
-                    ),
-                    trailing: Switch(
-                      value: active,
-                      onChanged: (_) => _toggle(program),
-                    ),
-                  ),
-                );
-              }),
-          ],
+                  );
+                }),
+            ],
+          ),
         ),
       ),
     );

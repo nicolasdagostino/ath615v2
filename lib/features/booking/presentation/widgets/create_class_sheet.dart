@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,8 +14,8 @@ Future<void> showCreateClassSheet({
 }) async {
   await showModalBottomSheet(
     context: context,
-    showDragHandle: true,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (_) =>
         _CreateClassSheet(client: client, gymId: gymId, onCreated: onCreated),
   );
@@ -235,20 +236,30 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          top: 8,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
             Text(
               appStrings.createClassTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0E0E11),
+                letterSpacing: -0.3,
+                height: 1.0,
+              ),
             ),
             const SizedBox(height: 18),
             if (_loadingPrograms)
@@ -256,7 +267,12 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             else if (_programs.isEmpty)
               Text(
                 appStrings.classNeedProgram,
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF384152),
+                  height: 1.3,
+                ),
               )
             else
               DropdownButtonFormField<String>(
@@ -374,7 +390,8 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
               loading: _saving,
               onPressed: _canCreate ? _save : null,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
