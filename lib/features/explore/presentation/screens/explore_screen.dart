@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -198,12 +199,35 @@ class _ExploreScreenState extends State<ExploreScreen> {
               unreadNotifications: widget.unreadNotifications,
               onOpenNotifications: widget.onOpenNotifications,
             ),
+            const SizedBox(height: 22),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
               child: TextField(
+                style: GoogleFonts.barlowCondensed(
+                  color: const Color(0xFF384152),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
                 decoration: InputDecoration(
                   hintText: appStrings.exploreSearchWorkouts,
-                  prefixIcon: const Icon(Icons.search),
+                  hintStyle: GoogleFonts.barlowCondensed(
+                    color: const Color(0xFF8F96A3),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF8F96A3)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 onChanged: (value) => setState(() => _search = value),
               ),
@@ -223,13 +247,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ? _selectedProgramId == null
                       : _selectedProgramId == id;
 
+                  final label = all
+                      ? appStrings.exploreAllPrograms
+                      : program?['name']?.toString() ??
+                            appStrings.workoutProgram;
+
                   return ChoiceChip(
                     selected: selected,
                     label: Text(
-                      all
-                          ? appStrings.exploreAllPrograms
-                          : program?['name']?.toString() ??
-                                appStrings.workoutProgram,
+                      label.toUpperCase(),
+                      style: GoogleFonts.barlowCondensed(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF8F96A3),
+                        height: 1.0,
+                      ),
+                    ),
+                    selectedColor: const Color(0xFFB59B6A),
+                    backgroundColor: Colors.white,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     onSelected: (_) {
                       setState(() => _selectedProgramId = all ? null : id);
@@ -249,7 +290,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     ? const WorkoutsEmptyState()
                     : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                         itemCount: filteredWorkouts.length,
                         itemBuilder: (context, index) {
                           final workout = filteredWorkouts[index];
