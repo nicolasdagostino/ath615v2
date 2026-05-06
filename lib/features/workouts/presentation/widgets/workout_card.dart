@@ -213,7 +213,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   ),
                 ],
                 const SizedBox(height: 18),
-                Text(widget.description, style: BookingTextStyles.metaValue),
+                Text(widget.description, style: WorkoutTextStyles.body),
                 const SizedBox(height: 18),
                 Row(
                   children: [

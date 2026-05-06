@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 
@@ -233,7 +234,13 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       const Spacer(),
                       Text(
                         appStrings.workoutsTitle.toUpperCase(),
-                        style: BookingTextStyles.headerMonth,
+                        style: GoogleFonts.barlowCondensed(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0E0E11),
+                          letterSpacing: -0.3,
+                          height: 1.0,
+                        ),
                       ),
                       const Spacer(),
                       const SizedBox(width: 44),
@@ -258,12 +265,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       children: [
                         Text(
                           programName.toUpperCase(),
-                          style: BookingTextStyles.classTitle,
+                          style: GoogleFonts.barlowCondensed(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0E0E11),
+                            letterSpacing: -0.3,
+                            height: 1.0,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           _formatDate(workout['workout_date'].toString()),
-                          style: BookingTextStyles.metaLabel,
+                          style: GoogleFonts.barlowCondensed(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF8F96A3),
+                            letterSpacing: 0.3,
+                            height: 1.0,
+                          ),
                         ),
                         if (hasImage) ...[
                           const SizedBox(height: 18),
@@ -279,7 +298,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         const SizedBox(height: 18),
                         Text(
                           workout['description']?.toString() ?? '',
-                          style: BookingTextStyles.metaValue,
+                          style: WorkoutTextStyles.body,
                         ),
                         const SizedBox(height: 18),
                         Row(
@@ -320,7 +339,13 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       child: Text(
                         appStrings.workoutNoComments,
                         textAlign: TextAlign.center,
-                        style: WorkoutTextStyles.emptyMessage,
+                        style: GoogleFonts.barlowCondensed(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF8F96A3),
+                          letterSpacing: 0.3,
+                          height: 1.0,
+                        ),
                       ),
                     )
                   else
@@ -359,9 +384,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               ),
                               child: Text(
                                 initial,
-                                style: BookingTextStyles.metaValue.copyWith(
+                                style: GoogleFonts.barlowCondensed(
                                   color: const Color(0xFFB59B6A),
                                   fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.0,
                                 ),
                               ),
                             ),
@@ -377,8 +404,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           name,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: BookingTextStyles.metaValue
-                                              .copyWith(fontSize: 15),
+                                          style: GoogleFonts.barlowCondensed(
+                                            color: const Color(0xFF111318),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            height: 1.0,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -386,18 +417,25 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         _timeAgo(
                                           comment['created_at']?.toString(),
                                         ),
-                                        style: BookingTextStyles.metaLabel,
+                                        style: GoogleFonts.barlowCondensed(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF8F96A3),
+                                          letterSpacing: 0.3,
+                                          height: 1.0,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
                                     comment['body']?.toString() ?? '',
-                                    style: const TextStyle(
-                                      color: Color(0xFF111318),
-                                      fontSize: 14,
+                                    style: GoogleFonts.barlowCondensed(
+                                      color: const Color(0xFF384152),
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w500,
-                                      height: 1.25,
+                                      letterSpacing: 0.0,
+                                      height: 1.3,
                                     ),
                                   ),
                                 ],
@@ -419,8 +457,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       children: [
                         Text(
                           appStrings.workoutPostScoreComments.toUpperCase(),
-                          style: BookingTextStyles.metaLabel.copyWith(
+                          style: GoogleFonts.barlowCondensed(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
                             color: const Color(0xFF111318),
+                            letterSpacing: 0.8,
+                            height: 1.0,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -429,8 +471,20 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           focusNode: _commentFocus,
                           minLines: 1,
                           maxLines: 4,
+                          style: GoogleFonts.barlowCondensed(
+                            color: const Color(0xFF384152),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
+                          ),
                           decoration: InputDecoration(
                             hintText: appStrings.workoutCommentHint,
+                            hintStyle: GoogleFonts.barlowCondensed(
+                              color: const Color(0xFF8F96A3),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.2,
+                            ),
                             suffixIcon: IconButton(
                               icon: const Icon(Icons.send),
                               color: const Color(0xFFB59B6A),
