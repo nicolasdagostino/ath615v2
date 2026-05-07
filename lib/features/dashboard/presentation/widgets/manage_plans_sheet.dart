@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_card.dart';
 
 Future<void> showManagePlansSheet({
   required BuildContext context,
@@ -12,7 +12,7 @@ Future<void> showManagePlansSheet({
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => _ManagePlansSheet(gymId: gymId),
   );
 }
@@ -97,92 +97,160 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          8,
-          24,
-          MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Text(
-              appStrings.managePlans,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(labelText: appStrings.planName),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _planType,
-              decoration: InputDecoration(labelText: appStrings.planType),
-              items: [
-                DropdownMenuItem(
-                  value: 'class_pack',
-                  child: Text(appStrings.classPack),
-                ),
-                DropdownMenuItem(
-                  value: 'unlimited',
-                  child: Text(appStrings.unlimited),
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(appStrings.managePlans.toUpperCase(), style: _PlansText.title),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                style: _PlansText.body,
+                decoration: _plansInput(appStrings.planName, Icons.badge_outlined),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _planType,
+                decoration: _plansInput(appStrings.planType, Icons.tune_rounded),
+                items: [
+                  DropdownMenuItem(value: 'class_pack', child: Text(appStrings.classPack)),
+                  DropdownMenuItem(value: 'unlimited', child: Text(appStrings.unlimited)),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _planType = value);
+                },
+              ),
+              if (_planType == 'class_pack') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _credits,
+                  keyboardType: TextInputType.number,
+                  style: _PlansText.body,
+                  decoration: _plansInput(appStrings.credits, Icons.confirmation_number_outlined),
                 ),
               ],
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _planType = value);
-              },
-            ),
-            if (_planType == 'class_pack') ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _credits,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: appStrings.credits),
-              ),
-            ],
-            const SizedBox(height: 14),
-            AppButton(
-              label: appStrings.createPlan,
-              loading: _saving,
-              onPressed: _create,
-            ),
-            const SizedBox(height: 20),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else if (_plans.isEmpty)
-              Text(appStrings.noPlansYet)
-            else
-              ..._plans.map((plan) {
-                final active = plan['is_active'] == true;
-                final type = plan['plan_type']?.toString() == 'unlimited'
-                    ? appStrings.unlimited
-                    : appStrings.classPack;
-                final credits = plan['credits'];
+              const SizedBox(height: 14),
+              AppButton(label: appStrings.createPlan, loading: _saving, onPressed: _create),
+              const SizedBox(height: 20),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                )
+              else if (_plans.isEmpty)
+                Text(appStrings.noPlansYet, style: _PlansText.subtle)
+              else
+                ..._plans.map((plan) {
+                  final active = plan['is_active'] == true;
+                  final type = plan['plan_type']?.toString() == 'unlimited'
+                      ? appStrings.unlimited
+                      : appStrings.classPack;
+                  final credits = plan['credits'];
+                  final subtitle = credits == null
+                      ? '$type · ${active ? appStrings.active : appStrings.inactive}'
+                      : '$type · $credits ${appStrings.creditsLower} · ${active ? appStrings.active : appStrings.inactive}';
 
-                return AppCard(
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    title: Text(plan['name']?.toString() ?? appStrings.plan),
-                    subtitle: Text(
-                      credits == null
-                          ? '$type · ${active ? appStrings.active : appStrings.inactive}'
-                          : '$type · $credits ${appStrings.creditsLower} · ${active ? appStrings.active : appStrings.inactive}',
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: const Color(0xFFF7F8FA),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    plan['name']?.toString() ?? appStrings.plan,
+                                    style: _PlansText.rowTitle,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(subtitle, style: _PlansText.subtle),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: active,
+                              activeThumbColor: const Color(0xFFB59B6A),
+                              onChanged: (_) => _toggle(plan),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    trailing: Switch(
-                      value: active,
-                      onChanged: (_) => _toggle(plan),
-                    ),
-                  ),
-                );
-              }),
-          ],
+                  );
+                }),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+InputDecoration _plansInput(String hint, IconData icon) {
+  return InputDecoration(
+    hintText: hint,
+    labelText: hint,
+    hintStyle: _PlansText.subtle,
+    labelStyle: _PlansText.subtle,
+    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    filled: true,
+    fillColor: const Color(0xFFF4F5F7),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+class _PlansText {
+  const _PlansText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1,
+  );
+}
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,7 +9,14 @@ import '../../../../core/widgets/app_button.dart';
 import '../widgets/manage_plans_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({
+    super.key,
+    required this.unreadNotifications,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onOpenNotifications;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -436,86 +444,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final members = _filteredMembers;
 
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                Text(
-                  appStrings.dashboardTitle,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
-                IconButton(
-                  tooltip: appStrings.managePlans,
-                  onPressed: _openPlans,
-                  icon: const Icon(Icons.card_membership),
-                ),
-                IconButton(
-                  onPressed: _loadMembers,
-                  icon: const Icon(Icons.refresh),
-                ),
-              ],
+      backgroundColor: const Color(0xFFF4F5F7),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _DashboardHeader(
+              unreadNotifications: widget.unreadNotifications,
+              onManagePlans: _openPlans,
+              onOpenNotifications: widget.onOpenNotifications,
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                Text(
-                  appStrings.inviteAthlete,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(appStrings.inviteAthleteDescription),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _inviteEmail,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: appStrings.athleteEmail,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                AppButton(
-                  label: appStrings.inviteAthlete,
-                  loading: _loading,
-                  onPressed: _inviteAthlete,
-                ),
-                const SizedBox(height: 34),
-                Text(
-                  appStrings.members,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: appStrings.searchMember,
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_loadingMembers)
-                  const Center(child: CircularProgressIndicator())
-                else if (members.isEmpty)
-                  Text(appStrings.noMembersFound)
-                else
-                  ...members.map(
-                    (member) => _MemberTile(
-                      member: member,
-                      onTap: () => _openMember(member),
+            Expanded(
+              child: RefreshIndicator(
+                color: const Color(0xFFB59B6A),
+                onRefresh: _loadMembers,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                  children: [
+                    _DashboardCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(appStrings.inviteAthlete.toUpperCase(), style: _DashText.section),
+                          const SizedBox(height: 6),
+                          Text(appStrings.inviteAthleteDescription, style: _DashText.subtle),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _inviteEmail,
+                            keyboardType: TextInputType.emailAddress,
+                            style: _DashText.body,
+                            decoration: _dashInput(appStrings.athleteEmail, Icons.email_outlined),
+                          ),
+                          const SizedBox(height: 14),
+                          AppButton(
+                            label: appStrings.inviteAthlete,
+                            loading: _loading,
+                            onPressed: _inviteAthlete,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.members,
+                            value: '${_members.length}',
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.active,
+                            value: '${_members.where((m) => m['is_active'] == true).length}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _DashboardCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(appStrings.members.toUpperCase(), style: _DashText.section),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _search,
+                            onChanged: (_) => setState(() {}),
+                            style: _DashText.body,
+                            decoration: _dashInput(appStrings.searchMember, Icons.search),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_loadingMembers)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 22),
+                              child: Center(
+                                child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                              ),
+                            )
+                          else if (members.isEmpty)
+                            Text(appStrings.noMembersFound, style: _DashText.subtle)
+                          else
+                            ...members.map(
+                              (member) => _MemberTile(
+                                member: member,
+                                onTap: () => _openMember(member),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 }
 
 class _MemberTile extends StatelessWidget {
@@ -531,20 +559,280 @@ class _MemberTile extends StatelessWidget {
     final role = (member['role'] ?? '-').toString();
     final active = member['is_active'] == true;
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      onTap: onTap,
-      child: ListTile(
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text(
-          '$email\n${active ? appStrings.active : appStrings.inactive} · $role',
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F3EA),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
+                    style: GoogleFonts.barlowCondensed(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFFB59B6A),
+                      height: 1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: _DashText.title),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$email · ${active ? appStrings.active : appStrings.inactive} · $role',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _DashText.subtle,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+              ],
+            ),
+          ),
         ),
-        isThreeLine: true,
-        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
 }
+
+
+
+InputDecoration _dashInput(String hint, IconData icon) {
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: GoogleFonts.barlowCondensed(
+      color: const Color(0xFF8F96A3),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    filled: true,
+    fillColor: const Color(0xFFF4F5F7),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+class _DashText {
+  const _DashText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1.0,
+  );
+
+  static TextStyle section = GoogleFonts.barlowCondensed(
+    fontSize: 13,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: 0.8,
+    height: 1.0,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1.0,
+  );
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({
+    required this.unreadNotifications,
+    required this.onManagePlans,
+    required this.onOpenNotifications,
+  });
+
+  final int unreadNotifications;
+  final VoidCallback onManagePlans;
+  final VoidCallback onOpenNotifications;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 132,
+                    child: Text('ATHLETE LAB', style: _DashText.title),
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('DASHBOARD', style: _DashText.title),
+                    const SizedBox(height: 2),
+                    Text('Members & plans', style: _DashText.subtle),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 132,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _HeaderIcon(icon: Icons.card_membership_outlined, onTap: onManagePlans),
+                      const SizedBox(width: 8),
+                      _HeaderIcon(
+                        icon: Icons.notifications_outlined,
+                        onTap: onOpenNotifications,
+                        badgeCount: unreadNotifications,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon({
+    required this.icon,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F3EA),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Badge(
+          isLabelVisible: badgeCount > 0,
+          label: Text(badgeCount > 99 ? '99+' : badgeCount.toString()),
+          child: Icon(icon, size: 18, color: const Color(0xFFB59B6A)),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardCard extends StatelessWidget {
+  const _DashboardCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label.toUpperCase(), style: _DashText.subtle),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0E0E11),
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _DetailRow extends StatelessWidget {
   const _DetailRow({required this.label, required this.value});
@@ -562,7 +850,7 @@ class _DetailRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: _DashText.section,
             ),
           ),
           Expanded(child: Text(value)),

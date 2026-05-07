@@ -21,7 +21,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
-  String _gymName = appStrings.defaultGymName;
   int _unreadNotifications = 0;
 
   @override
@@ -43,22 +42,8 @@ class _AppShellState extends State<AppShell> {
 
     if (!mounted) return;
 
-    String gymName = appStrings.defaultGymName;
-    final gymId = profile['gym_id'] as String?;
-
-    if (gymId != null) {
-      final gym = await Supabase.instance.client
-          .from('gyms')
-          .select('name')
-          .eq('id', gymId)
-          .maybeSingle();
-
-      gymName = gym?['name']?.toString() ?? gymName;
-    }
-
     setState(() {
       _role = profile['role'] as String?;
-      _gymName = gymName;
     });
   }
 
@@ -115,93 +100,127 @@ class _AppShellState extends State<AppShell> {
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
-      if (canSeeDashboard) const DashboardScreen(),
+      if (canSeeDashboard)
+        DashboardScreen(
+          unreadNotifications: _unreadNotifications,
+          onOpenNotifications: _openNotifications,
+        ),
     ];
 
-    final destinations = [
-      NavigationDestination(
-        icon: Icon(Icons.fitness_center),
-        label: appStrings.navWorkout,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.calendar_month),
-        label: appStrings.navBooking,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.search),
-        label: appStrings.navExplore,
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.person),
-        label: appStrings.navProfile,
-      ),
+    final navItems = [
+      _ShellNavItem(icon: Icons.fitness_center_outlined, activeIcon: Icons.fitness_center, label: appStrings.navWorkout),
+      _ShellNavItem(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: appStrings.navBooking),
+      _ShellNavItem(icon: Icons.search_outlined, activeIcon: Icons.search, label: appStrings.navExplore),
+      _ShellNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: appStrings.navProfile),
       if (canSeeDashboard)
-        NavigationDestination(
-          icon: Icon(Icons.dashboard),
-          label: appStrings.navDashboard,
-        ),
+        _ShellNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: appStrings.navDashboard),
     ];
 
     if (_index >= screens.length) {
       _index = 0;
     }
 
-    final hideAppBar = _index == 0 || _index == 1 || _index == 2 || _index == 3;
-
     return Scaffold(
-      appBar: hideAppBar
-          ? null
-          : AppBar(
-              title: Text(_gymName),
-              actions: [
-                IconButton(
-                  icon: Badge(
-                    isLabelVisible: _unreadNotifications > 0,
-                    label: Text(
-                      _unreadNotifications > 99
-                          ? '99+'
-                          : _unreadNotifications.toString(),
-                    ),
-                    child: const Icon(Icons.notifications_outlined),
-                  ),
-                  onPressed: _openNotifications,
-                ),
-              ],
-            ),
       body: screens[_index],
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          height: 88,
-          backgroundColor: Colors.white,
-          indicatorColor: Colors.transparent,
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            final selected = states.contains(WidgetState.selected);
-            return GoogleFonts.barlowCondensed(
-              fontSize: 15,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected
-                  ? const Color(0xFF111318)
-                  : const Color(0xFF8F96A3),
-              letterSpacing: 0.1,
-              height: 1.0,
-            );
-          }),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            final selected = states.contains(WidgetState.selected);
-            return IconThemeData(
-              size: 25,
-              color: selected
-                  ? const Color(0xFF111318)
-                  : const Color(0xFF8F96A3),
-            );
-          }),
-        ),
-        child: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (value) => setState(() => _index = value),
-          destinations: destinations,
+      bottomNavigationBar: _ShellBottomNav(
+        index: _index,
+        items: navItems,
+        onSelected: (value) => setState(() => _index = value),
+      ),
+    );
+  }
+}
+
+class _ShellNavItem {
+  const _ShellNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+}
+
+class _ShellBottomNav extends StatelessWidget {
+  const _ShellBottomNav({
+    required this.index,
+    required this.items,
+    required this.onSelected,
+  });
+
+  final int index;
+  final List<_ShellNavItem> items;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEDEFF3), width: 0.8)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: List.generate(items.length, (i) {
+                final selected = index == i;
+                final item = items[i];
+
+                return Expanded(
+                  child: InkWell(
+                    onTap: () => onSelected(i),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            width: selected ? 34 : 30,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: selected ? const Color(0xFFF7F3EA) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Icon(
+                              selected ? item.activeIcon : item.icon,
+                              size: 22,
+                              color: selected ? const Color(0xFFB59B6A) : const Color(0xFF8F96A3),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 11.5,
+                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                              color: selected ? const Color(0xFF111318) : const Color(0xFF8F96A3),
+                              letterSpacing: 0.1,
+                              height: 1.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
