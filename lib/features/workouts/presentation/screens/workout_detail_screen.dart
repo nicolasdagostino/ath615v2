@@ -54,7 +54,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             'id, workout_date, description, image_url, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
           )
           .eq('id', widget.workoutId)
-          .single();
+          .maybeSingle();
+
+      if (workout == null) {
+        if (!mounted) return;
+        setState(() {
+          _workout = null;
+          _likes = [];
+          _comments = [];
+          _authorNames = {};
+        });
+        return;
+      }
 
       final comments = List<Map<String, dynamic>>.from(
         workout['workout_comments'] ?? [],
@@ -209,9 +220,41 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               )
             : workout == null
             ? Center(
-                child: Text(
-                  appStrings.workoutNotFound,
-                  style: WorkoutTextStyles.emptyMessage,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        appStrings.workoutNotFound,
+                        textAlign: TextAlign.center,
+                        style: WorkoutTextStyles.emptyMessage,
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        height: 54,
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF111111),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            appStrings.cancel.toUpperCase(),
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             : ListView(
