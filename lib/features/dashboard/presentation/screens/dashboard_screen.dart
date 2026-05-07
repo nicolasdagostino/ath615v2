@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../widgets/manage_plans_sheet.dart';
 
@@ -203,71 +202,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    appStrings.assignPlan,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: SafeArea(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedPlanId,
-                    hint: Text(appStrings.selectPlan),
-                    items: List<Map<String, dynamic>>.from(plans).map((plan) {
-                      final name = plan['name']?.toString() ?? appStrings.plan;
-                      final credits = plan['credits'];
-                      final label = credits == null
-                          ? '$name · ${appStrings.unlimited}'
-                          : '$name · $credits ${appStrings.creditsLower}';
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text(appStrings.assignPlan.toUpperCase(), style: _DashText.title),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedPlanId,
+                        decoration: _dashInput(appStrings.selectPlan, Icons.card_membership_outlined),
+                        items: List<Map<String, dynamic>>.from(plans).map((plan) {
+                          final name = plan['name']?.toString() ?? appStrings.plan;
+                          final credits = plan['credits'];
+                          final label = credits == null
+                              ? '$name · ${appStrings.unlimited}'
+                              : '$name · $credits ${appStrings.creditsLower}';
 
-                      return DropdownMenuItem<String>(
-                        value: plan['id'].toString(),
-                        child: Text(label),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setSheetState(() => selectedPlanId = value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: appStrings.assign,
-                    onPressed: selectedPlanId == null
-                        ? null
-                        : () async {
-                            try {
-                              await client.rpc(
-                                'assign_membership_plan',
-                                params: {
-                                  'p_user_id': userId,
-                                  'p_plan_id': selectedPlanId,
-                                },
-                              );
+                          return DropdownMenuItem<String>(
+                            value: plan['id'].toString(),
+                            child: Text(label, style: _DashText.body),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setSheetState(() => selectedPlanId = value);
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      AppButton(
+                        label: appStrings.assign,
+                        onPressed: selectedPlanId == null
+                            ? null
+                            : () async {
+                                try {
+                                  await client.rpc(
+                                    'assign_membership_plan',
+                                    params: {
+                                      'p_user_id': userId,
+                                      'p_plan_id': selectedPlanId,
+                                    },
+                                  );
 
-                              if (!context.mounted) return;
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(appStrings.planAssigned),
-                                ),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(appStrings.assignPlanError(e)),
-                                ),
-                              );
-                            }
-                          },
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(appStrings.planAssigned)),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(appStrings.assignPlanError(e))),
+                                  );
+                                }
+                              },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -277,10 +281,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openMember(Map<String, dynamic> member) {
+    String historyFilter = 'all';
+
     showModalBottomSheet(
       context: context,
-      showDragHandle: true,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) {
         final email = (member['email'] ?? '-').toString();
         final name = (member['full_name'] ?? email).toString();
@@ -288,150 +294,248 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final active = member['is_active'] == true;
         final birthDate = member['birth_date']?.toString() ?? appStrings.notSet;
 
-        return FutureBuilder<List<dynamic>>(
-          future: Future.wait([
-            _loadMemberHistory(member['id']),
-            _loadMemberMembershipData(member['id']),
-          ]),
-          builder: (context, snapshot) {
-            final history = snapshot.hasData
-                ? List<Map<String, dynamic>>.from(snapshot.data![0] as List)
-                : <Map<String, dynamic>>[];
-            final membershipData = snapshot.hasData
-                ? snapshot.data![1] as Map<String, dynamic>
-                : <String, dynamic>{};
-            final membership =
-                membershipData['membership'] as Map<String, dynamic>?;
-            final creditLogs = List<Map<String, dynamic>>.from(
-              membershipData['logs'] ?? [],
-            );
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return FutureBuilder<List<dynamic>>(
+              future: Future.wait([
+                _loadMemberHistory(member['id']),
+                _loadMemberMembershipData(member['id']),
+              ]),
+              builder: (context, snapshot) {
+                final history = snapshot.hasData
+                    ? List<Map<String, dynamic>>.from(snapshot.data![0] as List)
+                    : <Map<String, dynamic>>[];
 
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(email),
-                      const SizedBox(height: 24),
-                      _DetailRow(label: appStrings.role, value: role),
-                      _DetailRow(
-                        label: appStrings.status,
-                        value: active ? appStrings.active : appStrings.inactive,
-                      ),
-                      _DetailRow(label: appStrings.birthDate, value: birthDate),
+                final filteredHistory = historyFilter == 'all'
+                    ? history
+                    : history
+                          .where((h) => h['status']?.toString() == historyFilter)
+                          .toList();
 
-                      const SizedBox(height: 16),
-                      AppCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              appStrings.membershipTitle,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
+                final membershipData = snapshot.hasData
+                    ? snapshot.data![1] as Map<String, dynamic>
+                    : <String, dynamic>{};
+
+                final membership =
+                    membershipData['membership'] as Map<String, dynamic>?;
+
+                final creditLogs = List<Map<String, dynamic>>.from(
+                  membershipData['logs'] ?? [],
+                );
+
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: SafeArea(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.86,
+                      ),
+                      margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: ListView(
+                        shrinkWrap: false,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 48,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD7DAE0),
+                                borderRadius: BorderRadius.circular(999),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            if (membership == null)
-                              Text(appStrings.noActivePlan)
-                            else ...[
-                              Text(
-                                '${appStrings.activePlan}: ${(membership['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Container(
+                                width: 54,
+                                height: 54,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF7F3EA),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Text(
+                                  name.trim().isEmpty
+                                      ? 'A'
+                                      : name.trim()[0].toUpperCase(),
+                                  style: GoogleFonts.barlowCondensed(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFFB59B6A),
+                                    height: 1,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${appStrings.credits}: ${membership['credits_remaining'] ?? appStrings.unlimited}',
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${appStrings.expires}: ${_formatDate(membership['expires_at']?.toString())}',
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: _DashText.title,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: _DashText.subtle,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
-                            const SizedBox(height: 12),
-                            Text(
-                              appStrings.creditHistory,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            if (creditLogs.isEmpty)
-                              Text(appStrings.noCreditHistory)
-                            else
-                              ...creditLogs.map((log) {
-                                final amount = log['amount'];
-                                final sign = (amount is int && amount > 0)
-                                    ? '+'
-                                    : '';
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Text(
-                                    '$sign$amount · ${_creditReasonLabel(log['reason']?.toString() ?? '')} · ${_formatDate(log['created_at']?.toString())}',
+                          ),
+                          const SizedBox(height: 22),
+                          _MemberDetailInfoRow(label: appStrings.role, value: role),
+                          _MemberDetailInfoRow(
+                            label: appStrings.status,
+                            value: active ? appStrings.active : appStrings.inactive,
+                          ),
+                          _MemberDetailInfoRow(
+                            label: appStrings.birthDate,
+                            value: birthDate,
+                          ),
+                          const SizedBox(height: 18),
+                          _MemberDetailCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  appStrings.membershipTitle.toUpperCase(),
+                                  style: _DashText.section,
+                                ),
+                                const SizedBox(height: 12),
+                                if (membership == null)
+                                  Text(appStrings.noActivePlan, style: _DashText.subtle)
+                                else ...[
+                                  _MemberDetailInfoRow(
+                                    label: appStrings.activePlan,
+                                    value:
+                                        '${(membership['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
                                   ),
-                                );
-                              }),
-                          ],
-                        ),
-                      ),
+                                  _MemberDetailInfoRow(
+                                    label: appStrings.credits,
+                                    value:
+                                        '${membership['credits_remaining'] ?? appStrings.unlimited}',
+                                  ),
+                                  _MemberDetailInfoRow(
+                                    label: appStrings.expires,
+                                    value: _formatDate(
+                                      membership['expires_at']?.toString(),
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 14),
+                                Text(
+                                  appStrings.creditHistory.toUpperCase(),
+                                  style: _DashText.section,
+                                ),
+                                const SizedBox(height: 10),
+                                if (creditLogs.isEmpty)
+                                  Text(
+                                    appStrings.noCreditHistory,
+                                    style: _DashText.subtle,
+                                  )
+                                else
+                                  ...creditLogs.map((log) {
+                                    final amount = log['amount'];
+                                    final sign =
+                                        (amount is int && amount > 0) ? '+' : '';
 
-                      const SizedBox(height: 16),
-
-                      AppButton(
-                        label: appStrings.assignPlan,
-                        onPressed: () => _openAssignPlan(member['id']),
-                      ),
-
-                      const SizedBox(height: 16),
-                      Text(
-                        appStrings.recentClasses,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-
-                      if (!snapshot.hasData)
-                        const CircularProgressIndicator()
-                      else if (history.isEmpty)
-                        Text(appStrings.noClasses)
-                      else
-                        ...history.map((h) {
-                          final klass = h['classes'];
-                          final status = h['status'];
-
-                          return ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              klass['title'] ?? appStrings.classFallback,
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Text(
+                                        '$sign$amount · ${_creditReasonLabel(log['reason']?.toString() ?? '')} · ${_formatDate(log['created_at']?.toString())}',
+                                        style: _DashText.subtle,
+                                      ),
+                                    );
+                                  }),
+                              ],
                             ),
-                            subtitle: Text(klass['starts_at'] ?? ''),
-                            trailing: Text(
-                              status == 'attended'
-                                  ? '✓'
-                                  : status == 'no_show'
-                                  ? '✗'
-                                  : '',
-                            ),
-                          );
-                        }),
+                          ),
+                          const SizedBox(height: 16),
+                          AppButton(
+                            label: appStrings.assignPlan,
+                            onPressed: () => _openAssignPlan(member['id']),
+                          ),
+                          const SizedBox(height: 22),
+                          Text(
+                            appStrings.recentClasses.toUpperCase(),
+                            style: _DashText.section,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _MemberFilterChip(
+                                  label: 'ALL',
+                                  selected: historyFilter == 'all',
+                                  onTap: () => setSheetState(() => historyFilter = 'all'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _MemberFilterChip(
+                                  label: appStrings.attended.toUpperCase(),
+                                  selected: historyFilter == 'attended',
+                                  onTap: () => setSheetState(() => historyFilter = 'attended'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _MemberFilterChip(
+                                  label: appStrings.noShow.toUpperCase(),
+                                  selected: historyFilter == 'no_show',
+                                  onTap: () => setSheetState(() => historyFilter = 'no_show'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (!snapshot.hasData)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFB59B6A),
+                                ),
+                              ),
+                            )
+                          else if (filteredHistory.isEmpty)
+                            Text(appStrings.noClasses, style: _DashText.subtle)
+                          else
+                            ...filteredHistory.map((h) {
+                              final klass = h['classes'];
+                              final title = klass?['title']?.toString() ??
+                                  appStrings.classFallback;
+                              final startsAt =
+                                  klass?['starts_at']?.toString() ?? '';
+                              final status = h['status']?.toString() ?? '';
 
-                      const SizedBox(height: 12),
-                    ],
+                              return _MemberHistoryRow(
+                                title: title,
+                                subtitle: startsAt,
+                                status: status,
+                              );
+                            }),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         );
@@ -834,8 +938,30 @@ class _MetricCard extends StatelessWidget {
 }
 
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
+class _MemberDetailCard extends StatelessWidget {
+  const _MemberDetailCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _MemberDetailInfoRow extends StatelessWidget {
+  const _MemberDetailInfoRow({
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -843,19 +969,106 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 9),
       child: Row(
         children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: _DashText.section,
-            ),
+          Expanded(
+            child: Text(label.toUpperCase(), style: _DashText.subtle),
           ),
-          Expanded(child: Text(value)),
+          const SizedBox(width: 12),
+          Text(value, style: _DashText.body),
         ],
       ),
     );
   }
 }
+
+class _MemberFilterChip extends StatelessWidget {
+  const _MemberFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFF0E0E11) : const Color(0xFFF4F5F7),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : const Color(0xFF384152),
+                letterSpacing: 0.5,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _MemberHistoryRow extends StatelessWidget {
+  const _MemberHistoryRow({
+    required this.title,
+    required this.subtitle,
+    required this.status,
+  });
+
+  final String title;
+  final String subtitle;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final marker = status == 'attended'
+        ? '✓'
+        : status == 'no_show'
+            ? '✗'
+            : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: _DashText.title),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: _DashText.subtle),
+                ],
+              ),
+            ),
+            if (marker.isNotEmpty)
+              Text(marker, style: _DashText.title),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+

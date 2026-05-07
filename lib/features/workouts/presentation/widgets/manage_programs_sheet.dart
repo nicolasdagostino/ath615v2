@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_button.dart';
 
 Future<void> showManageProgramsSheet({
@@ -107,9 +106,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -121,24 +118,13 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(
-                appStrings.manageProgramsTitle,
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0E0E11),
-                  letterSpacing: -0.3,
-                  height: 1.0,
-                ),
-              ),
+              Text(appStrings.manageProgramsTitle.toUpperCase(), style: _ProgramsText.title),
               const SizedBox(height: 16),
               TextField(
                 controller: _name,
-                decoration: InputDecoration(
-                  labelText: appStrings.programName,
-                  hintText: 'CrossFit, Hyrox, Funcional...',
-                ),
                 textCapitalization: TextCapitalization.words,
+                style: _ProgramsText.body,
+                decoration: _programsInput(appStrings.programName, Icons.badge_outlined),
               ),
               const SizedBox(height: 12),
               AppButton(
@@ -148,24 +134,48 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
               ),
               const SizedBox(height: 20),
               if (_loading)
-                const Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A)))
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                )
               else if (_programs.isEmpty)
-                Text(appStrings.noProgramsYet)
+                Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
               else
                 ..._programs.map((program) {
                   final active = program['is_active'] == true;
-                  return AppCard(
-                    padding: EdgeInsets.zero,
-                    child: ListTile(
-                      title: Text(
-                        program['name']?.toString() ?? appStrings.workoutProgram,
-                      ),
-                      subtitle: Text(
-                        active ? appStrings.active : appStrings.inactive,
-                      ),
-                      trailing: Switch(
-                        value: active,
-                        onChanged: (_) => _toggle(program),
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: const Color(0xFFF7F8FA),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    program['name']?.toString() ?? appStrings.workoutProgram,
+                                    style: _ProgramsText.rowTitle,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    active ? appStrings.active : appStrings.inactive,
+                                    style: _ProgramsText.subtle,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: active,
+                              activeThumbColor: const Color(0xFFB59B6A),
+                              onChanged: (_) => _toggle(program),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -176,4 +186,56 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
       ),
     );
   }
+}
+
+InputDecoration _programsInput(String hint, IconData icon) {
+  return InputDecoration(
+    hintText: hint,
+    labelText: hint,
+    hintStyle: _ProgramsText.subtle,
+    labelStyle: _ProgramsText.subtle,
+    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    filled: true,
+    fillColor: const Color(0xFFF4F5F7),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+class _ProgramsText {
+  const _ProgramsText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1,
+  );
 }
