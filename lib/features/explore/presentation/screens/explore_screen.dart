@@ -130,22 +130,49 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _deleteWorkout(String workoutId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(appStrings.deleteWorkoutTitle),
-          content: Text(appStrings.deleteWorkoutMsg),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(appStrings.cancel),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(appStrings.deleteWorkoutTitle.toUpperCase(), style: _ExploreDeleteSheetText.title),
+                  const SizedBox(height: 10),
+                  Text(appStrings.deleteWorkoutMsg, style: _ExploreDeleteSheetText.body),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ExploreDeleteSecondaryButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.pop(context, false),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ExploreDeleteDangerButton(
+                          label: appStrings.delete,
+                          onTap: () => Navigator.pop(context, true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(appStrings.delete),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -357,3 +384,86 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 }
+
+class _ExploreDeleteSheetText {
+  const _ExploreDeleteSheetText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+}
+
+class _ExploreDeleteSecondaryButton extends StatelessWidget {
+  const _ExploreDeleteSecondaryButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF384152),
+          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(label.toUpperCase(), style: _ExploreDeleteSheetText.rowTitle),
+      ),
+    );
+  }
+}
+
+class _ExploreDeleteDangerButton extends StatelessWidget {
+  const _ExploreDeleteDangerButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB42318),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: _ExploreDeleteSheetText.rowTitle.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+

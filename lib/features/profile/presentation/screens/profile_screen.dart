@@ -112,27 +112,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String confirmLabel,
     bool danger = false,
   }) async {
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(appStrings.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(
-                confirmLabel,
-                style: danger
-                    ? const TextStyle(color: Color(0xFFB42318))
-                    : null,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(title.toUpperCase(), style: _ProfileConfirmText.title),
+                  const SizedBox(height: 10),
+                  Text(message, style: _ProfileConfirmText.body),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ProfileConfirmSecondaryButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.pop(context, false),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: danger
+                            ? _ProfileConfirmDangerButton(
+                                label: confirmLabel,
+                                onTap: () => Navigator.pop(context, true),
+                              )
+                            : _ProfileConfirmPrimaryButton(
+                                label: confirmLabel,
+                                onTap: () => Navigator.pop(context, true),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -985,3 +1012,115 @@ class _CreditLogSection extends StatelessWidget {
     );
   }
 }
+
+class _ProfileConfirmText {
+  const _ProfileConfirmText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+}
+
+class _ProfileConfirmSecondaryButton extends StatelessWidget {
+  const _ProfileConfirmSecondaryButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF384152),
+          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(label.toUpperCase(), style: _ProfileConfirmText.rowTitle),
+      ),
+    );
+  }
+}
+
+class _ProfileConfirmPrimaryButton extends StatelessWidget {
+  const _ProfileConfirmPrimaryButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF111111),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: _ProfileConfirmText.rowTitle.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileConfirmDangerButton extends StatelessWidget {
+  const _ProfileConfirmDangerButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB42318),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: _ProfileConfirmText.rowTitle.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
