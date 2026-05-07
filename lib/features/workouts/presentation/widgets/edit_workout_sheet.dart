@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 
-import '../../../../core/widgets/app_outlined_button.dart';
 import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
@@ -23,8 +23,8 @@ Future<void> showEditWorkoutSheet({
 }) async {
   await showModalBottomSheet(
     context: context,
-    showDragHandle: true,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => _EditWorkoutSheet(
       client: client,
       workoutId: workoutId,
@@ -173,82 +173,192 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Text(
-              appStrings.workoutEditTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 16),
-            if (_loadingPrograms)
-              const Center(child: CircularProgressIndicator())
-            else
-              DropdownButtonFormField<String>(
-                initialValue: _programId,
-                decoration: InputDecoration(
-                  labelText: appStrings.workoutProgram,
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(appStrings.workoutEditTitle.toUpperCase(), style: _EditWorkoutSheetText.title),
+              const SizedBox(height: 16),
+              if (_loadingPrograms)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                )
+              else
+                DropdownButtonFormField<String>(
+                  initialValue: _programId,
+                  decoration: _editWorkoutInput(appStrings.workoutProgram, Icons.fitness_center_outlined),
+                  items: _programs.map((p) {
+                    return DropdownMenuItem<String>(
+                      value: p['id'].toString(),
+                      child: Text(p['name']?.toString() ?? appStrings.workoutProgram),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) setState(() => _programId = value);
+                  },
                 ),
-                items: _programs
-                    .map(
-                      (p) => DropdownMenuItem(
-                        value: p['id'].toString(),
-                        child: Text(p['name']?.toString() ?? 'Program'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _programId = value);
+              const SizedBox(height: 12),
+              _EditWorkoutActionRow(
+                icon: Icons.calendar_month_outlined,
+                title: appStrings.workoutDate,
+                subtitle: _formatDate(_date),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _date,
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setState(() => _date = picked);
                 },
               ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
-              subtitle: Text(_formatDate(_date)),
-              trailing: const Icon(Icons.calendar_month),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) setState(() => _date = picked);
-              },
-            ),
-            const SizedBox(height: 12),
-            AppOutlinedButton(label: 'Change image', onPressed: _pickImage),
-            if (_image != null) ...[
-              const SizedBox(height: 8),
-              Image.file(_image!, height: 150),
-            ] else if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Image.network(_imageUrl!, height: 150),
-            ],
-            const SizedBox(height: 12),
-            TextField(
-              controller: _description,
-              maxLines: 6,
-              decoration: InputDecoration(
-                labelText: appStrings.workoutDescription,
+              const SizedBox(height: 12),
+              _EditWorkoutActionRow(
+                icon: Icons.image_outlined,
+                title: 'Change image',
+                subtitle: _image != null
+                    ? 'New image selected'
+                    : (_imageUrl != null && _imageUrl!.isNotEmpty ? 'Current image' : 'No image'),
+                onTap: _pickImage,
               ),
-            ),
-            const SizedBox(height: 18),
-            AppButton(
-              label: appStrings.workoutSaveChanges,
-              loading: _saving,
-              onPressed: _canSave ? _save : null,
-            ),
-          ],
+              if (_image != null) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.file(_image!, height: 150, width: double.infinity, fit: BoxFit.cover),
+                ),
+              ] else if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.network(_imageUrl!, height: 150, width: double.infinity, fit: BoxFit.cover),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _description,
+                maxLines: 6,
+                style: _EditWorkoutSheetText.body,
+                decoration: _editWorkoutInput(appStrings.workoutDescription, Icons.notes_rounded).copyWith(
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 18),
+              AppButton(
+                label: appStrings.workoutSaveChanges,
+                loading: _saving,
+                onPressed: _canSave ? _save : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+InputDecoration _editWorkoutInput(String hint, IconData icon) {
+  return InputDecoration(
+    hintText: hint,
+    labelText: hint,
+    hintStyle: _EditWorkoutSheetText.subtle,
+    labelStyle: _EditWorkoutSheetText.subtle,
+    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    filled: true,
+    fillColor: const Color(0xFFF4F5F7),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+class _EditWorkoutSheetText {
+  const _EditWorkoutSheetText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1,
+  );
+}
+
+class _EditWorkoutActionRow extends StatelessWidget {
+  const _EditWorkoutActionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF7F8FA),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: _EditWorkoutSheetText.rowTitle),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: _EditWorkoutSheetText.subtle),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+            ],
+          ),
         ),
       ),
     );

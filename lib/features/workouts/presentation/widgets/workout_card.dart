@@ -94,37 +94,46 @@ class _WorkoutCardState extends State<WorkoutCard> {
   Future<void> _showManageActions() async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SheetAction(
-                  icon: Icons.edit_outlined,
-                  label: appStrings.workoutEdit,
-                  onTap: () {
-                    Navigator.pop(context);
-                    widget.onEdit?.call();
-                  },
-                ),
-                _SheetAction(
-                  icon: Icons.delete_outline,
-                  label: appStrings.workoutDelete,
-                  danger: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                    widget.onDelete?.call();
-                  },
-                ),
-              ],
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text('WORKOUT OPTIONS', style: _WorkoutOptionsText.title),
+                  const SizedBox(height: 16),
+                  _SheetAction(
+                    icon: Icons.edit_outlined,
+                    label: appStrings.workoutEdit,
+                    subtitle: widget.program,
+                    onTap: () {
+                      Navigator.pop(context);
+                      widget.onEdit?.call();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _SheetAction(
+                    icon: Icons.delete_outline,
+                    label: appStrings.workoutDelete,
+                    subtitle: widget.program,
+                    danger: true,
+                    onTap: () {
+                      Navigator.pop(context);
+                      widget.onDelete?.call();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -310,39 +319,91 @@ class _OpenCommentsButton extends StatelessWidget {
   }
 }
 
+class _WorkoutOptionsText {
+  const _WorkoutOptionsText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1,
+  );
+}
+
 class _SheetAction extends StatelessWidget {
   const _SheetAction({
     required this.icon,
     required this.label,
+    required this.subtitle,
     required this.onTap,
     this.danger = false,
   });
 
   final IconData icon;
   final String label;
+  final String subtitle;
   final VoidCallback onTap;
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFF111318);
-    final bg = danger ? const Color(0xFFFFF1F0) : const Color(0xFFF4F5F7);
+    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
 
-    return ListTile(
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
+    return Material(
+      color: const Color(0xFFF7F8FA),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: _WorkoutOptionsText.rowTitle.copyWith(
+                        color: danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _WorkoutOptionsText.subtle,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+            ],
+          ),
         ),
-        child: Icon(icon, color: color),
       ),
-      title: Text(
-        label,
-        style: BookingTextStyles.metaValue.copyWith(color: color),
-      ),
-      onTap: onTap,
     );
   }
 }
+

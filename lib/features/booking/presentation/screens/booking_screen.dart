@@ -11,6 +11,7 @@ import '../widgets/booking_loading_state.dart';
 import '../widgets/booking_header.dart';
 import '../widgets/membership_status_card.dart';
 import '../widgets/create_class_sheet.dart';
+import '../widgets/edit_class_sheet.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
@@ -275,40 +276,159 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Future<void> _showEditClassSheet(Map<String, dynamic> klass) async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    await showEditClassSheet(
+      context: context,
+      client: _client,
+      gymId: gymId,
+      klass: klass,
+      onUpdated: _load,
+    );
+  }
+
+  Future<bool> _confirmDeleteClass({
+    required String title,
+    required String message,
+  }) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(title.toUpperCase(), style: _BookingSheetText.title),
+                  const SizedBox(height: 10),
+                  Text(message, style: _BookingSheetText.body),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _BookingSheetSecondaryButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.pop(context, false),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _BookingSheetDangerButton(
+                          label: appStrings.delete,
+                          onTap: () => Navigator.pop(context, true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return confirmed == true;
+  }
+
   Future<void> _deleteClassOptions(Map<String, dynamic> klass) async {
     final recurringId = klass['recurring_id'];
     final startsAt = klass['starts_at'];
+    final title = klass['title']?.toString() ?? appStrings.classFallback;
 
-    showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('Delete this class'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _client.from('classes').delete().eq('id', klass['id']);
-                _load();
-              },
-            ),
-            if (recurringId != null)
-              ListTile(
-                title: const Text('Delete this + future'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _client
-                      .from('classes')
-                      .delete()
-                      .eq('recurring_id', recurringId)
-                      .gte('starts_at', startsAt);
-                  _load();
-                },
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
               ),
-          ],
-        ),
-      ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text('CLASS OPTIONS', style: _BookingSheetText.title),
+                  const SizedBox(height: 16),
+                  _BookingSheetActionRow(
+                    icon: Icons.edit_outlined,
+                    title: 'Edit class',
+                    subtitle: title,
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _showEditClassSheet(klass);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _BookingSheetActionRow(
+                    icon: Icons.delete_outline_rounded,
+                    title: 'Delete this class',
+                    subtitle: title,
+                    danger: true,
+                    onTap: () async {
+                      Navigator.pop(context);
+
+                      final confirmed = await _confirmDeleteClass(
+                        title: 'Delete this class?',
+                        message: 'This will permanently delete only this class.',
+                      );
+
+                      if (!confirmed) return;
+
+                      await _client.from('classes').delete().eq('id', klass['id']);
+                      await _load();
+                    },
+                  ),
+                  if (recurringId != null) ...[
+                    const SizedBox(height: 12),
+                    _BookingSheetActionRow(
+                      icon: Icons.delete_sweep_outlined,
+                      title: 'Delete this + future',
+                      subtitle: 'Delete this class and upcoming repeats.',
+                      danger: true,
+                      onTap: () async {
+                        Navigator.pop(context);
+
+                        final confirmed = await _confirmDeleteClass(
+                          title: 'Delete this + future?',
+                          message: 'This will permanently delete this class and all future repeated classes.',
+                        );
+
+                        if (!confirmed) return;
+
+                        await _client
+                            .from('classes')
+                            .delete()
+                            .eq('recurring_id', recurringId)
+                            .gte('starts_at', startsAt);
+                        await _load();
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -535,6 +655,143 @@ class _BookingRestDayEmptyState extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BookingSheetText {
+  const _BookingSheetText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+
+  static TextStyle subtle = GoogleFonts.barlowCondensed(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF8F96A3),
+    letterSpacing: 0.3,
+    height: 1,
+  );
+}
+
+class _BookingSheetActionRow extends StatelessWidget {
+  const _BookingSheetActionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
+
+    return Material(
+      color: const Color(0xFFF7F8FA),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: _BookingSheetText.rowTitle.copyWith(color: color)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: _BookingSheetText.subtle),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingSheetSecondaryButton extends StatelessWidget {
+  const _BookingSheetSecondaryButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF384152),
+          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(label.toUpperCase(), style: _BookingSheetText.rowTitle),
+      ),
+    );
+  }
+}
+
+class _BookingSheetDangerButton extends StatelessWidget {
+  const _BookingSheetDangerButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB42318),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(label.toUpperCase(), style: _BookingSheetText.rowTitle.copyWith(color: Colors.white)),
+      ),
     );
   }
 }
