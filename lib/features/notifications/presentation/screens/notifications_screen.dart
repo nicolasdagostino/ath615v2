@@ -33,8 +33,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       final rows = await _client
           .from('notifications')
-          .select('id, title, body, type, data, scheduled_for, sent_at, read_at')
+          .select(
+            'id, title, body, type, data, scheduled_for, sent_at, read_at',
+          )
           .eq('user_id', user.id)
+          .isFilter('read_at', null)
           .order('scheduled_for', ascending: false)
           .limit(50);
 
@@ -104,7 +107,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -116,7 +121,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text(appStrings.notificationsClearTitle.toUpperCase(), style: _NotificationText.title),
+                  Text(
+                    appStrings.notificationsClearTitle.toUpperCase(),
+                    style: _NotificationText.title,
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     appStrings.notificationsClearMessage,
@@ -135,7 +143,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: Text(appStrings.cancel.toUpperCase(), style: _NotificationText.button),
+                          child: Text(
+                            appStrings.cancel.toUpperCase(),
+                            style: _NotificationText.button,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -151,7 +162,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           child: Text(
                             appStrings.clear.toUpperCase(),
-                            style: _NotificationText.button.copyWith(color: Colors.white),
+                            style: _NotificationText.button.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -176,7 +189,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _notifications = []);
 
     try {
-      await _client.from('notifications').delete().eq('user_id', user.id);
+      await _client
+          .from('notifications')
+          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('user_id', user.id)
+          .isFilter('read_at', null);
     } catch (e) {
       if (!mounted) return;
       setState(() => _notifications = previous);
@@ -201,7 +218,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return _notifications.where((n) {
       final sentAt = n['sent_at']?.toString();
       final readAt = n['read_at']?.toString();
-      return sentAt != null && sentAt.isNotEmpty && (readAt == null || readAt.isEmpty);
+      return sentAt != null &&
+          sentAt.isNotEmpty &&
+          (readAt == null || readAt.isEmpty);
     }).length;
   }
 
@@ -221,48 +240,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: const Color(0xFFB59B6A),
-                onRefresh: _clearNotifications,
+                onRefresh: _load,
                 child: _loading
                     ? const _NotificationsLoadingState()
                     : _notifications.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(28, 120, 28, 24),
-                            children: [
-                              _NotificationsEmptyState(
-                                message: appStrings.notificationsEmpty,
-                              ),
-                            ],
-                          )
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-                            itemCount: _notifications.length,
-                            itemBuilder: (context, index) {
-                              final notification = _notifications[index];
-                              final sentAt = notification['sent_at']?.toString();
-                              final readAt = notification['read_at']?.toString();
-                              final isSent = sentAt != null && sentAt.isNotEmpty;
-                              final isUnread =
-                                  isSent && (readAt == null || readAt.isEmpty);
-
-                              return _NotificationCard(
-                                title: notification['title']?.toString() ??
-                                    appStrings.notificationFallbackTitle,
-                                body: notification['body']?.toString() ?? '',
-                                meta: isSent
-                                    ? appStrings.notificationSent(_formatDate(sentAt))
-                                    : appStrings.notificationScheduled(
-                                        _formatDate(
-                                          notification['scheduled_for']?.toString(),
-                                        ),
-                                      ),
-                                isUnread: isUnread,
-                                isSent: isSent,
-                                onTap: () => _openNotification(notification),
-                              );
-                            },
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(28, 120, 28, 24),
+                        children: [
+                          _NotificationsEmptyState(
+                            message: appStrings.notificationsEmpty,
                           ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                        itemCount: _notifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = _notifications[index];
+                          final sentAt = notification['sent_at']?.toString();
+                          final readAt = notification['read_at']?.toString();
+                          final isSent = sentAt != null && sentAt.isNotEmpty;
+                          final isUnread =
+                              isSent && (readAt == null || readAt.isEmpty);
+
+                          return _NotificationCard(
+                            title:
+                                notification['title']?.toString() ??
+                                appStrings.notificationFallbackTitle,
+                            body: notification['body']?.toString() ?? '',
+                            meta: isSent
+                                ? appStrings.notificationSent(
+                                    _formatDate(sentAt),
+                                  )
+                                : appStrings.notificationScheduled(
+                                    _formatDate(
+                                      notification['scheduled_for']?.toString(),
+                                    ),
+                                  ),
+                            isUnread: isUnread,
+                            isSent: isSent,
+                            onTap: () => _openNotification(notification),
+                          );
+                        },
+                      ),
               ),
             ),
           ],
@@ -311,10 +333,15 @@ class _NotificationsHeader extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(appStrings.notificationsTitle.toUpperCase(), style: _NotificationText.title),
+                  Text(
+                    appStrings.notificationsTitle.toUpperCase(),
+                    style: _NotificationText.title,
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                    unreadCount == 0 ? appStrings.allCaughtUp : appStrings.unreadCount(unreadCount),
+                    unreadCount == 0
+                        ? appStrings.allCaughtUp
+                        : appStrings.unreadCount(unreadCount),
                     style: _NotificationText.subtle,
                   ),
                 ],
@@ -346,10 +373,7 @@ class _NotificationsHeader extends StatelessWidget {
 }
 
 class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon({
-    required this.icon,
-    required this.onTap,
-  });
+  const _HeaderIcon({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -394,8 +418,8 @@ class _NotificationCard extends StatelessWidget {
     final icon = isUnread
         ? Icons.notifications_active_outlined
         : isSent
-            ? Icons.notifications_none_rounded
-            : Icons.schedule_rounded;
+        ? Icons.notifications_none_rounded
+        : Icons.schedule_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -477,9 +501,17 @@ class _NotificationsEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(appStrings.noNotificationsTitle.toUpperCase(), textAlign: TextAlign.center, style: _NotificationText.emptyTitle),
+        Text(
+          appStrings.noNotificationsTitle.toUpperCase(),
+          textAlign: TextAlign.center,
+          style: _NotificationText.emptyTitle,
+        ),
         const SizedBox(height: 14),
-        Text(message, textAlign: TextAlign.center, style: _NotificationText.subtle),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: _NotificationText.subtle,
+        ),
       ],
     );
   }

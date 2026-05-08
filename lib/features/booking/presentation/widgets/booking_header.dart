@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import '../../../../core/locale/locale_controller.dart';
-import 'package:intl/intl.dart';
 
 class BookingHeader extends StatelessWidget {
   const BookingHeader({
@@ -51,10 +49,7 @@ class BookingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayText = DateFormat(
-      'EEEE, MMMM d',
-      localeController.locale.languageCode,
-    ).format(selectedDay);
+    final dayText = appStrings.formatHeaderDate(selectedDay);
 
     return Container(
       color: Colors.white,

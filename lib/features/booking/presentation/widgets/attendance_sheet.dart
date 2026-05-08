@@ -49,6 +49,8 @@ Future<void> showAttendanceSheet({
             Map<String, dynamic> booking,
             String status,
           ) async {
+            if (!canMarkAttendance) return;
+
             try {
               await client
                   .from('class_bookings')
@@ -139,8 +141,13 @@ Future<void> showAttendanceSheet({
                           email: email,
                           status: prettyStatus(status),
                           selectedStatus: status,
-                          onAttended: () => updateStatus(booking, 'attended'),
-                          onNoShow: () => updateStatus(booking, 'no_show'),
+                          canMarkAttendance: canMarkAttendance,
+                          onAttended: canMarkAttendance
+                              ? () => updateStatus(booking, 'attended')
+                              : null,
+                          onNoShow: canMarkAttendance
+                              ? () => updateStatus(booking, 'no_show')
+                              : null,
                         );
                       }),
                   ],
@@ -219,6 +226,7 @@ class _AttendanceMemberCard extends StatelessWidget {
     required this.email,
     required this.status,
     required this.selectedStatus,
+    required this.canMarkAttendance,
     required this.onAttended,
     required this.onNoShow,
   });
@@ -227,8 +235,9 @@ class _AttendanceMemberCard extends StatelessWidget {
   final String email;
   final String status;
   final String selectedStatus;
-  final VoidCallback onAttended;
-  final VoidCallback onNoShow;
+  final bool canMarkAttendance;
+  final VoidCallback? onAttended;
+  final VoidCallback? onNoShow;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +330,7 @@ class _AttendanceStatusButton extends StatelessWidget {
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool danger;
 
   @override

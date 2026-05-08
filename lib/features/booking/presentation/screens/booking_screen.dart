@@ -575,15 +575,20 @@ class _BookingScreenState extends State<BookingScreen> {
                             buttonLabel = appStrings.bookingFinished;
                             buttonAction = null;
                           } else if (booked) {
-                            if (myStatus == 'attended') {
+                            if (state == 'upcoming') {
+                              if (_canCancelClass(klass)) {
+                                buttonLabel = appStrings.bookingCancel;
+                                buttonAction = () => _cancelBooking(klass);
+                              } else {
+                                buttonLabel = appStrings.bookingBooked;
+                                buttonAction = null;
+                              }
+                            } else if (myStatus == 'attended') {
                               buttonLabel = appStrings.attended;
                               buttonAction = null;
                             } else if (myStatus == 'no_show') {
                               buttonLabel = appStrings.noShow;
                               buttonAction = null;
-                            } else if (_canCancelClass(klass)) {
-                              buttonLabel = appStrings.bookingCancel;
-                              buttonAction = () => _cancelBooking(klass);
                             } else {
                               buttonLabel = appStrings.bookingBooked;
                               buttonAction = null;

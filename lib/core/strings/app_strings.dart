@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../locale/locale_controller.dart';
 
 class AppStrings {
@@ -6,6 +8,19 @@ class AppStrings {
   bool get isEs => localeController.locale.languageCode == 'es';
 
   String pick(String en, String es) => isEs ? es : en;
+
+  String _capitalize(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1);
+  }
+
+  String formatHeaderDate(DateTime date) {
+    final locale = localeController.locale.languageCode;
+    final dayName = _capitalize(DateFormat('EEEE', locale).format(date));
+    final day = DateFormat('d', locale).format(date);
+    final month = _capitalize(DateFormat('MMMM', locale).format(date));
+    return '$dayName, $day $month';
+  }
 
   String get defaultGymName => 'Athlete 615';
 
