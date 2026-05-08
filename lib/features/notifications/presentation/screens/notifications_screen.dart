@@ -116,10 +116,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text('CLEAR NOTIFICATIONS?', style: _NotificationText.title),
+                  Text(appStrings.notificationsClearTitle.toUpperCase(), style: _NotificationText.title),
                   const SizedBox(height: 10),
                   Text(
-                    'This will remove all notifications from your list.',
+                    appStrings.notificationsClearMessage,
                     style: _NotificationText.body,
                   ),
                   const SizedBox(height: 18),
@@ -135,7 +135,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: Text('CANCEL', style: _NotificationText.button),
+                          child: Text(appStrings.cancel.toUpperCase(), style: _NotificationText.button),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -150,7 +150,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           ),
                           child: Text(
-                            'CLEAR',
+                            appStrings.clear.toUpperCase(),
                             style: _NotificationText.button.copyWith(color: Colors.white),
                           ),
                         ),
@@ -311,10 +311,10 @@ class _NotificationsHeader extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('NOTIFICATIONS', style: _NotificationText.title),
+                  Text(appStrings.notificationsTitle.toUpperCase(), style: _NotificationText.title),
                   const SizedBox(height: 2),
                   Text(
-                    unreadCount == 0 ? 'All caught up' : '$unreadCount unread',
+                    unreadCount == 0 ? appStrings.allCaughtUp : appStrings.unreadCount(unreadCount),
                     style: _NotificationText.subtle,
                   ),
                 ],
@@ -477,7 +477,7 @@ class _NotificationsEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('NO NOTIFICATIONS', textAlign: TextAlign.center, style: _NotificationText.emptyTitle),
+        Text(appStrings.noNotificationsTitle.toUpperCase(), textAlign: TextAlign.center, style: _NotificationText.emptyTitle),
         const SizedBox(height: 14),
         Text(message, textAlign: TextAlign.center, style: _NotificationText.subtle),
       ],

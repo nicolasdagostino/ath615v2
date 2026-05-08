@@ -85,7 +85,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Programs load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
     } finally {
       if (mounted) setState(() => _loadingPrograms = false);
     }
@@ -132,13 +132,13 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       final startsAt = _selectedStartsAt;
       final program = _selectedProgram;
 
-      if (startsAt == null) throw Exception('Select date and time');
-      if (program == null) throw Exception('Select a program');
+      if (startsAt == null) throw Exception(appStrings.selectDateTime);
+      if (program == null) throw Exception(appStrings.selectProgram);
       if (!startsAt.isAfter(DateTime.now())) {
-        throw Exception('Class date and time must be in the future');
+        throw Exception(appStrings.classFuture);
       }
 
-      final programName = program['name']?.toString() ?? 'Class';
+      final programName = program['name']?.toString() ?? appStrings.classFallback;
       final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
       final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 

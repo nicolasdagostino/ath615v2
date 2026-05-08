@@ -318,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout() async {
     final confirmed = await _confirmAction(
       title: appStrings.profileLogout,
-      message: 'Are you sure you want to log out?',
+      message: appStrings.profileLogoutConfirm,
       confirmLabel: appStrings.profileLogout,
     );
 
@@ -332,7 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _deleteAccount() async {
     final confirmed = await _confirmAction(
       title: appStrings.profileDeleteAccount,
-      message: 'This action cannot be undone. Are you sure?',
+      message: appStrings.profileDeleteConfirm,
       confirmLabel: appStrings.profileDeleteAccount,
       danger: true,
     );
@@ -360,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.couldNotOpenLink)));
     }
   }
 

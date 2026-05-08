@@ -10,6 +10,7 @@ Future<void> showAttendanceSheet({
   required Map<String, dynamic> klass,
   required String Function(String raw) formatDateTime,
   required String Function(String status) prettyStatus,
+  required bool canMarkAttendance,
   required Future<void> Function() onChanged,
 }) async {
   final classId = klass['id'].toString();

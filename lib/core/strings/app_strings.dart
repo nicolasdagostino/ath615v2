@@ -142,6 +142,86 @@ class AppStrings {
   String notificationsMarkReadError(Object e) =>
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
+
+  String get notificationsClearTitle =>
+      pick('Clear notifications?', '¿Vaciar notificaciones?');
+  String get notificationsClearMessage => pick(
+    'This will remove all notifications from your list.',
+    'Esto eliminará todas las notificaciones de tu lista.',
+  );
+  String get clear => pick('Clear', 'Vaciar');
+  String get allCaughtUp => pick('All caught up', 'Todo al día');
+  String unreadCount(int count) => count == 1
+      ? pick('1 unread', '1 sin leer')
+      : pick('$count unread', '$count sin leer');
+  String get noNotificationsTitle =>
+      pick('No notifications', 'Sin notificaciones');
+
+  String get authLoginTitle => pick('Athlete Lab', 'Athlete Lab');
+  String get authLoginSubtitle =>
+      pick('Login to your gym account.', 'Accede a tu cuenta del gym.');
+  String get authLoginSection => pick('Login', 'Iniciar sesión');
+  String get authEmail => pick('Email', 'Email');
+  String get authPassword => pick('Password', 'Contraseña');
+  String get authLoginButton => pick('Login', 'Entrar');
+  String get authForgotPassword =>
+      pick('Forgot password?', '¿Olvidaste tu contraseña?');
+  String loginError(Object e) => pick('Login error: $e', 'Error al entrar: $e');
+
+  String get authForgotTitle =>
+      pick('Forgot password', 'Recuperar contraseña');
+  String get authForgotSubtitle => pick(
+    'Enter your email and we will send you a reset link.',
+    'Escribe tu email y te enviaremos un enlace para restablecerla.',
+  );
+  String get authResetLink => pick('Reset link', 'Enlace de recuperación');
+  String get authSendResetLink =>
+      pick('Send reset link', 'Enviar enlace');
+  String get authPasswordEmailSent =>
+      pick('Password email sent.', 'Email de recuperación enviado.');
+  String resetPasswordError(Object e) =>
+      pick('Reset error: $e', 'Error al recuperar contraseña: $e');
+
+  String get authSetNewPasswordTitle =>
+      pick('Set new password', 'Nueva contraseña');
+  String get authSetNewPasswordSubtitleReady =>
+      pick('Create your new password.', 'Crea tu nueva contraseña.');
+  String get authSetNewPasswordSubtitleWaiting =>
+      pick('Opening secure invitation...', 'Abriendo invitación segura...');
+  String get authNewPasswordSection =>
+      pick('New password', 'Nueva contraseña');
+  String get authSavePassword =>
+      pick('Save password', 'Guardar contraseña');
+  String get authWaitingForSession =>
+      pick('Waiting for session...', 'Esperando sesión...');
+  String get authSessionNotReady => pick(
+    'Session not ready. Please open the email link again.',
+    'La sesión no está lista. Abre nuevamente el enlace del email.',
+  );
+  String passwordUpdateError(Object e) => pick(
+    'Password update error: $e',
+    'Error al actualizar contraseña: $e',
+  );
+
+  String get profileLogoutConfirm =>
+      pick('Are you sure you want to log out?', '¿Seguro que quieres cerrar sesión?');
+  String get profileDeleteConfirm => pick(
+    'This action cannot be undone. Are you sure?',
+    'Esta acción no se puede deshacer. ¿Estás seguro?',
+  );
+  String get couldNotOpenLink =>
+      pick('Could not open link', 'No se pudo abrir el enlace');
+
+  String get classOptions => pick('Class options', 'Opciones de clase');
+  String get deleteThisClass =>
+      pick('Delete this class', 'Eliminar esta clase');
+  String get deleteThisAndFuture =>
+      pick('Delete this + future', 'Eliminar esta y futuras');
+  String get deleteClassTitle =>
+      pick('Delete class?', '¿Eliminar clase?');
+  String get deleteFutureClassesTitle =>
+      pick('Delete future classes?', '¿Eliminar clases futuras?');
+
   String get managePlans => pick('Manage plans', 'Gestionar planes');
   String get plan => pick('Plan', 'Plan');
   String get planName => pick('Plan name', 'Nombre del plan');

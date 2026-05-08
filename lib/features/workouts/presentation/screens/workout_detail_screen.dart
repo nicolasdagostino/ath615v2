@@ -110,7 +110,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Workout detail error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.workoutDetailError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -211,9 +211,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final imageUrl = workout?['image_url']?.toString();
     final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F5F7),
+        body: SafeArea(
         child: _loading
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
@@ -541,6 +544,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   ),
                 ],
               ),
+        ),
       ),
     );
   }

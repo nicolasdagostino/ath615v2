@@ -39,6 +39,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   List<Map<String, dynamic>> _classes = [];
   Set<String> _myBookedClassIds = {};
+  Map<String, String> _myClassStatuses = {};
 
   SupabaseClient get _client => Supabase.instance.client;
 
@@ -110,6 +111,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _role = role;
           _classes = [];
           _myBookedClassIds = {};
+          _myClassStatuses = {};
           _hasActiveMembership = hasActiveMembership;
           _creditsRemaining = creditsRemaining;
         });
@@ -137,11 +139,13 @@ class _BookingScreenState extends State<BookingScreen> {
           .from('class_bookings')
           .select('class_id, status')
           .eq('user_id', user.id)
-          .eq('status', 'booked');
+          .neq('status', 'cancelled');
 
-      final bookedIds = List<Map<String, dynamic>>.from(
-        bookings,
-      ).map((b) => b['class_id'].toString()).toSet();
+      final bookingRows = List<Map<String, dynamic>>.from(bookings);
+      final bookedIds = bookingRows.map((b) => b['class_id'].toString()).toSet();
+      final bookingStatuses = {
+        for (final b in bookingRows) b['class_id'].toString(): b['status'].toString(),
+      };
 
       final classRows = List<Map<String, dynamic>>.from(classes);
 
@@ -162,6 +166,7 @@ class _BookingScreenState extends State<BookingScreen> {
         _gymId = gymId;
         _classes = classRows;
         _myBookedClassIds = bookedIds;
+        _myClassStatuses = bookingStatuses;
         _hasActiveMembership = hasActiveMembership;
         _creditsRemaining = creditsRemaining;
       });
@@ -441,6 +446,7 @@ class _BookingScreenState extends State<BookingScreen> {
       klass: klass,
       formatDateTime: _formatDateTime,
       prettyStatus: _prettyStatus,
+      canMarkAttendance: _classState(klass) != 'upcoming',
       onChanged: _load,
     );
   }
@@ -540,7 +546,8 @@ class _BookingScreenState extends State<BookingScreen> {
                         itemBuilder: (context, index) {
                           final klass = _classes[index];
                           final id = klass['id'].toString();
-                          final booked = _myBookedClassIds.contains(id);
+                          final myStatus = _myClassStatuses[id];
+                          final booked = myStatus != null;
                           final bookedCount =
                               klass['booked_count'] as int? ?? 0;
                           final capacity = klass['capacity'] as int? ?? 0;
@@ -557,7 +564,13 @@ class _BookingScreenState extends State<BookingScreen> {
                             buttonLabel = appStrings.bookingFinished;
                             buttonAction = null;
                           } else if (booked) {
-                            if (_canCancelClass(klass)) {
+                            if (myStatus == 'attended') {
+                              buttonLabel = appStrings.attended;
+                              buttonAction = null;
+                            } else if (myStatus == 'no_show') {
+                              buttonLabel = appStrings.noShow;
+                              buttonAction = null;
+                            } else if (_canCancelClass(klass)) {
                               buttonLabel = appStrings.bookingCancel;
                               buttonAction = () => _cancelBooking(klass);
                             } else {
