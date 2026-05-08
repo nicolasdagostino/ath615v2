@@ -78,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Load members error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.loadMembersError(e))));
     } finally {
       if (mounted) setState(() => _loadingMembers = false);
     }
@@ -99,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Athlete invitation sent')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.athleteInvitationSent)));
 
       await _loadMembers();
     } catch (e) {
@@ -107,7 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Invite athlete error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.inviteAthleteError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -208,7 +208,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: SafeArea(
                 child: Container(
                   margin: const EdgeInsets.all(16),
@@ -220,13 +222,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      Text(appStrings.assignPlan.toUpperCase(), style: _DashText.title),
+                      Text(
+                        appStrings.assignPlan.toUpperCase(),
+                        style: _DashText.title,
+                      ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         initialValue: selectedPlanId,
-                        decoration: _dashInput(appStrings.selectPlan, Icons.card_membership_outlined),
-                        items: List<Map<String, dynamic>>.from(plans).map((plan) {
-                          final name = plan['name']?.toString() ?? appStrings.plan;
+                        decoration: _dashInput(
+                          appStrings.selectPlan,
+                          Icons.card_membership_outlined,
+                        ),
+                        items: List<Map<String, dynamic>>.from(plans).map((
+                          plan,
+                        ) {
+                          final name =
+                              plan['name']?.toString() ?? appStrings.plan;
                           final credits = plan['credits'];
                           final label = credits == null
                               ? '$name · ${appStrings.unlimited}'
@@ -259,12 +270,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(appStrings.planAssigned)),
+                                    SnackBar(
+                                      content: Text(appStrings.planAssigned),
+                                    ),
                                   );
                                 } catch (e) {
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(appStrings.assignPlanError(e))),
+                                    SnackBar(
+                                      content: Text(
+                                        appStrings.assignPlanError(e),
+                                      ),
+                                    ),
                                   );
                                 }
                               },
@@ -309,7 +326,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final filteredHistory = historyFilter == 'all'
                     ? history
                     : history
-                          .where((h) => h['status']?.toString() == historyFilter)
+                          .where(
+                            (h) => h['status']?.toString() == historyFilter,
+                          )
                           .toList();
 
                 final membershipData = snapshot.hasData
@@ -398,10 +417,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           const SizedBox(height: 22),
-                          _MemberDetailInfoRow(label: appStrings.role, value: role),
+                          _MemberDetailInfoRow(
+                            label: appStrings.role,
+                            value: role,
+                          ),
                           _MemberDetailInfoRow(
                             label: appStrings.status,
-                            value: active ? appStrings.active : appStrings.inactive,
+                            value: active
+                                ? appStrings.active
+                                : appStrings.inactive,
                           ),
                           _MemberDetailInfoRow(
                             label: appStrings.birthDate,
@@ -418,7 +442,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 if (membership == null)
-                                  Text(appStrings.noActivePlan, style: _DashText.subtle)
+                                  Text(
+                                    appStrings.noActivePlan,
+                                    style: _DashText.subtle,
+                                  )
                                 else ...[
                                   _MemberDetailInfoRow(
                                     label: appStrings.activePlan,
@@ -451,8 +478,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 else
                                   ...creditLogs.map((log) {
                                     final amount = log['amount'];
-                                    final sign =
-                                        (amount is int && amount > 0) ? '+' : '';
+                                    final sign = (amount is int && amount > 0)
+                                        ? '+'
+                                        : '';
 
                                     return Padding(
                                       padding: const EdgeInsets.only(bottom: 6),
@@ -480,9 +508,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Expanded(
                                 child: _MemberFilterChip(
-                                  label: 'ALL',
+                                  label: appStrings.all,
                                   selected: historyFilter == 'all',
-                                  onTap: () => setSheetState(() => historyFilter = 'all'),
+                                  onTap: () => setSheetState(
+                                    () => historyFilter = 'all',
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -490,7 +520,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: _MemberFilterChip(
                                   label: appStrings.attended.toUpperCase(),
                                   selected: historyFilter == 'attended',
-                                  onTap: () => setSheetState(() => historyFilter = 'attended'),
+                                  onTap: () => setSheetState(
+                                    () => historyFilter = 'attended',
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -498,7 +530,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: _MemberFilterChip(
                                   label: appStrings.noShow.toUpperCase(),
                                   selected: historyFilter == 'no_show',
-                                  onTap: () => setSheetState(() => historyFilter = 'no_show'),
+                                  onTap: () => setSheetState(
+                                    () => historyFilter = 'no_show',
+                                  ),
                                 ),
                               ),
                             ],
@@ -518,7 +552,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           else
                             ...filteredHistory.map((h) {
                               final klass = h['classes'];
-                              final title = klass?['title']?.toString() ??
+                              final title =
+                                  klass?['title']?.toString() ??
                                   appStrings.classFallback;
                               final startsAt =
                                   klass?['starts_at']?.toString() ?? '';
@@ -568,15 +603,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(appStrings.inviteAthlete.toUpperCase(), style: _DashText.section),
+                          Text(
+                            appStrings.inviteAthlete.toUpperCase(),
+                            style: _DashText.section,
+                          ),
                           const SizedBox(height: 6),
-                          Text(appStrings.inviteAthleteDescription, style: _DashText.subtle),
+                          Text(
+                            appStrings.inviteAthleteDescription,
+                            style: _DashText.subtle,
+                          ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _inviteEmail,
                             keyboardType: TextInputType.emailAddress,
                             style: _DashText.body,
-                            decoration: _dashInput(appStrings.athleteEmail, Icons.email_outlined),
+                            decoration: _dashInput(
+                              appStrings.athleteEmail,
+                              Icons.email_outlined,
+                            ),
                           ),
                           const SizedBox(height: 14),
                           AppButton(
@@ -600,7 +644,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Expanded(
                           child: _MetricCard(
                             label: appStrings.active,
-                            value: '${_members.where((m) => m['is_active'] == true).length}',
+                            value:
+                                '${_members.where((m) => m['is_active'] == true).length}',
                           ),
                         ),
                       ],
@@ -610,24 +655,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(appStrings.members.toUpperCase(), style: _DashText.section),
+                          Text(
+                            appStrings.members.toUpperCase(),
+                            style: _DashText.section,
+                          ),
                           const SizedBox(height: 14),
                           TextField(
                             controller: _search,
                             onChanged: (_) => setState(() {}),
                             style: _DashText.body,
-                            decoration: _dashInput(appStrings.searchMember, Icons.search),
+                            decoration: _dashInput(
+                              appStrings.searchMember,
+                              Icons.search,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           if (_loadingMembers)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 22),
                               child: Center(
-                                child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFB59B6A),
+                                ),
                               ),
                             )
                           else if (members.isEmpty)
-                            Text(appStrings.noMembersFound, style: _DashText.subtle)
+                            Text(
+                              appStrings.noMembersFound,
+                              style: _DashText.subtle,
+                            )
                           else
                             ...members.map(
                               (member) => _MemberTile(
@@ -647,7 +703,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
 }
 
 class _MemberTile extends StatelessWidget {
@@ -698,7 +753,12 @@ class _MemberTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: _DashText.title),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _DashText.title,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         '$email · ${active ? appStrings.active : appStrings.inactive} · $role',
@@ -709,7 +769,10 @@ class _MemberTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF8F96A3),
+                ),
               ],
             ),
           ),
@@ -718,8 +781,6 @@ class _MemberTile extends StatelessWidget {
     );
   }
 }
-
-
 
 InputDecoration _dashInput(String hint, IconData icon) {
   return InputDecoration(
@@ -807,7 +868,7 @@ class _DashboardHeader extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     width: 132,
-                    child: Text('ATHLETE LAB', style: _DashText.title),
+                    child: Text(appStrings.appBrand, style: _DashText.title),
                   ),
                 ),
               ),
@@ -815,9 +876,15 @@ class _DashboardHeader extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('DASHBOARD', style: _DashText.title),
+                    Text(
+                      appStrings.dashboardTitle.toUpperCase(),
+                      style: _DashText.title,
+                    ),
                     const SizedBox(height: 2),
-                    Text('Members & plans', style: _DashText.subtle),
+                    Text(
+                      appStrings.dashboardHeaderSubtitle,
+                      style: _DashText.subtle,
+                    ),
                   ],
                 ),
               ),
@@ -830,7 +897,10 @@ class _DashboardHeader extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      _HeaderIcon(icon: Icons.card_membership_outlined, onTap: onManagePlans),
+                      _HeaderIcon(
+                        icon: Icons.card_membership_outlined,
+                        onTap: onManagePlans,
+                      ),
                       const SizedBox(width: 8),
                       _HeaderIcon(
                         icon: Icons.notifications_outlined,
@@ -937,7 +1007,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-
 class _MemberDetailCard extends StatelessWidget {
   const _MemberDetailCard({required this.child});
 
@@ -958,10 +1027,7 @@ class _MemberDetailCard extends StatelessWidget {
 }
 
 class _MemberDetailInfoRow extends StatelessWidget {
-  const _MemberDetailInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _MemberDetailInfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -972,9 +1038,7 @@ class _MemberDetailInfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label.toUpperCase(), style: _DashText.subtle),
-          ),
+          Expanded(child: Text(label.toUpperCase(), style: _DashText.subtle)),
           const SizedBox(width: 12),
           Text(value, style: _DashText.body),
         ],
@@ -1022,7 +1086,6 @@ class _MemberFilterChip extends StatelessWidget {
   }
 }
 
-
 class _MemberHistoryRow extends StatelessWidget {
   const _MemberHistoryRow({
     required this.title,
@@ -1039,8 +1102,8 @@ class _MemberHistoryRow extends StatelessWidget {
     final marker = status == 'attended'
         ? '✓'
         : status == 'no_show'
-            ? '✗'
-            : '';
+        ? '✗'
+        : '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1062,13 +1125,10 @@ class _MemberHistoryRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (marker.isNotEmpty)
-              Text(marker, style: _DashText.title),
+            if (marker.isNotEmpty) Text(marker, style: _DashText.title),
           ],
         ),
       ),
     );
   }
 }
-
-

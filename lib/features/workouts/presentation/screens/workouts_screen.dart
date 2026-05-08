@@ -122,7 +122,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -134,9 +136,15 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text(appStrings.workoutsDeleteTitle.toUpperCase(), style: _WorkoutDeleteSheetText.title),
+                  Text(
+                    appStrings.workoutsDeleteTitle.toUpperCase(),
+                    style: _WorkoutDeleteSheetText.title,
+                  ),
                   const SizedBox(height: 10),
-                  Text(appStrings.workoutsDeleteMessage, style: _WorkoutDeleteSheetText.body),
+                  Text(
+                    appStrings.workoutsDeleteMessage,
+                    style: _WorkoutDeleteSheetText.body,
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -170,9 +178,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.workoutsDeleteError(e))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.workoutsDeleteError(e))),
+      );
     }
   }
 
@@ -235,9 +243,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
-                        children: const [
-                          _RestDayEmptyState(),
-                        ],
+                        children: const [_RestDayEmptyState()],
                       )
                     : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -282,7 +288,8 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                             child: WorkoutCard(
                               workoutId: workout['id'].toString(),
                               program:
-                                  program?['name']?.toString() ?? 'Workout',
+                                  program?['name']?.toString() ??
+                                  appStrings.workoutFallbackTitle,
                               description:
                                   workout['description']?.toString() ?? '',
                               date: _formatDate(
@@ -333,7 +340,7 @@ class _RestDayEmptyState extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'REST DAY',
+          appStrings.restDayTitle,
           textAlign: TextAlign.center,
           style: _font(
             30,
@@ -344,7 +351,7 @@ class _RestDayEmptyState extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
+          appStrings.restDayMessage,
           textAlign: TextAlign.center,
           style: _font(
             12,
@@ -404,19 +411,21 @@ class _WorkoutDeleteSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF384152),
           side: const BorderSide(color: Color(0xFFE1E4EA)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
-        child: Text(label.toUpperCase(), style: _WorkoutDeleteSheetText.rowTitle),
+        child: Text(
+          label.toUpperCase(),
+          style: _WorkoutDeleteSheetText.rowTitle,
+        ),
       ),
     );
   }
 }
 
 class _WorkoutDeleteDangerButton extends StatelessWidget {
-  const _WorkoutDeleteDangerButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _WorkoutDeleteDangerButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -430,7 +439,9 @@ class _WorkoutDeleteDangerButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFB42318),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(
           label.toUpperCase(),
@@ -440,4 +451,3 @@ class _WorkoutDeleteDangerButton extends StatelessWidget {
     );
   }
 }
-

@@ -93,14 +93,14 @@ class BookingClassCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetaBlock(
-                        label: 'COACH',
+                        label: appStrings.coach,
                         value:
                             klass['coach_name']?.toString() ??
                             'Nicolás D’Agostino',
                       ),
                     ),
                     _MetaBlock(
-                      label: 'SPOTS',
+                      label: appStrings.spots,
                       value: '$bookedCount / $capacity',
                       alignEnd: true,
                     ),
@@ -109,7 +109,7 @@ class BookingClassCard extends StatelessWidget {
                 if (canManageAttendance) ...[
                   const SizedBox(height: 14),
                   _ActionButton(
-                    label: 'ROSTER',
+                    label: appStrings.roster,
                     onPressed: onOpenAttendance,
                     filled: false,
                   ),

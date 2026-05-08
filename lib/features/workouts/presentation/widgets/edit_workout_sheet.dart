@@ -174,7 +174,9 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -186,21 +188,31 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(appStrings.workoutEditTitle.toUpperCase(), style: _EditWorkoutSheetText.title),
+              Text(
+                appStrings.workoutEditTitle.toUpperCase(),
+                style: _EditWorkoutSheetText.title,
+              ),
               const SizedBox(height: 16),
               if (_loadingPrograms)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                  ),
                 )
               else
                 DropdownButtonFormField<String>(
                   initialValue: _programId,
-                  decoration: _editWorkoutInput(appStrings.workoutProgram, Icons.fitness_center_outlined),
+                  decoration: _editWorkoutInput(
+                    appStrings.workoutProgram,
+                    Icons.fitness_center_outlined,
+                  ),
                   items: _programs.map((p) {
                     return DropdownMenuItem<String>(
                       value: p['id'].toString(),
-                      child: Text(p['name']?.toString() ?? appStrings.workoutProgram),
+                      child: Text(
+                        p['name']?.toString() ?? appStrings.workoutProgram,
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -216,7 +228,9 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                   final picked = await showDatePicker(
                     context: context,
                     initialDate: _date,
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 365),
+                    ),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
                   if (picked != null) setState(() => _date = picked);
@@ -225,23 +239,35 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
               const SizedBox(height: 12),
               _EditWorkoutActionRow(
                 icon: Icons.image_outlined,
-                title: 'Change image',
+                title: appStrings.changeImage,
                 subtitle: _image != null
-                    ? 'New image selected'
-                    : (_imageUrl != null && _imageUrl!.isNotEmpty ? 'Current image' : 'No image'),
+                    ? appStrings.newImageSelected
+                    : (_imageUrl != null && _imageUrl!.isNotEmpty
+                          ? appStrings.currentImage
+                          : appStrings.noImage),
                 onTap: _pickImage,
               ),
               if (_image != null) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: Image.file(_image!, height: 150, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.file(
+                    _image!,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ] else if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: Image.network(_imageUrl!, height: 150, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.network(
+                    _imageUrl!,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -249,9 +275,10 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                 controller: _description,
                 maxLines: 6,
                 style: _EditWorkoutSheetText.body,
-                decoration: _editWorkoutInput(appStrings.workoutDescription, Icons.notes_rounded).copyWith(
-                  alignLabelWithHint: true,
-                ),
+                decoration: _editWorkoutInput(
+                  appStrings.workoutDescription,
+                  Icons.notes_rounded,
+                ).copyWith(alignLabelWithHint: true),
               ),
               const SizedBox(height: 18),
               AppButton(

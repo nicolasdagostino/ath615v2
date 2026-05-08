@@ -1,7 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/strings/app_strings.dart';
 
 class WorkoutsHeader extends StatelessWidget {
   const WorkoutsHeader({
@@ -37,7 +38,7 @@ class WorkoutsHeader extends StatelessWidget {
     return SizedBox(
       width: 132,
       child: Text(
-        'ATHLETE LAB',
+        appStrings.appBrand,
         style: _font(
           18,
           weight: FontWeight.w800,
@@ -70,7 +71,7 @@ class WorkoutsHeader extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.zero,
                       child: Text(
-                        "TODAY'S WORKOUTS",
+                        appStrings.workoutsTitle.toUpperCase(),
                         style: _font(
                           18,
                           weight: FontWeight.w800,

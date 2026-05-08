@@ -60,9 +60,9 @@ Future<void> showAttendanceSheet({
               await onChanged();
             } catch (e) {
               if (!sheetContext.mounted) return;
-              ScaffoldMessenger.of(
-                sheetContext,
-              ).showSnackBar(SnackBar(content: Text('Attendance error: $e')));
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                SnackBar(content: Text(appStrings.attendanceError(e))),
+              );
             }
           }
 
@@ -108,16 +108,20 @@ Future<void> showAttendanceSheet({
                     const SizedBox(height: 22),
                     Row(
                       children: [
-                        Text('ATTENDANCE', style: _AttendanceText.section),
-                        const Spacer(),
-                        _AttendanceCountPill(
-                          label: '${bookingRows.length}',
+                        Text(
+                          appStrings.attendance.toUpperCase(),
+                          style: _AttendanceText.section,
                         ),
+                        const Spacer(),
+                        _AttendanceCountPill(label: '${bookingRows.length}'),
                       ],
                     ),
                     const SizedBox(height: 12),
                     if (bookingRows.isEmpty)
-                      Text('No bookings yet.', style: _AttendanceText.subtle)
+                      Text(
+                        appStrings.noBookingsYet,
+                        style: _AttendanceText.subtle,
+                      )
                     else
                       ...bookingRows.map((booking) {
                         final profile =
@@ -125,7 +129,7 @@ Future<void> showAttendanceSheet({
                         final name =
                             (profile?['full_name'] ??
                                     profile?['email'] ??
-                                    'Member')
+                                    appStrings.member)
                                 .toString();
                         final email = (profile?['email'] ?? '').toString();
                         final status = booking['status'].toString();
@@ -203,9 +207,7 @@ class _AttendanceCountPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: _AttendanceText.section.copyWith(
-          color: const Color(0xFFB59B6A),
-        ),
+        style: _AttendanceText.section.copyWith(color: const Color(0xFFB59B6A)),
       ),
     );
   }

@@ -103,7 +103,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Programs load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
     } finally {
       if (mounted) setState(() => _loadingPrograms = false);
     }
@@ -144,20 +144,24 @@ class _EditClassSheetState extends State<_EditClassSheet> {
       final startsAt = _selectedStartsAt;
       final program = _selectedProgram;
 
-      if (startsAt == null) throw Exception('Select date and time');
-      if (program == null) throw Exception('Select a program');
+      if (startsAt == null) throw Exception(appStrings.selectDateTime);
+      if (program == null) throw Exception(appStrings.selectProgram);
 
-      final programName = program['name']?.toString() ?? appStrings.classFallback;
+      final programName =
+          program['name']?.toString() ?? appStrings.classFallback;
       final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
       final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 
-      await widget.client.from('classes').update({
-        'program_id': program['id'],
-        'title': programName,
-        'starts_at': startsAt.toUtc().toIso8601String(),
-        'duration_minutes': durationMinutes,
-        'capacity': capacity,
-      }).eq('id', widget.klass['id']);
+      await widget.client
+          .from('classes')
+          .update({
+            'program_id': program['id'],
+            'title': programName,
+            'starts_at': startsAt.toUtc().toIso8601String(),
+            'duration_minutes': durationMinutes,
+            'capacity': capacity,
+          })
+          .eq('id', widget.klass['id']);
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -212,7 +216,9 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -224,7 +230,10 @@ class _EditClassSheetState extends State<_EditClassSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text('EDIT CLASS', style: _EditClassSheetText.title),
+              Text(
+                appStrings.editClass.toUpperCase(),
+                style: _EditClassSheetText.title,
+              ),
               const SizedBox(height: 18),
               if (_loadingPrograms)
                 const Padding(
@@ -234,7 +243,10 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                   ),
                 )
               else if (_programs.isEmpty)
-                Text(appStrings.classNeedProgram, style: _EditClassSheetText.body)
+                Text(
+                  appStrings.classNeedProgram,
+                  style: _EditClassSheetText.body,
+                )
               else
                 DropdownButtonFormField<String>(
                   initialValue: _selectedProgramId,
@@ -246,11 +258,13 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                     return DropdownMenuItem<String>(
                       value: program['id'].toString(),
                       child: Text(
-                        program['name']?.toString() ?? appStrings.workoutProgram,
+                        program['name']?.toString() ??
+                            appStrings.workoutProgram,
                       ),
                     );
                   }).toList(),
-                  onChanged: (value) => setState(() => _selectedProgramId = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedProgramId = value),
                 ),
               const SizedBox(height: 12),
               _EditClassActionRow(

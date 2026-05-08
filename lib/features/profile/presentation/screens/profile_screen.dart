@@ -105,7 +105,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-
   Future<bool> _confirmAction({
     required String title,
     required String message,
@@ -118,7 +117,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -220,7 +221,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-
 
   Future<void> _openGymNameSheet() async {
     await showModalBottomSheet<void>(
@@ -388,156 +388,182 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  _ProfileCard(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 54,
-                          height: 54,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF7F3EA),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text(
-                            email.isNotEmpty ? email[0].toUpperCase() : 'A',
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFFB59B6A),
-                              height: 1.0,
+                    _ProfileCard(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F3EA),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(
+                              email.isNotEmpty ? email[0].toUpperCase() : 'A',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFFB59B6A),
+                                height: 1.0,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(email, style: _ProfileText.title),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${appStrings.profileRole}: ${_profile?['role'] ?? '-'}',
-                                style: _ProfileText.subtle,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(email, style: _ProfileText.title),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${appStrings.profileRole}: ${_profile?['role'] ?? '-'}',
+                                  style: _ProfileText.subtle,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appStrings.membershipTitle.toUpperCase(),
+                            style: _ProfileText.sectionTitle,
+                          ),
+                          const SizedBox(height: 14),
+                          if (_membership == null)
+                            Text(
+                              appStrings.noActivePlan,
+                              style: _ProfileText.body,
+                            )
+                          else ...[
+                            _InfoRow(
+                              label: appStrings.activePlan,
+                              value:
+                                  '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                            ),
+                            _InfoRow(
+                              label: appStrings.credits,
+                              value:
+                                  '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
+                            ),
+                            _InfoRow(
+                              label: appStrings.expires,
+                              value: _formatDate(
+                                _membership?['expires_at']?.toString(),
                               ),
-                            ],
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+                          Text(
+                            appStrings.creditHistory.toUpperCase(),
+                            style: _ProfileText.sectionTitle,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          if (_creditLogs.isEmpty)
+                            Text(
+                              appStrings.noCreditHistory,
+                              style: _ProfileText.subtle,
+                            )
+                          else ...[
+                            _CreditLogSection(
+                              title: appStrings.assignedCredits,
+                              logs: _creditLogs
+                                  .where((log) => log['reason'] == 'assigned')
+                                  .toList(),
+                              formatDate: _formatDate,
+                              reasonLabel: _creditReasonLabel,
+                            ),
+                            _CreditLogSection(
+                              title: appStrings.bookedCredits,
+                              logs: _creditLogs
+                                  .where((log) => log['reason'] == 'booked')
+                                  .toList(),
+                              formatDate: _formatDate,
+                              reasonLabel: _creditReasonLabel,
+                            ),
+                            _CreditLogSection(
+                              title: appStrings.cancelledCredits,
+                              logs: _creditLogs
+                                  .where((log) => log['reason'] == 'cancelled')
+                                  .toList(),
+                              formatDate: _formatDate,
+                              reasonLabel: _creditReasonLabel,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 18),
+                    _ProfileListCard(
                       children: [
-                        Text(appStrings.membershipTitle.toUpperCase(), style: _ProfileText.sectionTitle),
-                        const SizedBox(height: 14),
-                        if (_membership == null)
-                          Text(appStrings.noActivePlan, style: _ProfileText.body)
-                        else ...[
-                          _InfoRow(
-                            label: appStrings.activePlan,
-                            value: '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
-                          ),
-                          _InfoRow(
-                            label: appStrings.credits,
-                            value: '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
-                          ),
-                          _InfoRow(
-                            label: appStrings.expires,
-                            value: _formatDate(_membership?['expires_at']?.toString()),
-                          ),
-                        ],
-                        const SizedBox(height: 18),
-                        Text(appStrings.creditHistory.toUpperCase(), style: _ProfileText.sectionTitle),
-                        const SizedBox(height: 10),
-                        if (_creditLogs.isEmpty)
-                          Text(appStrings.noCreditHistory, style: _ProfileText.subtle)
-                        else ...[
-                          _CreditLogSection(
-                            title: appStrings.assignedCredits,
-                            logs: _creditLogs.where((log) => log['reason'] == 'assigned').toList(),
-                            formatDate: _formatDate,
-                            reasonLabel: _creditReasonLabel,
-                          ),
-                          _CreditLogSection(
-                            title: appStrings.bookedCredits,
-                            logs: _creditLogs.where((log) => log['reason'] == 'booked').toList(),
-                            formatDate: _formatDate,
-                            reasonLabel: _creditReasonLabel,
-                          ),
-                          _CreditLogSection(
-                            title: appStrings.cancelledCredits,
-                            logs: _creditLogs.where((log) => log['reason'] == 'cancelled').toList(),
-                            formatDate: _formatDate,
-                            reasonLabel: _creditReasonLabel,
-                          ),
-                        ],
+                        _ProfileMenuRow(
+                          icon: Icons.language_rounded,
+                          title:
+                              '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
+                          onTap: () {
+                            final next =
+                                localeController.locale.languageCode == 'en'
+                                ? 'es'
+                                : 'en';
+                            localeController.setLanguage(next);
+                            setState(() {});
+                          },
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileListCard(
-                    children: [
-                      _ProfileMenuRow(
-                        icon: Icons.language_rounded,
-                        title: '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
-                        onTap: () {
-                          final next = localeController.locale.languageCode == 'en' ? 'es' : 'en';
-                          localeController.setLanguage(next);
-                          setState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileListCard(
-                    children: [
-                      if (canEditGym)
+                    const SizedBox(height: 18),
+                    _ProfileListCard(
+                      children: [
+                        if (canEditGym)
+                          _ProfileMenuRow(
+                            icon: Icons.business_rounded,
+                            title: appStrings.profileGymName,
+                            onTap: _openGymNameSheet,
+                          ),
                         _ProfileMenuRow(
-                          icon: Icons.business_rounded,
-                          title: appStrings.profileGymName,
-                          onTap: _openGymNameSheet,
+                          icon: Icons.lock_outline_rounded,
+                          title: appStrings.profileChangePassword,
+                          onTap: _openChangePasswordSheet,
                         ),
-                      _ProfileMenuRow(
-                        icon: Icons.lock_outline_rounded,
-                        title: appStrings.profileChangePassword,
-                        onTap: _openChangePasswordSheet,
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.privacy_tip_outlined,
-                        title: appStrings.profilePrivacyPolicy,
-                        onTap: () => _openUrl('https://TU_URL_PRIVACY'),
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.description_outlined,
-                        title: appStrings.profileTerms,
-                        onTap: () => _openUrl('https://TU_URL_TERMS'),
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.help_outline_rounded,
-                        title: appStrings.profileHelp,
-                        onTap: () => _openUrl('https://TU_URL_HELP'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _ProfileListCard(
-                    children: [
-                      _ProfileMenuRow(
-                        icon: Icons.logout_rounded,
-                        title: appStrings.profileLogout,
-                        onTap: _logout,
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.delete_outline_rounded,
-                        title: appStrings.profileDeleteAccount,
-                        danger: true,
-                        onTap: _deleteAccount,
-                      ),
-                    ],
-                  ),
+                        _ProfileMenuRow(
+                          icon: Icons.privacy_tip_outlined,
+                          title: appStrings.profilePrivacyPolicy,
+                          onTap: () => _openUrl('https://TU_URL_PRIVACY'),
+                        ),
+                        _ProfileMenuRow(
+                          icon: Icons.description_outlined,
+                          title: appStrings.profileTerms,
+                          onTap: () => _openUrl('https://TU_URL_TERMS'),
+                        ),
+                        _ProfileMenuRow(
+                          icon: Icons.help_outline_rounded,
+                          title: appStrings.profileHelp,
+                          onTap: () => _openUrl('https://TU_URL_HELP'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _ProfileListCard(
+                      children: [
+                        _ProfileMenuRow(
+                          icon: Icons.logout_rounded,
+                          title: appStrings.profileLogout,
+                          onTap: _logout,
+                        ),
+                        _ProfileMenuRow(
+                          icon: Icons.delete_outline_rounded,
+                          title: appStrings.profileDeleteAccount,
+                          danger: true,
+                          onTap: _deleteAccount,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -547,7 +573,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
 
 InputDecoration _inputDecoration(String hint) {
   return InputDecoration(
@@ -657,7 +682,7 @@ class _ProfileHeader extends StatelessWidget {
                   child: SizedBox(
                     width: 132,
                     child: Text(
-                      'ATHLETE LAB',
+                      appStrings.appBrand,
                       style: _font(
                         18,
                         weight: FontWeight.w800,
@@ -674,7 +699,7 @@ class _ProfileHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'PROFILE',
+                      appStrings.profileHeaderTitle,
                       style: _font(
                         18,
                         weight: FontWeight.w800,
@@ -684,7 +709,7 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Account & settings',
+                      appStrings.profileHeaderSubtitle,
                       style: _font(
                         12,
                         weight: FontWeight.w500,
@@ -777,7 +802,9 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
         children: [
-          Expanded(child: Text(label.toUpperCase(), style: _ProfileText.subtle)),
+          Expanded(
+            child: Text(label.toUpperCase(), style: _ProfileText.subtle),
+          ),
           const SizedBox(width: 12),
           Text(value, style: _ProfileText.body),
         ],
@@ -785,7 +812,6 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
 
 class _ProfileListCard extends StatelessWidget {
   const _ProfileListCard({required this.children});
@@ -848,7 +874,9 @@ class _ProfileMenuRow extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 20,
-                color: danger ? const Color(0xFFB42318) : const Color(0xFF8F96A3),
+                color: danger
+                    ? const Color(0xFFB42318)
+                    : const Color(0xFF8F96A3),
               ),
             ),
             const SizedBox(width: 14),
@@ -923,7 +951,11 @@ class _SkeletonCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      _SkeletonBox(width: double.infinity, height: 18, radius: 999),
+                      _SkeletonBox(
+                        width: double.infinity,
+                        height: 18,
+                        radius: 999,
+                      ),
                       SizedBox(height: 10),
                       _SkeletonBox(width: 150, height: 14, radius: 999),
                     ],
@@ -1058,7 +1090,9 @@ class _ProfileConfirmSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF384152),
           side: const BorderSide(color: Color(0xFFE1E4EA)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(label.toUpperCase(), style: _ProfileConfirmText.rowTitle),
       ),
@@ -1084,7 +1118,9 @@ class _ProfileConfirmPrimaryButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF111111),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(
           label.toUpperCase(),
@@ -1096,10 +1132,7 @@ class _ProfileConfirmPrimaryButton extends StatelessWidget {
 }
 
 class _ProfileConfirmDangerButton extends StatelessWidget {
-  const _ProfileConfirmDangerButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _ProfileConfirmDangerButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -1113,7 +1146,9 @@ class _ProfileConfirmDangerButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFB42318),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(
           label.toUpperCase(),
@@ -1123,4 +1158,3 @@ class _ProfileConfirmDangerButton extends StatelessWidget {
     );
   }
 }
-

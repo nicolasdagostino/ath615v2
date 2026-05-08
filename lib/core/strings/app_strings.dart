@@ -9,6 +9,23 @@ class AppStrings {
 
   String get defaultGymName => 'Athlete 615';
 
+  String get appBrand => pick('ATHLETE LAB', 'ATHLETE LAB');
+  String get profileHeaderTitle => pick('PROFILE', 'PERFIL');
+  String get profileHeaderSubtitle =>
+      pick('Account & settings', 'Cuenta y ajustes');
+  String get dashboardHeaderSubtitle =>
+      pick('Members & plans', 'Miembros y planes');
+  String get all => pick('ALL', 'TODOS');
+  String get coach => pick('COACH', 'COACH');
+  String get spots => pick('SPOTS', 'PLAZAS');
+  String get roster => pick('ROSTER', 'LISTA');
+  String get attendance => pick('ATTENDANCE', 'ASISTENCIA');
+  String get noBookingsYet => pick('No bookings yet.', 'Aún no hay reservas.');
+  String get member => pick('Member', 'Miembro');
+  String get workoutOptions => pick('WORKOUT OPTIONS', 'OPCIONES DEL WOD');
+  String get athleteInvitationSent =>
+      pick('Athlete invitation sent', 'Invitación enviada al atleta');
+
   String get navWorkout => pick('Workout', 'WOD');
   String get navBooking => pick('Booking', 'Reservas');
   String get navExplore => pick('Explore', 'Explorar');
@@ -81,6 +98,18 @@ class AppStrings {
   String get workoutWriteWod => pick('Write the WOD...', 'Escribe el WOD...');
   String get workoutCreate => pick('Create workout', 'Crear WOD');
 
+  String get restDayTitle => pick('REST DAY', 'DÍA DE DESCANSO');
+  String get restDayMessage => pick(
+    "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
+    'Descansar es tan importante como entrenar. Deja que tu mente y tu cuerpo recuperen, haz movilidad y estiramientos. No caigas en la tentación de entrenar si te sientes bien.',
+  );
+  String get imageSelected => pick('Image selected', 'Imagen seleccionada');
+  String get changeImage => pick('Change image', 'Cambiar imagen');
+  String get newImageSelected =>
+      pick('New image selected', 'Nueva imagen seleccionada');
+  String get currentImage => pick('Current image', 'Imagen actual');
+  String get noImage => pick('No image', 'Sin imagen');
+
   String get workoutFallbackTitle => pick('Workout', 'WOD');
   String get workoutEdit => pick('Edit', 'Editar');
   String get workoutDelete => pick('Delete', 'Eliminar');
@@ -142,7 +171,6 @@ class AppStrings {
   String notificationsMarkReadError(Object e) =>
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
-
   String get notificationsClearTitle =>
       pick('Clear notifications?', '¿Vaciar notificaciones?');
   String get notificationsClearMessage => pick(
@@ -168,15 +196,13 @@ class AppStrings {
       pick('Forgot password?', '¿Olvidaste tu contraseña?');
   String loginError(Object e) => pick('Login error: $e', 'Error al entrar: $e');
 
-  String get authForgotTitle =>
-      pick('Forgot password', 'Recuperar contraseña');
+  String get authForgotTitle => pick('Forgot password', 'Recuperar contraseña');
   String get authForgotSubtitle => pick(
     'Enter your email and we will send you a reset link.',
     'Escribe tu email y te enviaremos un enlace para restablecerla.',
   );
   String get authResetLink => pick('Reset link', 'Enlace de recuperación');
-  String get authSendResetLink =>
-      pick('Send reset link', 'Enviar enlace');
+  String get authSendResetLink => pick('Send reset link', 'Enviar enlace');
   String get authPasswordEmailSent =>
       pick('Password email sent.', 'Email de recuperación enviado.');
   String resetPasswordError(Object e) =>
@@ -188,23 +214,21 @@ class AppStrings {
       pick('Create your new password.', 'Crea tu nueva contraseña.');
   String get authSetNewPasswordSubtitleWaiting =>
       pick('Opening secure invitation...', 'Abriendo invitación segura...');
-  String get authNewPasswordSection =>
-      pick('New password', 'Nueva contraseña');
-  String get authSavePassword =>
-      pick('Save password', 'Guardar contraseña');
+  String get authNewPasswordSection => pick('New password', 'Nueva contraseña');
+  String get authSavePassword => pick('Save password', 'Guardar contraseña');
   String get authWaitingForSession =>
       pick('Waiting for session...', 'Esperando sesión...');
   String get authSessionNotReady => pick(
     'Session not ready. Please open the email link again.',
     'La sesión no está lista. Abre nuevamente el enlace del email.',
   );
-  String passwordUpdateError(Object e) => pick(
-    'Password update error: $e',
-    'Error al actualizar contraseña: $e',
-  );
+  String passwordUpdateError(Object e) =>
+      pick('Password update error: $e', 'Error al actualizar contraseña: $e');
 
-  String get profileLogoutConfirm =>
-      pick('Are you sure you want to log out?', '¿Seguro que quieres cerrar sesión?');
+  String get profileLogoutConfirm => pick(
+    'Are you sure you want to log out?',
+    '¿Seguro que quieres cerrar sesión?',
+  );
   String get profileDeleteConfirm => pick(
     'This action cannot be undone. Are you sure?',
     'Esta acción no se puede deshacer. ¿Estás seguro?',
@@ -217,10 +241,23 @@ class AppStrings {
       pick('Delete this class', 'Eliminar esta clase');
   String get deleteThisAndFuture =>
       pick('Delete this + future', 'Eliminar esta y futuras');
-  String get deleteClassTitle =>
-      pick('Delete class?', '¿Eliminar clase?');
+  String get deleteClassTitle => pick('Delete class?', '¿Eliminar clase?');
   String get deleteFutureClassesTitle =>
       pick('Delete future classes?', '¿Eliminar clases futuras?');
+
+  String get editClass => pick('Edit class', 'Editar clase');
+  String get deleteOnlyThisClassMessage => pick(
+    'This will permanently delete only this class.',
+    'Esto eliminará definitivamente solo esta clase.',
+  );
+  String get deleteThisAndFutureSubtitle => pick(
+    'Delete this class and upcoming repeats.',
+    'Eliminar esta clase y las próximas repeticiones.',
+  );
+  String get deleteThisAndFutureMessage => pick(
+    'This will permanently delete this class and all future repeated classes.',
+    'Esto eliminará definitivamente esta clase y todas las clases repetidas futuras.',
+  );
 
   String get managePlans => pick('Manage plans', 'Gestionar planes');
   String get plan => pick('Plan', 'Plan');

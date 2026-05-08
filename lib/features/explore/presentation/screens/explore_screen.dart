@@ -136,7 +136,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -148,9 +150,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text(appStrings.deleteWorkoutTitle.toUpperCase(), style: _ExploreDeleteSheetText.title),
+                  Text(
+                    appStrings.deleteWorkoutTitle.toUpperCase(),
+                    style: _ExploreDeleteSheetText.title,
+                  ),
                   const SizedBox(height: 10),
-                  Text(appStrings.deleteWorkoutMsg, style: _ExploreDeleteSheetText.body),
+                  Text(
+                    appStrings.deleteWorkoutMsg,
+                    style: _ExploreDeleteSheetText.body,
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -244,7 +252,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
                   ),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF8F96A3)),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF8F96A3),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(
@@ -358,7 +369,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             child: WorkoutCard(
                               workoutId: workout['id'].toString(),
                               program:
-                                  program?['name']?.toString() ?? 'Workout',
+                                  program?['name']?.toString() ??
+                                  appStrings.workoutFallbackTitle,
                               description:
                                   workout['description']?.toString() ?? '',
                               date: _formatDate(
@@ -430,19 +442,21 @@ class _ExploreDeleteSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF384152),
           side: const BorderSide(color: Color(0xFFE1E4EA)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
-        child: Text(label.toUpperCase(), style: _ExploreDeleteSheetText.rowTitle),
+        child: Text(
+          label.toUpperCase(),
+          style: _ExploreDeleteSheetText.rowTitle,
+        ),
       ),
     );
   }
 }
 
 class _ExploreDeleteDangerButton extends StatelessWidget {
-  const _ExploreDeleteDangerButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _ExploreDeleteDangerButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -456,7 +470,9 @@ class _ExploreDeleteDangerButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFB42318),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(
           label.toUpperCase(),
@@ -466,4 +482,3 @@ class _ExploreDeleteDangerButton extends StatelessWidget {
     );
   }
 }
-

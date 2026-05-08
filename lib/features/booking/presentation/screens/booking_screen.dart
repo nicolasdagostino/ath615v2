@@ -142,9 +142,12 @@ class _BookingScreenState extends State<BookingScreen> {
           .neq('status', 'cancelled');
 
       final bookingRows = List<Map<String, dynamic>>.from(bookings);
-      final bookedIds = bookingRows.map((b) => b['class_id'].toString()).toSet();
+      final bookedIds = bookingRows
+          .map((b) => b['class_id'].toString())
+          .toSet();
       final bookingStatuses = {
-        for (final b in bookingRows) b['class_id'].toString(): b['status'].toString(),
+        for (final b in bookingRows)
+          b['class_id'].toString(): b['status'].toString(),
       };
 
       final classRows = List<Map<String, dynamic>>.from(classes);
@@ -304,7 +307,9 @@ class _BookingScreenState extends State<BookingScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -359,7 +364,9 @@ class _BookingScreenState extends State<BookingScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -371,11 +378,14 @@ class _BookingScreenState extends State<BookingScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text('CLASS OPTIONS', style: _BookingSheetText.title),
+                  Text(
+                    appStrings.classOptions.toUpperCase(),
+                    style: _BookingSheetText.title,
+                  ),
                   const SizedBox(height: 16),
                   _BookingSheetActionRow(
                     icon: Icons.edit_outlined,
-                    title: 'Edit class',
+                    title: appStrings.editClass,
                     subtitle: title,
                     onTap: () async {
                       Navigator.pop(context);
@@ -385,20 +395,23 @@ class _BookingScreenState extends State<BookingScreen> {
                   const SizedBox(height: 12),
                   _BookingSheetActionRow(
                     icon: Icons.delete_outline_rounded,
-                    title: 'Delete this class',
+                    title: appStrings.deleteThisClass,
                     subtitle: title,
                     danger: true,
                     onTap: () async {
                       Navigator.pop(context);
 
                       final confirmed = await _confirmDeleteClass(
-                        title: 'Delete this class?',
-                        message: 'This will permanently delete only this class.',
+                        title: appStrings.deleteClassTitle,
+                        message: appStrings.deleteOnlyThisClassMessage,
                       );
 
                       if (!confirmed) return;
 
-                      await _client.from('classes').delete().eq('id', klass['id']);
+                      await _client
+                          .from('classes')
+                          .delete()
+                          .eq('id', klass['id']);
                       await _load();
                     },
                   ),
@@ -406,15 +419,15 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 12),
                     _BookingSheetActionRow(
                       icon: Icons.delete_sweep_outlined,
-                      title: 'Delete this + future',
-                      subtitle: 'Delete this class and upcoming repeats.',
+                      title: appStrings.deleteThisAndFuture,
+                      subtitle: appStrings.deleteThisAndFutureSubtitle,
                       danger: true,
                       onTap: () async {
                         Navigator.pop(context);
 
                         final confirmed = await _confirmDeleteClass(
-                          title: 'Delete this + future?',
-                          message: 'This will permanently delete this class and all future repeated classes.',
+                          title: appStrings.deleteFutureClassesTitle,
+                          message: appStrings.deleteThisAndFutureMessage,
                         );
 
                         if (!confirmed) return;
@@ -535,9 +548,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(28, 115, 28, 24),
-                        children: const [
-                          _BookingRestDayEmptyState(),
-                        ],
+                        children: const [_BookingRestDayEmptyState()],
                       )
                     : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -645,7 +656,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'REST DAY',
+          appStrings.restDayTitle,
           textAlign: TextAlign.center,
           style: GoogleFonts.barlowCondensed(
             fontSize: 30,
@@ -657,7 +668,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
+          appStrings.restDayMessage,
           textAlign: TextAlign.center,
           style: GoogleFonts.barlowCondensed(
             fontSize: 12,
@@ -742,7 +753,10 @@ class _BookingSheetActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: _BookingSheetText.rowTitle.copyWith(color: color)),
+                    Text(
+                      title,
+                      style: _BookingSheetText.rowTitle.copyWith(color: color),
+                    ),
                     const SizedBox(height: 4),
                     Text(subtitle, style: _BookingSheetText.subtle),
                   ],
@@ -775,7 +789,9 @@ class _BookingSheetSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF384152),
           side: const BorderSide(color: Color(0xFFE1E4EA)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Text(label.toUpperCase(), style: _BookingSheetText.rowTitle),
       ),
@@ -784,10 +800,7 @@ class _BookingSheetSecondaryButton extends StatelessWidget {
 }
 
 class _BookingSheetDangerButton extends StatelessWidget {
-  const _BookingSheetDangerButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _BookingSheetDangerButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -801,11 +814,15 @@ class _BookingSheetDangerButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFB42318),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
-        child: Text(label.toUpperCase(), style: _BookingSheetText.rowTitle.copyWith(color: Colors.white)),
+        child: Text(
+          label.toUpperCase(),
+          style: _BookingSheetText.rowTitle.copyWith(color: Colors.white),
+        ),
       ),
     );
   }
 }
-

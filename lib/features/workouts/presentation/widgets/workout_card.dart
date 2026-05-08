@@ -98,7 +98,9 @@ class _WorkoutCardState extends State<WorkoutCard> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
@@ -110,7 +112,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text('WORKOUT OPTIONS', style: _WorkoutOptionsText.title),
+                  Text(
+                    appStrings.workoutOptions.toUpperCase(),
+                    style: _WorkoutOptionsText.title,
+                  ),
                   const SizedBox(height: 16),
                   _SheetAction(
                     icon: Icons.edit_outlined,
@@ -385,7 +390,9 @@ class _SheetAction extends StatelessWidget {
                     Text(
                       label,
                       style: _WorkoutOptionsText.rowTitle.copyWith(
-                        color: danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A),
+                        color: danger
+                            ? const Color(0xFFB42318)
+                            : const Color(0xFFB59B6A),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -406,4 +413,3 @@ class _SheetAction extends StatelessWidget {
     );
   }
 }
-

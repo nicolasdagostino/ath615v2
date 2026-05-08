@@ -1,6 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import 'package:intl/intl.dart';
 
 class ExploreHeader extends StatelessWidget {
@@ -33,7 +34,7 @@ class ExploreHeader extends StatelessWidget {
     return SizedBox(
       width: 132,
       child: Text(
-        'ATHLETE LAB',
+        appStrings.appBrand,
         style: _font(
           18,
           weight: FontWeight.w800,
@@ -64,7 +65,7 @@ class ExploreHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'EXPLORE',
+                      appStrings.exploreTitle.toUpperCase(),
                       style: _font(
                         18,
                         weight: FontWeight.w800,

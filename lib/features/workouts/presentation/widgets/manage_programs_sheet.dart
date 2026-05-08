@@ -62,7 +62,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Programs load error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -85,7 +85,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Create program error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.createProgramError(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -106,7 +106,9 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -118,13 +120,19 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(appStrings.manageProgramsTitle.toUpperCase(), style: _ProgramsText.title),
+              Text(
+                appStrings.manageProgramsTitle.toUpperCase(),
+                style: _ProgramsText.title,
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
                 style: _ProgramsText.body,
-                decoration: _programsInput(appStrings.programName, Icons.badge_outlined),
+                decoration: _programsInput(
+                  appStrings.programName,
+                  Icons.badge_outlined,
+                ),
               ),
               const SizedBox(height: 12),
               AppButton(
@@ -136,7 +144,9 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                  ),
                 )
               else if (_programs.isEmpty)
                 Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
@@ -158,12 +168,15 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    program['name']?.toString() ?? appStrings.workoutProgram,
+                                    program['name']?.toString() ??
+                                        appStrings.workoutProgram,
                                     style: _ProgramsText.rowTitle,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    active ? appStrings.active : appStrings.inactive,
+                                    active
+                                        ? appStrings.active
+                                        : appStrings.inactive,
                                     style: _ProgramsText.subtle,
                                   ),
                                 ],

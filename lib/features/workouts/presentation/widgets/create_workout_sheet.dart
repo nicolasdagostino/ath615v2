@@ -146,7 +146,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Create workout error: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.createWorkoutError(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -155,7 +155,9 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -167,23 +169,36 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(appStrings.workoutCreateTitle.toUpperCase(), style: _WorkoutSheetText.title),
+              Text(
+                appStrings.workoutCreateTitle.toUpperCase(),
+                style: _WorkoutSheetText.title,
+              ),
               const SizedBox(height: 16),
               if (_loadingPrograms)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                  ),
                 )
               else if (_programs.isEmpty)
-                Text(appStrings.workoutNeedProgram, style: _WorkoutSheetText.body)
+                Text(
+                  appStrings.workoutNeedProgram,
+                  style: _WorkoutSheetText.body,
+                )
               else
                 DropdownButtonFormField<String>(
                   initialValue: _programId,
-                  decoration: _workoutSheetInput(appStrings.workoutProgram, Icons.fitness_center_outlined),
+                  decoration: _workoutSheetInput(
+                    appStrings.workoutProgram,
+                    Icons.fitness_center_outlined,
+                  ),
                   items: _programs.map((p) {
                     return DropdownMenuItem<String>(
                       value: p['id'].toString(),
-                      child: Text(p['name']?.toString() ?? appStrings.workoutProgram),
+                      child: Text(
+                        p['name']?.toString() ?? appStrings.workoutProgram,
+                      ),
                     );
                   }).toList(),
                   onChanged: (v) => setState(() => _programId = v),
@@ -207,7 +222,9 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
               _WorkoutSheetActionRow(
                 icon: Icons.image_outlined,
                 title: appStrings.workoutSelectImage,
-                subtitle: _image == null ? appStrings.workoutSelectImage : 'Image selected',
+                subtitle: _image == null
+                    ? appStrings.workoutSelectImage
+                    : appStrings.imageSelected,
                 onTap: _pickImage,
               ),
               if (_image != null) ...[
@@ -227,10 +244,14 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                 controller: _description,
                 maxLines: 6,
                 style: _WorkoutSheetText.body,
-                decoration: _workoutSheetInput(appStrings.workoutWriteWod, Icons.notes_rounded).copyWith(
-                  labelText: appStrings.workoutDescription,
-                  alignLabelWithHint: true,
-                ),
+                decoration:
+                    _workoutSheetInput(
+                      appStrings.workoutWriteWod,
+                      Icons.notes_rounded,
+                    ).copyWith(
+                      labelText: appStrings.workoutDescription,
+                      alignLabelWithHint: true,
+                    ),
               ),
               const SizedBox(height: 18),
               AppButton(
