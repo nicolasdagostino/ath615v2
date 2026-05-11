@@ -63,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final data = await Supabase.instance.client
           .from('profiles')
           .select(
-            'id, full_name, email, role, gym_id, birth_date, is_active, created_at',
+            'id, full_name, email, role, gym_id, phone, birth_date, is_active, created_at',
           )
           .eq('gym_id', gymId)
           .neq('role', 'owner')
@@ -136,6 +136,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final date = DateTime.tryParse(raw)?.toLocal();
     if (date == null) return raw;
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _dateInputValue(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  Future<void> _pickBirthDate(TextEditingController controller) async {
+    final current = DateTime.tryParse(controller.text);
+    final now = DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+
+    if (picked == null) return;
+    controller.text = _dateInputValue(picked);
+  }
+
+  Future<void> _openEditMemberSheet(Map<String, dynamic> member) async {
+    final gymId = _gymId;
+    final memberId = member['id']?.toString();
+    final memberGymId = member['gym_id']?.toString();
+    if (gymId == null || memberId == null || memberGymId != gymId) return;
+
+    final fullName = TextEditingController(
+      text: member['full_name']?.toString() ?? '',
+    );
+    final phone = TextEditingController(
+      text: member['phone']?.toString() ?? '',
+    );
+    final birthDate = TextEditingController(
+      text: member['birth_date']?.toString() ?? '',
+    );
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    appStrings.editMember.toUpperCase(),
+                    style: _DashText.section,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: fullName,
+                    textCapitalization: TextCapitalization.words,
+                    style: _DashText.body,
+                    decoration: _dashInput(
+                      appStrings.fullName,
+                      Icons.person_outline_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phone,
+                    keyboardType: TextInputType.phone,
+                    style: _DashText.body,
+                    decoration: _dashInput(
+                      appStrings.phone,
+                      Icons.phone_outlined,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: birthDate,
+                    readOnly: true,
+                    style: _DashText.body,
+                    decoration: _dashInput(
+                      appStrings.birthDate,
+                      Icons.calendar_month_rounded,
+                    ),
+                    onTap: () => _pickBirthDate(birthDate),
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: appStrings.saveChanges,
+                    onPressed: () async {
+                      try {
+                        final updated = await Supabase.instance.client
+                            .rpc(
+                              'update_gym_member_profile',
+                              params: {
+                                'p_member_id': memberId,
+                                'p_full_name': fullName.text.trim(),
+                                'p_phone': phone.text.trim(),
+                                'p_birth_date': birthDate.text.trim().isEmpty
+                                    ? null
+                                    : birthDate.text.trim(),
+                              },
+                            )
+                            .single();
+
+                        member
+                          ..['full_name'] = updated['full_name']
+                          ..['phone'] = updated['phone']
+                          ..['birth_date'] = updated['birth_date'];
+
+                        if (!mounted || !sheetContext.mounted) return;
+                        Navigator.pop(sheetContext);
+
+                        setState(() {
+                          final index = _members.indexWhere(
+                            (m) => m['id']?.toString() == memberId,
+                          );
+                          if (index != -1) {
+                            _members[index] = {
+                              ..._members[index],
+                              ...Map<String, dynamic>.from(updated),
+                            };
+                          }
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(appStrings.memberUpdated)),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(appStrings.updateMemberError(e)),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String _creditReasonLabel(String reason) {
@@ -308,6 +461,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final email = (member['email'] ?? '-').toString();
         final name = (member['full_name'] ?? email).toString();
         final role = (member['role'] ?? '-').toString();
+        final phone = member['phone']?.toString();
         final active = member['is_active'] == true;
         final birthDate = member['birth_date']?.toString() ?? appStrings.notSet;
 
@@ -430,6 +584,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _MemberDetailInfoRow(
                             label: appStrings.birthDate,
                             value: birthDate,
+                          ),
+                          _MemberDetailInfoRow(
+                            label: appStrings.phone,
+                            value: (phone == null || phone.trim().isEmpty)
+                                ? appStrings.notSet
+                                : phone,
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            label: appStrings.editMember,
+                            onPressed: () => _openEditMemberSheet(member),
                           ),
                           const SizedBox(height: 18),
                           _MemberDetailCard(

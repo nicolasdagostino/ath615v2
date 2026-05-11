@@ -368,6 +368,10 @@ class AppStrings {
       pick('Personal information', 'Información personal');
   String get editPersonalInformation =>
       pick('Edit personal information', 'Editar información personal');
+  String get editMember => pick('Edit member', 'Editar miembro');
+  String get memberUpdated => pick('Member updated', 'Miembro actualizado');
+  String updateMemberError(Object e) =>
+      pick('Update member error: $e', 'Error al actualizar miembro: $e');
   String get fullName => pick('Full name', 'Nombre completo');
   String get phone => pick('Phone', 'Teléfono');
   String get saveChanges => pick('Save changes', 'Guardar cambios');
