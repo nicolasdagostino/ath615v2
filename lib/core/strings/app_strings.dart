@@ -328,6 +328,9 @@ class AppStrings {
   String get birthDate => pick('Birth date', 'Fecha de nacimiento');
   String get notSet => pick('Not set', 'Sin completar');
   String get recentClasses => pick('Recent classes', 'Clases recientes');
+  String get milestone => pick('Milestone', 'Objetivo');
+  String get classesAttended => pick('Classes attended', 'Clases asistidas');
+  String get classesToGo => pick('to go', 'para llegar');
   String get noClasses => pick('No classes', 'Sin clases');
   String get classFallback => pick('Class', 'Clase');
 

@@ -325,6 +325,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     };
   }
 
+  Future<Map<String, dynamic>> _loadMemberStats(String memberId) async {
+    final attended = await Supabase.instance.client
+        .from('class_bookings')
+        .select('id')
+        .eq('user_id', memberId)
+        .eq('status', 'attended');
+
+    return {'attended_count': List<Map<String, dynamic>>.from(attended).length};
+  }
+
   Future<List<Map<String, dynamic>>> _loadMemberHistory(String memberId) async {
     final res = await Supabase.instance.client
         .from('class_bookings')
@@ -458,19 +468,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        final email = (member['email'] ?? '-').toString();
-        final name = (member['full_name'] ?? email).toString();
-        final role = (member['role'] ?? '-').toString();
-        final phone = member['phone']?.toString();
-        final active = member['is_active'] == true;
-        final birthDate = member['birth_date']?.toString() ?? appStrings.notSet;
-
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final email = (member['email'] ?? '-').toString();
+            final name = (member['full_name'] ?? email).toString();
+            final role = (member['role'] ?? '-').toString();
+            final phone = member['phone']?.toString();
+            final active = member['is_active'] == true;
+            final birthDate =
+                member['birth_date']?.toString() ?? appStrings.notSet;
             return FutureBuilder<List<dynamic>>(
               future: Future.wait([
                 _loadMemberHistory(member['id']),
                 _loadMemberMembershipData(member['id']),
+                _loadMemberStats(member['id']),
               ]),
               builder: (context, snapshot) {
                 final history = snapshot.hasData
@@ -495,6 +506,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final creditLogs = List<Map<String, dynamic>>.from(
                   membershipData['logs'] ?? [],
                 );
+
+                final stats = snapshot.hasData
+                    ? snapshot.data![2] as Map<String, dynamic>
+                    : <String, dynamic>{};
+                final attendedCount = stats['attended_count'] as int? ?? 0;
 
                 return Padding(
                   padding: EdgeInsets.only(
@@ -594,8 +610,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 12),
                           AppButton(
                             label: appStrings.editMember,
-                            onPressed: () => _openEditMemberSheet(member),
+                            onPressed: () async {
+                              await _openEditMemberSheet(member);
+                              if (!context.mounted) return;
+                              setSheetState(() {});
+                            },
                           ),
+                          const SizedBox(height: 18),
+                          _MemberMilestoneCard(attendedCount: attendedCount),
                           const SizedBox(height: 18),
                           _MemberDetailCard(
                             child: Column(
@@ -1164,6 +1186,62 @@ class _MetricCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0E0E11),
               height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberMilestoneCard extends StatelessWidget {
+  const _MemberMilestoneCard({required this.attendedCount});
+
+  final int attendedCount;
+
+  int get _target {
+    for (final target in [50, 100, 200, 500]) {
+      if (attendedCount < target) return target;
+    }
+    return 500;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = _target;
+    final progress = target == 0
+        ? 0.0
+        : (attendedCount / target).clamp(0.0, 1.0);
+    final remaining = (target - attendedCount).clamp(0, target);
+
+    return _MemberDetailCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(appStrings.milestone.toUpperCase(), style: _DashText.section),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$attendedCount / $target ${appStrings.classesAttended}',
+                  style: _DashText.title,
+                ),
+              ),
+              Text(
+                '$remaining ${appStrings.classesToGo}',
+                style: _DashText.subtle,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 9,
+              backgroundColor: const Color(0xFFE8EAF0),
+              color: const Color(0xFFB59B6A),
             ),
           ),
         ],
