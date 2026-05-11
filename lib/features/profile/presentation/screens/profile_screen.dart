@@ -26,6 +26,9 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _password = TextEditingController();
   final _gymName = TextEditingController();
+  final _fullName = TextEditingController();
+  final _phone = TextEditingController();
+  final _birthDate = TextEditingController();
   bool _loading = false;
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _membership;
@@ -40,11 +43,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _password.dispose();
+    _gymName.dispose();
+    _fullName.dispose();
+    _phone.dispose();
+    _birthDate.dispose();
+    super.dispose();
+  }
+
   String _formatDate(String? raw) {
     if (raw == null || raw.isEmpty) return '-';
     final date = DateTime.tryParse(raw)?.toLocal();
     if (date == null) return raw;
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _dateInputValue(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  Future<void> _pickBirthDate() async {
+    final current = DateTime.tryParse(_birthDate.text);
+    final now = DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _birthDate.text = _dateInputValue(picked);
+    });
   }
 
   String _creditReasonLabel(String reason) {
@@ -102,6 +139,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _profile = profile;
       _gymId = gymId;
       _gymName.text = gymName;
+      _fullName.text = profile?['full_name']?.toString() ?? '';
+      _phone.text = profile?['phone']?.toString() ?? '';
+      _birthDate.text = profile?['birth_date']?.toString() ?? '';
     });
   }
 
@@ -222,6 +262,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openPersonalInfoSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    appStrings.editPersonalInformation.toUpperCase(),
+                    style: _ProfileText.sectionTitle,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _fullName,
+                    textCapitalization: TextCapitalization.words,
+                    style: _ProfileText.input,
+                    decoration: _inputDecoration(appStrings.fullName),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    style: _ProfileText.input,
+                    decoration: _inputDecoration(appStrings.phone),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _birthDate,
+                    readOnly: true,
+                    style: _ProfileText.input,
+                    decoration: _inputDecoration(appStrings.birthDate).copyWith(
+                      suffixIcon: const Icon(Icons.calendar_month_rounded),
+                    ),
+                    onTap: _pickBirthDate,
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: appStrings.saveChanges,
+                    loading: _loading,
+                    onPressed: () async {
+                      final navigator = Navigator.of(sheetContext);
+                      await _savePersonalInfo();
+                      if (mounted) navigator.pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _openGymNameSheet() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -282,6 +390,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdated)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _savePersonalInfo() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final fullName = _fullName.text.trim();
+    final phone = _phone.text.trim();
+    final birthDate = _birthDate.text.trim();
+
+    setState(() => _loading = true);
+
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({
+            'full_name': fullName.isEmpty ? null : fullName,
+            'phone': phone.isEmpty ? null : phone,
+            'birth_date': birthDate.isEmpty ? null : birthDate,
+          })
+          .eq('id', userId);
+
+      await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.profileUpdated)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.updateProfileError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -367,6 +511,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
+    final profileName = _profile?['full_name']?.toString().trim() ?? '';
+    final displayName = profileName.isNotEmpty ? profileName : email;
     final role = _profile?['role']?.toString();
     final canEditGym = role == 'admin' || role == 'owner';
 
@@ -400,7 +546,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Text(
-                              email.isNotEmpty ? email[0].toUpperCase() : 'A',
+                              displayName.isNotEmpty
+                                  ? displayName[0].toUpperCase()
+                                  : 'A',
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
@@ -414,7 +562,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(email, style: _ProfileText.title),
+                                Text(displayName, style: _ProfileText.title),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${appStrings.profileRole}: ${_profile?['role'] ?? '-'}',
@@ -422,6 +570,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ],
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appStrings.personalInformation.toUpperCase(),
+                            style: _ProfileText.sectionTitle,
+                          ),
+                          const SizedBox(height: 14),
+                          _InfoRow(
+                            label: appStrings.fullName,
+                            value: profileName.isEmpty
+                                ? appStrings.notSet
+                                : profileName,
+                          ),
+                          _InfoRow(
+                            label: appStrings.phone,
+                            value:
+                                (_profile?['phone']
+                                        ?.toString()
+                                        .trim()
+                                        .isEmpty ??
+                                    true)
+                                ? appStrings.notSet
+                                : _profile!['phone'].toString(),
+                          ),
+                          _InfoRow(
+                            label: appStrings.birthDate,
+                            value: _formatDate(
+                              _profile?['birth_date']?.toString(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            label: appStrings.editPersonalInformation,
+                            onPressed: _openPersonalInfoSheet,
                           ),
                         ],
                       ),

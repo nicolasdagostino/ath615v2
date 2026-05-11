@@ -33,7 +33,7 @@ class AuthRepository {
 
     return _client
         .from('profiles')
-        .select('id, full_name, role, gym_id')
+        .select('id, full_name, role, gym_id, email, phone, birth_date')
         .eq('id', user.id)
         .maybeSingle();
   }

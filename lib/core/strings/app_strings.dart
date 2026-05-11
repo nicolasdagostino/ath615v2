@@ -364,6 +364,17 @@ class AppStrings {
   String get profileEnglish => pick('English', 'Inglés');
   String get profileSpanish => pick('Spanish', 'Español');
 
+  String get personalInformation =>
+      pick('Personal information', 'Información personal');
+  String get editPersonalInformation =>
+      pick('Edit personal information', 'Editar información personal');
+  String get fullName => pick('Full name', 'Nombre completo');
+  String get phone => pick('Phone', 'Teléfono');
+  String get saveChanges => pick('Save changes', 'Guardar cambios');
+  String get profileUpdated => pick('Profile updated', 'Perfil actualizado');
+  String updateProfileError(Object e) =>
+      pick('Update profile error: $e', 'Error al actualizar perfil: $e');
+
   String get profileRole => pick('Role', 'Rol');
   String get profileGymName => pick('Gym name', 'Nombre del gym');
   String get profileSaveGymName =>
