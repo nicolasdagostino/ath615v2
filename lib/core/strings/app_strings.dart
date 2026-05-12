@@ -331,6 +331,24 @@ class AppStrings {
   String get milestone => pick('Milestone', 'Objetivo');
   String get classesAttended => pick('Classes attended', 'Clases asistidas');
   String get classesToGo => pick('to go', 'para llegar');
+  String get personalRecords => pick('Personal records', 'Records personales');
+  String get addRecord => pick('Add record', 'Añadir record');
+  String get viewRecords => pick('View records', 'Ver records');
+  String get updateRecord => pick('Update record', 'Actualizar record');
+  String get deleteRecordTitle => pick('Delete record?', '¿Eliminar record?');
+  String get deleteRecordMsg => pick(
+    'This personal record will be deleted.',
+    'Este record será eliminado.',
+  );
+  String get exercise => pick('Exercise', 'Ejercicio');
+  String get weightKg => pick('Weight kg', 'Peso kg');
+  String get notes => pick('Notes', 'Notas');
+  String get recordSaved => pick('Record saved', 'Record guardado');
+  String get noRecordsYet => pick('No records yet.', 'Aún no hay records.');
+  String saveRecordError(Object e) =>
+      pick('Save record error: $e', 'Error al guardar record: $e');
+  String deleteRecordError(Object e) =>
+      pick('Delete record error: $e', 'Error al eliminar record: $e');
   String get noClasses => pick('No classes', 'Sin clases');
   String get classFallback => pick('Class', 'Clase');
 

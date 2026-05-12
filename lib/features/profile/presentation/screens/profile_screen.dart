@@ -33,10 +33,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
+  List<Map<String, dynamic>> _personalRecords = [];
   int _attendedCount = 0;
   String? _gymId;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
+
+  static const List<String> _recordExercises = [
+    'Back Squat',
+    'Front Squat',
+    'Overhead Squat',
+    'Deadlift',
+    'Strict Press',
+    'Push Press',
+    'Push Jerk',
+    'Split Jerk',
+    'Bench Press',
+    'Clean',
+    'Power Clean',
+    'Squat Clean',
+    'Hang Clean',
+    'Snatch',
+    'Power Snatch',
+    'Squat Snatch',
+    'Hang Snatch',
+    'Clean & Jerk',
+    'Thruster',
+  ];
 
   @override
   void initState() {
@@ -92,6 +115,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return reason;
   }
 
+  Future<void> _loadPersonalRecords(String userId) async {
+    final records = await Supabase.instance.client
+        .from('personal_records')
+        .select('id, exercise_name, weight_kg, achieved_at, notes')
+        .eq('user_id', userId)
+        .order('achieved_at', ascending: false)
+        .order('created_at', ascending: false)
+        .limit(8);
+
+    _personalRecords = List<Map<String, dynamic>>.from(records);
+  }
+
   Future<void> _loadStats(String userId) async {
     final attended = await Supabase.instance.client
         .from('class_bookings')
@@ -133,6 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (userId != null) {
       await _loadMembership(userId);
       await _loadStats(userId);
+      await _loadPersonalRecords(userId);
     }
 
     String gymName = '';
@@ -285,6 +321,365 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Map<String, dynamic>? _personalRecordForExercise(String exerciseName) {
+    for (final record in _personalRecords) {
+      if (record['exercise_name']?.toString() == exerciseName) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openPersonalRecordSheet({String? initialExercise}) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final gymId = _gymId;
+    if (userId == null || gymId == null) return;
+
+    String selectedExercise = initialExercise ?? _recordExercises.first;
+    final weight = TextEditingController();
+    final notes = TextEditingController();
+    final achievedAt = TextEditingController(
+      text: _dateInputValue(DateTime.now()),
+    );
+
+    void fillFromExisting(String exerciseName) {
+      final record = _personalRecordForExercise(exerciseName);
+      if (record == null) {
+        weight.clear();
+        notes.clear();
+        achievedAt.text = _dateInputValue(DateTime.now());
+        return;
+      }
+
+      weight.text = record['weight_kg']?.toString() ?? '';
+      notes.text = record['notes']?.toString() ?? '';
+      achievedAt.text =
+          record['achieved_at']?.toString() ?? _dateInputValue(DateTime.now());
+    }
+
+    fillFromExisting(selectedExercise);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: SafeArea(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text(
+                        appStrings.addRecord.toUpperCase(),
+                        style: _ProfileText.sectionTitle,
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedExercise,
+                        decoration: _inputDecoration(appStrings.exercise),
+                        items: _recordExercises.map((exercise) {
+                          return DropdownMenuItem<String>(
+                            value: exercise,
+                            child: Text(exercise, style: _ProfileText.input),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setSheetState(() {
+                            selectedExercise = value;
+                            fillFromExisting(value);
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: weight,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: _ProfileText.input,
+                        decoration: _inputDecoration(appStrings.weightKg),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: achievedAt,
+                        readOnly: true,
+                        style: _ProfileText.input,
+                        decoration: _inputDecoration(appStrings.birthDate)
+                            .copyWith(
+                              suffixIcon: const Icon(
+                                Icons.calendar_month_rounded,
+                              ),
+                            ),
+                        onTap: () async {
+                          final current = DateTime.tryParse(achievedAt.text);
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: current ?? now,
+                            firstDate: DateTime(2000),
+                            lastDate: now,
+                          );
+                          if (picked == null) return;
+                          setSheetState(() {
+                            achievedAt.text = _dateInputValue(picked);
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: notes,
+                        minLines: 2,
+                        maxLines: 3,
+                        style: _ProfileText.input,
+                        decoration: _inputDecoration(appStrings.notes),
+                      ),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label:
+                            _personalRecords.any(
+                              (r) =>
+                                  r['exercise_name']?.toString() ==
+                                  selectedExercise,
+                            )
+                            ? appStrings.updateRecord
+                            : appStrings.addRecord,
+                        onPressed: () async {
+                          await _savePersonalRecord(
+                            userId: userId,
+                            gymId: gymId,
+                            exerciseName: selectedExercise,
+                            weightKg: weight.text,
+                            achievedAt: achievedAt.text,
+                            notes: notes.text,
+                          );
+                          if (mounted && sheetContext.mounted) {
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openPersonalRecordsListSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.82,
+            ),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: ListView(
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7DAE0),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  appStrings.personalRecords.toUpperCase(),
+                  style: _ProfileText.sectionTitle,
+                ),
+                const SizedBox(height: 14),
+                if (_personalRecords.isEmpty)
+                  Text(appStrings.noRecordsYet, style: _ProfileText.subtle)
+                else
+                  ..._personalRecords.map((record) {
+                    final id = record['id']?.toString() ?? '';
+                    final exercise = record['exercise_name']?.toString() ?? '-';
+                    final weight = record['weight_kg']?.toString() ?? '-';
+                    final date = _formatDate(record['achieved_at']?.toString());
+                    final notes = record['notes']?.toString().trim() ?? '';
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Material(
+                        color: const Color(0xFFF7F8FA),
+                        borderRadius: BorderRadius.circular(18),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () async {
+                            Navigator.pop(sheetContext);
+                            await _openPersonalRecordSheet(
+                              initialExercise: exercise,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(exercise, style: _ProfileText.title),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '$weight kg · $date',
+                                        style: _ProfileText.subtle,
+                                      ),
+                                      if (notes.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(notes, style: _ProfileText.body),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: id.isEmpty
+                                      ? null
+                                      : () async {
+                                          Navigator.pop(sheetContext);
+                                          await _deletePersonalRecord(id);
+                                        },
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Color(0xFFB42318),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 8),
+                AppButton(
+                  label: appStrings.addRecord,
+                  onPressed: () async {
+                    Navigator.pop(sheetContext);
+                    await _openPersonalRecordSheet();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _savePersonalRecord({
+    required String userId,
+    required String gymId,
+    required String exerciseName,
+    required String weightKg,
+    required String achievedAt,
+    required String notes,
+  }) async {
+    final parsedWeight = double.tryParse(weightKg.replaceAll(',', '.'));
+    final exercise = exerciseName.trim();
+
+    if (exercise.isEmpty || parsedWeight == null) return;
+
+    try {
+      final existing = _personalRecords.where(
+        (r) => r['exercise_name']?.toString() == exercise,
+      );
+
+      final payload = {
+        'user_id': userId,
+        'gym_id': gymId,
+        'exercise_name': exercise,
+        'weight_kg': parsedWeight,
+        'achieved_at': achievedAt,
+        'notes': notes.trim().isEmpty ? null : notes.trim(),
+      };
+
+      if (existing.isEmpty) {
+        await Supabase.instance.client.from('personal_records').insert(payload);
+      } else {
+        await Supabase.instance.client
+            .from('personal_records')
+            .update(payload)
+            .eq('id', existing.first['id'])
+            .eq('user_id', userId);
+      }
+
+      await _loadPersonalRecords(userId);
+
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.recordSaved)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.saveRecordError(e))));
+    }
+  }
+
+  Future<void> _deletePersonalRecord(String recordId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final confirmed = await _confirmAction(
+      title: appStrings.deleteRecordTitle,
+      message: appStrings.deleteRecordMsg,
+      confirmLabel: appStrings.delete,
+      danger: true,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await Supabase.instance.client
+          .from('personal_records')
+          .delete()
+          .eq('id', recordId)
+          .eq('user_id', userId);
+
+      await _loadPersonalRecords(userId);
+
+      if (!mounted) return;
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.deleteRecordError(e))));
+    }
   }
 
   Future<void> _openPersonalInfoSheet() async {
@@ -643,6 +1038,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 18),
                     _ProfileMilestoneCard(attendedCount: _attendedCount),
                     const SizedBox(height: 18),
+                    _PersonalRecordsCard(
+                      records: _personalRecords.take(5).toList(),
+                      formatDate: _formatDate,
+                      onAdd: _openPersonalRecordSheet,
+                      onView: _openPersonalRecordsListSheet,
+                      onDelete: _deletePersonalRecord,
+                    ),
+                    const SizedBox(height: 18),
                     _ProfileCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -975,6 +1378,59 @@ class _ProfileHeader extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PersonalRecordsCard extends StatelessWidget {
+  const _PersonalRecordsCard({
+    required this.records,
+    required this.formatDate,
+    required this.onAdd,
+    required this.onView,
+    required this.onDelete,
+  });
+
+  final List<Map<String, dynamic>> records;
+  final String Function(String? raw) formatDate;
+  final VoidCallback onAdd;
+  final VoidCallback onView;
+  final ValueChanged<String> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.personalRecords.toUpperCase(),
+            style: _ProfileText.sectionTitle,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            records.isEmpty
+                ? appStrings.noRecordsYet
+                : '${records.length} ${appStrings.personalRecords}',
+            style: _ProfileText.subtle,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: appStrings.viewRecords,
+                  onPressed: onView,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: AppButton(label: appStrings.addRecord, onPressed: onAdd),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
