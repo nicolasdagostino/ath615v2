@@ -33,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
+  int _attendedCount = 0;
   String? _gymId;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
@@ -91,6 +92,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return reason;
   }
 
+  Future<void> _loadStats(String userId) async {
+    final attended = await Supabase.instance.client
+        .from('class_bookings')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'attended');
+
+    _attendedCount = List<Map<String, dynamic>>.from(attended).length;
+  }
+
   Future<void> _loadMembership(String userId) async {
     final membership = await Supabase.instance.client
         .from('member_memberships')
@@ -121,6 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (userId != null) {
       await _loadMembership(userId);
+      await _loadStats(userId);
     }
 
     String gymName = '';
@@ -143,6 +155,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _phone.text = profile?['phone']?.toString() ?? '';
       _birthDate.text = profile?['birth_date']?.toString() ?? '';
     });
+  }
+
+  String _displayRole(String? role) {
+    switch (role) {
+      case 'athlete':
+        return 'MEMBER';
+      case 'admin':
+        return 'COACH';
+      case 'owner':
+        return 'OWNER';
+      default:
+        return role?.toUpperCase() ?? '-';
+    }
   }
 
   Future<bool> _confirmAction({
@@ -565,7 +590,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Text(displayName, style: _ProfileText.title),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${appStrings.profileRole}: ${_profile?['role'] ?? '-'}',
+                                  _displayRole(_profile?['role']?.toString()),
                                   style: _ProfileText.subtle,
                                 ),
                               ],
@@ -615,6 +640,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    _ProfileMilestoneCard(attendedCount: _attendedCount),
                     const SizedBox(height: 18),
                     _ProfileCard(
                       child: Column(
@@ -948,6 +975,65 @@ class _ProfileHeader extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileMilestoneCard extends StatelessWidget {
+  const _ProfileMilestoneCard({required this.attendedCount});
+
+  final int attendedCount;
+
+  int get _target {
+    for (final target in [50, 100, 200, 500]) {
+      if (attendedCount < target) return target;
+    }
+    return 500;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = _target;
+    final progress = target == 0
+        ? 0.0
+        : (attendedCount / target).clamp(0.0, 1.0);
+    final remaining = (target - attendedCount).clamp(0, target);
+
+    return _ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.milestone.toUpperCase(),
+            style: _ProfileText.sectionTitle,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$attendedCount / $target ${appStrings.classesAttended}',
+                  style: _ProfileText.title,
+                ),
+              ),
+              Text(
+                '$remaining ${appStrings.classesToGo}',
+                style: _ProfileText.subtle,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 9,
+              backgroundColor: const Color(0xFFE8EAF0),
+              color: const Color(0xFFB59B6A),
+            ),
+          ),
+        ],
       ),
     );
   }
