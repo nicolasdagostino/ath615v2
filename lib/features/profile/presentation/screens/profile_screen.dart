@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,10 +31,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _phone = TextEditingController();
   final _birthDate = TextEditingController();
   bool _loading = false;
+  bool _uploadingAvatar = false;
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
   List<Map<String, dynamic>> _personalRecords = [];
+  List<Map<String, dynamic>> _classHistory = [];
   int _attendedCount = 0;
   String? _gymId;
 
@@ -483,6 +486,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openFullHistorySheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.82,
+            ),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: ListView(
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7DAE0),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  appStrings.classHistory.toUpperCase(),
+                  style: _ProfileText.sectionTitle,
+                ),
+                const SizedBox(height: 14),
+                if (_classHistory.isEmpty)
+                  Text(appStrings.noClasses, style: _ProfileText.subtle)
+                else
+                  ..._classHistory.map((item) {
+                    final klass =
+                        item['classes'] as Map<String, dynamic>? ?? {};
+                    final title =
+                        klass['title']?.toString() ?? appStrings.classFallback;
+                    final date = _formatDate(klass['starts_at']?.toString());
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F8FA),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(title, style: _ProfileText.title),
+                            ),
+                            Text(date, style: _ProfileText.subtle),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _openPersonalRecordsListSheet() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -879,6 +954,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _uploadAvatar() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null || _uploadingAvatar) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 900,
+    );
+
+    if (picked == null) return;
+
+    setState(() => _uploadingAvatar = true);
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final path = '$userId.jpg';
+
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      final publicUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(path);
+
+      final freshUrl = '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'avatar_url': freshUrl})
+          .eq('id', userId);
+
+      await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.photoUpdated)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.updatePhotoError(e))));
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
+
   Future<void> _logout() async {
     final confirmed = await _confirmAction(
       title: appStrings.profileLogout,
@@ -933,6 +1065,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
     final profileName = _profile?['full_name']?.toString().trim() ?? '';
     final displayName = profileName.isNotEmpty ? profileName : email;
+    final avatarUrl = _profile?['avatar_url']?.toString();
     final role = _profile?['role']?.toString();
     final canEditGym = role == 'admin' || role == 'owner';
 
@@ -957,25 +1090,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileCard(
                       child: Row(
                         children: [
-                          Container(
-                            width: 54,
-                            height: 54,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F3EA),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Text(
-                              displayName.isNotEmpty
-                                  ? displayName[0].toUpperCase()
-                                  : 'A',
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFFB59B6A),
-                                height: 1.0,
-                              ),
-                            ),
+                          _ProfileAvatar(
+                            displayName: displayName,
+                            avatarUrl: avatarUrl,
+                            uploading: _uploadingAvatar,
+                            onTap: _uploadAvatar,
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -993,6 +1112,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 18),
+                    _ClassHistoryCard(
+                      history: _classHistory.take(5).toList(),
+                      formatDate: _formatDate,
+                      onViewAll: _openFullHistorySheet,
                     ),
                     const SizedBox(height: 18),
                     _ProfileCard(
@@ -1429,6 +1554,143 @@ class _PersonalRecordsCard extends StatelessWidget {
                 child: AppButton(label: appStrings.addRecord, onPressed: onAdd),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClassHistoryCard extends StatelessWidget {
+  const _ClassHistoryCard({
+    required this.history,
+    required this.formatDate,
+    required this.onViewAll,
+  });
+
+  final List<Map<String, dynamic>> history;
+  final String Function(String? raw) formatDate;
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.classHistory.toUpperCase(),
+            style: _ProfileText.sectionTitle,
+          ),
+          const SizedBox(height: 10),
+          if (history.isEmpty)
+            Text(appStrings.noClasses, style: _ProfileText.subtle)
+          else
+            ...history.map((item) {
+              final klass = item['classes'] as Map<String, dynamic>? ?? {};
+              final title =
+                  klass['title']?.toString() ?? appStrings.classFallback;
+              final date = formatDate(klass['starts_at']?.toString());
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F8FA),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(title, style: _ProfileText.title)),
+                      Text(date, style: _ProfileText.subtle),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 8),
+          AppButton(label: appStrings.viewAllHistory, onPressed: onViewAll),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.displayName,
+    required this.avatarUrl,
+    required this.uploading,
+    required this.onTap,
+  });
+
+  final String displayName;
+  final String? avatarUrl;
+  final bool uploading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: uploading ? null : onTap,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              width: 54,
+              height: 54,
+              alignment: Alignment.center,
+              color: const Color(0xFFF7F3EA),
+              child: hasAvatar
+                  ? Image.network(
+                      avatarUrl!,
+                      width: 54,
+                      height: 54,
+                      fit: BoxFit.cover,
+                    )
+                  : Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'A',
+                      style: GoogleFonts.barlowCondensed(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFB59B6A),
+                        height: 1.0,
+                      ),
+                    ),
+            ),
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0E0E11),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: uploading
+                  ? const Padding(
+                      padding: EdgeInsets.all(5),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+            ),
           ),
         ],
       ),

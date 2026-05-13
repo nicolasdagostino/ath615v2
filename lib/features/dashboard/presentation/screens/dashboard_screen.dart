@@ -63,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final data = await Supabase.instance.client
           .from('profiles')
           .select(
-            'id, full_name, email, role, gym_id, phone, birth_date, is_active, created_at',
+            'id, full_name, email, role, gym_id, phone, birth_date, avatar_url, is_active, created_at',
           )
           .eq('gym_id', gymId)
           .neq('role', 'owner')
@@ -917,23 +917,9 @@ class _MemberTile extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
             child: Row(
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F3EA),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFFB59B6A),
-                      height: 1,
-                    ),
-                  ),
+                _MemberAvatar(
+                  name: name,
+                  avatarUrl: member['avatar_url']?.toString(),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -964,6 +950,44 @@ class _MemberTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  const _MemberAvatar({required this.name, required this.avatarUrl});
+
+  final String name;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        color: const Color(0xFFF7F3EA),
+        child: hasAvatar
+            ? Image.network(
+                avatarUrl!,
+                width: 42,
+                height: 42,
+                fit: BoxFit.cover,
+              )
+            : Text(
+                name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFB59B6A),
+                  height: 1,
+                ),
+              ),
       ),
     );
   }

@@ -334,6 +334,9 @@ class AppStrings {
   String get personalRecords => pick('Personal records', 'Records personales');
   String get addRecord => pick('Add record', 'Añadir record');
   String get viewRecords => pick('View records', 'Ver records');
+  String get classHistory => pick('Class history', 'Historial de clases');
+  String get viewAllHistory =>
+      pick('View all history', 'Ver historial completo');
   String get updateRecord => pick('Update record', 'Actualizar record');
   String get deleteRecordTitle => pick('Delete record?', '¿Eliminar record?');
   String get deleteRecordMsg => pick(
@@ -397,6 +400,10 @@ class AppStrings {
   String get phone => pick('Phone', 'Teléfono');
   String get saveChanges => pick('Save changes', 'Guardar cambios');
   String get profileUpdated => pick('Profile updated', 'Perfil actualizado');
+  String get updatePhoto => pick('Update photo', 'Actualizar foto');
+  String get photoUpdated => pick('Photo updated', 'Foto actualizada');
+  String updatePhotoError(Object e) =>
+      pick('Update photo error: $e', 'Error al actualizar foto: $e');
   String updateProfileError(Object e) =>
       pick('Update profile error: $e', 'Error al actualizar perfil: $e');
 

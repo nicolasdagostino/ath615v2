@@ -30,7 +30,7 @@ Future<void> showAttendanceSheet({
       : List<Map<String, dynamic>>.from(
           await client
               .from('profiles')
-              .select('id, full_name, email')
+              .select('id, full_name, email, avatar_url')
               .inFilter('id', userIds),
         );
 
@@ -134,11 +134,13 @@ Future<void> showAttendanceSheet({
                                     appStrings.member)
                                 .toString();
                         final email = (profile?['email'] ?? '').toString();
+                        final avatarUrl = profile?['avatar_url']?.toString();
                         final status = booking['status'].toString();
 
                         return _AttendanceMemberCard(
                           name: name,
                           email: email,
+                          avatarUrl: avatarUrl,
                           status: prettyStatus(status),
                           selectedStatus: status,
                           canMarkAttendance: canMarkAttendance,
@@ -224,6 +226,7 @@ class _AttendanceMemberCard extends StatelessWidget {
   const _AttendanceMemberCard({
     required this.name,
     required this.email,
+    required this.avatarUrl,
     required this.status,
     required this.selectedStatus,
     required this.canMarkAttendance,
@@ -233,6 +236,7 @@ class _AttendanceMemberCard extends StatelessWidget {
 
   final String name;
   final String email;
+  final String? avatarUrl;
   final String status;
   final String selectedStatus;
   final bool canMarkAttendance;
@@ -252,21 +256,7 @@ class _AttendanceMemberCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F3EA),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
-                  style: _AttendanceText.rowTitle.copyWith(
-                    color: const Color(0xFFB59B6A),
-                  ),
-                ),
-              ),
+              _AttendanceAvatar(name: name, avatarUrl: avatarUrl),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -315,6 +305,41 @@ class _AttendanceMemberCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AttendanceAvatar extends StatelessWidget {
+  const _AttendanceAvatar({required this.name, required this.avatarUrl});
+
+  final String name;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        color: const Color(0xFFF7F3EA),
+        child: hasAvatar
+            ? Image.network(
+                avatarUrl!,
+                width: 42,
+                height: 42,
+                fit: BoxFit.cover,
+              )
+            : Text(
+                name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
+                style: _AttendanceText.rowTitle.copyWith(
+                  color: const Color(0xFFB59B6A),
+                ),
+              ),
       ),
     );
   }

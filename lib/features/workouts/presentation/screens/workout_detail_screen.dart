@@ -22,6 +22,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   List<Map<String, dynamic>> _likes = [];
   List<Map<String, dynamic>> _comments = [];
   Map<String, String> _authorNames = {};
+  Map<String, String> _authorAvatars = {};
 
   final _commentCtrl = TextEditingController();
   final _commentFocus = FocusNode();
@@ -63,6 +64,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           _likes = [];
           _comments = [];
           _authorNames = {};
+          _authorAvatars = {};
         });
         return;
       }
@@ -84,16 +86,22 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           .toList();
 
       final authors = <String, String>{};
+      final avatars = <String, String>{};
 
       if (userIds.isNotEmpty) {
         final profiles = await _client
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, avatar_url')
             .inFilter('id', userIds);
 
         for (final profile in List<Map<String, dynamic>>.from(profiles)) {
-          authors[profile['id'].toString()] =
+          final id = profile['id'].toString();
+          authors[id] =
               profile['full_name']?.toString() ?? appStrings.userFallbackName;
+          final avatarUrl = profile['avatar_url']?.toString();
+          if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
+            avatars[id] = avatarUrl;
+          }
         }
       }
 
@@ -105,6 +113,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         );
         _comments = comments;
         _authorNames = authors;
+        _authorAvatars = avatars;
       });
     } catch (e) {
       if (!mounted) return;
@@ -160,7 +169,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
     final profile = await _client
         .from('profiles')
-        .select('full_name')
+        .select('full_name, avatar_url')
         .eq('id', userId)
         .single();
 
@@ -169,6 +178,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       _comments.insert(0, Map<String, dynamic>.from(res));
       _authorNames[userId] =
           profile['full_name']?.toString() ?? appStrings.userFallbackName;
+      final avatarUrl = profile['avatar_url']?.toString();
+      if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
+        _authorAvatars[userId] = avatarUrl;
+      }
       _commentCtrl.clear();
     });
   }
@@ -217,100 +230,69 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F5F7),
         body: SafeArea(
-        child: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
-              )
-            : workout == null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        appStrings.workoutNotFound,
-                        textAlign: TextAlign.center,
-                        style: WorkoutTextStyles.emptyMessage,
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        height: 54,
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF111111),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+          child: _loading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                )
+              : workout == null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          appStrings.workoutNotFound,
+                          textAlign: TextAlign.center,
+                          style: WorkoutTextStyles.emptyMessage,
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          height: 54,
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF111111),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              appStrings.cancel.toUpperCase(),
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            appStrings.cancel.toUpperCase(),
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-                children: [
-                  Row(
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: Navigator.of(context).pop,
-                        icon: const Icon(Icons.arrow_back),
-                        style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFFF4EFE6),
-                          foregroundColor: const Color(0xFFB59B6A),
-                          fixedSize: const Size(44, 44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        appStrings.workoutsTitle.toUpperCase(),
-                        style: GoogleFonts.barlowCondensed(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0E0E11),
-                          letterSpacing: -0.3,
-                          height: 1.0,
-                        ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(width: 44),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                  children: [
+                    Row(
                       children: [
+                        IconButton.filledTonal(
+                          onPressed: Navigator.of(context).pop,
+                          icon: const Icon(Icons.arrow_back),
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFFF4EFE6),
+                            foregroundColor: const Color(0xFFB59B6A),
+                            fixedSize: const Size(44, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
                         Text(
-                          programName.toUpperCase(),
+                          appStrings.workoutsTitle.toUpperCase(),
                           style: GoogleFonts.barlowCondensed(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -319,9 +301,103 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             height: 1.0,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _formatDate(workout['workout_date'].toString()),
+                        const Spacer(),
+                        const SizedBox(width: 44),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            programName.toUpperCase(),
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0E0E11),
+                              letterSpacing: -0.3,
+                              height: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formatDate(workout['workout_date'].toString()),
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF8F96A3),
+                              letterSpacing: 0.3,
+                              height: 1.0,
+                            ),
+                          ),
+                          if (hasImage) ...[
+                            const SizedBox(height: 18),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(22),
+                              child: Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+                          Text(
+                            workout['description']?.toString() ?? '',
+                            style: WorkoutTextStyles.body,
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              _DetailStatButton(
+                                icon: _liked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                label: appStrings.workoutLikesCount(
+                                  _likes.length,
+                                ),
+                                active: _liked,
+                                onTap: _toggleLike,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _DetailActionButton(
+                                  label: appStrings.workoutCommentCount(
+                                    _comments.length,
+                                  ),
+                                  icon: Icons.chat_bubble_outline,
+                                  onTap: () => _commentFocus.requestFocus(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (_comments.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Text(
+                          appStrings.workoutNoComments,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.barlowCondensed(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -330,220 +406,166 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             height: 1.0,
                           ),
                         ),
-                        if (hasImage) ...[
-                          const SizedBox(height: 18),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(22),
-                            child: Image.network(
-                              imageUrl,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                      )
+                    else
+                      ..._comments.map((comment) {
+                        final userId = comment['user_id']?.toString();
+                        final name = _displayAuthorName(_authorNames[userId]);
+
+                        final initial = name.trim().isEmpty
+                            ? '?'
+                            : name.trim()[0].toUpperCase();
+                        final avatarUrl = _authorAvatars[userId];
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        ],
-                        const SizedBox(height: 18),
-                        Text(
-                          workout['description']?.toString() ?? '',
-                          style: WorkoutTextStyles.body,
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            _DetailStatButton(
-                              icon: _liked
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              label: appStrings.workoutLikesCount(
-                                _likes.length,
-                              ),
-                              active: _liked,
-                              onTap: _toggleLike,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _DetailActionButton(
-                                label: appStrings.workoutCommentCount(
-                                  _comments.length,
-                                ),
-                                icon: Icons.chat_bubble_outline,
-                                onTap: () => _commentFocus.requestFocus(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (_comments.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Text(
-                        appStrings.workoutNoComments,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.barlowCondensed(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF8F96A3),
-                          letterSpacing: 0.3,
-                          height: 1.0,
-                        ),
-                      ),
-                    )
-                  else
-                    ..._comments.map((comment) {
-                      final userId = comment['user_id']?.toString();
-                      final name = _displayAuthorName(_authorNames[userId]);
-
-                      final initial = name.trim().isEmpty
-                          ? '?'
-                          : name.trim()[0].toUpperCase();
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              alignment: Alignment.center,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF4EFE6),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                initial,
-                                style: GoogleFonts.barlowCondensed(
-                                  color: const Color(0xFFB59B6A),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.0,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipOval(
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  alignment: Alignment.center,
+                                  color: const Color(0xFFF4EFE6),
+                                  child:
+                                      avatarUrl == null ||
+                                          avatarUrl.trim().isEmpty
+                                      ? Text(
+                                          initial,
                                           style: GoogleFonts.barlowCondensed(
-                                            color: const Color(0xFF111318),
+                                            color: const Color(0xFFB59B6A),
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
                                             height: 1.0,
                                           ),
+                                        )
+                                      : Image.network(
+                                          avatarUrl,
+                                          width: 38,
+                                          height: 38,
+                                          fit: BoxFit.cover,
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _timeAgo(
-                                          comment['created_at']?.toString(),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.barlowCondensed(
+                                              color: const Color(0xFF111318),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.0,
+                                            ),
+                                          ),
                                         ),
-                                        style: GoogleFonts.barlowCondensed(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF8F96A3),
-                                          letterSpacing: 0.3,
-                                          height: 1.0,
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _timeAgo(
+                                            comment['created_at']?.toString(),
+                                          ),
+                                          style: GoogleFonts.barlowCondensed(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF8F96A3),
+                                            letterSpacing: 0.3,
+                                            height: 1.0,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    comment['body']?.toString() ?? '',
-                                    style: GoogleFonts.barlowCondensed(
-                                      color: const Color(0xFF384152),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 0.0,
-                                      height: 1.3,
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      comment['body']?.toString() ?? '',
+                                      style: GoogleFonts.barlowCondensed(
+                                        color: const Color(0xFF384152),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.0,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appStrings.workoutPostScoreComments.toUpperCase(),
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF111318),
+                              letterSpacing: 0.8,
+                              height: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _commentCtrl,
+                            focusNode: _commentFocus,
+                            minLines: 1,
+                            maxLines: 4,
+                            style: GoogleFonts.barlowCondensed(
+                              color: const Color(0xFF384152),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: appStrings.workoutCommentHint,
+                              hintStyle: GoogleFonts.barlowCondensed(
+                                color: const Color(0xFF8F96A3),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.send),
+                                color: const Color(0xFFB59B6A),
+                                onPressed: _addComment,
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    }),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                            onSubmitted: (_) => _addComment(),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          appStrings.workoutPostScoreComments.toUpperCase(),
-                          style: GoogleFonts.barlowCondensed(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF111318),
-                            letterSpacing: 0.8,
-                            height: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _commentCtrl,
-                          focusNode: _commentFocus,
-                          minLines: 1,
-                          maxLines: 4,
-                          style: GoogleFonts.barlowCondensed(
-                            color: const Color(0xFF384152),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            height: 1.2,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: appStrings.workoutCommentHint,
-                            hintStyle: GoogleFonts.barlowCondensed(
-                              color: const Color(0xFF8F96A3),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.send),
-                              color: const Color(0xFFB59B6A),
-                              onPressed: _addComment,
-                            ),
-                          ),
-                          onSubmitted: (_) => _addComment(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
         ),
       ),
     );
