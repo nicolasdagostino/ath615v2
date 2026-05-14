@@ -155,6 +155,8 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             'p_title': programName,
             'p_time':
                 '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00',
+            'p_start_date':
+                '${startsAt.year.toString().padLeft(4, '0')}-${startsAt.month.toString().padLeft(2, '0')}-${startsAt.day.toString().padLeft(2, '0')}',
             'p_days': _selectedDays,
             'p_duration_minutes': durationMinutes,
             'p_capacity': capacity,

@@ -31,7 +31,12 @@ ThemeData _pickerTheme(BuildContext context) {
           return const Color(0xFFB59B6A);
         return null;
       }),
-      todayForegroundColor: const WidgetStatePropertyAll(Color(0xFFB59B6A)),
+      todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return const Color(0xFFB59B6A);
+      }),
       todayBorder: const BorderSide(color: Color(0xFFB59B6A)),
     ),
     timePickerTheme: TimePickerThemeData(
