@@ -350,6 +350,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               child: Image.network(
                                 imageUrl,
                                 width: double.infinity,
+                                height: 230,
                                 fit: BoxFit.cover,
                               ),
                             ),
