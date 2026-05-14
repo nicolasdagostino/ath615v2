@@ -1279,17 +1279,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _ProfileMenuRow(
                           icon: Icons.privacy_tip_outlined,
                           title: appStrings.profilePrivacyPolicy,
-                          onTap: () => _openUrl('https://TU_URL_PRIVACY'),
+                          onTap: () =>
+                              _openUrl('https://athlete615.com/privacy-policy'),
                         ),
                         _ProfileMenuRow(
                           icon: Icons.description_outlined,
                           title: appStrings.profileTerms,
-                          onTap: () => _openUrl('https://TU_URL_TERMS'),
+                          onTap: () => _openUrl(
+                            'https://athlete615.com/terms-and-conditions',
+                          ),
                         ),
                         _ProfileMenuRow(
                           icon: Icons.help_outline_rounded,
                           title: appStrings.profileHelp,
-                          onTap: () => _openUrl('https://TU_URL_HELP'),
+                          onTap: () =>
+                              _openUrl('https://athlete615.com/support'),
                         ),
                       ],
                     ),
