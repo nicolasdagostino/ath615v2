@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -97,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final current = DateTime.tryParse(_birthDate.text);
     final now = DateTime.now();
 
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
       firstDate: DateTime(1900),
@@ -431,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () async {
                           final current = DateTime.tryParse(achievedAt.text);
                           final now = DateTime.now();
-                          final picked = await showDatePicker(
+                          final picked = await showAppDatePicker(
                             context: context,
                             initialDate: current ?? now,
                             firstDate: DateTime(2000),

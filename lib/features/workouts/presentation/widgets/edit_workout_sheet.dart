@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showEditWorkoutSheet({
   required BuildContext context,
@@ -225,7 +226,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                 title: appStrings.workoutDate,
                 subtitle: _formatDate(_date),
                 onTap: () async {
-                  final picked = await showDatePicker(
+                  final picked = await showAppDatePicker(
                     context: context,
                     initialDate: _date,
                     firstDate: DateTime.now().subtract(

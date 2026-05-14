@@ -209,8 +209,8 @@ class AppStrings {
   String get authLoginButton => pick('Login', 'Entrar');
   String get authForgotPassword =>
       pick('Forgot password?', '¿Olvidaste tu contraseña?');
-  String loginError(Object e) => pick('Login error: $e', 'Error al entrar: $e');
-
+  String loginError(Object e) =>
+      pick('Invalid email or password.', 'Email o contraseña incorrectos.');
   String get authForgotTitle => pick('Forgot password', 'Recuperar contraseña');
   String get authForgotSubtitle => pick(
     'Enter your email and we will send you a reset link.',

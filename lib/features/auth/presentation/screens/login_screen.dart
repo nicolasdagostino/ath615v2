@@ -52,7 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(appStrings.authLoginSection.toUpperCase(), style: _AuthText.section),
+          Text(
+            appStrings.authLoginSection.toUpperCase(),
+            style: _AuthText.section,
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _email,
@@ -65,10 +68,17 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _password,
             obscureText: true,
             style: _AuthText.body,
-            decoration: _authInput(appStrings.authPassword, Icons.lock_outline_rounded),
+            decoration: _authInput(
+              appStrings.authPassword,
+              Icons.lock_outline_rounded,
+            ),
           ),
           const SizedBox(height: 18),
-          AppButton(label: appStrings.authLoginButton, loading: _loading, onPressed: _submit),
+          AppButton(
+            label: appStrings.authLoginButton,
+            loading: _loading,
+            onPressed: _submit,
+          ),
           const SizedBox(height: 12),
           Center(
             child: TextButton(

@@ -5,6 +5,7 @@ import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 import '../widgets/manage_plans_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -148,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final current = DateTime.tryParse(controller.text);
     final now = DateTime.now();
 
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
       firstDate: DateTime(1900),

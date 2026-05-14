@@ -5,6 +5,7 @@ import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showCreateClassSheet({
   required BuildContext context,
@@ -138,7 +139,8 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
         throw Exception(appStrings.classFuture);
       }
 
-      final programName = program['name']?.toString() ?? appStrings.classFallback;
+      final programName =
+          program['name']?.toString() ?? appStrings.classFallback;
       final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
       final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 
@@ -211,7 +213,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
@@ -222,7 +224,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
@@ -237,7 +239,9 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -249,39 +253,55 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(appStrings.createClassTitle.toUpperCase(), style: _ClassSheetText.title),
+              Text(
+                appStrings.createClassTitle.toUpperCase(),
+                style: _ClassSheetText.title,
+              ),
               const SizedBox(height: 18),
               if (_loadingPrograms)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                  ),
                 )
               else if (_programs.isEmpty)
                 Text(appStrings.classNeedProgram, style: _ClassSheetText.body)
               else
                 DropdownButtonFormField<String>(
                   initialValue: _selectedProgramId,
-                  decoration: _classSheetInput(appStrings.workoutProgram, Icons.fitness_center_outlined),
+                  decoration: _classSheetInput(
+                    appStrings.workoutProgram,
+                    Icons.fitness_center_outlined,
+                  ),
                   items: _programs.map((program) {
                     return DropdownMenuItem<String>(
                       value: program['id'].toString(),
-                      child: Text(program['name']?.toString() ?? appStrings.workoutProgram),
+                      child: Text(
+                        program['name']?.toString() ??
+                            appStrings.workoutProgram,
+                      ),
                     );
                   }).toList(),
-                  onChanged: (value) => setState(() => _selectedProgramId = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedProgramId = value),
                 ),
               const SizedBox(height: 12),
               _ClassSheetActionRow(
                 icon: Icons.calendar_month_outlined,
                 title: appStrings.workoutDate,
-                subtitle: _selectedDate == null ? appStrings.selectDate : _formatDate(_selectedDate!),
+                subtitle: _selectedDate == null
+                    ? appStrings.selectDate
+                    : _formatDate(_selectedDate!),
                 onTap: _pickDate,
               ),
               const SizedBox(height: 12),
               _ClassSheetActionRow(
                 icon: Icons.schedule_rounded,
                 title: appStrings.time,
-                subtitle: _selectedTime == null ? appStrings.selectTime : _selectedTime!.format(context),
+                subtitle: _selectedTime == null
+                    ? appStrings.selectTime
+                    : _selectedTime!.format(context),
                 onTap: _pickTime,
               ),
               const SizedBox(height: 12),
@@ -293,13 +313,22 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                   activeThumbColor: const Color(0xFFB59B6A),
                   value: _repeatWeekly,
                   onChanged: (value) => setState(() => _repeatWeekly = value),
-                  title: Text(appStrings.repeatWeekly, style: _ClassSheetText.rowTitle),
-                  subtitle: Text(appStrings.repeatWeeklyDescription, style: _ClassSheetText.subtle),
+                  title: Text(
+                    appStrings.repeatWeekly,
+                    style: _ClassSheetText.rowTitle,
+                  ),
+                  subtitle: Text(
+                    appStrings.repeatWeeklyDescription,
+                    style: _ClassSheetText.subtle,
+                  ),
                 ),
               ),
               if (_repeatWeekly) ...[
                 const SizedBox(height: 12),
-                Text(appStrings.repeatOn.toUpperCase(), style: _ClassSheetText.section),
+                Text(
+                  appStrings.repeatOn.toUpperCase(),
+                  style: _ClassSheetText.section,
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -341,7 +370,10 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                       controller: _duration,
                       keyboardType: TextInputType.number,
                       style: _ClassSheetText.body,
-                      decoration: _classSheetInput(appStrings.durationMinutes, Icons.timer_outlined),
+                      decoration: _classSheetInput(
+                        appStrings.durationMinutes,
+                        Icons.timer_outlined,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -350,7 +382,10 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                       controller: _capacity,
                       keyboardType: TextInputType.number,
                       style: _ClassSheetText.body,
-                      decoration: _classSheetInput(appStrings.capacity, Icons.groups_outlined),
+                      decoration: _classSheetInput(
+                        appStrings.capacity,
+                        Icons.groups_outlined,
+                      ),
                     ),
                   ),
                 ],
@@ -359,7 +394,9 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                 const SizedBox(height: 12),
                 Text(
                   appStrings.chooseFutureDateTime,
-                  style: _ClassSheetText.body.copyWith(color: const Color(0xFFB42318)),
+                  style: _ClassSheetText.body.copyWith(
+                    color: const Color(0xFFB42318),
+                  ),
                 ),
               ],
               const SizedBox(height: 18),

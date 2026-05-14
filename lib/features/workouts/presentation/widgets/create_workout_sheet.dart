@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showCreateWorkoutSheet({
   required BuildContext context,
@@ -209,7 +210,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                 title: appStrings.workoutDate,
                 subtitle: '${_date.day}/${_date.month}/${_date.year}',
                 onTap: () async {
-                  final picked = await showDatePicker(
+                  final picked = await showAppDatePicker(
                     context: context,
                     initialDate: _date,
                     firstDate: DateTime.now().subtract(const Duration(days: 7)),

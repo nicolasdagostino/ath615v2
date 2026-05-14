@@ -94,13 +94,26 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   Future<void> _toggle(Map<String, dynamic> program) async {
     final id = program['id'].toString();
     final active = program['is_active'] == true;
+    final next = !active;
 
-    await widget.client
-        .from('programs')
-        .update({'is_active': !active})
-        .eq('id', id);
+    setState(() {
+      program['is_active'] = next;
+    });
 
-    await _load();
+    try {
+      await widget.client
+          .from('programs')
+          .update({'is_active': next})
+          .eq('id', id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        program['is_active'] = active;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
+    }
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showEditClassSheet({
   required BuildContext context,
@@ -190,7 +191,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -201,7 +202,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
     );
