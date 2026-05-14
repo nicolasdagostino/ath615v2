@@ -333,22 +333,18 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    for (final day in [
-                      {'label': 'L', 'value': 1},
-                      {'label': 'M', 'value': 2},
-                      {'label': 'X', 'value': 3},
-                      {'label': 'J', 'value': 4},
-                      {'label': 'V', 'value': 5},
-                      {'label': 'S', 'value': 6},
-                      {'label': 'D', 'value': 7},
-                    ])
+                    for (
+                      var index = 0;
+                      index < appStrings.weekdayInitials.length;
+                      index++
+                    )
                       ChoiceChip(
-                        label: Text(day['label'] as String),
-                        selected: _selectedDays.contains(day['value']),
+                        label: Text(appStrings.weekdayInitials[index]),
+                        selected: _selectedDays.contains(index + 1),
                         selectedColor: const Color(0xFFF7F3EA),
                         labelStyle: _ClassSheetText.body,
                         onSelected: (selected) {
-                          final value = day['value'] as int;
+                          final value = index + 1;
                           setState(() {
                             if (selected) {
                               _selectedDays.add(value);
