@@ -24,7 +24,7 @@ class AppStrings {
 
   String get defaultGymName => 'Athlete 615';
 
-  String get appBrand => pick('ATHLETE LAB', 'ATHLETE LAB');
+  String get appBrand => pick('ATHLETE 615', 'ATHLETE 615');
   String get profileHeaderTitle => pick('PROFILE', 'PERFIL');
   String get profileHeaderSubtitle =>
       pick('Account & settings', 'Cuenta y ajustes');
@@ -200,7 +200,7 @@ class AppStrings {
   String get noNotificationsTitle =>
       pick('No notifications', 'Sin notificaciones');
 
-  String get authLoginTitle => pick('Athlete Lab', 'Athlete Lab');
+  String get authLoginTitle => pick('ATHLETE 615', 'ATHLETE 615');
   String get authLoginSubtitle =>
       pick('Login to your gym account.', 'Accede a tu cuenta del gym.');
   String get authLoginSection => pick('Login', 'Iniciar sesión');
@@ -220,8 +220,27 @@ class AppStrings {
   String get authSendResetLink => pick('Send reset link', 'Enviar enlace');
   String get authPasswordEmailSent =>
       pick('Password email sent.', 'Email de recuperación enviado.');
-  String resetPasswordError(Object e) =>
-      pick('Reset error: $e', 'Error al recuperar contraseña: $e');
+  String resetPasswordError(Object e) {
+    final message = e.toString();
+    if (message.contains('account_not_found')) {
+      return pick(
+        'No account found with this email.',
+        'No existe una cuenta registrada con este email.',
+      );
+    }
+    if (message.contains('over_email_send_rate_limit') ||
+        message.contains('email rate limit exceeded') ||
+        message.contains('statusCode: 429')) {
+      return pick(
+        'Too many reset emails requested. Please wait a few minutes and try again.',
+        'Has solicitado demasiados emails de recuperación. Espera unos minutos e inténtalo de nuevo.',
+      );
+    }
+    return pick(
+      'We could not send the reset email. Please try again.',
+      'No pudimos enviar el email de recuperación. Inténtalo de nuevo.',
+    );
+  }
 
   String get authSetNewPasswordTitle =>
       pick('Set new password', 'Nueva contraseña');
