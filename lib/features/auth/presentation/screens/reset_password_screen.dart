@@ -47,11 +47,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   Future<void> _submit() async {
     if (!_sessionReady) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(appStrings.authSessionNotReady),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.authSessionNotReady)));
       return;
     }
 
@@ -62,9 +60,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       context.go('/');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdateError(e))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.passwordUpdateError(e))),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -80,17 +78,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(appStrings.authNewPasswordSection.toUpperCase(), style: _AuthText.section),
+          Text(
+            appStrings.authNewPasswordSection.toUpperCase(),
+            style: _AuthText.section,
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _password,
             obscureText: true,
             style: _AuthText.body,
-            decoration: _authInput(appStrings.authNewPasswordSection, Icons.lock_outline_rounded),
+            decoration: _authInput(
+              appStrings.authNewPasswordSection,
+              Icons.lock_outline_rounded,
+            ),
           ),
           const SizedBox(height: 18),
           AppButton(
-            label: _sessionReady ? appStrings.authSavePassword : appStrings.authWaitingForSession,
+            label: _sessionReady
+                ? appStrings.authSavePassword
+                : appStrings.authWaitingForSession,
             loading: _loading,
             onPressed: _sessionReady ? _submit : null,
           ),

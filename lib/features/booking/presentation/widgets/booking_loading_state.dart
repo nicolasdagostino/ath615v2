@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class BookingLoadingState extends StatelessWidget {
@@ -42,7 +41,11 @@ class _BookingSkeletonCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SkeletonBox(width: double.infinity, height: 18, radius: 999),
+                      _SkeletonBox(
+                        width: double.infinity,
+                        height: 18,
+                        radius: 999,
+                      ),
                       SizedBox(height: 12),
                       _SkeletonBox(width: 170, height: 14, radius: 999),
                     ],

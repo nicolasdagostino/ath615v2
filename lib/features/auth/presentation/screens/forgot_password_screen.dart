@@ -53,7 +53,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(appStrings.authResetLink.toUpperCase(), style: _AuthText.section),
+          Text(
+            appStrings.authResetLink.toUpperCase(),
+            style: _AuthText.section,
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _email,

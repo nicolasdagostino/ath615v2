@@ -98,7 +98,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
@@ -110,21 +112,36 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(appStrings.managePlans.toUpperCase(), style: _PlansText.title),
+              Text(
+                appStrings.managePlans.toUpperCase(),
+                style: _PlansText.title,
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
                 style: _PlansText.body,
-                decoration: _plansInput(appStrings.planName, Icons.badge_outlined),
+                decoration: _plansInput(
+                  appStrings.planName,
+                  Icons.badge_outlined,
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _planType,
-                decoration: _plansInput(appStrings.planType, Icons.tune_rounded),
+                decoration: _plansInput(
+                  appStrings.planType,
+                  Icons.tune_rounded,
+                ),
                 items: [
-                  DropdownMenuItem(value: 'class_pack', child: Text(appStrings.classPack)),
-                  DropdownMenuItem(value: 'unlimited', child: Text(appStrings.unlimited)),
+                  DropdownMenuItem(
+                    value: 'class_pack',
+                    child: Text(appStrings.classPack),
+                  ),
+                  DropdownMenuItem(
+                    value: 'unlimited',
+                    child: Text(appStrings.unlimited),
+                  ),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -137,16 +154,25 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   controller: _credits,
                   keyboardType: TextInputType.number,
                   style: _PlansText.body,
-                  decoration: _plansInput(appStrings.credits, Icons.confirmation_number_outlined),
+                  decoration: _plansInput(
+                    appStrings.credits,
+                    Icons.confirmation_number_outlined,
+                  ),
                 ),
               ],
               const SizedBox(height: 14),
-              AppButton(label: appStrings.createPlan, loading: _saving, onPressed: _create),
+              AppButton(
+                label: appStrings.createPlan,
+                loading: _saving,
+                onPressed: _create,
+              ),
               const SizedBox(height: 20),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                  ),
                 )
               else if (_plans.isEmpty)
                 Text(appStrings.noPlansYet, style: _PlansText.subtle)
@@ -253,4 +279,3 @@ class _PlansText {
     height: 1,
   );
 }
-

@@ -78,7 +78,11 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     if (_role == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFFB59B6A))));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+        ),
+      );
     }
 
     final canSeeDashboard = _role == 'admin' || _role == 'owner';
@@ -108,12 +112,32 @@ class _AppShellState extends State<AppShell> {
     ];
 
     final navItems = [
-      _ShellNavItem(icon: Icons.fitness_center_outlined, activeIcon: Icons.fitness_center, label: appStrings.navWorkout),
-      _ShellNavItem(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: appStrings.navBooking),
-      _ShellNavItem(icon: Icons.search_outlined, activeIcon: Icons.search, label: appStrings.navExplore),
-      _ShellNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: appStrings.navProfile),
+      _ShellNavItem(
+        icon: Icons.fitness_center_outlined,
+        activeIcon: Icons.fitness_center,
+        label: appStrings.navWorkout,
+      ),
+      _ShellNavItem(
+        icon: Icons.calendar_month_outlined,
+        activeIcon: Icons.calendar_month,
+        label: appStrings.navBooking,
+      ),
+      _ShellNavItem(
+        icon: Icons.search_outlined,
+        activeIcon: Icons.search,
+        label: appStrings.navExplore,
+      ),
+      _ShellNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: appStrings.navProfile,
+      ),
       if (canSeeDashboard)
-        _ShellNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: appStrings.navDashboard),
+        _ShellNavItem(
+          icon: Icons.dashboard_outlined,
+          activeIcon: Icons.dashboard,
+          label: appStrings.navDashboard,
+        ),
     ];
 
     if (_index >= screens.length) {
@@ -188,13 +212,17 @@ class _ShellBottomNav extends StatelessWidget {
                             height: 28,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: selected ? const Color(0xFFF7F3EA) : Colors.transparent,
+                              color: selected
+                                  ? const Color(0xFFF7F3EA)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Icon(
                               selected ? item.activeIcon : item.icon,
                               size: 22,
-                              color: selected ? const Color(0xFFB59B6A) : const Color(0xFF8F96A3),
+                              color: selected
+                                  ? const Color(0xFFB59B6A)
+                                  : const Color(0xFF8F96A3),
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -204,8 +232,12 @@ class _ShellBottomNav extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.barlowCondensed(
                               fontSize: 11.5,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                              color: selected ? const Color(0xFF111318) : const Color(0xFF8F96A3),
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: selected
+                                  ? const Color(0xFF111318)
+                                  : const Color(0xFF8F96A3),
                               letterSpacing: 0.1,
                               height: 1.0,
                             ),
@@ -223,4 +255,3 @@ class _ShellBottomNav extends StatelessWidget {
     );
   }
 }
-

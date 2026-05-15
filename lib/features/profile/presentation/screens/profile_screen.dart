@@ -141,6 +141,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _attendedCount = List<Map<String, dynamic>>.from(attended).length;
   }
 
+  Future<void> _loadClassHistory(String userId) async {
+    final history = await Supabase.instance.client
+        .from('class_bookings')
+        .select('id, status, classes(title, starts_at)')
+        .eq('user_id', userId)
+        .eq('status', 'attended')
+        .order('created_at', ascending: false)
+        .limit(20);
+
+    _classHistory = List<Map<String, dynamic>>.from(history);
+  }
+
   Future<void> _loadMembership(String userId) async {
     final membership = await Supabase.instance.client
         .from('member_memberships')
@@ -172,6 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (userId != null) {
       await _loadMembership(userId);
       await _loadStats(userId);
+      await _loadClassHistory(userId);
       await _loadPersonalRecords(userId);
     }
 
