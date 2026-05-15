@@ -473,7 +473,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, setSheetState) {
             final email = (member['email'] ?? '-').toString();
             final name = (member['full_name'] ?? email).toString();
-            final role = (member['role'] ?? '-').toString();
+            String selectedRole = (member['role'] ?? 'athlete').toString();
             final phone = member['phone']?.toString();
             final active = member['is_active'] == true;
             final birthDate =
@@ -588,9 +588,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           const SizedBox(height: 22),
-                          _MemberDetailInfoRow(
-                            label: appStrings.role,
-                            value: role,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appStrings.role.toUpperCase(),
+                                style: _DashText.subtle,
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                initialValue: selectedRole,
+                                decoration: _dashInput(
+                                  appStrings.role,
+                                  Icons.admin_panel_settings_outlined,
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'athlete',
+                                    child: Text('Athlete'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'admin',
+                                    child: Text('Admin'),
+                                  ),
+                                ],
+                                onChanged: (value) async {
+                                  if (value == null || value == selectedRole) {
+                                    return;
+                                  }
+
+                                  try {
+                                    await Supabase.instance.client.rpc(
+                                      'update_member_role',
+                                      params: {
+                                        'p_member_id': member['id'],
+                                        'p_role': value,
+                                      },
+                                    );
+
+                                    member['role'] = value;
+
+                                    if (!context.mounted) return;
+
+                                    setSheetState(() {
+                                      selectedRole = value;
+                                    });
+
+                                    setState(() {
+                                      final index = _members.indexWhere(
+                                        (m) => m['id'] == member['id'],
+                                      );
+
+                                      if (index != -1) {
+                                        _members[index] = {
+                                          ..._members[index],
+                                          'role': value,
+                                        };
+                                      }
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Role updated'),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error updating role: $e',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                           _MemberDetailInfoRow(
                             label: appStrings.status,
