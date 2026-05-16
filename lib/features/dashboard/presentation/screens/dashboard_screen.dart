@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -627,6 +628,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     );
 
                                     member['role'] = value;
+
+                                    final currentUser = Supabase
+                                        .instance
+                                        .client
+                                        .auth
+                                        .currentUser;
+                                    final currentUserId = currentUser?.id;
+                                    final currentUserEmail = currentUser?.email
+                                        ?.trim()
+                                        .toLowerCase();
+                                    final memberId = member['id']?.toString();
+                                    final memberEmail = member['email']
+                                        ?.toString()
+                                        .trim()
+                                        .toLowerCase();
+
+                                    final changedOwnRole =
+                                        (currentUserId != null &&
+                                            memberId == currentUserId) ||
+                                        (currentUserEmail != null &&
+                                            memberEmail == currentUserEmail);
+
+                                    if (changedOwnRole && value != 'admin') {
+                                      await Supabase.instance.client.auth
+                                          .signOut();
+
+                                      if (!context.mounted) return;
+                                      context.go('/login');
+                                      return;
+                                    }
 
                                     if (!context.mounted) return;
 
