@@ -25,12 +25,15 @@ class DashboardScreen extends StatefulWidget {
 
 enum _DashboardTab { overview, members, plans }
 
+enum _MemberRoleFilter { all, athlete, coach, admin }
+
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
 
   bool _loading = false;
   bool _loadingMembers = true;
   _DashboardTab _selectedTab = _DashboardTab.overview;
+  _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
 
@@ -289,13 +292,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Map<String, dynamic>> get _filteredMembers {
     final q = _search.text.trim().toLowerCase();
-    if (q.isEmpty) return _members;
 
-    return _members.where((m) {
+    var filtered = _members.where((m) {
       final name = (m['full_name'] ?? '').toString().toLowerCase();
       final email = (m['email'] ?? '').toString().toLowerCase();
-      return name.contains(q) || email.contains(q);
-    }).toList();
+
+      final matchesSearch = q.isEmpty || name.contains(q) || email.contains(q);
+
+      if (!matchesSearch) return false;
+
+      final role = (m['role'] ?? '').toString();
+
+      switch (_roleFilter) {
+        case _MemberRoleFilter.athlete:
+          return role == 'athlete';
+
+        case _MemberRoleFilter.coach:
+          return role == 'coach';
+
+        case _MemberRoleFilter.admin:
+          return role == 'admin';
+
+        case _MemberRoleFilter.all:
+          return true;
+      }
+    });
+
+    return filtered.toList();
   }
 
   String _formatDate(String? raw) {
@@ -1166,6 +1189,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _RoleFilterChip(
+                                    label: 'All',
+                                    selected:
+                                        _roleFilter == _MemberRoleFilter.all,
+                                    onTap: () {
+                                      setState(() {
+                                        _roleFilter = _MemberRoleFilter.all;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _RoleFilterChip(
+                                    label: 'Athletes',
+                                    selected:
+                                        _roleFilter ==
+                                        _MemberRoleFilter.athlete,
+                                    onTap: () {
+                                      setState(() {
+                                        _roleFilter = _MemberRoleFilter.athlete;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _RoleFilterChip(
+                                    label: 'Coaches',
+                                    selected:
+                                        _roleFilter == _MemberRoleFilter.coach,
+                                    onTap: () {
+                                      setState(() {
+                                        _roleFilter = _MemberRoleFilter.coach;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _RoleFilterChip(
+                                    label: 'Admins',
+                                    selected:
+                                        _roleFilter == _MemberRoleFilter.admin,
+                                    onTap: () {
+                                      setState(() {
+                                        _roleFilter = _MemberRoleFilter.admin;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
                             if (_loadingMembers)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 22),
@@ -1276,9 +1354,19 @@ class _MemberTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF8F96A3),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_horiz_rounded,
+                    color: Color(0xFF8F96A3),
+                  ),
+                  onSelected: (value) {},
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'plan', child: Text('Assign plan')),
+                    PopupMenuItem(
+                      value: 'resend',
+                      child: Text('Resend invitation'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1491,6 +1579,44 @@ class _HeaderIcon extends StatelessWidget {
           isLabelVisible: badgeCount > 0,
           label: Text(badgeCount > 99 ? '99+' : badgeCount.toString()),
           child: Icon(icon, size: 18, color: const Color(0xFFB59B6A)),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleFilterChip extends StatelessWidget {
+  const _RoleFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(100),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFB59B6A) : Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: selected ? const Color(0xFFB59B6A) : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : const Color(0xFF111827),
+          ),
         ),
       ),
     );

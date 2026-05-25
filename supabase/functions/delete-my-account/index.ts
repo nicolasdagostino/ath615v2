@@ -21,8 +21,30 @@ serve(async (req) => {
     if (userError || !userData.user) throw new Error('Unauthorized')
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
-    const { error } = await adminClient.auth.admin.deleteUser(userData.user.id)
-    if (error) throw error
+    const userId = userData.user.id
+
+    const deletes = [
+      ['device_tokens', 'user_id'],
+      ['notifications', 'user_id'],
+      ['workout_likes', 'user_id'],
+      ['workout_comments', 'user_id'],
+      ['class_bookings', 'user_id'],
+      ['membership_credit_logs', 'user_id'],
+      ['member_memberships', 'user_id'],
+      ['personal_records', 'user_id'],
+      ['profiles', 'id'],
+    ]
+
+    for (const [table, column] of deletes) {
+      const { error } = await adminClient.from(table).delete().eq(column, userId)
+
+      if (error) {
+        throw new Error(`Could not delete from ${table}: ${error.message}`)
+      }
+    }
+
+    const { error } = await adminClient.auth.admin.deleteUser(userId)
+    if (error) throw new Error(`Could not delete auth user: ${error.message}`)
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

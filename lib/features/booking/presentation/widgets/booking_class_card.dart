@@ -40,6 +40,8 @@ class BookingClassCard extends StatelessWidget {
         klass['title']?.toString().toUpperCase() ??
         appStrings.classFallback.toUpperCase();
 
+    final durationMinutes = klass['duration_minutes'] as int? ?? 60;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -93,10 +95,8 @@ class BookingClassCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetaBlock(
-                        label: appStrings.coach,
-                        value:
-                            klass['coach_name']?.toString() ??
-                            'Nicolás D’Agostino',
+                        label: 'DURATION',
+                        value: '$durationMinutes MIN',
                       ),
                     ),
                     _MetaBlock(
