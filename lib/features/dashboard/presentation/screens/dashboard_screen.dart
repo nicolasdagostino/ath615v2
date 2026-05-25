@@ -23,12 +23,14 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
+enum _DashboardTab { overview, members, plans }
+
 class _DashboardScreenState extends State<DashboardScreen> {
-  final _inviteEmail = TextEditingController();
   final _search = TextEditingController();
 
   bool _loading = false;
   bool _loadingMembers = true;
+  _DashboardTab _selectedTab = _DashboardTab.overview;
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
 
@@ -86,18 +88,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _inviteAthlete() async {
+  Future<void> _inviteAthlete({
+    required String email,
+    String? fullName,
+    String? phone,
+    String? birthDate,
+    String role = 'athlete',
+  }) async {
     setState(() => _loading = true);
 
     try {
       await Supabase.instance.client.functions.invoke(
         'admin-invite-athlete',
-        body: {'email': _inviteEmail.text.trim()},
+        body: {
+          'email': email.trim(),
+          'full_name': fullName?.trim(),
+          'phone': phone?.trim(),
+          'birth_date': birthDate?.trim(),
+          'role': role,
+        },
       );
 
       if (!mounted) return;
-
-      _inviteEmail.clear();
 
       ScaffoldMessenger.of(
         context,
@@ -111,8 +123,161 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.inviteAthleteError(e))));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
+  }
+
+  Future<void> _openInviteMemberSheet() async {
+    final fullName = TextEditingController();
+    final email = TextEditingController();
+    final phone = TextEditingController();
+    final birthDate = TextEditingController();
+
+    String role = 'athlete';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('INVITE MEMBER', style: _DashText.section),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Send an invitation to join ATHLETE615.',
+                      style: _DashText.subtle,
+                    ),
+                    const SizedBox(height: 24),
+
+                    TextField(
+                      controller: fullName,
+                      style: _DashText.body,
+                      decoration: _dashInput(
+                        appStrings.fullName,
+                        Icons.person_outline,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      style: _DashText.body,
+                      decoration: _dashInput('Email', Icons.email_outlined),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: phone,
+                      keyboardType: TextInputType.phone,
+                      style: _DashText.body,
+                      decoration: _dashInput(
+                        appStrings.phone,
+                        Icons.phone_outlined,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => _pickBirthDate(birthDate),
+                      child: IgnorePointer(
+                        child: TextField(
+                          controller: birthDate,
+                          style: _DashText.body,
+                          decoration: _dashInput(
+                            'Birth date',
+                            Icons.cake_outlined,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      initialValue: role,
+                      decoration: _dashInput('Role', Icons.shield_outlined),
+                      style: _DashText.body,
+                      dropdownColor: Colors.white,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'athlete',
+                          child: Text('Athlete'),
+                        ),
+                        DropdownMenuItem(value: 'coach', child: Text('Coach')),
+                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() {
+                          role = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            label: appStrings.cancel,
+                            onPressed: () => context.pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: AppButton(
+                            label: 'Send invitation',
+                            loading: _loading,
+                            onPressed: () async {
+                              await _inviteAthlete(
+                                email: email.text,
+                                fullName: fullName.text,
+                                phone: phone.text,
+                                birthDate: birthDate.text,
+                                role: role,
+                              );
+
+                              if (context.mounted) {
+                                context.pop();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _openPlans() async {
@@ -886,6 +1051,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onManagePlans: _openPlans,
               onOpenNotifications: widget.onOpenNotifications,
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _DashboardTabChip(
+                      label: 'Overview',
+                      selected: _selectedTab == _DashboardTab.overview,
+                      onTap: () {
+                        setState(() {
+                          _selectedTab = _DashboardTab.overview;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _DashboardTabChip(
+                      label: 'Members',
+                      selected: _selectedTab == _DashboardTab.members,
+                      onTap: () {
+                        setState(() {
+                          _selectedTab = _DashboardTab.members;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _DashboardTabChip(
+                      label: 'Plans',
+                      selected: _selectedTab == _DashboardTab.plans,
+                      onTap: () {
+                        setState(() {
+                          _selectedTab = _DashboardTab.plans;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: RefreshIndicator(
                 color: const Color(0xFFB59B6A),
@@ -893,101 +1100,121 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                   children: [
-                    _DashboardCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    if (_selectedTab == _DashboardTab.overview) ...[
+                      Row(
                         children: [
-                          Text(
-                            appStrings.inviteAthlete.toUpperCase(),
-                            style: _DashText.section,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            appStrings.inviteAthleteDescription,
-                            style: _DashText.subtle,
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _inviteEmail,
-                            keyboardType: TextInputType.emailAddress,
-                            style: _DashText.body,
-                            decoration: _dashInput(
-                              appStrings.athleteEmail,
-                              Icons.email_outlined,
+                          Expanded(
+                            child: _MetricCard(
+                              label: appStrings.members,
+                              value: '${_members.length}',
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          AppButton(
-                            label: appStrings.inviteAthlete,
-                            loading: _loading,
-                            onPressed: _inviteAthlete,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _MetricCard(
+                              label: appStrings.active,
+                              value:
+                                  '${_members.where((m) => m['is_active'] == true).length}',
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.members,
-                            value: '${_members.length}',
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.active,
-                            value:
-                                '${_members.where((m) => m['is_active'] == true).length}',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _DashboardCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appStrings.members.toUpperCase(),
-                            style: _DashText.section,
-                          ),
-                          const SizedBox(height: 14),
-                          TextField(
-                            controller: _search,
-                            onChanged: (_) => setState(() {}),
-                            style: _DashText.body,
-                            decoration: _dashInput(
-                              appStrings.searchMember,
-                              Icons.search,
+                    ],
+
+                    if (_selectedTab == _DashboardTab.members) ...[
+                      _DashboardCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        appStrings.members.toUpperCase(),
+                                        style: _DashText.section,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Manage ATHLETE615 athletes, coaches and admins.',
+                                        style: _DashText.subtle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 160,
+                                  child: AppButton(
+                                    label: 'Invite member',
+                                    onPressed: _openInviteMemberSheet,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (_loadingMembers)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 22),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFFB59B6A),
+                            const SizedBox(height: 18),
+                            TextField(
+                              controller: _search,
+                              onChanged: (_) => setState(() {}),
+                              style: _DashText.body,
+                              decoration: _dashInput(
+                                appStrings.searchMember,
+                                Icons.search,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (_loadingMembers)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 22),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFFB59B6A),
+                                  ),
+                                ),
+                              )
+                            else if (members.isEmpty)
+                              Text(
+                                appStrings.noMembersFound,
+                                style: _DashText.subtle,
+                              )
+                            else
+                              ...members.map(
+                                (member) => _MemberTile(
+                                  member: member,
+                                  onTap: () => _openMember(member),
                                 ),
                               ),
-                            )
-                          else if (members.isEmpty)
-                            Text(
-                              appStrings.noMembersFound,
-                              style: _DashText.subtle,
-                            )
-                          else
-                            ...members.map(
-                              (member) => _MemberTile(
-                                member: member,
-                                onTap: () => _openMember(member),
-                              ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
+
+                    if (_selectedTab == _DashboardTab.plans) ...[
+                      _DashboardCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appStrings.managePlans.toUpperCase(),
+                              style: _DashText.section,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Manage gym memberships and plans.',
+                              style: _DashText.subtle,
+                            ),
+                            const SizedBox(height: 18),
+                            AppButton(
+                              label: appStrings.managePlans,
+                              onPressed: _openPlans,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1264,6 +1491,47 @@ class _HeaderIcon extends StatelessWidget {
           isLabelVisible: badgeCount > 0,
           label: Text(badgeCount > 99 ? '99+' : badgeCount.toString()),
           child: Icon(icon, size: 18, color: const Color(0xFFB59B6A)),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardTabChip extends StatelessWidget {
+  const _DashboardTabChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFB59B6A) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? const Color(0xFFB59B6A) : const Color(0xFFE7E8EC),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : const Color(0xFF111827),
+            ),
+          ),
         ),
       ),
     );

@@ -25,6 +25,14 @@ serve(async (req) => {
 
     const body = await req.json()
     const email = String(body.email ?? '').trim().toLowerCase()
+    const fullName = String(body.full_name ?? body.fullName ?? '').trim()
+    const phone = String(body.phone ?? '').trim()
+    const birthDate = String(body.birth_date ?? body.birthDate ?? '').trim()
+    const role = String(body.role ?? 'athlete').trim().toLowerCase()
+    const redirectTo =
+      String(body.redirectTo ?? '').trim() ||
+      'athletelab://reset-password'
+
     if (!email) throw new Error('Missing email')
 
     const { data: profile, error: profileError } = await adminClient
@@ -41,14 +49,29 @@ serve(async (req) => {
 
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: {
-        full_name: email,
-        role: 'athlete',
+        full_name: fullName || email,
+        phone: phone || null,
+        birth_date: birthDate || null,
+        role: ['admin', 'coach', 'athlete'].includes(role)
+          ? role
+          : 'athlete',
         gym_id: profile.gym_id,
       },
-      redirectTo: 'athletelab://reset-password',
+      redirectTo,
     })
 
     if (error) throw error
+
+    if (data.user?.id && (phone || birthDate || fullName)) {
+      await adminClient
+        .from('profiles')
+        .update({
+          full_name: fullName || email,
+          phone: phone || null,
+          birth_date: birthDate || null,
+        })
+        .eq('id', data.user.id)
+    }
 
     return new Response(JSON.stringify({ ok: true, user: data.user }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
