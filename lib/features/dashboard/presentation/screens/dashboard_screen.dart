@@ -1165,7 +1165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
-                                        'Manage ATHLETE615 athletes, coaches and admins.',
+                                        'Manage athletes, coaches and admins.',
                                         style: _DashText.subtle,
                                       ),
                                     ],
@@ -1266,6 +1266,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 (member) => _MemberTile(
                                   member: member,
                                   onTap: () => _openMember(member),
+                                  onAssignPlan: () =>
+                                      _openAssignPlan(member['id'].toString()),
                                 ),
                               ),
                           ],
@@ -1308,10 +1310,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member, required this.onTap});
+  const _MemberTile({
+    required this.member,
+    required this.onTap,
+    required this.onAssignPlan,
+  });
 
   final Map<String, dynamic> member;
   final VoidCallback onTap;
+  final Future<void> Function() onAssignPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -1362,7 +1369,11 @@ class _MemberTile extends StatelessWidget {
                     Icons.more_horiz_rounded,
                     color: Color(0xFF8F96A3),
                   ),
-                  onSelected: (value) {},
+                  onSelected: (value) async {
+                    if (value == 'plan') {
+                      await onAssignPlan();
+                    }
+                  },
                   itemBuilder: (context) => const [
                     PopupMenuItem(value: 'plan', child: Text('Assign plan')),
                     PopupMenuItem(
@@ -1539,11 +1550,6 @@ class _DashboardHeader extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       _HeaderIcon(
-                        icon: Icons.card_membership_outlined,
-                        onTap: onManagePlans,
-                      ),
-                      const SizedBox(width: 8),
-                      _HeaderIcon(
                         icon: Icons.notifications_outlined,
                         onTap: onOpenNotifications,
                         badgeCount: unreadNotifications,
@@ -1606,27 +1612,23 @@ class _RoleFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(100),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFB59B6A) : Colors.white,
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: selected ? const Color(0xFFB59B6A) : const Color(0xFFE5E7EB),
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF111827),
-          ),
+    return ChoiceChip(
+      selected: selected,
+      label: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.barlowCondensed(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: selected ? Colors.white : const Color(0xFF8F96A3),
+          height: 1.0,
         ),
       ),
+      selectedColor: const Color(0xFFB59B6A),
+      backgroundColor: Colors.white,
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) => onTap(),
     );
   }
 }
@@ -1644,30 +1646,28 @@ class _DashboardTabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFB59B6A) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? const Color(0xFFB59B6A) : const Color(0xFFE7E8EC),
-          ),
-        ),
+    return ChoiceChip(
+      selected: selected,
+      label: SizedBox(
+        width: double.infinity,
         child: Center(
           child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : const Color(0xFF111827),
+            label.toUpperCase(),
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: selected ? Colors.white : const Color(0xFF8F96A3),
+              height: 1.0,
             ),
           ),
         ),
       ),
+      selectedColor: const Color(0xFFB59B6A),
+      backgroundColor: Colors.white,
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) => onTap(),
     );
   }
 }
@@ -1840,7 +1840,7 @@ class _MemberFilterChip extends StatelessWidget {
       color: selected ? const Color(0xFF0E0E11) : const Color(0xFFF4F5F7),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
