@@ -16,10 +16,12 @@ import '../widgets/edit_class_sheet.dart';
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
     super.key,
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -521,6 +523,7 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           children: [
             BookingHeader(
+              gymName: widget.gymName,
               selectedDay: _selectedDay,
               unreadNotifications: widget.unreadNotifications,
               onOpenNotifications: widget.onOpenNotifications,

@@ -14,10 +14,14 @@ import '../../../auth/data/auth_repository.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
+    required this.gymName,
+    required this.onGymNameChanged,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
+  final Future<void> Function() onGymNameChanged;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -954,7 +958,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .update({'name': name})
           .eq('id', gymId);
 
+      await widget.onGymNameChanged();
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.gymNameUpdated)));
@@ -1090,6 +1097,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: EdgeInsets.zero,
           children: [
             _ProfileHeader(
+              gymName: widget.gymName,
               unreadNotifications: widget.unreadNotifications,
               onOpenNotifications: widget.onOpenNotifications,
             ),
@@ -1400,10 +1408,12 @@ class _ProfileText {
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -1444,7 +1454,7 @@ class _ProfileHeader extends StatelessWidget {
                   child: SizedBox(
                     width: 132,
                     child: Text(
-                      appStrings.appBrand,
+                      gymName ?? appStrings.appBrand,
                       style: _font(
                         18,
                         weight: FontWeight.w800,

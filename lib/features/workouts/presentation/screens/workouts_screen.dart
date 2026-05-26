@@ -14,10 +14,12 @@ import '../widgets/workouts_loading_state.dart';
 class WorkoutsScreen extends StatefulWidget {
   const WorkoutsScreen({
     super.key,
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -228,6 +230,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
         child: Column(
           children: [
             WorkoutsHeader(
+              gymName: widget.gymName,
               canManage: _canManage,
               onPrograms: _openPrograms,
               unreadNotifications: widget.unreadNotifications,

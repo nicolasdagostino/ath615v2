@@ -13,10 +13,12 @@ import '../widgets/explore_header.dart';
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({
     super.key,
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -231,6 +233,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         child: Column(
           children: [
             ExploreHeader(
+              gymName: widget.gymName,
               unreadNotifications: widget.unreadNotifications,
               onOpenNotifications: widget.onOpenNotifications,
             ),

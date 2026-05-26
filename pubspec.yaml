@@ -35,6 +35,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/.env
+    - assets/images/logo_negro.png
 
 
 flutter_launcher_icons:

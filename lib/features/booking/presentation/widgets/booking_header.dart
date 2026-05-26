@@ -6,11 +6,13 @@ import '../../../../core/strings/app_strings.dart';
 class BookingHeader extends StatelessWidget {
   const BookingHeader({
     super.key,
+    required this.gymName,
     required this.selectedDay,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final DateTime selectedDay;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
@@ -35,7 +37,7 @@ class BookingHeader extends StatelessWidget {
     return SizedBox(
       width: 132,
       child: Text(
-        appStrings.appBrand,
+        gymName ?? appStrings.appBrand,
         style: _font(
           18,
           weight: FontWeight.w800,

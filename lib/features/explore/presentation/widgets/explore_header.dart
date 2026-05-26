@@ -6,10 +6,12 @@ import '../../../../core/strings/app_strings.dart';
 class ExploreHeader extends StatelessWidget {
   const ExploreHeader({
     super.key,
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -33,7 +35,7 @@ class ExploreHeader extends StatelessWidget {
     return SizedBox(
       width: 132,
       child: Text(
-        appStrings.appBrand,
+        gymName ?? appStrings.appBrand,
         style: _font(
           18,
           weight: FontWeight.w800,

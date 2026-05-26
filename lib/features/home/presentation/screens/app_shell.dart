@@ -21,6 +21,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
+  String? _gymName;
   int _unreadNotifications = 0;
 
   @override
@@ -40,10 +41,27 @@ class _AppShellState extends State<AppShell> {
         .eq('id', user.id)
         .single();
 
+    final gymId = profile['gym_id']?.toString();
+
+    String? gymName;
+
+    if (gymId != null) {
+      try {
+        final gym = await Supabase.instance.client
+            .from('gyms')
+            .select('name')
+            .eq('id', gymId)
+            .maybeSingle();
+
+        gymName = gym?['name']?.toString();
+      } catch (_) {}
+    }
+
     if (!mounted) return;
 
     setState(() {
       _role = profile['role'] as String?;
+      _gymName = gymName;
     });
   }
 
@@ -89,23 +107,29 @@ class _AppShellState extends State<AppShell> {
 
     final screens = [
       WorkoutsScreen(
+        gymName: _gymName,
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
       BookingScreen(
+        gymName: _gymName,
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
       ExploreScreen(
+        gymName: _gymName,
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
       ProfileScreen(
+        gymName: _gymName,
+        onGymNameChanged: _loadRole,
         unreadNotifications: _unreadNotifications,
         onOpenNotifications: _openNotifications,
       ),
       if (canSeeDashboard)
         DashboardScreen(
+          gymName: _gymName,
           unreadNotifications: _unreadNotifications,
           onOpenNotifications: _openNotifications,
         ),

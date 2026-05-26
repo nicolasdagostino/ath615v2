@@ -12,10 +12,12 @@ import '../widgets/manage_plans_sheet.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
+    required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
 
@@ -1070,6 +1072,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           children: [
             _DashboardHeader(
+              gymName: widget.gymName,
               unreadNotifications: widget.unreadNotifications,
               onManagePlans: _openPlans,
               onOpenNotifications: widget.onOpenNotifications,
@@ -1472,11 +1475,13 @@ class _DashText {
 
 class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({
+    required this.gymName,
     required this.unreadNotifications,
     required this.onManagePlans,
     required this.onOpenNotifications,
   });
 
+  final String? gymName;
   final int unreadNotifications;
   final VoidCallback onManagePlans;
   final VoidCallback onOpenNotifications;
@@ -1501,7 +1506,10 @@ class _DashboardHeader extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     width: 132,
-                    child: Text(appStrings.appBrand, style: _DashText.title),
+                    child: Text(
+                      gymName ?? appStrings.appBrand,
+                      style: _DashText.title,
+                    ),
                   ),
                 ),
               ),

@@ -140,9 +140,26 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
       );
 
       if (!mounted) return;
+
+      FocusScope.of(context).unfocus();
+
+      final messenger = ScaffoldMessenger.of(context);
       final navigator = Navigator.of(context);
+
       navigator.pop();
+
       await widget.onCreated();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            appStrings.pick(
+              'Workout created successfully.',
+              'WOD creado correctamente.',
+            ),
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -168,6 +185,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             borderRadius: BorderRadius.circular(28),
           ),
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             shrinkWrap: true,
             children: [
               Text(
@@ -243,6 +261,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _description,
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
                 maxLines: 6,
                 style: _WorkoutSheetText.body,
                 decoration:

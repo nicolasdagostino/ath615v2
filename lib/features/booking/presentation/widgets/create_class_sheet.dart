@@ -189,8 +189,25 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       }
 
       if (!mounted) return;
+
+      FocusScope.of(context).unfocus();
+
+      final messenger = ScaffoldMessenger.of(context);
+
       Navigator.of(context).pop();
+
       await widget.onCreated();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            appStrings.pick(
+              'Class created successfully.',
+              'Clase creada correctamente.',
+            ),
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -253,6 +270,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             borderRadius: BorderRadius.circular(28),
           ),
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             shrinkWrap: true,
             children: [
               Text(
@@ -366,6 +384,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                   Expanded(
                     child: TextField(
                       controller: _duration,
+                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
                       keyboardType: TextInputType.number,
                       style: _ClassSheetText.body,
                       decoration: _classSheetInput(
@@ -378,6 +397,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                   Expanded(
                     child: TextField(
                       controller: _capacity,
+                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
                       keyboardType: TextInputType.number,
                       style: _ClassSheetText.body,
                       decoration: _classSheetInput(

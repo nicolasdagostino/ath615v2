@@ -108,14 +108,28 @@ class _AuthShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
-          children: [
-            Text(title, style: _AuthText.logo),
-            const SizedBox(height: 6),
-            Text(subtitle, style: _AuthText.subtle),
-            const SizedBox(height: 34),
-            Container(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      'assets/images/logo_negro.png',
+                      height: 96,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(title, style: _AuthText.logo),
+                  const SizedBox(height: 6),
+                  Text(subtitle, style: _AuthText.subtle),
+                  const SizedBox(height: 34),
+                  Container(
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -128,9 +142,12 @@ class _AuthShell extends StatelessWidget {
                   ),
                 ],
               ),
-              child: child,
+                    child: child,
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

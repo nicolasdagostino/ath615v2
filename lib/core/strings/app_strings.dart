@@ -98,7 +98,7 @@ class AppStrings {
     'Prueba otro día o vuelve a revisar más tarde.',
   );
 
-  String get workoutsTitle => pick('Workouts', 'WODs');
+  String get workoutsTitle => pick('WOD', 'WOD');
 
   String get workoutCreateTitle => pick('Create workout', 'Crear WOD');
   String get workoutNeedProgram => pick(
