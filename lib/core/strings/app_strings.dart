@@ -249,6 +249,10 @@ class AppStrings {
   String get authSetNewPasswordSubtitleWaiting =>
       pick('Opening secure invitation...', 'Abriendo invitación segura...');
   String get authNewPasswordSection => pick('New password', 'Nueva contraseña');
+  String get authConfirmPassword =>
+      pick('Confirm password', 'Confirmar contraseña');
+  String get authPasswordsDoNotMatch =>
+      pick('Passwords do not match.', 'Las contraseñas no coinciden.');
   String get authSavePassword => pick('Save password', 'Guardar contraseña');
   String get authWaitingForSession =>
       pick('Waiting for session...', 'Esperando sesión...');

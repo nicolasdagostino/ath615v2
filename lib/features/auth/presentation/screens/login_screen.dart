@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  bool _obscurePassword = true;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
@@ -66,12 +67,27 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _password,
-            obscureText: true,
+            obscureText: _obscurePassword,
             style: _AuthText.body,
-            decoration: _authInput(
-              appStrings.authPassword,
-              Icons.lock_outline_rounded,
-            ),
+            decoration:
+                _authInput(
+                  appStrings.authPassword,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
           ),
           const SizedBox(height: 18),
           AppButton(
@@ -130,18 +146,18 @@ class _AuthShell extends StatelessWidget {
                   Text(subtitle, style: _AuthText.subtle),
                   const SizedBox(height: 34),
                   Container(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
                     child: child,
                   ),
                 ],

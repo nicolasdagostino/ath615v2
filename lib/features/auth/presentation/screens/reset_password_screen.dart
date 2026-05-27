@@ -16,8 +16,12 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+
   bool _loading = false;
   bool _sessionReady = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
@@ -30,6 +34,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   void dispose() {
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -39,6 +44,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         if (mounted) setState(() => _sessionReady = true);
         return;
       }
+
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
 
@@ -53,13 +59,24 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return;
     }
 
+    if (_password.text != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.authPasswordsDoNotMatch)),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
+
     try {
       await _repo.updatePassword(_password.text);
+
       if (!mounted) return;
+
       context.go('/');
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(appStrings.passwordUpdateError(e))),
       );
@@ -85,12 +102,52 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _password,
-            obscureText: true,
+            obscureText: _obscurePassword,
             style: _AuthText.body,
-            decoration: _authInput(
-              appStrings.authNewPasswordSection,
-              Icons.lock_outline_rounded,
-            ),
+            decoration:
+                _authInput(
+                  appStrings.authNewPasswordSection,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirmPassword,
+            obscureText: _obscureConfirmPassword,
+            style: _AuthText.body,
+            decoration:
+                _authInput(
+                  appStrings.authConfirmPassword,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
           ),
           const SizedBox(height: 18),
           AppButton(

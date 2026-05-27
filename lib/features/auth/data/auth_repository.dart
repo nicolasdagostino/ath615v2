@@ -15,15 +15,6 @@ class AuthRepository {
   Future<void> resetPassword(String email) async {
     final normalizedEmail = email.trim().toLowerCase();
 
-    final isRegistered = await _client.rpc(
-      'email_registered_for_password_reset',
-      params: {'p_email': normalizedEmail},
-    );
-
-    if (isRegistered != true) {
-      throw const AuthException('account_not_found');
-    }
-
     await _client.auth.resetPasswordForEmail(
       normalizedEmail,
       redirectTo: 'athletelab://reset-password',
