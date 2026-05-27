@@ -165,10 +165,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('INVITE MEMBER', style: _DashText.section),
+                    Text(
+                      appStrings.inviteAthlete.toUpperCase(),
+                      style: _DashText.section,
+                    ),
                     const SizedBox(height: 6),
                     Text(
-                      'Send an invitation to join ATHLETE615.',
+                      appStrings.inviteAthleteDescription,
                       style: _DashText.subtle,
                     ),
                     const SizedBox(height: 24),
@@ -188,7 +191,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       controller: email,
                       keyboardType: TextInputType.emailAddress,
                       style: _DashText.body,
-                      decoration: _dashInput('Email', Icons.email_outlined),
+                      decoration: _dashInput(
+                        appStrings.athleteEmail,
+                        Icons.email_outlined,
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -213,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           controller: birthDate,
                           style: _DashText.body,
                           decoration: _dashInput(
-                            'Birth date',
+                            appStrings.birthDate,
                             Icons.cake_outlined,
                           ),
                         ),
@@ -224,15 +230,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     DropdownButtonFormField<String>(
                       initialValue: role,
-                      decoration: _dashInput('Role', Icons.shield_outlined),
+                      decoration: _dashInput(
+                        appStrings.role,
+                        Icons.shield_outlined,
+                      ),
                       style: _DashText.body,
                       dropdownColor: Colors.white,
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: 'athlete',
-                          child: Text('Athlete'),
+                          child: Text(appStrings.member),
                         ),
-                        DropdownMenuItem(value: 'coach', child: Text('Coach')),
+                        DropdownMenuItem(
+                          value: 'coach',
+                          child: Text(appStrings.coach),
+                        ),
                         DropdownMenuItem(value: 'admin', child: Text('Admin')),
                       ],
                       onChanged: (value) {
@@ -256,7 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 14),
                         Expanded(
                           child: AppButton(
-                            label: 'Send invitation',
+                            label: appStrings.inviteAthlete,
                             loading: _loading,
                             onPressed: () async {
                               await _inviteAthlete(
@@ -539,6 +551,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return List<Map<String, dynamic>>.from(res);
   }
 
+  Future<void> _toggleMemberActive(Map<String, dynamic> member) async {
+    final memberId = member['id']?.toString();
+
+    if (memberId == null) return;
+
+    final current = member['is_active'] == true;
+    final next = !current;
+
+    try {
+      final updated = await Supabase.instance.client
+          .rpc(
+            'set_gym_member_active',
+            params: {'p_member_id': memberId, 'p_is_active': next},
+          )
+          .single();
+
+      if (!mounted) return;
+
+      setState(() {
+        final index = _members.indexWhere(
+          (m) => m['id']?.toString() == memberId,
+        );
+
+        if (index != -1) {
+          _members[index] = {
+            ..._members[index],
+            'is_active': updated['is_active'] == true,
+          };
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            next
+                ? 'Member activated successfully.'
+                : 'Member deactivated successfully.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update member status: $e')),
+      );
+    }
+  }
+
   Future<void> _openAssignPlan(String userId) async {
     final gymId = _gymId;
     if (gymId == null) return;
@@ -793,10 +854,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   appStrings.role,
                                   Icons.admin_panel_settings_outlined,
                                 ),
-                                items: const [
+                                items: [
                                   DropdownMenuItem(
                                     value: 'athlete',
-                                    child: Text('Athlete'),
+                                    child: Text(appStrings.member),
                                   ),
                                   DropdownMenuItem(
                                     value: 'admin',
@@ -1083,7 +1144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Expanded(
                     child: _DashboardTabChip(
-                      label: 'Overview',
+                      label: appStrings.dashboardTitle,
                       selected: _selectedTab == _DashboardTab.overview,
                       onTap: () {
                         setState(() {
@@ -1095,7 +1156,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _DashboardTabChip(
-                      label: 'Members',
+                      label: appStrings.members,
                       selected: _selectedTab == _DashboardTab.members,
                       onTap: () {
                         setState(() {
@@ -1107,7 +1168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _DashboardTabChip(
-                      label: 'Plans',
+                      label: appStrings.membershipTitle,
                       selected: _selectedTab == _DashboardTab.plans,
                       onTap: () {
                         setState(() {
@@ -1165,7 +1226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
-                                        'Manage athletes, coaches and admins.',
+                                        appStrings.dashboardHeaderSubtitle,
                                         style: _DashText.subtle,
                                       ),
                                     ],
@@ -1175,7 +1236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 SizedBox(
                                   width: 160,
                                   child: AppButton(
-                                    label: 'Invite member',
+                                    label: appStrings.inviteAthlete,
                                     onPressed: _openInviteMemberSheet,
                                   ),
                                 ),
@@ -1198,7 +1259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: Row(
                                 children: [
                                   _RoleFilterChip(
-                                    label: 'All',
+                                    label: appStrings.all,
                                     selected:
                                         _roleFilter == _MemberRoleFilter.all,
                                     onTap: () {
@@ -1268,6 +1329,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   onTap: () => _openMember(member),
                                   onAssignPlan: () =>
                                       _openAssignPlan(member['id'].toString()),
+                                  onToggleActive: () =>
+                                      _toggleMemberActive(member),
                                 ),
                               ),
                           ],
@@ -1286,7 +1349,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Manage gym memberships and plans.',
+                              appStrings.manageMembershipsDescription,
                               style: _DashText.subtle,
                             ),
                             const SizedBox(height: 18),
@@ -1314,11 +1377,13 @@ class _MemberTile extends StatelessWidget {
     required this.member,
     required this.onTap,
     required this.onAssignPlan,
+    required this.onToggleActive,
   });
 
   final Map<String, dynamic> member;
   final VoidCallback onTap;
   final Future<void> Function() onAssignPlan;
+  final Future<void> Function() onToggleActive;
 
   @override
   Widget build(BuildContext context) {
@@ -1335,54 +1400,72 @@ class _MemberTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-            child: Row(
-              children: [
-                _MemberAvatar(
-                  name: name,
-                  avatarUrl: member['avatar_url']?.toString(),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _DashText.title,
+          child: Opacity(
+            opacity: active ? 1 : 0.55,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              child: Row(
+                children: [
+                  _MemberAvatar(
+                    name: name,
+                    avatarUrl: member['avatar_url']?.toString(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _DashText.title,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$email · ${active ? appStrings.active : appStrings.inactive} · $role',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _DashText.subtle,
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_horiz_rounded,
+                      color: Color(0xFF8F96A3),
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'plan') {
+                        await onAssignPlan();
+                      }
+
+                      if (value == 'toggle_active') {
+                        await onToggleActive();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'plan',
+                        child: Text(appStrings.assignPlan),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$email · ${active ? appStrings.active : appStrings.inactive} · $role',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _DashText.subtle,
+                      PopupMenuItem(
+                        value: 'toggle_active',
+                        child: Text(
+                          active
+                              ? appStrings.deactivateMember
+                              : appStrings.activateMember,
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'resend',
+                        child: Text(appStrings.resendInvitation),
                       ),
                     ],
                   ),
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_horiz_rounded,
-                    color: Color(0xFF8F96A3),
-                  ),
-                  onSelected: (value) async {
-                    if (value == 'plan') {
-                      await onAssignPlan();
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'plan', child: Text('Assign plan')),
-                    PopupMenuItem(
-                      value: 'resend',
-                      child: Text('Resend invitation'),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

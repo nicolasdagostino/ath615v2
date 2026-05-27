@@ -1188,7 +1188,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _PersonalRecordsCard(
                       records: _personalRecords.take(5).toList(),
                       formatDate: _formatDate,
-                      onAdd: _openPersonalRecordSheet,
                       onView: _openPersonalRecordsListSheet,
                       onDelete: _deletePersonalRecord,
                     ),
@@ -1237,30 +1236,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: _ProfileText.subtle,
                             )
                           else ...[
-                            _CreditLogSection(
-                              title: appStrings.assignedCredits,
-                              logs: _creditLogs
-                                  .where((log) => log['reason'] == 'assigned')
-                                  .toList(),
-                              formatDate: _formatDate,
-                              reasonLabel: _creditReasonLabel,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _CreditSummaryChip(
+                                    label: appStrings.assigned,
+                                    value: _creditLogs
+                                        .where(
+                                          (log) => log['reason'] == 'assigned',
+                                        )
+                                        .fold<int>(
+                                          0,
+                                          (sum, log) =>
+                                              sum +
+                                              ((log['amount'] as num?) ?? 0)
+                                                  .toInt(),
+                                        )
+                                        .toString(),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _CreditSummaryChip(
+                                    label: appStrings.booked,
+                                    value: _creditLogs
+                                        .where(
+                                          (log) => log['reason'] == 'booked',
+                                        )
+                                        .length
+                                        .toString(),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _CreditSummaryChip(
+                                    label: appStrings.cancelled,
+                                    value: _creditLogs
+                                        .where(
+                                          (log) => log['reason'] == 'cancelled',
+                                        )
+                                        .length
+                                        .toString(),
+                                  ),
+                                ),
+                              ],
                             ),
-                            _CreditLogSection(
-                              title: appStrings.bookedCredits,
-                              logs: _creditLogs
-                                  .where((log) => log['reason'] == 'booked')
-                                  .toList(),
-                              formatDate: _formatDate,
-                              reasonLabel: _creditReasonLabel,
+                            const SizedBox(height: 18),
+                            Text(
+                              'RECENT ACTIVITY',
+                              style: _ProfileText.sectionTitle,
                             ),
-                            _CreditLogSection(
-                              title: appStrings.cancelledCredits,
-                              logs: _creditLogs
-                                  .where((log) => log['reason'] == 'cancelled')
-                                  .toList(),
-                              formatDate: _formatDate,
-                              reasonLabel: _creditReasonLabel,
-                            ),
+                            const SizedBox(height: 10),
+                            ..._creditLogs.take(5).map((log) {
+                              final amount = ((log['amount'] as num?) ?? 0)
+                                  .toInt();
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    14,
+                                    12,
+                                    14,
+                                    12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF7F8FA),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _creditReasonLabel(
+                                            log['reason']?.toString() ?? '',
+                                          ),
+                                          style: _ProfileText.title,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${amount > 0 ? '+' : ''}$amount',
+                                        style: _ProfileText.title,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        _formatDate(
+                                          log['created_at']?.toString(),
+                                        ),
+                                        style: _ProfileText.subtle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
                           ],
                         ],
                       ),
@@ -1540,14 +1609,12 @@ class _PersonalRecordsCard extends StatelessWidget {
   const _PersonalRecordsCard({
     required this.records,
     required this.formatDate,
-    required this.onAdd,
     required this.onView,
     required this.onDelete,
   });
 
   final List<Map<String, dynamic>> records;
   final String Function(String? raw) formatDate;
-  final VoidCallback onAdd;
   final VoidCallback onView;
   final ValueChanged<String> onDelete;
 
@@ -1569,20 +1636,7 @@ class _PersonalRecordsCard extends StatelessWidget {
             style: _ProfileText.subtle,
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: AppButton(
-                  label: appStrings.viewRecords,
-                  onPressed: onView,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: AppButton(label: appStrings.addRecord, onPressed: onAdd),
-              ),
-            ],
-          ),
+          AppButton(label: appStrings.viewRecords, onPressed: onView),
         ],
       ),
     );
@@ -2024,42 +2078,37 @@ class _SkeletonBox extends StatelessWidget {
   }
 }
 
-class _CreditLogSection extends StatelessWidget {
-  const _CreditLogSection({
-    required this.title,
-    required this.logs,
-    required this.formatDate,
-    required this.reasonLabel,
-  });
+class _CreditSummaryChip extends StatelessWidget {
+  const _CreditSummaryChip({required this.label, required this.value});
 
-  final String title;
-  final List<Map<String, dynamic>> logs;
-  final String Function(String? raw) formatDate;
-  final String Function(String reason) reasonLabel;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    if (logs.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title.toUpperCase(), style: _ProfileText.sectionTitle),
+          Text(
+            value,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0E0E11),
+              height: 1,
+            ),
+          ),
           const SizedBox(height: 6),
-          ...logs.map((log) {
-            final amount = log['amount'];
-            final sign = (amount is int && amount > 0) ? '+' : '';
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '$sign$amount · ${reasonLabel(log['reason']?.toString() ?? '')} · ${formatDate(log['created_at']?.toString())}',
-                style: _ProfileText.subtle,
-              ),
-            );
-          }),
+          Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: _ProfileText.subtle,
+          ),
         ],
       ),
     );

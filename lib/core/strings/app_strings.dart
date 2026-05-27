@@ -311,6 +311,15 @@ class AppStrings {
   String get noProgramsYet => pick('No programs yet.', 'Aún no hay programas.');
   String get active => pick('Active', 'Activo');
   String get inactive => pick('Inactive', 'Inactivo');
+  String get activateMember => pick('Activate member', 'Activar miembro');
+  String get deactivateMember =>
+      pick('Deactivate member', 'Desactivar miembro');
+  String get resendInvitation =>
+      pick('Resend invitation', 'Reenviar invitación');
+  String get manageMembershipsDescription => pick(
+    'Manage gym memberships and plans.',
+    'Gestiona membresías y planes del gym.',
+  );
 
   String get createClassTitle => pick('Create class', 'Crear clase');
   String get classNeedProgram => pick(

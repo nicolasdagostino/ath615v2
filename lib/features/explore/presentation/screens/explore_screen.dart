@@ -26,10 +26,56 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
+class _InactiveExploreState extends StatelessWidget {
+  const _InactiveExploreState();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
+      children: [
+        Column(
+          children: [
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 42,
+              color: Color(0xFFB59B6A),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'ACCOUNT INACTIVE',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0E0E11),
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Activate your account to access workout history.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF8F96A3),
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _ExploreScreenState extends State<ExploreScreen> {
   bool _loading = true;
   String? _role;
   String? _gymId;
+  bool _isAccountActive = true;
   String _search = '';
   String? _selectedProgramId;
 
@@ -82,14 +128,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
       final profile = await _client
           .from('profiles')
-          .select('role, gym_id')
+          .select('role, gym_id, is_active')
           .eq('id', user.id)
           .single();
 
       final gymId = profile['gym_id'] as String?;
+      final role = profile['role'] as String?;
+      final isAccountActive = profile['is_active'] == true;
       final today = DateTime.now().toIso8601String().split('T').first;
 
-      final programs = gymId == null
+      final programs = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
           : await _client
                 .from('programs')
@@ -98,7 +146,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 .eq('is_active', true)
                 .order('name');
 
-      final workouts = gymId == null
+      final workouts = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
           : await _client
                 .from('workouts')
@@ -112,8 +160,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
       if (!mounted) return;
       setState(() {
-        _role = profile['role'] as String?;
+        _role = role;
         _gymId = gymId;
+        _isAccountActive = isAccountActive;
         _programs = List<Map<String, dynamic>>.from(programs);
         _workouts = List<Map<String, dynamic>>.from(workouts);
       });
@@ -327,6 +376,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 onRefresh: _refresh,
                 child: _loading
                     ? const WorkoutsLoadingState()
+                    : _role == 'athlete' && !_isAccountActive
+                    ? const _InactiveExploreState()
                     : filteredWorkouts.isEmpty
                     ? const WorkoutsEmptyState()
                     : ListView.builder(

@@ -347,24 +347,25 @@ class _NotificationsHeader extends StatelessWidget {
                 ],
               ),
             ),
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: Row(
-                children: [
-                  _HeaderIcon(
-                    icon: Icons.done_all_rounded,
-                    onTap: onMarkAllRead,
-                  ),
-                  const SizedBox(width: 8),
-                  _HeaderIcon(
-                    icon: Icons.delete_sweep_outlined,
-                    onTap: onClear,
-                  ),
-                ],
+            if (unreadCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Row(
+                  children: [
+                    _HeaderIcon(
+                      icon: Icons.done_all_rounded,
+                      onTap: onMarkAllRead,
+                    ),
+                    const SizedBox(width: 8),
+                    _HeaderIcon(
+                      icon: Icons.delete_sweep_outlined,
+                      onTap: onClear,
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

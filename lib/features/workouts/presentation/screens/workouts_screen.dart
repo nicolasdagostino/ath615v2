@@ -31,6 +31,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   bool _loading = true;
   String? _role;
   String? _gymId;
+  bool _isAccountActive = true;
   List<Map<String, dynamic>> _workouts = [];
 
   SupabaseClient get _client => Supabase.instance.client;
@@ -54,13 +55,15 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
 
       final profile = await _client
           .from('profiles')
-          .select('role, gym_id')
+          .select('role, gym_id, is_active')
           .eq('id', user.id)
           .single();
 
       final gymId = profile['gym_id'] as String?;
+      final role = profile['role'] as String?;
+      final isAccountActive = profile['is_active'] == true;
 
-      final workouts = gymId == null
+      final workouts = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
           : await _client
                 .from('workouts')
@@ -76,8 +79,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
 
       if (!mounted) return;
       setState(() {
-        _role = profile['role'] as String?;
+        _role = role;
         _gymId = gymId;
+        _isAccountActive = isAccountActive;
         _workouts = List<Map<String, dynamic>>.from(workouts);
       });
     } catch (e) {
@@ -242,6 +246,12 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                 onRefresh: _refresh,
                 child: _loading
                     ? const WorkoutsLoadingState()
+                    : _role == 'athlete' && !_isAccountActive
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
+                        children: const [_InactiveAccountState()],
+                      )
                     : _workouts.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -315,6 +325,45 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InactiveAccountState extends StatelessWidget {
+  const _InactiveAccountState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(
+          Icons.lock_outline_rounded,
+          size: 42,
+          color: Color(0xFFB59B6A),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'ACCOUNT INACTIVE',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0E0E11),
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Activate your account to access today\'s WOD.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF8F96A3),
+            height: 1.25,
+          ),
+        ),
+      ],
     );
   }
 }

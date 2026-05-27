@@ -35,6 +35,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _role;
   String? _gymId;
   bool _hasActiveMembership = false;
+  bool _isAccountActive = true;
   int? _creditsRemaining;
 
   DateTime _selectedDay = DateTime.now();
@@ -65,12 +66,13 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final profile = await _client
           .from('profiles')
-          .select('role, gym_id')
+          .select('role, gym_id, is_active')
           .eq('id', user.id)
           .single();
 
       final gymId = profile['gym_id'] as String?;
       final role = profile['role'] as String?;
+      final isAccountActive = profile['is_active'] == true;
 
       bool hasActiveMembership = true;
       int? creditsRemaining;
@@ -115,6 +117,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _myBookedClassIds = {};
           _myClassStatuses = {};
           _hasActiveMembership = hasActiveMembership;
+          _isAccountActive = isAccountActive;
           _creditsRemaining = creditsRemaining;
         });
         return;
@@ -173,6 +176,7 @@ class _BookingScreenState extends State<BookingScreen> {
         _myBookedClassIds = bookedIds;
         _myClassStatuses = bookingStatuses;
         _hasActiveMembership = hasActiveMembership;
+        _isAccountActive = isAccountActive;
         _creditsRemaining = creditsRemaining;
       });
     } catch (e) {
@@ -188,6 +192,15 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<void> _bookClass(Map<String, dynamic> klass) async {
     final user = _client.auth.currentUser;
     if (user == null) return;
+
+    if (!_isAccountActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activate your account to reserve classes.'),
+        ),
+      );
+      return;
+    }
 
     if (!_hasActiveMembership) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -596,6 +609,9 @@ class _BookingScreenState extends State<BookingScreen> {
                               buttonLabel = appStrings.bookingBooked;
                               buttonAction = null;
                             }
+                          } else if (!_isAccountActive) {
+                            buttonLabel = 'Activate account';
+                            buttonAction = null;
                           } else if (!_hasActiveMembership) {
                             buttonLabel = appStrings.bookingMembershipRequired;
                             buttonAction = null;
