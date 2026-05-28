@@ -82,6 +82,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
   List<Map<String, dynamic>> _workouts = [];
   List<Map<String, dynamic>> _programs = [];
 
+  int _programWorkoutCount(String? programId) {
+    if (programId == null) return _workouts.length;
+
+    return _workouts
+        .where((w) => w['program_id']?.toString() == programId)
+        .length;
+  }
+
   SupabaseClient get _client => Supabase.instance.client;
 
   bool get _canManage => _role == 'admin' || _role == 'owner';
@@ -337,10 +345,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ? _selectedProgramId == null
                       : _selectedProgramId == id;
 
-                  final label = all
+                  final count = _programWorkoutCount(id);
+
+                  final baseLabel = all
                       ? appStrings.exploreAllPrograms
                       : program?['name']?.toString() ??
                             appStrings.workoutProgram;
+
+                  final label = '$baseLabel ($count)';
 
                   return ChoiceChip(
                     selected: selected,

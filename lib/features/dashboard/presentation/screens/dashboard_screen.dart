@@ -38,6 +38,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
 
+  int get _allMembersCount => _members.length;
+
+  int get _athletesCount =>
+      _members.where((m) => m['role'] == 'athlete').length;
+
+  int get _coachesCount => _members.where((m) => m['role'] == 'coach').length;
+
+  int get _adminsCount => _members.where((m) => m['role'] == 'admin').length;
+
   @override
   void initState() {
     super.initState();
@@ -1079,7 +1088,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Expanded(
                                 child: _MemberFilterChip(
-                                  label: appStrings.all,
+                                  label:
+                                      '${appStrings.all} ($_allMembersCount)',
                                   selected: historyFilter == 'all',
                                   onTap: () => setSheetState(
                                     () => historyFilter = 'all',
@@ -1296,7 +1306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   _RoleFilterChip(
-                                    label: 'Athletes',
+                                    label: 'Athletes ($_athletesCount)',
                                     selected:
                                         _roleFilter ==
                                         _MemberRoleFilter.athlete,
@@ -1308,7 +1318,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   _RoleFilterChip(
-                                    label: 'Coaches',
+                                    label: 'Coaches ($_coachesCount)',
                                     selected:
                                         _roleFilter == _MemberRoleFilter.coach,
                                     onTap: () {
@@ -1319,7 +1329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   _RoleFilterChip(
-                                    label: 'Admins',
+                                    label: 'Admins ($_adminsCount)',
                                     selected:
                                         _roleFilter == _MemberRoleFilter.admin,
                                     onTap: () {
