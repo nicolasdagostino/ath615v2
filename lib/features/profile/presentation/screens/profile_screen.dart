@@ -269,9 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 shrinkWrap: true,
                 children: [
                   Text(title.toUpperCase(), style: _ProfileConfirmText.title),
-                  const SizedBox(height: 10),
                   Text(message, style: _ProfileConfirmText.body),
-                  const SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(
@@ -1230,13 +1228,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _ClassHistoryCard(
-                      history: _classHistory.take(5).toList(),
-                      formatDate: _formatDate,
-                      onViewAll: _openFullHistorySheet,
-                    ),
-                    const SizedBox(height: 18),
                     _ProfileCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1278,16 +1269,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
                     _ProfileMilestoneCard(attendedCount: _attendedCount),
-                    const SizedBox(height: 18),
+                    _ProfileSectionLabel(label: 'TRAINING'),
                     _PersonalRecordsCard(
                       records: _personalRecords.take(5).toList(),
                       formatDate: _formatDate,
                       onView: _openPersonalRecordsListSheet,
                       onDelete: _deletePersonalRecord,
                     ),
-                    const SizedBox(height: 18),
+                    _ClassHistoryCard(
+                      history: _classHistory.take(5).toList(),
+                      formatDate: _formatDate,
+                      onViewAll: _openFullHistorySheet,
+                    ),
                     _ProfileCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1320,12 +1314,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 18),
                           Text(
                             appStrings.creditHistory.toUpperCase(),
                             style: _ProfileText.sectionTitle,
                           ),
-                          const SizedBox(height: 10),
                           if (_creditLogs.isEmpty)
                             Text(
                               appStrings.noCreditHistory,
@@ -1377,12 +1369,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 18),
                             Text(
-                              'RECENT ACTIVITY',
+                              'MEMBERSHIP HISTORY',
                               style: _ProfileText.sectionTitle,
                             ),
-                            const SizedBox(height: 10),
                             ..._creditLogs.take(5).map((log) {
                               final amount = ((log['amount'] as num?) ?? 0)
                                   .toInt();
@@ -1430,7 +1420,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    _ProfileSectionLabel(label: 'SETTINGS'),
                     _ProfileListCard(
                       children: [
                         _ProfileMenuRow(
@@ -1448,7 +1438,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
                     _ProfileListCard(
                       children: [
                         if (canEditGym)
@@ -1500,7 +1489,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     if (_appVersion.isNotEmpty) ...[
-                      const SizedBox(height: 18),
                       Center(
                         child: Text(
                           'ATHLETE615 · $_appVersion',
@@ -1733,7 +1721,6 @@ class _PersonalRecordsCard extends StatelessWidget {
             appStrings.personalRecords.toUpperCase(),
             style: _ProfileText.sectionTitle,
           ),
-          const SizedBox(height: 10),
           Text(
             records.isEmpty
                 ? appStrings.noRecordsYet
@@ -1769,7 +1756,6 @@ class _ClassHistoryCard extends StatelessWidget {
             appStrings.classHistory.toUpperCase(),
             style: _ProfileText.sectionTitle,
           ),
-          const SizedBox(height: 10),
           if (history.isEmpty)
             Text(appStrings.noClasses, style: _ProfileText.subtle)
           else
@@ -1940,6 +1926,20 @@ class _ProfileMilestoneCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileSectionLabel extends StatelessWidget {
+  const _ProfileSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(label, style: _ProfileText.sectionTitle),
     );
   }
 }
