@@ -32,7 +32,6 @@ enum _MemberRoleFilter { all, athlete, coach, admin }
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
 
-  bool _loading = false;
   bool _loadingMembers = true;
   _DashboardTab _selectedTab = _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
@@ -100,8 +99,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String? birthDate,
     String role = 'athlete',
   }) async {
-    setState(() => _loading = true);
-
     try {
       await Supabase.instance.client.functions.invoke(
         'admin-invite-athlete',
@@ -127,20 +124,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.inviteAthleteError(e))));
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
     }
   }
 
   Future<void> _openInviteMemberSheet() async {
-    final fullName = TextEditingController();
     final email = TextEditingController();
+    final fullName = TextEditingController();
     final phone = TextEditingController();
     final birthDate = TextEditingController();
 
     String role = 'athlete';
+    var inviting = false;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -175,7 +169,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: _DashText.subtle,
                     ),
                     const SizedBox(height: 24),
-
                     TextField(
                       controller: fullName,
                       style: _DashText.body,
@@ -184,9 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icons.person_outline,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     TextField(
                       controller: email,
                       keyboardType: TextInputType.emailAddress,
@@ -196,9 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icons.email_outlined,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     TextField(
                       controller: phone,
                       keyboardType: TextInputType.phone,
@@ -208,12 +197,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icons.phone_outlined,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     InkWell(
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => _pickBirthDate(birthDate),
+                      onTap: inviting ? null : () => _pickBirthDate(birthDate),
                       child: IgnorePointer(
                         child: TextField(
                           controller: birthDate,
@@ -225,9 +212,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     DropdownButtonFormField<String>(
                       initialValue: role,
                       decoration: _dashInput(
@@ -245,44 +230,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: 'coach',
                           child: Text(appStrings.coach),
                         ),
-                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                        const DropdownMenuItem(
+                          value: 'admin',
+                          child: Text('Admin'),
+                        ),
                       ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setSheetState(() {
-                          role = value;
-                        });
-                      },
+                      onChanged: inviting
+                          ? null
+                          : (value) {
+                              if (value == null) return;
+                              setSheetState(() {
+                                role = value;
+                              });
+                            },
                     ),
-
                     const SizedBox(height: 24),
-
                     Row(
                       children: [
                         Expanded(
                           child: AppButton(
                             label: appStrings.cancel,
-                            onPressed: () => context.pop(),
+                            onPressed: inviting ? null : () => context.pop(),
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: AppButton(
                             label: appStrings.inviteAthlete,
-                            loading: _loading,
-                            onPressed: () async {
-                              await _inviteAthlete(
-                                email: email.text,
-                                fullName: fullName.text,
-                                phone: phone.text,
-                                birthDate: birthDate.text,
-                                role: role,
-                              );
+                            loading: inviting,
+                            onPressed: inviting
+                                ? null
+                                : () async {
+                                    setSheetState(() {
+                                      inviting = true;
+                                    });
 
-                              if (context.mounted) {
-                                context.pop();
-                              }
-                            },
+                                    await _inviteAthlete(
+                                      email: email.text,
+                                      fullName: fullName.text,
+                                      phone: phone.text,
+                                      birthDate: birthDate.text,
+                                      role: role,
+                                    );
+
+                                    if (context.mounted) {
+                                      context.pop();
+                                    }
+                                  },
                           ),
                         ),
                       ],
@@ -295,6 +289,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
+
+    email.dispose();
+    fullName.dispose();
+    phone.dispose();
+    birthDate.dispose();
   }
 
   Future<void> _openPlans() async {
@@ -601,6 +600,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openAssignPlan(String userId) async {
+    final rootContext = context;
     final gymId = _gymId;
     if (gymId == null) return;
 
@@ -613,6 +613,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .eq('is_active', true);
 
     String? selectedPlanId;
+    var saving = false;
 
     if (!mounted) return;
 
@@ -655,6 +656,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final name =
                               plan['name']?.toString() ?? appStrings.plan;
                           final credits = plan['credits'];
+
                           final label = credits == null
                               ? '$name · ${appStrings.unlimited}'
                               : '$name · $credits ${appStrings.creditsLower}';
@@ -664,16 +666,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Text(label, style: _DashText.body),
                           );
                         }).toList(),
-                        onChanged: (value) {
-                          setSheetState(() => selectedPlanId = value);
-                        },
+                        onChanged: saving
+                            ? null
+                            : (value) {
+                                setSheetState(() {
+                                  selectedPlanId = value;
+                                });
+                              },
                       ),
                       const SizedBox(height: 18),
                       AppButton(
                         label: appStrings.assign,
-                        onPressed: selectedPlanId == null
+                        loading: saving,
+                        onPressed: selectedPlanId == null || saving
                             ? null
                             : () async {
+                                setSheetState(() {
+                                  saving = true;
+                                });
+
                                 try {
                                   await client.rpc(
                                     'assign_membership_plan',
@@ -684,21 +695,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   );
 
                                   if (!context.mounted) return;
+
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
+
+                                  if (!rootContext.mounted) return;
+
+                                  ScaffoldMessenger.of(
+                                    rootContext,
+                                  ).showSnackBar(
                                     SnackBar(
                                       content: Text(appStrings.planAssigned),
                                     ),
                                   );
                                 } catch (e) {
                                   if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
+
+                                  ScaffoldMessenger.of(
+                                    rootContext,
+                                  ).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         appStrings.assignPlanError(e),
                                       ),
                                     ),
                                   );
+                                } finally {
+                                  if (context.mounted) {
+                                    setSheetState(() {
+                                      saving = false;
+                                    });
+                                  }
                                 }
                               },
                       ),
