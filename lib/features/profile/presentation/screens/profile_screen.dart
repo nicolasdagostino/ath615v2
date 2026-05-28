@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -38,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _birthDate = TextEditingController();
   bool _loading = false;
   bool _uploadingAvatar = false;
+  String _appVersion = '';
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
@@ -73,7 +75,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _load();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+
+    if (!mounted) return;
+
+    setState(() {
+      _appVersion = 'v${info.version}+${info.buildNumber}';
+    });
   }
 
   @override
@@ -1484,6 +1497,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
+                    if (_appVersion.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      Center(
+                        child: Text(
+                          'ATHLETE615 · $_appVersion',
+                          style: _ProfileText.subtle,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
