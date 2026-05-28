@@ -1,4 +1,4 @@
-package com.athlete615.ath615v2
+package com.athlete615.app
 
 import io.flutter.embedding.android.FlutterActivity
 

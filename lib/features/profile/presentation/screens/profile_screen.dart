@@ -1237,6 +1237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? appStrings.notSet
                                 : profileName,
                           ),
+                          _InfoRow(label: appStrings.authEmail, value: email),
                           _InfoRow(
                             label: appStrings.phone,
                             value:
