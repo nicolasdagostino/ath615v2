@@ -142,24 +142,11 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
       if (!mounted) return;
 
       FocusScope.of(context).unfocus();
-
-      final messenger = ScaffoldMessenger.of(context);
       final navigator = Navigator.of(context);
 
       navigator.pop();
 
       await widget.onCreated();
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            appStrings.pick(
-              'Workout created successfully.',
-              'WOD creado correctamente.',
-            ),
-          ),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

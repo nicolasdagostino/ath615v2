@@ -43,6 +43,7 @@ class _BookingScreenState extends State<BookingScreen> {
   List<Map<String, dynamic>> _classes = [];
   Set<String> _myBookedClassIds = {};
   Map<String, String> _myClassStatuses = {};
+  String? _bookingActionClassId;
 
   SupabaseClient get _client => Supabase.instance.client;
 
@@ -231,9 +232,6 @@ class _BookingScreenState extends State<BookingScreen> {
       await _load();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.bookingConfirmed)));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -271,9 +269,6 @@ class _BookingScreenState extends State<BookingScreen> {
       await _load();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.bookingCancelled)));
     } catch (e) {
       await _load();
       if (!mounted) return;
@@ -628,6 +623,12 @@ class _BookingScreenState extends State<BookingScreen> {
                             buttonAction = () => _bookClass(klass);
                           }
 
+                          final isProcessing = _bookingActionClassId == id;
+
+                          if (isProcessing) {
+                            buttonAction = null;
+                          }
+
                           return TweenAnimationBuilder<double>(
                             key: ValueKey(
                               '${klass['id']}-${_selectedDay.toIso8601String()}',
@@ -652,6 +653,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               capacity: capacity,
                               buttonLabel: buttonLabel,
                               buttonAction: buttonAction,
+                              isLoading: isProcessing,
                               canManageAttendance: _canManageAttendance,
                               onOpenAttendance: () =>
                                   _openAttendanceSheet(klass),

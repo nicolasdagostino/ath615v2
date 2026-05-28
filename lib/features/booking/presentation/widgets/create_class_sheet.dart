@@ -192,22 +192,9 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
       FocusScope.of(context).unfocus();
 
-      final messenger = ScaffoldMessenger.of(context);
-
       Navigator.of(context).pop();
 
       await widget.onCreated();
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            appStrings.pick(
-              'Class created successfully.',
-              'Clase creada correctamente.',
-            ),
-          ),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
 

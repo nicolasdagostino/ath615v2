@@ -15,6 +15,7 @@ class BookingClassCard extends StatelessWidget {
     required this.onOpenAttendance,
     this.onMorePressed,
     required this.formatDateTime,
+    this.isLoading = false,
   });
 
   final Map<String, dynamic> klass;
@@ -26,6 +27,7 @@ class BookingClassCard extends StatelessWidget {
   final VoidCallback? onOpenAttendance;
   final VoidCallback? onMorePressed;
   final String Function(String raw) formatDateTime;
+  final bool isLoading;
 
   String _timeLabel(String raw) {
     final dt = DateTime.parse(raw).toLocal();

@@ -708,14 +708,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Navigator.pop(context);
 
                                   if (!rootContext.mounted) return;
-
-                                  ScaffoldMessenger.of(
-                                    rootContext,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(appStrings.planAssigned),
-                                    ),
-                                  );
                                 } catch (e) {
                                   if (!context.mounted) return;
 

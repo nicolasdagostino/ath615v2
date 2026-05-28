@@ -367,9 +367,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                 icon: _liked
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                label: appStrings.workoutLikesCount(
-                                  _likes.length,
-                                ),
+                                label: '${_likes.length}',
                                 active: _liked,
                                 onTap: _toggleLike,
                               ),

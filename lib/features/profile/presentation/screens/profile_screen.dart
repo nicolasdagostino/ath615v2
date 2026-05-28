@@ -1178,7 +1178,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
     final profileName = _profile?['full_name']?.toString().trim() ?? '';
-    final displayName = profileName.isNotEmpty ? profileName : email;
+    final displayName = profileName.isNotEmpty
+        ? profileName
+        : 'ATHLETE615 Member';
     final avatarUrl = _profile?['avatar_url']?.toString();
     final role = _profile?['role']?.toString();
     final canEditGym = role == 'admin' || role == 'owner';
