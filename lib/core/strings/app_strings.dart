@@ -444,6 +444,10 @@ class AppStrings {
   String get profileSaveGymName =>
       pick('Save gym name', 'Guardar nombre del gym');
   String get profileNewPassword => pick('New password', 'Nueva contraseña');
+  String get profileConfirmPassword =>
+      pick('Confirm password', 'Confirmar contraseña');
+  String get profilePasswordsDoNotMatch =>
+      pick('Passwords do not match.', 'Las contraseñas no coinciden.');
   String get profileChangePassword =>
       pick('Change password', 'Cambiar contraseña');
   String get profileLogout => pick('Logout', 'Cerrar sesión');

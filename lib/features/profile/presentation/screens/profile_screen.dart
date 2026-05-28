@@ -31,6 +31,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _gymName = TextEditingController();
   final _fullName = TextEditingController();
   final _phone = TextEditingController();
@@ -78,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _password.dispose();
+    _confirmPassword.dispose();
     _gymName.dispose();
     _fullName.dispose();
     _phone.dispose();
@@ -292,53 +294,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _openChangePasswordSheet() async {
     _password.clear();
+    _confirmPassword.clear();
+
+    var obscurePassword = true;
+    var obscureConfirmPassword = true;
+    var loading = false;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appStrings.profileChangePassword.toUpperCase(),
-                    style: _ProfileText.sectionTitle,
+              child: SafeArea(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _password,
-                    obscureText: true,
-                    style: _ProfileText.input,
-                    decoration: _inputDecoration(appStrings.profileNewPassword),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appStrings.profileChangePassword.toUpperCase(),
+                        style: _ProfileText.sectionTitle,
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _password,
+                        obscureText: obscurePassword,
+                        style: _ProfileText.input,
+                        decoration:
+                            _inputDecoration(
+                              appStrings.profileNewPassword,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                color: const Color(0xFF8F96A3),
+                                onPressed: () {
+                                  setSheetState(() {
+                                    obscurePassword = !obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _confirmPassword,
+                        obscureText: obscureConfirmPassword,
+                        style: _ProfileText.input,
+                        decoration:
+                            _inputDecoration(
+                              appStrings.profileConfirmPassword,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscureConfirmPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                color: const Color(0xFF8F96A3),
+                                onPressed: () {
+                                  setSheetState(() {
+                                    obscureConfirmPassword =
+                                        !obscureConfirmPassword;
+                                  });
+                                },
+                              ),
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label: appStrings.profileChangePassword,
+                        loading: loading,
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                final navigator = Navigator.of(sheetContext);
+
+                                setSheetState(() {
+                                  loading = true;
+                                });
+
+                                final updated = await _changePassword();
+
+                                if (!context.mounted) return;
+
+                                setSheetState(() {
+                                  loading = false;
+                                });
+
+                                if (mounted && updated) navigator.pop();
+                              },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: appStrings.profileChangePassword,
-                    loading: _loading,
-                    onPressed: () async {
-                      final navigator = Navigator.of(sheetContext);
-                      await _changePassword();
-                      if (mounted) navigator.pop();
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -894,15 +961,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _changePassword() async {
+  Future<bool> _changePassword() async {
+    if (_password.text != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.profilePasswordsDoNotMatch)),
+      );
+      return false;
+    }
+
     setState(() => _loading = true);
+
     try {
       await _repo.updatePassword(_password.text);
       _password.clear();
-      if (!mounted) return;
+      _confirmPassword.clear();
+
+      if (!mounted) return false;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdated)));
+
+      return true;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
