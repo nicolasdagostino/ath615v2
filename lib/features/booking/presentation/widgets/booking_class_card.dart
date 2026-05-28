@@ -118,7 +118,7 @@ class BookingClassCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 14),
                 _ActionButton(
-                  label: buttonLabel.toUpperCase(),
+                  label: isLoading ? '...' : buttonLabel.toUpperCase(),
                   onPressed: buttonAction,
                   filled: buttonAction != null,
                 ),

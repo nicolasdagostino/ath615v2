@@ -229,11 +229,11 @@ class _BookingScreenState extends State<BookingScreen> {
         params: {'p_class_id': classId},
       );
 
-      await _load();
+      await _load(showLoading: false);
 
       if (!mounted) return;
     } catch (e) {
-      await _load();
+      await _load(showLoading: false);
       if (!mounted) return;
       final message = e.toString().contains('No credits remaining')
           ? appStrings.bookingNoCreditsRemaining
@@ -266,11 +266,11 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       await _client.rpc('cancel_my_booking', params: {'p_class_id': classId});
-      await _load();
+      await _load(showLoading: false);
 
       if (!mounted) return;
     } catch (e) {
-      await _load();
+      await _load(showLoading: false);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -422,7 +422,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           .from('classes')
                           .delete()
                           .eq('id', klass['id']);
-                      await _load();
+                      await _load(showLoading: false);
                     },
                   ),
                   if (recurringId != null) ...[
@@ -447,7 +447,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             .delete()
                             .eq('recurring_id', recurringId)
                             .gte('starts_at', startsAt);
-                        await _load();
+                        await _load(showLoading: false);
                       },
                     ),
                   ],
