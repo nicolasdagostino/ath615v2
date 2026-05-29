@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -41,7 +40,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _uploadingAvatar = false;
   String _appVersion = '';
   Map<String, dynamic>? _profile;
-  String? _gymId;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
@@ -122,7 +120,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     setState(() {
       _profile = profile;
-      _gymId = gymId;
       _gymName.text = gymName;
       _fullName.text = profile?['full_name']?.toString() ?? '';
       _phone.text = profile?['phone']?.toString() ?? '';
@@ -141,186 +138,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return role?.toUpperCase() ?? '-';
     }
-  }
-
-  Future<bool> _confirmAction({
-    required String title,
-    required String message,
-    required String confirmLabel,
-    bool danger = false,
-  }) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Text(title.toUpperCase(), style: _ProfileConfirmText.title),
-                  Text(message, style: _ProfileConfirmText.body),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ProfileConfirmSecondaryButton(
-                          label: appStrings.cancel,
-                          onTap: () => Navigator.pop(context, false),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: danger
-                            ? _ProfileConfirmDangerButton(
-                                label: confirmLabel,
-                                onTap: () => Navigator.pop(context, true),
-                              )
-                            : _ProfileConfirmPrimaryButton(
-                                label: confirmLabel,
-                                onTap: () => Navigator.pop(context, true),
-                              ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    return result == true;
-  }
-
-  Future<void> _openChangePasswordSheet() async {
-    _password.clear();
-    _confirmPassword.clear();
-
-    var obscurePassword = true;
-    var obscureConfirmPassword = true;
-    var loading = false;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
-              child: SafeArea(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appStrings.profileChangePassword.toUpperCase(),
-                        style: _ProfileText.sectionTitle,
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: _password,
-                        obscureText: obscurePassword,
-                        style: _ProfileText.input,
-                        decoration:
-                            _inputDecoration(
-                              appStrings.profileNewPassword,
-                            ).copyWith(
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  obscurePassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                ),
-                                color: const Color(0xFF8F96A3),
-                                onPressed: () {
-                                  setSheetState(() {
-                                    obscurePassword = !obscurePassword;
-                                  });
-                                },
-                              ),
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _confirmPassword,
-                        obscureText: obscureConfirmPassword,
-                        style: _ProfileText.input,
-                        decoration:
-                            _inputDecoration(
-                              appStrings.profileConfirmPassword,
-                            ).copyWith(
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  obscureConfirmPassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                ),
-                                color: const Color(0xFF8F96A3),
-                                onPressed: () {
-                                  setSheetState(() {
-                                    obscureConfirmPassword =
-                                        !obscureConfirmPassword;
-                                  });
-                                },
-                              ),
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      AppButton(
-                        label: appStrings.profileChangePassword,
-                        loading: loading,
-                        onPressed: loading
-                            ? null
-                            : () async {
-                                final navigator = Navigator.of(sheetContext);
-
-                                setSheetState(() {
-                                  loading = true;
-                                });
-
-                                final updated = await _changePassword();
-
-                                if (!context.mounted) return;
-
-                                setSheetState(() {
-                                  loading = false;
-                                });
-
-                                if (mounted && updated) navigator.pop();
-                              },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   Future<void> _openPersonalInfoSheet() async {
@@ -391,84 +208,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _openGymNameSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appStrings.profileGymName.toUpperCase(),
-                    style: _ProfileText.sectionTitle,
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _gymName,
-                    style: _ProfileText.input,
-                    decoration: _inputDecoration(appStrings.profileGymName),
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: appStrings.profileSaveGymName,
-                    loading: _loading,
-                    onPressed: () async {
-                      final navigator = Navigator.of(sheetContext);
-                      await _saveGymName();
-                      if (mounted) navigator.pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool> _changePassword() async {
-    if (_password.text != _confirmPassword.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appStrings.profilePasswordsDoNotMatch)),
-      );
-      return false;
-    }
-
-    setState(() => _loading = true);
-
-    try {
-      await _repo.updatePassword(_password.text);
-      _password.clear();
-      _confirmPassword.clear();
-
-      if (!mounted) return false;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdated)));
-
-      return true;
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _savePersonalInfo() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
@@ -497,37 +236,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.updateProfileError(e))));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _saveGymName() async {
-    final gymId = _gymId;
-    final name = _gymName.text.trim();
-
-    if (gymId == null || name.isEmpty) return;
-
-    setState(() => _loading = true);
-
-    try {
-      await Supabase.instance.client
-          .from('gyms')
-          .update({'name': name})
-          .eq('id', gymId);
-
-      await widget.onGymNameChanged();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.gymNameUpdated)));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.updateGymError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -608,55 +316,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ).showSnackBar(SnackBar(content: Text(appStrings.updatePhotoError(e))));
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
-    }
-  }
-
-  Future<void> _logout() async {
-    final confirmed = await _confirmAction(
-      title: appStrings.profileLogout,
-      message: appStrings.profileLogoutConfirm,
-      confirmLabel: appStrings.profileLogout,
-    );
-
-    if (!confirmed) return;
-
-    await _repo.signOut();
-    if (!mounted) return;
-    context.go('/login');
-  }
-
-  Future<void> _deleteAccount() async {
-    final confirmed = await _confirmAction(
-      title: appStrings.profileDeleteAccount,
-      message: appStrings.profileDeleteConfirm,
-      confirmLabel: appStrings.profileDeleteAccount,
-      danger: true,
-    );
-
-    if (!confirmed) return;
-
-    setState(() => _loading = true);
-    try {
-      await _repo.deleteMyAccount();
-      if (!mounted) return;
-      context.go('/login');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.deleteAccountError(e))));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.couldNotOpenLink)));
     }
   }
 
@@ -1147,17 +806,15 @@ class _ProfileMenuRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onTap,
-    this.danger = false,
   });
 
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFF0E0E11);
+    const color = Color(0xFF0E0E11);
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
@@ -1175,13 +832,7 @@ class _ProfileMenuRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFE8EAF0)),
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: danger
-                    ? const Color(0xFFB42318)
-                    : const Color(0xFF8F96A3),
-              ),
+              child: Icon(icon, size: 20, color: const Color(0xFF8F96A3)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1302,120 +953,6 @@ class _SkeletonBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFE8EAF0),
         borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-}
-
-class _ProfileConfirmText {
-  const _ProfileConfirmText._();
-
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-}
-
-class _ProfileConfirmSecondaryButton extends StatelessWidget {
-  const _ProfileConfirmSecondaryButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF384152),
-          side: const BorderSide(color: Color(0xFFE1E4EA)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(label.toUpperCase(), style: _ProfileConfirmText.rowTitle),
-      ),
-    );
-  }
-}
-
-class _ProfileConfirmPrimaryButton extends StatelessWidget {
-  const _ProfileConfirmPrimaryButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF111111),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: _ProfileConfirmText.rowTitle.copyWith(color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileConfirmDangerButton extends StatelessWidget {
-  const _ProfileConfirmDangerButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: _ProfileConfirmText.rowTitle.copyWith(color: Colors.white),
-        ),
       ),
     );
   }
