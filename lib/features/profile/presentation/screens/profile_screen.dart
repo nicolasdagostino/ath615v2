@@ -1420,9 +1420,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    _ProfileSectionLabel(label: 'SETTINGS'),
+                    _ProfileSectionLabel(label: 'PROFILE'),
                     _ProfileListCard(
                       children: [
+                        _ProfileMenuRow(
+                          icon: Icons.person_outline_rounded,
+                          title: 'Account',
+                          onTap: () => context.push('/account'),
+                        ),
+                        _ProfileMenuRow(
+                          icon: Icons.fitness_center_rounded,
+                          title: 'Training',
+                          onTap: () => context.push('/training'),
+                        ),
+                        _ProfileMenuRow(
+                          icon: Icons.workspace_premium_outlined,
+                          title: 'Membership',
+                          onTap: () => context.push('/membership'),
+                        ),
                         _ProfileMenuRow(
                           icon: Icons.settings_outlined,
                           title: 'Settings',

@@ -9,6 +9,9 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
+import '../../features/profile/presentation/screens/account_screen.dart';
+import '../../features/profile/presentation/screens/training_screen.dart';
+import '../../features/profile/presentation/screens/membership_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
@@ -41,6 +44,18 @@ class AppRouter {
           builder: (context, state) => const OwnerScreen(),
         ),
         GoRoute(path: '/app', builder: (context, state) => const AppShell()),
+        GoRoute(
+          path: '/account',
+          builder: (context, state) => const AccountScreen(),
+        ),
+        GoRoute(
+          path: '/training',
+          builder: (context, state) => const TrainingScreen(),
+        ),
+        GoRoute(
+          path: '/membership',
+          builder: (context, state) => const MembershipScreen(),
+        ),
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
