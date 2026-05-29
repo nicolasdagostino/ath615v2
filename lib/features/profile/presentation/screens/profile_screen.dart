@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -548,10 +549,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (picked == null) return;
 
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 88,
+      uiSettings: [
+        IOSUiSettings(
+          title: appStrings.updatePhoto,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+        AndroidUiSettings(
+          toolbarTitle: appStrings.updatePhoto,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+      ],
+    );
+
+    if (cropped == null) return;
+
     setState(() => _uploadingAvatar = true);
 
     try {
-      final bytes = await picked.readAsBytes();
+      final bytes = await cropped.readAsBytes();
       final path = '$userId.jpg';
 
       await Supabase.instance.client.storage
