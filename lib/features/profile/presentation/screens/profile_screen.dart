@@ -1424,67 +1424,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _ProfileListCard(
                       children: [
                         _ProfileMenuRow(
-                          icon: Icons.language_rounded,
-                          title:
-                              '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
-                          onTap: () {
-                            final next =
-                                localeController.locale.languageCode == 'en'
-                                ? 'es'
-                                : 'en';
-                            localeController.setLanguage(next);
-                            setState(() {});
-                          },
-                        ),
-                      ],
-                    ),
-                    _ProfileListCard(
-                      children: [
-                        if (canEditGym)
-                          _ProfileMenuRow(
-                            icon: Icons.business_rounded,
-                            title: appStrings.profileGymName,
-                            onTap: _openGymNameSheet,
-                          ),
-                        _ProfileMenuRow(
-                          icon: Icons.lock_outline_rounded,
-                          title: appStrings.profileChangePassword,
-                          onTap: _openChangePasswordSheet,
-                        ),
-                        _ProfileMenuRow(
-                          icon: Icons.privacy_tip_outlined,
-                          title: appStrings.profilePrivacyPolicy,
-                          onTap: () =>
-                              _openUrl('https://athlete615.com/privacy-policy'),
-                        ),
-                        _ProfileMenuRow(
-                          icon: Icons.description_outlined,
-                          title: appStrings.profileTerms,
-                          onTap: () => _openUrl(
-                            'https://athlete615.com/terms-and-conditions',
-                          ),
-                        ),
-                        _ProfileMenuRow(
-                          icon: Icons.help_outline_rounded,
-                          title: appStrings.profileHelp,
-                          onTap: () =>
-                              _openUrl('https://athlete615.com/support'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    _ProfileListCard(
-                      children: [
-                        _ProfileMenuRow(
-                          icon: Icons.logout_rounded,
-                          title: appStrings.profileLogout,
-                          onTap: _logout,
-                        ),
-                        _ProfileMenuRow(
-                          icon: Icons.delete_outline_rounded,
-                          title: appStrings.profileDeleteAccount,
-                          danger: true,
-                          onTap: _deleteAccount,
+                          icon: Icons.settings_outlined,
+                          title: 'Settings',
+                          onTap: () => context.push('/settings'),
                         ),
                       ],
                     ),
