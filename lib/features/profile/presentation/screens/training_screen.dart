@@ -515,22 +515,50 @@ class _TrainingScreenState extends State<TrainingScreen> {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(appStrings.deleteRecordTitle),
-          content: Text(appStrings.deleteRecordMsg),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(appStrings.cancel),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(appStrings.delete),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Text(
+                  appStrings.deleteRecordTitle.toUpperCase(),
+                  style: _TrainingConfirmText.title,
+                ),
+                Text(
+                  appStrings.deleteRecordMsg,
+                  style: _TrainingConfirmText.body,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TrainingConfirmSecondaryButton(
+                        label: appStrings.cancel,
+                        onTap: () => Navigator.pop(context, false),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _TrainingConfirmDangerButton(
+                        label: appStrings.delete,
+                        onTap: () => Navigator.pop(context, true),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -831,6 +859,92 @@ class _TrainingClassHistoryCard extends StatelessWidget {
           const SizedBox(height: 8),
           AppButton(label: appStrings.viewAllHistory, onPressed: onViewAll),
         ],
+      ),
+    );
+  }
+}
+
+class _TrainingConfirmText {
+  const _TrainingConfirmText._();
+
+  static TextStyle title = GoogleFonts.barlowCondensed(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFF0E0E11),
+    letterSpacing: -0.2,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    color: const Color(0xFF384152),
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+  );
+}
+
+class _TrainingConfirmSecondaryButton extends StatelessWidget {
+  const _TrainingConfirmSecondaryButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF384152),
+          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(label.toUpperCase(), style: _TrainingConfirmText.rowTitle),
+      ),
+    );
+  }
+}
+
+class _TrainingConfirmDangerButton extends StatelessWidget {
+  const _TrainingConfirmDangerButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB42318),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: _TrainingConfirmText.rowTitle.copyWith(color: Colors.white),
+        ),
       ),
     );
   }
