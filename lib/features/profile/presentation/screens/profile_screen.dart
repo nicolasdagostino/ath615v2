@@ -1228,6 +1228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 18),
                     _ProfileCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1269,14 +1270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    _ProfileSectionLabel(label: 'PROFILE'),
+                    const SizedBox(height: 20),
                     _ProfileListCard(
                       children: [
-                        _ProfileMenuRow(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Account',
-                          onTap: () => context.push('/account'),
-                        ),
                         _ProfileMenuRow(
                           icon: Icons.fitness_center_rounded,
                           title: 'Training',
@@ -1294,6 +1290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 18),
                     if (_appVersion.isNotEmpty) ...[
                       Center(
                         child: Text(
@@ -1845,7 +1842,7 @@ class _ProfileMenuRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(28),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
         child: Row(
           children: [
             Container(
