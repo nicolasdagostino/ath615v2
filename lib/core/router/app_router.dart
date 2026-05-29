@@ -9,6 +9,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
+import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
 class AppRouter {
@@ -40,6 +41,10 @@ class AppRouter {
           builder: (context, state) => const OwnerScreen(),
         ),
         GoRoute(path: '/app', builder: (context, state) => const AppShell()),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
+        ),
         GoRoute(
           path: '/workout/:id',
           builder: (context, state) {
