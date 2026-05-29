@@ -492,9 +492,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await _load();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.profileUpdated)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
