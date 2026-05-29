@@ -1269,19 +1269,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    _ProfileMilestoneCard(attendedCount: _attendedCount),
-                    _ProfileSectionLabel(label: 'TRAINING'),
-                    _PersonalRecordsCard(
-                      records: _personalRecords.take(5).toList(),
-                      formatDate: _formatDate,
-                      onView: _openPersonalRecordsListSheet,
-                      onDelete: _deletePersonalRecord,
-                    ),
-                    _ClassHistoryCard(
-                      history: _classHistory.take(5).toList(),
-                      formatDate: _formatDate,
-                      onViewAll: _openFullHistorySheet,
-                    ),
                     _ProfileSectionLabel(label: 'PROFILE'),
                     _ProfileListCard(
                       children: [
