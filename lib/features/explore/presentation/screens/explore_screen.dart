@@ -78,6 +78,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool _isAccountActive = true;
   String _search = '';
   String? _selectedProgramId;
+  bool _showFuture = false;
 
   List<Map<String, dynamic>> _workouts = [];
   List<Map<String, dynamic>> _programs = [];
@@ -154,8 +155,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 .eq('is_active', true)
                 .order('name');
 
+      final canSeeFuture = role == 'admin';
+
       final workouts = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
+          : _showFuture && canSeeFuture
+          ? await _client
+                .from('workouts')
+                .select(
+                  'id, workout_date, description, image_url, program_id, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
+                )
+                .eq('gym_id', gymId)
+                .gt('workout_date', today)
+                .order('workout_date', ascending: true)
+                .limit(60)
           : await _client
                 .from('workouts')
                 .select(
@@ -335,24 +348,38 @@ class _ExploreScreenState extends State<ExploreScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: _programs.length + 1,
+                itemCount: _showFuture
+                    ? 2
+                    : _programs.length + 1 + (_role == 'admin' ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final all = index == 0;
-                  final program = all ? null : _programs[index - 1];
+                  final future = _role == 'admin' && index == 1;
+                  final programIndex = _role == 'admin' ? index - 2 : index - 1;
+                  final program = all || future
+                      ? null
+                      : _programs[programIndex];
                   final id = program?['id']?.toString();
-                  final selected = all
-                      ? _selectedProgramId == null
-                      : _selectedProgramId == id;
+                  final selected = future
+                      ? _showFuture
+                      : all
+                      ? !_showFuture && _selectedProgramId == null
+                      : !_showFuture && _selectedProgramId == id;
 
-                  final count = _programWorkoutCount(id);
+                  final count = future
+                      ? _workouts.length
+                      : _programWorkoutCount(id);
 
-                  final baseLabel = all
+                  final baseLabel = future
+                      ? 'Future'
+                      : all
                       ? appStrings.exploreAllPrograms
                       : program?['name']?.toString() ??
                             appStrings.workoutProgram;
 
-                  final label = '$baseLabel ($count)';
+                  final label = future && !_showFuture
+                      ? baseLabel
+                      : '$baseLabel ($count)';
 
                   return ChoiceChip(
                     selected: selected,
@@ -374,8 +401,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    onSelected: (_) {
-                      setState(() => _selectedProgramId = all ? null : id);
+                    onSelected: (_) async {
+                      if (future) {
+                        setState(() {
+                          _showFuture = true;
+                          _selectedProgramId = null;
+                        });
+                        await _load(showLoading: false);
+                        return;
+                      }
+
+                      setState(() {
+                        _showFuture = false;
+                        _selectedProgramId = all ? null : id;
+                      });
+                      await _load(showLoading: false);
                     },
                   );
                 },
