@@ -136,6 +136,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _resendInvitation(Map<String, dynamic> member) async {
+    try {
+      debugPrint('Calling resend for: ${member['id']}');
+      final result = await Supabase.instance.client.functions.invoke(
+        'admin-resend-athlete-invite',
+        body: {'member_id': member['id']},
+      );
+
+      debugPrint('Resend result data: ${result.data}');
+      debugPrint('Resend result status: ${result.status}');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.athleteInvitationSent)));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.inviteAthleteError(e))));
+    }
+  }
+
   Future<void> _openInviteMemberSheet() async {
     final email = TextEditingController();
     final fullName = TextEditingController();
@@ -1359,6 +1384,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       _openAssignPlan(member['id'].toString()),
                                   onToggleActive: () =>
                                       _toggleMemberActive(member),
+                                  onResendInvitation: () =>
+                                      _resendInvitation(member),
                                 ),
                               ),
                           ],
@@ -1406,12 +1433,14 @@ class _MemberTile extends StatelessWidget {
     required this.onTap,
     required this.onAssignPlan,
     required this.onToggleActive,
+    required this.onResendInvitation,
   });
 
   final Map<String, dynamic> member;
   final VoidCallback onTap;
   final Future<void> Function() onAssignPlan;
   final Future<void> Function() onToggleActive;
+  final Future<void> Function() onResendInvitation;
 
   @override
   Widget build(BuildContext context) {
@@ -1471,6 +1500,11 @@ class _MemberTile extends StatelessWidget {
 
                       if (value == 'toggle_active') {
                         await onToggleActive();
+                      }
+
+                      if (value == 'resend') {
+                        debugPrint('RESEND CLICKED');
+                        await onResendInvitation();
                       }
                     },
                     itemBuilder: (context) => [
