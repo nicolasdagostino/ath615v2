@@ -400,6 +400,9 @@ class AppStrings {
       pick('No members found.', 'No se encontraron miembros.');
 
   String get membershipTitle => pick('Membership', 'Membresía');
+  String get profileTraining => pick('Training', 'Entrenamiento');
+  String get profileMembership => pick('Membership', 'Membresía');
+  String get profileSettings => pick('Settings', 'Configuración');
   String get activePlan => pick('Active plan', 'Plan activo');
   String get noActivePlan => pick('No active plan', 'Sin plan activo');
   String get expires => pick('Expires', 'Vence');

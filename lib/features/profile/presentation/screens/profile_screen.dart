@@ -420,17 +420,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _ProfileMenuRow(
                           icon: Icons.fitness_center_rounded,
-                          title: 'Training',
+                          title: appStrings.profileTraining,
                           onTap: () => context.push('/training'),
                         ),
                         _ProfileMenuRow(
                           icon: Icons.workspace_premium_outlined,
-                          title: 'Membership',
+                          title: appStrings.profileMembership,
                           onTap: () => context.push('/membership'),
                         ),
                         _ProfileMenuRow(
                           icon: Icons.settings_outlined,
-                          title: 'Settings',
+                          title: appStrings.profileSettings,
                           onTap: () => context.push('/settings'),
                         ),
                       ],
