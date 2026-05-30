@@ -23,6 +23,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   List<Map<String, dynamic>> _comments = [];
   Map<String, String> _authorNames = {};
   Map<String, String> _authorAvatars = {};
+  String? _role;
 
   final _commentCtrl = TextEditingController();
   final _commentFocus = FocusNode();
@@ -31,6 +32,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   String? get _userId => _client.auth.currentUser?.id;
 
   bool get _liked => _likes.any((l) => l['user_id'].toString() == _userId);
+  bool get _canDeleteAnyComment => _role == 'admin';
+
+  bool _canDeleteComment(Map<String, dynamic> comment) {
+    final commentUserId = comment['user_id']?.toString();
+    return commentUserId == _userId || _canDeleteAnyComment;
+  }
 
   @override
   void initState() {
@@ -49,6 +56,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     setState(() => _loading = true);
 
     try {
+      final user = _client.auth.currentUser;
+      final currentProfile = user == null
+          ? null
+          : await _client
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .maybeSingle();
+
       final workout = await _client
           .from('workouts')
           .select(
@@ -65,6 +81,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           _comments = [];
           _authorNames = {};
           _authorAvatars = {};
+          _role = currentProfile?['role']?.toString();
         });
         return;
       }
@@ -114,6 +131,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         _comments = comments;
         _authorNames = authors;
         _authorAvatars = avatars;
+        _role = currentProfile?['role']?.toString();
       });
     } catch (e) {
       if (!mounted) return;
@@ -148,6 +166,131 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       setState(() {
         _likes.add({'user_id': userId});
       });
+    }
+  }
+
+  Future<void> _deleteComment(Map<String, dynamic> comment) async {
+    final commentId = comment['id']?.toString();
+    if (commentId == null || !_canDeleteComment(comment)) return;
+
+    final shouldDelete = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    'DELETE COMMENT',
+                    style: GoogleFonts.barlowCondensed(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0E0E11),
+                      letterSpacing: -0.3,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Are you sure you want to delete this comment? This action cannot be undone.',
+                    style: GoogleFonts.barlowCondensed(
+                      color: const Color(0xFF384152),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF384152),
+                              side: const BorderSide(color: Color(0xFFE1E4EA)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'CANCEL',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0E0E11),
+                                letterSpacing: -0.2,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFB42318),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'DELETE',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.2,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      await _client.from('workout_comments').delete().eq('id', commentId);
+
+      if (!mounted) return;
+      setState(() {
+        _comments.removeWhere((c) => c['id']?.toString() == commentId);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not delete comment: $e')));
     }
   }
 
@@ -492,6 +635,25 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                             height: 1.0,
                                           ),
                                         ),
+                                        if (_canDeleteComment(comment)) ...[
+                                          const SizedBox(width: 4),
+                                          IconButton(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                              minWidth: 28,
+                                              minHeight: 28,
+                                            ),
+                                            onPressed: () =>
+                                                _deleteComment(comment),
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              size: 18,
+                                              color: Color(0xFF8F96A3),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 5),
