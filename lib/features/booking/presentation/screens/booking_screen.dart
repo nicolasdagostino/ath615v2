@@ -223,6 +223,8 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    setState(() => _bookingActionClassId = classId);
+
     try {
       await _client.rpc(
         'book_class_with_membership',
@@ -242,6 +244,10 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) {
+        setState(() => _bookingActionClassId = null);
+      }
     }
   }
 
@@ -257,6 +263,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final bookedCount = klass['booked_count'] as int? ?? 0;
 
     setState(() {
+      _bookingActionClassId = classId;
       _myBookedClassIds.remove(classId);
       klass['booked_count'] = bookedCount > 0 ? bookedCount - 1 : 0;
       if (_role == 'athlete' && _creditsRemaining != null) {
@@ -275,6 +282,10 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.bookingCancelError(e))));
+    } finally {
+      if (mounted) {
+        setState(() => _bookingActionClassId = null);
+      }
     }
   }
 
