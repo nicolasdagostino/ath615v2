@@ -38,6 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           )
           .eq('user_id', user.id)
           .isFilter('read_at', null)
+          .not('sent_at', 'is', null)
           .order('scheduled_for', ascending: false)
           .limit(50);
 
