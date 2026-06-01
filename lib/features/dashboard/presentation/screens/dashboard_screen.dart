@@ -161,6 +161,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _deletePendingMember(Map<String, dynamic> member) async {
+    final name = (member['full_name'] ?? member['email'] ?? 'this member')
+        .toString();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete invitation?'),
+        content: Text(
+          'This will permanently remove $name from your members list. Only pending invitations can be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await Supabase.instance.client.functions.invoke(
+        'admin-delete-pending-member',
+        body: {'member_id': member['id'].toString()},
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invitation deleted')));
+
+      await _loadMembers();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.inviteAthleteError(e))));
+    }
+  }
+
   Future<void> _openInviteMemberSheet() async {
     final email = TextEditingController();
     final fullName = TextEditingController();
@@ -323,11 +371,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
-
-    email.dispose();
-    fullName.dispose();
-    phone.dispose();
-    birthDate.dispose();
   }
 
   Future<void> _openPlans() async {
@@ -1386,6 +1429,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       _toggleMemberActive(member),
                                   onResendInvitation: () =>
                                       _resendInvitation(member),
+                                  onDeletePendingMember: () =>
+                                      _deletePendingMember(member),
                                 ),
                               ),
                           ],
@@ -1434,6 +1479,7 @@ class _MemberTile extends StatelessWidget {
     required this.onAssignPlan,
     required this.onToggleActive,
     required this.onResendInvitation,
+    required this.onDeletePendingMember,
   });
 
   final Map<String, dynamic> member;
@@ -1441,6 +1487,7 @@ class _MemberTile extends StatelessWidget {
   final Future<void> Function() onAssignPlan;
   final Future<void> Function() onToggleActive;
   final Future<void> Function() onResendInvitation;
+  final Future<void> Function() onDeletePendingMember;
 
   @override
   Widget build(BuildContext context) {
@@ -1506,6 +1553,10 @@ class _MemberTile extends StatelessWidget {
                         debugPrint('RESEND CLICKED');
                         await onResendInvitation();
                       }
+
+                      if (value == 'delete_pending') {
+                        await onDeletePendingMember();
+                      }
                     },
                     itemBuilder: (context) => [
                       PopupMenuItem(
@@ -1523,6 +1574,10 @@ class _MemberTile extends StatelessWidget {
                       PopupMenuItem(
                         value: 'resend',
                         child: Text(appStrings.resendInvitation),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete_pending',
+                        child: Text('Delete invitation'),
                       ),
                     ],
                   ),

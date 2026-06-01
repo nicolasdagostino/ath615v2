@@ -1,7 +1,92 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { GoogleAuth } from 'npm:google-auth-library@9'
 import { corsHeaders } from '../_shared/cors.ts'
+
+function base64Url(input: ArrayBuffer | string) {
+  const bytes = typeof input === 'string'
+    ? new TextEncoder().encode(input)
+    : new Uint8Array(input)
+
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '')
+}
+
+async function getAccessToken(serviceAccount: Record<string, string>) {
+  const now = Math.floor(Date.now() / 1000)
+
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT',
+  }
+
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  }
+
+  const unsignedJwt = `${base64Url(JSON.stringify(header))}.${base64Url(
+    JSON.stringify(payload),
+  )}`
+
+  const privateKeyPem = serviceAccount.private_key
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\n/g, '')
+
+  const privateKeyDer = Uint8Array.from(atob(privateKeyPem), (c) =>
+    c.charCodeAt(0),
+  )
+
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyDer,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    false,
+    ['sign'],
+  )
+
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsignedJwt),
+  )
+
+  const jwt = `${unsignedJwt}.${base64Url(signature)}`
+
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  })
+
+  const tokenJson = await tokenResponse.json()
+
+  if (!tokenResponse.ok) {
+    throw new Error(`Google OAuth error: ${JSON.stringify(tokenJson)}`)
+  }
+
+  if (!tokenJson.access_token) {
+    throw new Error('Missing Google OAuth access token')
+  }
+
+  return tokenJson.access_token as string
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,20 +103,7 @@ serve(async (req) => {
     }
 
     const serviceAccount = JSON.parse(serviceAccountRaw)
-
-    const auth = new GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
-    })
-
-    const client = await auth.getClient()
-    const accessTokenResponse = await client.getAccessToken()
-    const accessToken = accessTokenResponse.token
-
-    if (!accessToken) {
-      throw new Error('Missing Google access token')
-    }
-
+    const accessToken = await getAccessToken(serviceAccount)
     const admin = createClient(supabaseUrl, serviceRoleKey)
 
     const { data: notifications, error } = await admin
@@ -93,7 +165,11 @@ serve(async (req) => {
         )
 
         if (!fcmResponse.ok) {
-          throw new Error(`FCM error: ${await fcmResponse.text()}`)
+          const errorText = await fcmResponse.text()
+          console.error(
+            `FCM send failed notification=${n.id} user=${n.user_id} token=${String(t.token).slice(0, 18)}... error=${errorText}`,
+          )
+          continue
         }
 
         sentCount++
