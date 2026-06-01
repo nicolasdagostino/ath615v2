@@ -57,39 +57,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _loadingMembers = true);
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
+      final result = await Supabase.instance.client.functions.invoke(
+        'admin-list-members',
+      );
 
-      final myProfile = await Supabase.instance.client
-          .from('profiles')
-          .select('gym_id')
-          .eq('id', user.id)
-          .single();
+      final data = Map<String, dynamic>.from(result.data as Map);
+      final members = List<Map<String, dynamic>>.from(data['members'] as List);
 
-      final gymId = myProfile['gym_id']?.toString();
-
-      if (gymId == null) {
-        if (!mounted) return;
-        setState(() {
-          _gymId = null;
-          _members = [];
-        });
-        return;
-      }
-
-      final data = await Supabase.instance.client
-          .from('profiles')
-          .select(
-            'id, full_name, email, role, gym_id, phone, birth_date, avatar_url, is_active, created_at',
-          )
-          .eq('gym_id', gymId)
-          .neq('role', 'owner')
-          .order('created_at', ascending: false);
+      final gymId = members.isEmpty
+          ? _gymId
+          : members.first['gym_id']?.toString();
 
       if (!mounted) return;
       setState(() {
         _gymId = gymId;
-        _members = List<Map<String, dynamic>>.from(data);
+        _members = members;
       });
     } catch (e) {
       if (!mounted) return;
@@ -1495,6 +1477,16 @@ class _MemberTile extends StatelessWidget {
     final name = (member['full_name'] ?? email).toString();
     final role = (member['role'] ?? '-').toString();
     final active = member['is_active'] == true;
+    final status =
+        (member['invitation_status'] ?? (active ? 'active' : 'disabled'))
+            .toString();
+    final isPending = status == 'pending';
+    final isDisabled = status == 'disabled';
+    final statusLabel = isPending
+        ? 'Pending'
+        : isDisabled
+        ? 'Disabled'
+        : 'Active';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1527,7 +1519,7 @@ class _MemberTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$email · ${active ? appStrings.active : appStrings.inactive} · $role',
+                          '$email · $statusLabel · $role',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _DashText.subtle,
@@ -1559,10 +1551,11 @@ class _MemberTile extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'plan',
-                        child: Text(appStrings.assignPlan),
-                      ),
+                      if (!isDisabled)
+                        PopupMenuItem(
+                          value: 'plan',
+                          child: Text(appStrings.assignPlan),
+                        ),
                       PopupMenuItem(
                         value: 'toggle_active',
                         child: Text(
@@ -1571,14 +1564,16 @@ class _MemberTile extends StatelessWidget {
                               : appStrings.activateMember,
                         ),
                       ),
-                      PopupMenuItem(
-                        value: 'resend',
-                        child: Text(appStrings.resendInvitation),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete_pending',
-                        child: Text('Delete invitation'),
-                      ),
+                      if (isPending)
+                        PopupMenuItem(
+                          value: 'resend',
+                          child: Text(appStrings.resendInvitation),
+                        ),
+                      if (isPending)
+                        const PopupMenuItem(
+                          value: 'delete_pending',
+                          child: Text('Delete invitation'),
+                        ),
                     ],
                   ),
                 ],
