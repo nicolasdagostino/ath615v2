@@ -143,6 +143,105 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     }
   }
 
+  Future<void> _showLikedBy() async {
+    final userIds = _likes
+        .map((l) => l['user_id']?.toString())
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    List<Map<String, dynamic>> profiles = [];
+
+    if (userIds.isNotEmpty) {
+      final rows = await _client
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .inFilter('id', userIds);
+
+      profiles = List<Map<String, dynamic>>.from(rows);
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
+            ),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Text(
+                  'LIKED BY · ${profiles.length}',
+                  style: WorkoutTextStyles.program,
+                ),
+                const SizedBox(height: 16),
+                if (profiles.isEmpty)
+                  Text('No likes yet.', style: WorkoutTextStyles.body)
+                else
+                  ...profiles.map((profile) {
+                    final name =
+                        profile['full_name']?.toString() ??
+                        appStrings.userFallbackName;
+                    final avatarUrl = profile['avatar_url']?.toString();
+                    final hasAvatar =
+                        avatarUrl != null && avatarUrl.trim().isNotEmpty;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 21,
+                            backgroundColor: const Color(0xFFF7F3EA),
+                            backgroundImage: hasAvatar
+                                ? NetworkImage(avatarUrl)
+                                : null,
+                            child: hasAvatar
+                                ? null
+                                : Text(
+                                    name.trim().isEmpty
+                                        ? 'A'
+                                        : name.trim()[0].toUpperCase(),
+                                    style: GoogleFonts.barlowCondensed(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFFB59B6A),
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: WorkoutTextStyles.stat,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _toggleLike() async {
     final userId = _userId;
     if (userId == null) return;
@@ -506,13 +605,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           const SizedBox(height: 18),
                           Row(
                             children: [
-                              _DetailStatButton(
-                                icon: _liked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                label: '${_likes.length}',
+                              _DetailLikeHeartButton(
                                 active: _liked,
                                 onTap: _toggleLike,
+                              ),
+                              const SizedBox(width: 8),
+                              _DetailLikeCountButton(
+                                count: _likes.length,
+                                onTap: _showLikedBy,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -733,16 +833,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   }
 }
 
-class _DetailStatButton extends StatelessWidget {
-  const _DetailStatButton({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
+class _DetailLikeHeartButton extends StatelessWidget {
+  const _DetailLikeHeartButton({required this.active, required this.onTap});
 
-  final IconData icon;
-  final String label;
   final bool active;
   final VoidCallback onTap;
 
@@ -756,19 +849,34 @@ class _DetailStatButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: active
-                    ? const Color(0xFFE11D48)
-                    : const Color(0xFF667085),
-              ),
-              const SizedBox(width: 8),
-              Text(label, style: WorkoutTextStyles.stat),
-            ],
+          child: Icon(
+            active ? Icons.favorite : Icons.favorite_border,
+            size: 20,
+            color: active ? const Color(0xFFE11D48) : const Color(0xFF667085),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailLikeCountButton extends StatelessWidget {
+  const _DetailLikeCountButton({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF2F3F6),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: count == 0 ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          child: Text('$count', style: WorkoutTextStyles.stat),
         ),
       ),
     );

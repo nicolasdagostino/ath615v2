@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,18 +15,20 @@ Future<void> setupPush() async {
 
     await messaging.requestPermission();
 
-    String? apnsToken;
-    for (var i = 0; i < 10; i++) {
-      apnsToken = await messaging.getAPNSToken();
-      if (apnsToken != null) break;
-      await Future.delayed(const Duration(seconds: 1));
-    }
+    if (Platform.isIOS) {
+      String? apnsToken;
+      for (var i = 0; i < 10; i++) {
+        apnsToken = await messaging.getAPNSToken();
+        if (apnsToken != null) break;
+        await Future.delayed(const Duration(seconds: 1));
+      }
 
-    debugPrint('PUSH APNS TOKEN => $apnsToken');
+      debugPrint('PUSH APNS TOKEN => $apnsToken');
 
-    if (apnsToken == null) {
-      debugPrint('PUSH SKIPPED => APNS token null');
-      return;
+      if (apnsToken == null) {
+        debugPrint('PUSH SKIPPED => APNS token null');
+        return;
+      }
     }
 
     final token = await messaging.getToken();
@@ -41,7 +44,7 @@ Future<void> setupPush() async {
     await Supabase.instance.client.from('device_tokens').upsert({
       'user_id': user.id,
       'token': token,
-      'platform': 'ios',
+      'platform': Platform.isIOS ? 'ios' : 'android',
     }, onConflict: 'user_id,token');
 
     debugPrint('PUSH TOKEN SAVED');
