@@ -122,6 +122,9 @@ serve(async (req) => {
     }
 
     let sentCount = 0
+    let deletedTokenCount = 0
+    let noTokenCount = 0
+    const completedNotificationIds: string[] = []
 
     for (const n of notifications) {
       const { data: tokens, error: tokenError } = await admin
@@ -131,7 +134,18 @@ serve(async (req) => {
 
       if (tokenError) throw tokenError
 
-      for (const t of tokens ?? []) {
+      if (!tokens || tokens.length === 0) {
+        noTokenCount++
+        completedNotificationIds.push(n.id)
+        console.log(`No device tokens notification=${n.id} user=${n.user_id}`)
+        continue
+      }
+
+      let notificationSent = false
+
+      for (const t of tokens) {
+        const token = String(t.token)
+
         const fcmResponse = await fetch(
           `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
           {
@@ -142,7 +156,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               message: {
-                token: t.token,
+                token,
                 notification: {
                   title: n.title,
                   body: n.body,
@@ -151,6 +165,11 @@ serve(async (req) => {
                   type: String(n.type ?? ''),
                   workoutId: String(n.data?.workoutId ?? ''),
                   notificationId: String(n.id),
+                },
+                android: {
+                  notification: {
+                    sound: 'default',
+                  },
                 },
                 apns: {
                   payload: {
@@ -166,25 +185,55 @@ serve(async (req) => {
 
         if (!fcmResponse.ok) {
           const errorText = await fcmResponse.text()
+
           console.error(
-            `FCM send failed notification=${n.id} user=${n.user_id} token=${String(t.token).slice(0, 18)}... error=${errorText}`,
+            `FCM send failed notification=${n.id} user=${n.user_id} token=${token.slice(0, 18)}... error=${errorText}`,
           )
+
+          if (
+            errorText.includes('UNREGISTERED') ||
+            errorText.includes('INVALID_ARGUMENT') ||
+            errorText.includes('registration-token-not-registered')
+          ) {
+            const { error: deleteTokenError } = await admin
+              .from('device_tokens')
+              .delete()
+              .eq('token', token)
+
+            if (!deleteTokenError) {
+              deletedTokenCount++
+              console.log(`Deleted invalid token user=${n.user_id} token=${token.slice(0, 18)}...`)
+            }
+          }
+
           continue
         }
 
         sentCount++
+        notificationSent = true
+      }
+
+      if (notificationSent) {
+        completedNotificationIds.push(n.id)
       }
     }
 
-    const ids = notifications.map((n) => n.id)
-
-    await admin
-      .from('notifications')
-      .update({ sent_at: new Date().toISOString() })
-      .in('id', ids)
+    if (completedNotificationIds.length > 0) {
+      await admin
+        .from('notifications')
+        .update({ sent_at: new Date().toISOString() })
+        .in('id', completedNotificationIds)
+    }
 
     return new Response(
-      JSON.stringify({ ok: true, count: notifications.length, sentCount }),
+      JSON.stringify({
+        ok: true,
+        count: notifications.length,
+        sentCount,
+        completedCount: completedNotificationIds.length,
+        noTokenCount,
+        deletedTokenCount,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
