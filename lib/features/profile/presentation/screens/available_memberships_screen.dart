@@ -53,7 +53,7 @@ class _AvailableMembershipsScreenState
 
       final query = client
           .from('membership_plans')
-          .select('id, name, plan_type, credits')
+          .select('id, name, plan_type, credits, price, currency')
           .eq('gym_id', gymId)
           .eq('is_active', true);
 
@@ -63,8 +63,15 @@ class _AvailableMembershipsScreenState
 
       if (!mounted) return;
 
+      final plans = List<Map<String, dynamic>>.from(rows)
+          .where(
+            (p) =>
+                (p['name']?.toString().toLowerCase() ?? '') != 'staff',
+          )
+          .toList();
+
       setState(() {
-        _plans = List<Map<String, dynamic>>.from(rows);
+        _plans = plans;
         _loading = false;
       });
     } catch (_) {
@@ -125,6 +132,7 @@ class _AvailableMembershipsScreenState
                     final plan = _plans[index];
                     final name = plan['name']?.toString() ?? 'Plan';
                     final credits = plan['credits'];
+                    final price = plan['price'];
 
                     final subtitle = _isSubscription
                         ? 'Unlimited access'
@@ -150,10 +158,20 @@ class _AvailableMembershipsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name.toUpperCase(),
-                              style: _AvailableMembershipText.title),
+                          Text(
+                            name.toUpperCase(),
+                            style: _AvailableMembershipText.title,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            price == null ? 'PRICE COMING SOON' : '€$price',
+                            style: _AvailableMembershipText.price,
+                          ),
                           const SizedBox(height: 8),
-                          Text(subtitle, style: _AvailableMembershipText.body),
+                          Text(
+                            subtitle,
+                            style: _AvailableMembershipText.body,
+                          ),
                           const SizedBox(height: 18),
                           SizedBox(
                             width: double.infinity,
@@ -186,6 +204,14 @@ class _AvailableMembershipText {
     fontWeight: FontWeight.w800,
     letterSpacing: -0.2,
     color: const Color(0xFF111827),
+  );
+
+
+  static TextStyle price = GoogleFonts.barlowCondensed(
+    fontSize: 30,
+    fontWeight: FontWeight.w800,
+    color: const Color(0xFFB59B6A),
+    height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(

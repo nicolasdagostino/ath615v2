@@ -49,7 +49,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
     try {
       final rows = await _client
           .from('membership_plans')
-          .select('id, name, plan_type, credits, is_active, created_at')
+          .select('id, name, plan_type, credits, price, currency, is_active, created_at')
           .eq('gym_id', widget.gymId)
           .order('created_at', ascending: false);
 
@@ -84,6 +84,132 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+
+  Future<void> _openEditPlan(Map<String, dynamic> plan) async {
+    final nameController = TextEditingController(
+      text: plan['name']?.toString() ?? '',
+    );
+    final priceController = TextEditingController(
+      text: plan['price']?.toString() ?? '',
+    );
+    final creditsController = TextEditingController(
+      text: plan['credits']?.toString() ?? '',
+    );
+
+    final isClassPack = plan['plan_type']?.toString() == 'class_pack';
+    var saving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: SafeArea(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text('EDIT PLAN', style: _PlansText.title),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: nameController,
+                        textCapitalization: TextCapitalization.words,
+                        style: _PlansText.body,
+                        decoration: _plansInput(
+                          appStrings.planName,
+                          Icons.badge_outlined,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: priceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: _PlansText.body,
+                        decoration: _plansInput(
+                          'Price (€)',
+                          Icons.euro_outlined,
+                        ),
+                      ),
+                      if (isClassPack) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: creditsController,
+                          keyboardType: TextInputType.number,
+                          style: _PlansText.body,
+                          decoration: _plansInput(
+                            appStrings.credits,
+                            Icons.confirmation_number_outlined,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label: 'Save Changes',
+                        loading: saving,
+                        onPressed: () async {
+                          final name = nameController.text.trim();
+                          final price = double.tryParse(
+                            priceController.text.trim(),
+                          );
+                          final credits = int.tryParse(
+                            creditsController.text.trim(),
+                          );
+
+                          if (name.isEmpty) return;
+                          if (price == null || price < 0) return;
+                          if (isClassPack && (credits == null || credits <= 0)) {
+                            return;
+                          }
+
+                          setSheetState(() => saving = true);
+
+                          try {
+                            await _client
+                                .from('membership_plans')
+                                .update({
+                                  'name': name,
+                                  'price': price,
+                                  'currency': 'EUR',
+                                  if (isClassPack) 'credits': credits,
+                                })
+                                .eq('id', plan['id']);
+
+                            if (!sheetContext.mounted) return;
+                            Navigator.pop(sheetContext);
+
+                            await _load();
+                          } finally {
+                            if (sheetContext.mounted) {
+                              setSheetState(() => saving = false);
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _toggle(Map<String, dynamic> plan) async {
@@ -183,9 +309,12 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                       ? appStrings.unlimited
                       : appStrings.classPack;
                   final credits = plan['credits'];
+                  final price = plan['price'];
+                  final priceLabel = price == null ? '€-' : '€$price';
+
                   final subtitle = credits == null
-                      ? '$type · ${active ? appStrings.active : appStrings.inactive}'
-                      : '$type · $credits ${appStrings.creditsLower} · ${active ? appStrings.active : appStrings.inactive}';
+                      ? '$priceLabel · $type · ${active ? appStrings.active : appStrings.inactive}'
+                      : '$priceLabel · $type · $credits ${appStrings.creditsLower} · ${active ? appStrings.active : appStrings.inactive}';
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -208,6 +337,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                                   Text(subtitle, style: _PlansText.subtle),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              onPressed: () => _openEditPlan(plan),
+                              icon: const Icon(Icons.more_horiz_rounded),
+                              color: const Color(0xFF384152),
                             ),
                             Switch(
                               value: active,
