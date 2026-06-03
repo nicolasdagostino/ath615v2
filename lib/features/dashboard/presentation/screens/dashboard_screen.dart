@@ -38,8 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
 
-  int get _allMembersCount => _members.length;
-
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
 
@@ -1194,7 +1192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Expanded(
                                 child: _MemberFilterChip(
                                   label:
-                                      '${appStrings.all} ($_allMembersCount)',
+                                      '${appStrings.all} (${history.length})',
                                   selected: historyFilter == 'all',
                                   onTap: () => setSheetState(
                                     () => historyFilter = 'all',

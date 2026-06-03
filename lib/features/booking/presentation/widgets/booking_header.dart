@@ -116,18 +116,29 @@ class BookingHeader extends StatelessWidget {
                           color: const Color(0xFFF7F3EA),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Badge(
-                          isLabelVisible: unreadNotifications > 0,
-                          label: Text(
-                            unreadNotifications > 99
-                                ? '99+'
-                                : unreadNotifications.toString(),
-                          ),
-                          child: const Icon(
-                            Icons.notifications_outlined,
-                            size: 18,
-                            color: Color(0xFFB59B6A),
-                          ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.notifications_outlined,
+                                size: 20,
+                                color: Color(0xFFB59B6A),
+                              ),
+                            ),
+                            if (unreadNotifications > 0)
+                              Positioned(
+                                right: -7,
+                                top: -7,
+                                child: Badge(
+                                  label: Text(
+                                    unreadNotifications > 99
+                                        ? '99+'
+                                        : unreadNotifications.toString(),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),

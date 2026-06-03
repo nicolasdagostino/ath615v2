@@ -400,6 +400,30 @@ class AppStrings {
       pick('No members found.', 'No se encontraron miembros.');
 
   String get membershipTitle => pick('Membership', 'Membresía');
+
+  String get nextClass => pick('Next Class', 'Próxima clase');
+
+  String weekdayLabel(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return pick('Monday', 'Lunes');
+      case DateTime.tuesday:
+        return pick('Tuesday', 'Martes');
+      case DateTime.wednesday:
+        return pick('Wednesday', 'Miércoles');
+      case DateTime.thursday:
+        return pick('Thursday', 'Jueves');
+      case DateTime.friday:
+        return pick('Friday', 'Viernes');
+      case DateTime.saturday:
+        return pick('Saturday', 'Sábado');
+      case DateTime.sunday:
+        return pick('Sunday', 'Domingo');
+      default:
+        return '';
+    }
+  }
+
   String get profileTraining => pick('Training', 'Entrenamiento');
   String get profileMembership => pick('Membership', 'Membresía');
   String get profileSettings => pick('Settings', 'Configuración');

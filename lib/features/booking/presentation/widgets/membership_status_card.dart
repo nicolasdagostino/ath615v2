@@ -8,10 +8,20 @@ class MembershipStatusCard extends StatelessWidget {
     super.key,
     required this.hasActiveMembership,
     required this.creditsRemaining,
+    this.nextClassTitle,
+    this.nextClassTime,
   });
 
   final bool hasActiveMembership;
   final int? creditsRemaining;
+  final String? nextClassTitle;
+  final String? nextClassTime;
+
+  bool get hasNextClass =>
+      nextClassTitle != null &&
+      nextClassTitle!.trim().isNotEmpty &&
+      nextClassTime != null &&
+      nextClassTime!.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -45,25 +55,59 @@ class MembershipStatusCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
-              hasActiveMembership
+              hasNextClass
+                  ? Icons.event_available_rounded
+                  : hasActiveMembership
                   ? Icons.workspace_premium_outlined
                   : Icons.lock_outline,
-              color: hasActiveMembership
+              color: hasNextClass
+                  ? const Color(0xFFB59B6A)
+                  : hasActiveMembership
                   ? const Color(0xFF149651)
-                  : const Color(0xFFB69B63),
+                  : const Color(0xFFB45309),
               size: 34,
             ),
           ),
           const SizedBox(width: 20),
           Expanded(
-            child: Text(
-              label,
-              style: BookingTextStyles.membership.copyWith(
-                color: hasActiveMembership
-                    ? const Color(0xFF149651)
-                    : const Color(0xFFB45309),
-              ),
-            ),
+            child: hasNextClass
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appStrings.nextClass.toUpperCase(),
+                        style: BookingTextStyles.membership.copyWith(
+                          color: const Color(0xFFB59B6A),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        nextClassTitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: BookingTextStyles.membership.copyWith(
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        nextClassTime!,
+                        style: BookingTextStyles.membership.copyWith(
+                          color: const Color(0xFF667085),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    label,
+                    style: BookingTextStyles.membership.copyWith(
+                      color: hasActiveMembership
+                          ? const Color(0xFF149651)
+                          : const Color(0xFFB45309),
+                    ),
+                  ),
           ),
         ],
       ),

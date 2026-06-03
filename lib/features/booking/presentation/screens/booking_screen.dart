@@ -521,6 +521,51 @@ class _BookingScreenState extends State<BookingScreen> {
     return '$d/$m · $h:$min';
   }
 
+  Map<String, dynamic>? get _nextBookedClass {
+    final now = DateTime.now();
+
+    final booked = _classes.where((klass) {
+      final classId = klass['id']?.toString();
+      if (classId == null || !_myBookedClassIds.contains(classId)) {
+        return false;
+      }
+
+      final startsAt = DateTime.tryParse(klass['starts_at']?.toString() ?? '');
+      if (startsAt == null) return false;
+
+      return startsAt.toLocal().isAfter(now);
+    }).toList();
+
+    booked.sort((a, b) {
+      final aStart = DateTime.tryParse(a['starts_at']?.toString() ?? '');
+      final bStart = DateTime.tryParse(b['starts_at']?.toString() ?? '');
+      if (aStart == null && bStart == null) return 0;
+      if (aStart == null) return 1;
+      if (bStart == null) return -1;
+      return aStart.compareTo(bStart);
+    });
+
+    return booked.isEmpty ? null : booked.first;
+  }
+
+  String? get _nextBookedClassTime {
+    final nextClass = _nextBookedClass;
+    if (nextClass == null) return null;
+
+    final startsAt = DateTime.tryParse(
+      nextClass['starts_at']?.toString() ?? '',
+    );
+    if (startsAt == null) return null;
+
+    final local = startsAt.toLocal();
+    final weekday = appStrings.weekdayLabel(local.weekday);
+
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+
+    return '$weekday $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -559,6 +604,8 @@ class _BookingScreenState extends State<BookingScreen> {
               MembershipStatusCard(
                 hasActiveMembership: _hasActiveMembership,
                 creditsRemaining: _creditsRemaining,
+                nextClassTitle: _nextBookedClass?['title']?.toString(),
+                nextClassTime: _nextBookedClassTime,
               ),
             Expanded(
               child: RefreshIndicator(

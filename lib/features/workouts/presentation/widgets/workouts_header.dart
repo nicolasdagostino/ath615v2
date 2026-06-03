@@ -128,10 +128,12 @@ class WorkoutsHeader extends StatelessWidget {
                                 ? '99+'
                                 : unreadNotifications.toString(),
                           ),
-                          child: const Icon(
-                            Icons.fitness_center_rounded,
+                          child: Icon(
+                            canManage
+                                ? Icons.fitness_center_rounded
+                                : Icons.notifications_outlined,
                             size: 18,
-                            color: Color(0xFFB59B6A),
+                            color: const Color(0xFFB59B6A),
                           ),
                         ),
                       ),
