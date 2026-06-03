@@ -16,6 +16,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
   bool _loading = true;
+  String _selectedTab = 'subscriptions';
 
   @override
   void initState() {
@@ -102,38 +103,144 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       style: _MembershipText.sectionTitle,
                     ),
                     const SizedBox(height: 14),
-                    if (_membership == null)
-                      Text(appStrings.noActivePlan, style: _MembershipText.body)
-                    else ...[
-                      _InfoRow(
-                        label: appStrings.activePlan,
-                        value:
-                            '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+
+                    SizedBox(
+                      height: 48,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          ChoiceChip(
+                            selected: _selectedTab == 'subscriptions',
+                            label: Text(
+                              'SUBSCRIPTIONS',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: _selectedTab == 'subscriptions'
+                                    ? Colors.white
+                                    : const Color(0xFF8F96A3),
+                                height: 1.0,
+                              ),
+                            ),
+                            selectedColor: const Color(0xFFB59B6A),
+                            backgroundColor: Colors.white,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTab = 'subscriptions';
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          ChoiceChip(
+                            selected: _selectedTab == 'dropins',
+                            label: Text(
+                              'DROP-INS',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: _selectedTab == 'dropins'
+                                    ? Colors.white
+                                    : const Color(0xFF8F96A3),
+                                height: 1.0,
+                              ),
+                            ),
+                            selectedColor: const Color(0xFFB59B6A),
+                            backgroundColor: Colors.white,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTab = 'dropins';
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                      _InfoRow(
-                        label: appStrings.credits,
-                        value:
-                            '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
-                      ),
-                      _InfoRow(
-                        label: appStrings.expires,
-                        value: _formatDate(
-                          _membership?['expires_at']?.toString(),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    Text(
-                      appStrings.creditHistory.toUpperCase(),
-                      style: _MembershipText.sectionTitle,
                     ),
-                    const SizedBox(height: 14),
-                    if (_creditLogs.isEmpty)
+
+                    const SizedBox(height: 18),
+                    if (_selectedTab == 'subscriptions') ...[
+                      Text('MY SUBSCRIPTION', style: _MembershipText.sectionTitle),
+                      const SizedBox(height: 14),
+                      if (_membership == null ||
+                          _membership?['credits_remaining'] != null)
+                        Text(
+                          'You have no active subscription.',
+                          style: _MembershipText.body,
+                        )
+                      else ...[
+                        _InfoRow(
+                          label: appStrings.activePlan,
+                          value:
+                              '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                        ),
+                        _InfoRow(
+                          label: appStrings.expires,
+                          value: _formatDate(
+                            _membership?['expires_at']?.toString(),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _MembershipActionButton(
+                        label: 'GET SUBSCRIPTION',
+                        onPressed: () {
+                          context.push(
+                            '/available-memberships/subscription',
+                          );
+                        },
+                      ),
+                    ] else ...[
+                      Text('MY DROP-INS', style: _MembershipText.sectionTitle),
+                      const SizedBox(height: 14),
+                      if (_membership == null ||
+                          _membership?['credits_remaining'] == null)
+                        Text(
+                          'You have no active drop-ins.',
+                          style: _MembershipText.body,
+                        )
+                      else ...[
+                        _InfoRow(
+                          label: appStrings.credits,
+                          value:
+                              '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
+                        ),
+                        _InfoRow(
+                          label: appStrings.expires,
+                          value: _formatDate(
+                            _membership?['expires_at']?.toString(),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _MembershipActionButton(
+                        label: 'GET DROP-IN',
+                        onPressed: () {
+                          context.push(
+                            '/available-memberships/dropin',
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 22),
                       Text(
-                        appStrings.noCreditHistory,
-                        style: _MembershipText.subtle,
-                      )
-                    else ...[
+                        appStrings.creditHistory.toUpperCase(),
+                        style: _MembershipText.sectionTitle,
+                      ),
+                      const SizedBox(height: 14),
+                      if (_creditLogs.isEmpty)
+                        Text(
+                          appStrings.noCreditHistory,
+                          style: _MembershipText.subtle,
+                        )
+                      else ...[
                       Row(
                         children: [
                           Expanded(
@@ -214,6 +321,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         );
                       }),
                     ],
+                    ],
                   ],
                 ),
               ),
@@ -224,7 +332,38 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 }
 
+
+
+class _MembershipActionButton extends StatelessWidget {
+  const _MembershipActionButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB59B6A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
 class _MembershipText {
+
   const _MembershipText._();
 
   static TextStyle header = GoogleFonts.barlowCondensed(

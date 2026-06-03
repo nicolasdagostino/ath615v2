@@ -12,6 +12,7 @@ import '../../features/owner/presentation/screens/owner_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
 import '../../features/profile/presentation/screens/membership_screen.dart';
+import '../../features/profile/presentation/screens/available_memberships_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
@@ -55,6 +56,14 @@ class AppRouter {
         GoRoute(
           path: '/membership',
           builder: (context, state) => const MembershipScreen(),
+        ),
+        GoRoute(
+          path: '/available-memberships/:type',
+          builder: (context, state) {
+            return AvailableMembershipsScreen(
+              type: state.pathParameters['type'] ?? 'subscription',
+            );
+          },
         ),
         GoRoute(
           path: '/settings',
