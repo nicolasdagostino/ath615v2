@@ -663,11 +663,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .from('class_bookings')
         .select('status, created_at, classes(title, starts_at)')
         .eq('user_id', memberId)
-        .neq('status', 'cancelled')
-        .order('created_at', ascending: false)
-        .limit(10);
+        .inFilter('status', ['attended', 'no_show'])
+        .limit(30);
 
-    return List<Map<String, dynamic>>.from(res);
+    final history = List<Map<String, dynamic>>.from(res);
+
+    history.sort((a, b) {
+      final aClass = a['classes'] as Map<String, dynamic>?;
+      final bClass = b['classes'] as Map<String, dynamic>?;
+      final aStartsAt = DateTime.tryParse(
+        aClass?['starts_at']?.toString() ?? '',
+      );
+      final bStartsAt = DateTime.tryParse(
+        bClass?['starts_at']?.toString() ?? '',
+      );
+
+      if (aStartsAt == null && bStartsAt == null) return 0;
+      if (aStartsAt == null) return 1;
+      if (bStartsAt == null) return -1;
+
+      return bStartsAt.compareTo(aStartsAt);
+    });
+
+    return history.take(10).toList();
   }
 
   Future<void> _toggleMemberActive(Map<String, dynamic> member) async {
