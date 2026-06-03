@@ -593,13 +593,15 @@ class _BookingScreenState extends State<BookingScreen> {
               onOpenNotifications: widget.onOpenNotifications,
             ),
             const SizedBox(height: 18),
-            BookingDayChips(
-              selectedDay: _selectedDay,
-              onSelected: (day) {
-                setState(() => _selectedDay = day);
-                _load();
-              },
-            ),
+            if (_role != null)
+              BookingDayChips(
+                selectedDay: _selectedDay,
+                canViewPastDays: _canManageAttendance,
+                onSelected: (day) {
+                  setState(() => _selectedDay = day);
+                  _load();
+                },
+              ),
             if (_role == 'athlete')
               MembershipStatusCard(
                 hasActiveMembership: _hasActiveMembership,

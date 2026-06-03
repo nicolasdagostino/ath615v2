@@ -719,6 +719,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<bool> _confirmReplaceActiveMembership(
+    BuildContext rootContext,
+  ) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: rootContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text('REPLACE ACTIVE PLAN?', style: _DashText.section),
+                  const SizedBox(height: 10),
+                  Text(
+                    'This member already has an active membership. Assigning a new plan will replace the current one and remaining credits may be lost.',
+                    style: _DashText.body.copyWith(
+                      color: const Color(0xFF384152),
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetContext, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF384152),
+                              side: const BorderSide(color: Color(0xFFE1E4EA)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              appStrings.cancel.toUpperCase(),
+                              style: _DashText.title,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(sheetContext, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFB42318),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'REPLACE',
+                              style: _DashText.title.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return confirmed == true;
+  }
+
   Future<void> _openAssignPlan(String userId) async {
     final rootContext = context;
     final gymId = _gymId;
@@ -731,6 +820,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .select('id, name, plan_type, credits')
         .eq('gym_id', gymId)
         .eq('is_active', true);
+
+    final activeMembership = await client
+        .from('member_memberships')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('gym_id', gymId)
+        .eq('is_active', true)
+        .eq('status', 'active')
+        .gt('expires_at', DateTime.now().toIso8601String())
+        .maybeSingle();
 
     String? selectedPlanId;
     var saving = false;
@@ -806,6 +905,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 });
 
                                 try {
+                                  if (activeMembership != null) {
+                                    final confirmed =
+                                        await _confirmReplaceActiveMembership(
+                                          rootContext,
+                                        );
+
+                                    if (!confirmed) {
+                                      return;
+                                    }
+                                  }
+
                                   await client.rpc(
                                     'assign_membership_plan',
                                     params: {
