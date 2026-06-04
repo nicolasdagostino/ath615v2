@@ -414,7 +414,13 @@ class _OpenCommentsButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.chat_bubble_outline, size: 18),
-        label: Text(label.toUpperCase(), style: BookingTextStyles.button),
+        label: Text(
+          label.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: BookingTextStyles.button,
+        ),
         style: FilledButton.styleFrom(
           elevation: 0,
           backgroundColor: const Color(0xFFB59B6A),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/strings/app_strings.dart';
+
 class AvailableMembershipsScreen extends StatefulWidget {
   const AvailableMembershipsScreen({
     super.key,
@@ -80,23 +82,153 @@ class _AvailableMembershipsScreenState
     }
   }
 
-  void _showRequestMessage(String planName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isSubscription
-              ? 'Contact your gym to activate $planName.'
-              : 'Contact your gym to activate this drop-in package.',
-        ),
-      ),
+
+
+  Future<bool> _confirmRequest() async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    appStrings.requestMembershipTitle.toUpperCase(),
+                    style: _AvailableMembershipText.title,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    appStrings.requestMembershipConfirm,
+                    style: _AvailableMembershipText.body,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetContext, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF384152),
+                              side: const BorderSide(color: Color(0xFFE1E4EA)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(appStrings.cancel.toUpperCase()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(sheetContext, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFB59B6A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(appStrings.request.toUpperCase()),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
+
+    return result == true;
+  }
+
+  Future<void> _requestPlan(Map<String, dynamic> plan) async {
+    final confirmed = await _confirmRequest();
+
+    if (!confirmed) return;
+
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+
+      if (userId == null) return;
+
+      final profile = await client
+          .from('profiles')
+          .select('gym_id')
+          .eq('id', userId)
+          .single();
+
+      final existing = await client
+          .from('membership_requests')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('plan_id', plan['id'])
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existing != null) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(appStrings.membershipRequestAlreadySent),
+          ),
+        );
+        return;
+      }
+
+      await client.from('membership_requests').insert({
+        'user_id': userId,
+        'gym_id': profile['gym_id'],
+        'plan_id': plan['id'],
+        'status': 'pending',
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(appStrings.membershipRequestSent),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(appStrings.membershipRequestError(e)),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final title = _isSubscription
-        ? 'AVAILABLE SUBSCRIPTIONS'
-        : 'AVAILABLE DROP-INS';
+        ? appStrings.availableSubscriptions.toUpperCase()
+        : appStrings.availableDropIns.toUpperCase();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
@@ -119,8 +251,8 @@ class _AvailableMembershipsScreenState
               ? Center(
                   child: Text(
                     _isSubscription
-                        ? 'No subscriptions available.'
-                        : 'No drop-ins available.',
+                        ? appStrings.noSubscriptionsAvailable
+                        : appStrings.noDropInsAvailable,
                     style: _AvailableMembershipText.body,
                   ),
                 )
@@ -135,12 +267,14 @@ class _AvailableMembershipsScreenState
                     final price = plan['price'];
 
                     final subtitle = _isSubscription
-                        ? 'Unlimited access'
-                        : '$credits class ${credits == 1 ? 'credit' : 'credits'}';
+                        ? appStrings.unlimitedAccess
+                        : credits == 1
+                            ? appStrings.classCredit(credits)
+                            : appStrings.classCredits(credits);
 
                     final action = _isSubscription
-                        ? 'REQUEST SUBSCRIPTION'
-                        : 'REQUEST DROP-IN';
+                        ? appStrings.requestSubscription.toUpperCase()
+                        : appStrings.requestDropIn.toUpperCase();
 
                     return Container(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -164,7 +298,7 @@ class _AvailableMembershipsScreenState
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            price == null ? 'PRICE COMING SOON' : '€$price',
+                            price == null ? appStrings.priceComingSoon.toUpperCase() : '€$price',
                             style: _AvailableMembershipText.price,
                           ),
                           const SizedBox(height: 8),
@@ -177,7 +311,7 @@ class _AvailableMembershipsScreenState
                             width: double.infinity,
                             height: 52,
                             child: FilledButton(
-                              onPressed: () => _showRequestMessage(name),
+                              onPressed: () => _requestPlan(plan),
                               style: FilledButton.styleFrom(
                                 backgroundColor: const Color(0xFFB59B6A),
                                 shape: RoundedRectangleBorder(

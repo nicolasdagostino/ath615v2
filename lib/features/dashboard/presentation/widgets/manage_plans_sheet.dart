@@ -123,7 +123,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      Text('EDIT PLAN', style: _PlansText.title),
+                      Text(appStrings.editPlan.toUpperCase(), style: _PlansText.title),
                       const SizedBox(height: 16),
                       TextField(
                         controller: nameController,
@@ -160,7 +160,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                       ],
                       const SizedBox(height: 16),
                       AppButton(
-                        label: 'Save Changes',
+                        label: appStrings.saveChanges,
                         loading: saving,
                         onPressed: () async {
                           final name = nameController.text.trim();

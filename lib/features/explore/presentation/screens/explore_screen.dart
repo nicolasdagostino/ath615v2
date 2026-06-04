@@ -371,7 +371,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       : _programWorkoutCount(id);
 
                   final baseLabel = future
-                      ? 'Future'
+                      ? appStrings.future
                       : all
                       ? appStrings.exploreAllPrograms
                       : program?['name']?.toString() ??

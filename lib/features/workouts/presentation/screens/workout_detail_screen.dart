@@ -389,7 +389,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Could not delete comment: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.deleteCommentError(e))));
     }
   }
 

@@ -97,7 +97,7 @@ class BookingClassCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetaBlock(
-                        label: 'DURATION',
+                        label: appStrings.duration.toUpperCase(),
                         value: '$durationMinutes MIN',
                       ),
                     ),

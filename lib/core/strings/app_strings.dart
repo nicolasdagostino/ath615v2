@@ -33,7 +33,93 @@ class AppStrings {
   String get all => pick('ALL', 'TODOS');
   String get coach => pick('COACH', 'COACH');
   String get spots => pick('SPOTS', 'PLAZAS');
-  String get roster => pick('ROSTER', 'LISTA');
+  String get roster => pick('ATTENDANCE', 'ASISTENCIA');
+  String get duration => pick('Duration', 'Duración');
+  String get subscriptions => pick('Subscriptions', 'Suscripciones');
+  String get dropIns => pick('Drop-ins', 'Bonos');
+  String get mySubscription => pick('My subscription', 'Mi suscripción');
+  String get getSubscription => pick('Get subscription', 'Obtener suscripción');
+  String get myDropIns => pick('My drop-ins', 'Mis bonos');
+  String get getDropIn => pick('Get drop-in', 'Obtener bono');
+  String get availableSubscriptions =>
+      pick('Available subscriptions', 'Suscripciones disponibles');
+  String get availableDropIns => pick('Available drop-ins', 'Bonos disponibles');
+  String get unlimitedAccess => pick('Unlimited access', 'Acceso ilimitado');
+  String get requestSubscription =>
+      pick('Request subscription', 'Solicitar suscripción');
+  String get requestDropIn => pick('Request drop-in', 'Solicitar bono');
+  String get noActiveDropIns =>
+      pick('You have no active drop-ins.', 'No tienes bonos activos.');
+  String get noActiveSubscription =>
+      pick('You have no active subscription.', 'No tienes una suscripción activa.');
+  String classCredits(Object credits) =>
+      pick('$credits class credits', '$credits créditos');
+  String classCredit(Object credits) =>
+      pick('$credits class credit', '$credits crédito');
+  String contactGymToActivate(String planName) => pick(
+        'Contact your gym to activate $planName.',
+        'Contacta con tu gym para activar $planName.',
+      );
+  String get contactGymToActivateDropIn => pick(
+        'Contact your gym to activate this drop-in package.',
+        'Contacta con tu gym para activar este bono.',
+      );
+  String get future => pick('Future', 'Futuras');
+  String get membershipRequestSent =>
+      pick('Membership request sent', 'Solicitud de membresía enviada');
+  String get requestMembershipTitle =>
+      pick('Request membership?', '¿Solicitar membresía?');
+  String get requestMembershipConfirm => pick(
+        'Do you want to send this membership request to your gym?',
+        '¿Quieres enviar esta solicitud de membresía a tu gym?',
+      );
+  String get request => pick('Request', 'Solicitar');
+  String get membershipRequestAlreadySent => pick(
+        'You already requested this plan',
+        'Ya solicitaste este plan',
+      );
+  String membershipRequestError(Object e) =>
+      pick('Request error: $e', 'Error al enviar solicitud: $e');
+  String get noSubscriptionsAvailable =>
+      pick('No subscriptions available.', 'No hay suscripciones disponibles.');
+  String get noDropInsAvailable =>
+      pick('No drop-ins available.', 'No hay bonos disponibles.');
+  String get priceComingSoon => pick('Price coming soon', 'Precio próximamente');
+  String get membershipRequests =>
+      pick('Membership requests', 'Solicitudes de membresía');
+  String get noPendingRequests =>
+      pick('No pending requests.', 'No hay solicitudes pendientes.');
+  String get membershipAssigned =>
+      pick('Membership assigned', 'Membresía asignada');
+  String assignMembershipRequestError(Object e) => pick(
+        'Could not assign membership: $e',
+        'No se pudo asignar la membresía: $e',
+      );
+  String get membershipRequestRejected =>
+      pick('Request rejected', 'Solicitud rechazada');
+  String rejectMembershipRequestError(Object e) => pick(
+        'Could not reject request: $e',
+        'No se pudo rechazar la solicitud: $e',
+      );
+  String get reject => pick('Reject', 'Rechazar');
+  String get assignMembershipRequestConfirm => pick(
+        'This membership request will be approved and the plan will be assigned.',
+        'Esta solicitud será aprobada y el plan será asignado.',
+      );
+  String get rejectMembershipRequestConfirm => pick(
+        'This membership request will be rejected.',
+        'Esta solicitud será rechazada.',
+      );
+  String get replaceActivePlan =>
+      pick('Replace active plan?', '¿Reemplazar plan activo?');
+  String get replaceActivePlanMessage => pick(
+        'This member already has an active membership. Assigning a new plan will replace the current one and remaining credits may be lost.',
+        'Este miembro ya tiene una membresía activa. Asignar un nuevo plan reemplazará el actual y puede perder créditos restantes.',
+      );
+  String get replace => pick('Replace', 'Reemplazar');
+  String get editPlan => pick('Edit plan', 'Editar plan');
+  String deleteCommentError(Object e) =>
+      pick('Could not delete comment: $e', 'No se pudo eliminar el comentario: $e');
   String get attendance => pick('ATTENDANCE', 'ASISTENCIA');
   String get noBookingsYet => pick('No bookings yet.', 'Aún no hay reservas.');
   String get member => pick('Member', 'Miembro');
@@ -128,7 +214,7 @@ class AppStrings {
   String get workoutFallbackTitle => pick('Workout', 'WOD');
   String get workoutEdit => pick('Edit', 'Editar');
   String get workoutDelete => pick('Delete', 'Eliminar');
-  String get workoutPostScore => pick('Post score', 'Sube tu resultado');
+  String get workoutPostScore => pick('Post score', 'Subir resultado');
   String get workoutFirstComment =>
       pick('Be the first to comment', 'Sé el primero en comentar');
   String workoutCommentCount(int count) => count == 1

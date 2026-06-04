@@ -36,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _DashboardTab _selectedTab = _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
+  List<Map<String, dynamic>> _membershipRequests = [];
   String? _gymId;
 
   int get _athletesCount =>
@@ -66,10 +67,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? _gymId
           : members.first['gym_id']?.toString();
 
+      final requests = gymId == null
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await Supabase.instance.client
+                  .from('membership_requests')
+                  .select(
+                    'id, user_id, plan_id, status, created_at, membership_plans(name, price, credits)',
+                  )
+                  .eq('gym_id', gymId)
+                  .eq('status', 'pending')
+                  .order('created_at', ascending: false),
+            );
+
       if (!mounted) return;
       setState(() {
         _gymId = gymId;
         _members = members;
+        _membershipRequests = requests;
       });
     } catch (e) {
       if (!mounted) return;
@@ -737,6 +752,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+
+  Future<bool> _confirmDashboardAction({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    bool danger = false,
+  }) async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(title.toUpperCase(), style: _DashText.section),
+                  const SizedBox(height: 10),
+                  Text(
+                    message,
+                    style: _DashText.body.copyWith(
+                      color: const Color(0xFF384152),
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetContext, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF384152),
+                              side: const BorderSide(color: Color(0xFFE1E4EA)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              appStrings.cancel.toUpperCase(),
+                              style: _DashText.title,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(sheetContext, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: danger
+                                  ? const Color(0xFFB42318)
+                                  : const Color(0xFFB59B6A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              confirmLabel.toUpperCase(),
+                              style: _DashText.title.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return result == true;
+  }
+
   Future<bool> _confirmReplaceActiveMembership(
     BuildContext rootContext,
   ) async {
@@ -760,10 +870,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text('REPLACE ACTIVE PLAN?', style: _DashText.section),
+                  Text(appStrings.replaceActivePlan.toUpperCase(), style: _DashText.section),
                   const SizedBox(height: 10),
                   Text(
-                    'This member already has an active membership. Assigning a new plan will replace the current one and remaining credits may be lost.',
+                    appStrings.replaceActivePlanMessage,
                     style: _DashText.body.copyWith(
                       color: const Color(0xFF384152),
                       height: 1.25,
@@ -805,7 +915,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             child: Text(
-                              'REPLACE',
+                              appStrings.replace.toUpperCase(),
                               style: _DashText.title.copyWith(
                                 color: Colors.white,
                               ),
@@ -824,6 +934,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return confirmed == true;
+  }
+
+
+  Future<void> _approveMembershipRequest(Map<String, dynamic> request) async {
+    final userId = request['user_id']?.toString();
+    final planId = request['plan_id']?.toString();
+    final requestId = request['id']?.toString();
+
+    if (userId == null || planId == null || requestId == null) return;
+
+    final confirmed = await _confirmDashboardAction(
+      title: appStrings.assignPlan,
+      message: appStrings.assignMembershipRequestConfirm,
+      confirmLabel: appStrings.assign,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await Supabase.instance.client.rpc(
+        'assign_membership_plan',
+        params: {
+          'p_user_id': userId,
+          'p_plan_id': planId,
+        },
+      );
+
+      await Supabase.instance.client
+          .from('membership_requests')
+          .update({'status': 'approved'})
+          .eq('id', requestId);
+
+      await _loadMembers();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.membershipAssigned)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.assignMembershipRequestError(e))),
+      );
+    }
+  }
+
+
+  Future<void> _rejectMembershipRequest(Map<String, dynamic> request) async {
+    final requestId = request['id']?.toString();
+
+    if (requestId == null) return;
+
+    final confirmed = await _confirmDashboardAction(
+      title: appStrings.reject,
+      message: appStrings.rejectMembershipRequestConfirm,
+      confirmLabel: appStrings.reject,
+      danger: true,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await Supabase.instance.client
+          .from('membership_requests')
+          .update({'status': 'rejected'})
+          .eq('id', requestId);
+
+      await _loadMembers();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.membershipRequestRejected)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.rejectMembershipRequestError(e))),
+      );
+    }
   }
 
   Future<void> _openAssignPlan(String userId) async {
@@ -1472,6 +1665,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      _DashboardCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${appStrings.membershipRequests.toUpperCase()} (${_membershipRequests.length})',
+                              style: _DashText.section,
+                            ),
+                            const SizedBox(height: 12),
+                            if (_membershipRequests.isEmpty)
+                              Text(
+                                appStrings.noPendingRequests,
+                                style: _DashText.subtle,
+                              )
+                            else
+                              ..._membershipRequests.map((request) {
+                                final plan =
+                                    request['membership_plans'] as Map<String, dynamic>?;
+                                final member = _members.firstWhere(
+                                  (m) =>
+                                      m['id']?.toString() ==
+                                      request['user_id']?.toString(),
+                                  orElse: () => <String, dynamic>{},
+                                );
+
+                                final name =
+                                    member['full_name']?.toString() ??
+                                    member['email']?.toString() ??
+                                    'Member';
+                                final planName =
+                                    plan?['name']?.toString() ?? 'Plan';
+                                final price = plan?['price'];
+                                final priceLabel =
+                                    price == null ? '' : ' · €$price';
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Container(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      12,
+                                      14,
+                                      12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF7F8FA),
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: _DashText.title,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '$planName$priceLabel',
+                                                style: _DashText.subtle,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuButton<String>(
+                                          icon: const Icon(
+                                            Icons.more_horiz_rounded,
+                                            color: Color(0xFF8F96A3),
+                                          ),
+                                          onSelected: (value) async {
+                                            if (value == 'assign') {
+                                              await _approveMembershipRequest(
+                                                request,
+                                              );
+                                            }
+
+                                            if (value == 'reject') {
+                                              await _rejectMembershipRequest(
+                                                request,
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem(
+                                              value: 'assign',
+                                              child: Text(appStrings.assignPlan),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'reject',
+                                              child: Text(appStrings.reject),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                          ],
+                        ),
                       ),
                     ],
 

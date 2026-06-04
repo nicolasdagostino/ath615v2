@@ -112,7 +112,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           ChoiceChip(
                             selected: _selectedTab == 'subscriptions',
                             label: Text(
-                              'SUBSCRIPTIONS',
+                              appStrings.subscriptions.toUpperCase(),
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -139,7 +139,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           ChoiceChip(
                             selected: _selectedTab == 'dropins',
                             label: Text(
-                              'DROP-INS',
+                              appStrings.dropIns.toUpperCase(),
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -168,12 +168,12 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
                     const SizedBox(height: 18),
                     if (_selectedTab == 'subscriptions') ...[
-                      Text('MY SUBSCRIPTION', style: _MembershipText.sectionTitle),
+                      Text(appStrings.mySubscription.toUpperCase(), style: _MembershipText.sectionTitle),
                       const SizedBox(height: 14),
                       if (_membership == null ||
                           _membership?['credits_remaining'] != null)
                         Text(
-                          'You have no active subscription.',
+                          appStrings.noActiveSubscription,
                           style: _MembershipText.body,
                         )
                       else ...[
@@ -191,7 +191,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       ],
                       const SizedBox(height: 18),
                       _MembershipActionButton(
-                        label: 'GET SUBSCRIPTION',
+                        label: appStrings.getSubscription.toUpperCase(),
                         onPressed: () {
                           context.push(
                             '/available-memberships/subscription',
@@ -199,12 +199,12 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         },
                       ),
                     ] else ...[
-                      Text('MY DROP-INS', style: _MembershipText.sectionTitle),
+                      Text(appStrings.myDropIns.toUpperCase(), style: _MembershipText.sectionTitle),
                       const SizedBox(height: 14),
                       if (_membership == null ||
                           _membership?['credits_remaining'] == null)
                         Text(
-                          'You have no active drop-ins.',
+                          appStrings.noActiveDropIns,
                           style: _MembershipText.body,
                         )
                       else ...[
@@ -222,7 +222,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       ],
                       const SizedBox(height: 18),
                       _MembershipActionButton(
-                        label: 'GET DROP-IN',
+                        label: appStrings.getDropIn.toUpperCase(),
                         onPressed: () {
                           context.push(
                             '/available-memberships/dropin',
