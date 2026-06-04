@@ -174,12 +174,6 @@ class _AvailableMembershipsScreenState
 
       if (userId == null) return;
 
-      final profile = await client
-          .from('profiles')
-          .select('gym_id')
-          .eq('id', userId)
-          .single();
-
       final existing = await client
           .from('membership_requests')
           .select('id')
@@ -199,12 +193,10 @@ class _AvailableMembershipsScreenState
         return;
       }
 
-      await client.from('membership_requests').insert({
-        'user_id': userId,
-        'gym_id': profile['gym_id'],
-        'plan_id': plan['id'],
-        'status': 'pending',
-      });
+      await client.rpc(
+        'create_membership_request',
+        params: {'p_plan_id': plan['id']},
+      );
 
       if (!mounted) return;
 
@@ -216,9 +208,13 @@ class _AvailableMembershipsScreenState
     } catch (e) {
       if (!mounted) return;
 
+      final message = e.toString().contains('DUPLICATE_MEMBERSHIP_REQUEST')
+          ? appStrings.membershipRequestAlreadySent
+          : appStrings.membershipRequestError(e);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(appStrings.membershipRequestError(e)),
+          content: Text(message),
         ),
       );
     }
