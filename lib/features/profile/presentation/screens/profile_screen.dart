@@ -578,20 +578,10 @@ class _ProfileHeader extends StatelessWidget {
                     Text(
                       appStrings.profileHeaderTitle,
                       style: _font(
-                        18,
+                        24,
                         weight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      appStrings.profileHeaderSubtitle,
-                      style: _font(
-                        12,
-                        weight: FontWeight.w500,
-                        color: const Color(0xFFB8BDC7),
-                        letterSpacing: 0.3,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],

@@ -346,7 +346,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   Text(title.toUpperCase(), style: _BookingSheetText.title),
                   const SizedBox(height: 10),
                   Text(message, style: _BookingSheetText.body),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
@@ -555,7 +555,7 @@ class _BookingScreenState extends State<BookingScreen> {
             unreadNotifications: widget.unreadNotifications,
             onOpenNotifications: widget.onOpenNotifications,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 0),
           BookingDayChips(
             selectedDay: _selectedDay,
             onSelected: (day) {

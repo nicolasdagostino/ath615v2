@@ -51,11 +51,9 @@ class BookingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayText = appStrings.formatHeaderDate(selectedDay);
-
     return Container(
       color: const Color(0xFF171717),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -70,20 +68,10 @@ class BookingHeader extends StatelessWidget {
                     Text(
                       appStrings.bookingTitle.toUpperCase(),
                       style: _font(
-                        18,
+                        24,
                         weight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      dayText,
-                      style: _font(
-                        12,
-                        weight: FontWeight.w500,
-                        color: const Color(0xFFB8BDC7),
-                        letterSpacing: 0.3,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],

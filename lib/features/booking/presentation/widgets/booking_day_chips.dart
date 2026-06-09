@@ -22,7 +22,7 @@ class BookingDayChips extends StatelessWidget {
     final today = DateTime.now();
 
     return SizedBox(
-      height: 104,
+      height: 78,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -43,18 +43,18 @@ class BookingDayChips extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelected(day),
             child: SizedBox(
-              width: 56,
+              width: 50,
               child: Column(
                 children: [
                   Text(
                     _weekdayLabel(day),
                     style: BookingTextStyles.dayLabel(selected: selected),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 56,
-                    height: 56,
+                    width: 50,
+                    height: 46,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selected

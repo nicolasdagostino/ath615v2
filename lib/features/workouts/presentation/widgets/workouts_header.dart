@@ -53,8 +53,6 @@ class WorkoutsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final todayText = appStrings.formatHeaderDate(DateTime.now());
-
     return Container(
       color: const Color(0xFF171717),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
@@ -69,26 +67,13 @@ class WorkoutsHeader extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.zero,
-                      child: Text(
-                        appStrings.workoutsTitle.toUpperCase(),
-                        style: _font(
-                          18,
-                          weight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
                     Text(
-                      todayText,
+                      appStrings.workoutsTitle.toUpperCase(),
                       style: _font(
-                        12,
-                        weight: FontWeight.w500,
-                        color: const Color(0xFFB8BDC7),
-                        letterSpacing: 0.35,
+                        24,
+                        weight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],

@@ -1216,7 +1216,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onOpenNotifications: widget.onOpenNotifications,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
             child: Row(
               children: [
                 Expanded(
@@ -1721,13 +1721,10 @@ class _DashboardHeader extends StatelessWidget {
                   children: [
                     Text(
                       appStrings.dashboardTitle.toUpperCase(),
-                      style: _DashText.title.copyWith(color: Colors.white),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      appStrings.dashboardHeaderSubtitle,
-                      style: _DashText.subtle.copyWith(
-                        color: const Color(0xFFB8BDC7),
+                      style: _DashText.title.copyWith(
+                        color: Colors.white,
+                        fontSize: 24,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],
