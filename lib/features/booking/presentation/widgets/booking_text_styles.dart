@@ -73,7 +73,7 @@ class BookingTextStyles {
         fontSize: 14,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.2,
-        height: 1.0,
+        height: 0.82,
       );
 
   static TextStyle dayNumber({required bool selected}) =>

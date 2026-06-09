@@ -22,12 +22,12 @@ class BookingDayChips extends StatelessWidget {
     final today = DateTime.now();
 
     return SizedBox(
-      height: 78,
+      height: 58,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        itemCount: 14,
-        separatorBuilder: (_, _) => const SizedBox(width: 7),
+        itemCount: 7,
+        separatorBuilder: (_, _) => const SizedBox(width: 5),
         itemBuilder: (context, index) {
           final day = DateTime(
             today.year,
@@ -43,19 +43,19 @@ class BookingDayChips extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelected(day),
             child: SizedBox(
-              width: 50,
+              width: 46,
               child: Column(
                 children: [
                   Text(
                     _weekdayLabel(day),
                     style: BookingTextStyles.dayLabel(selected: selected),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 5),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 50,
-                    height: 46,
-                    alignment: Alignment.center,
+                    width: 24,
+                    height: 24,
+                    alignment: const Alignment(0, -0.08),
                     decoration: BoxDecoration(
                       color: selected
                           ? const Color(0xFFBCA36D)
@@ -64,6 +64,11 @@ class BookingDayChips extends StatelessWidget {
                     ),
                     child: Text(
                       day.day.toString(),
+                      strutStyle: const StrutStyle(
+                        fontSize: 15,
+                        height: 0.82,
+                        forceStrutHeight: true,
+                      ),
                       style: BookingTextStyles.dayNumber(selected: selected),
                     ),
                   ),
