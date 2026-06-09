@@ -307,7 +307,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final filteredWorkouts = _filteredWorkouts;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF171717),
+      backgroundColor: const Color(0xFF252525),
       body: Column(
         children: [
           ExploreHeader(

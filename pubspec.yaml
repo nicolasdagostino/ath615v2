@@ -38,6 +38,7 @@ flutter:
   assets:
     - assets/.env
     - assets/images/logo_negro.png
+    - assets/images/card_crossfit.png
 
 
 flutter_launcher_icons:

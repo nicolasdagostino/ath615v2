@@ -42,91 +42,178 @@ class BookingClassCard extends StatelessWidget {
         klass['title']?.toString().toUpperCase() ??
         appStrings.classFallback.toUpperCase();
 
-    final durationMinutes = klass['duration_minutes'] as int? ?? 60;
+    final program = klass['programs'] as Map<String, dynamic>?;
+    final programImageUrl = program?['image_url']?.toString().trim();
+    final hasProgramImage =
+        programImageUrl != null && programImageUrl.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: canManageAttendance ? onOpenAttendance : null,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _timeLabel(klass['starts_at']),
-                      style: BookingTextStyles.displayTime,
-                    ),
-                    const Spacer(),
-                    if (_isBooked)
-                      _StatusPill(
-                        label: appStrings.bookingBooked.toUpperCase(),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ColorFiltered(
+                colorFilter: const ColorFilter.matrix(<double>[
+                  0.2126,
+                  0.7152,
+                  0.0722,
+                  0,
+                  0,
+                  0.2126,
+                  0.7152,
+                  0.0722,
+                  0,
+                  0,
+                  0.2126,
+                  0.7152,
+                  0.0722,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1,
+                  0,
+                ]),
+                child: hasProgramImage
+                    ? Image.network(
+                        programImageUrl,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.centerRight,
+                      )
+                    : const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFF111111),
+                              Color(0xFF252525),
+                              Color(0xFF323232),
+                            ],
+                          ),
+                        ),
                       ),
-                    if (onMorePressed != null)
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.more_horiz),
-                        onPressed: onMorePressed,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(title, style: BookingTextStyles.classTitle),
-                const SizedBox(height: 14),
-                const Divider(height: 1, color: Color(0xFFEDEFF3)),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetaBlock(
-                        label: 'DURATION',
-                        value: '$durationMinutes MIN',
-                      ),
-                    ),
-                    _MetaBlock(
-                      label: appStrings.spots,
-                      value: '$bookedCount / $capacity',
-                      alignEnd: true,
-                    ),
-                  ],
-                ),
-                if (canManageAttendance) ...[
-                  const SizedBox(height: 14),
-                  _ActionButton(
-                    label: appStrings.roster,
-                    onPressed: onOpenAttendance,
-                    filled: false,
-                  ),
-                ],
-                const SizedBox(height: 14),
-                _ActionButton(
-                  label: isLoading ? '...' : buttonLabel.toUpperCase(),
-                  onPressed: buttonAction,
-                  filled: buttonAction != null,
-                ),
-              ],
+              ),
             ),
-          ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      const Color(0xFF111111),
+                      const Color(0xFF171717).withValues(alpha: 0.94),
+                      const Color(0xFF252525).withValues(alpha: 0.58),
+                    ],
+                    stops: const [0.0, 0.46, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: canManageAttendance ? onOpenAttendance : null,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _timeLabel(klass['starts_at']),
+                            style: BookingTextStyles.displayTime,
+                          ),
+                          const Spacer(),
+                          _InlineSpots(value: '$bookedCount / $capacity'),
+                          if (onMorePressed != null) ...[
+                            const SizedBox(width: 6),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(
+                                Icons.more_horiz,
+                                color: Color(0xFFABABAB),
+                              ),
+                              onPressed: onMorePressed,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: BookingTextStyles.classTitle,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          SizedBox(
+                            width: 132,
+                            child: _ActionButton(
+                              label: isLoading
+                                  ? '...'
+                                  : buttonLabel.toUpperCase(),
+                              onPressed: buttonAction,
+                              filled: buttonAction != null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isBooked) ...[
+                        const SizedBox(height: 8),
+                        _StatusPill(
+                          label: appStrings.bookingBooked.toUpperCase(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _InlineSpots extends StatelessWidget {
+  const _InlineSpots({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          appStrings.spots.toUpperCase(),
+          style: BookingTextStyles.metaLabel,
+        ),
+        const SizedBox(width: 6),
+        Text(value, style: BookingTextStyles.metaValue),
+      ],
     );
   }
 }
@@ -157,32 +244,6 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _MetaBlock extends StatelessWidget {
-  const _MetaBlock({
-    required this.label,
-    required this.value,
-    this.alignEnd = false,
-  });
-
-  final String label;
-  final String value;
-  final bool alignEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Text(label, style: BookingTextStyles.metaLabel),
-        const SizedBox(height: 8),
-        Text(value, style: BookingTextStyles.metaValue),
-      ],
-    );
-  }
-}
-
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
@@ -197,7 +258,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 64,
+      height: 50,
       width: double.infinity,
       child: FilledButton(
         onPressed: onPressed,

@@ -238,7 +238,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFF171717),
+      backgroundColor: const Color(0xFF252525),
       body: Column(
         children: [
           WorkoutsHeader(

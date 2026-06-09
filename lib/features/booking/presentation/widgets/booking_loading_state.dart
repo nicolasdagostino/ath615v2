@@ -29,7 +29,7 @@ class _BookingSkeletonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2E2E2E),
         borderRadius: BorderRadius.circular(28),
       ),
       child: compact
@@ -90,7 +90,7 @@ class _SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EAF0),
+        color: const Color(0xFF3A3A3A),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

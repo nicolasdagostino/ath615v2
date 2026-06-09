@@ -5,7 +5,7 @@ class BookingTextStyles {
   const BookingTextStyles._();
 
   static TextStyle displayTime = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     fontSize: 32,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.7,
@@ -13,7 +13,7 @@ class BookingTextStyles {
   );
 
   static TextStyle classTitle = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     fontSize: 18,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
@@ -21,7 +21,7 @@ class BookingTextStyles {
   );
 
   static TextStyle metaLabel = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     fontSize: 12,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.3,
@@ -29,7 +29,7 @@ class BookingTextStyles {
   );
 
   static TextStyle metaValue = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.0,

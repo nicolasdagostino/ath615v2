@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../../../../core/widgets/app_button.dart';
 
@@ -34,6 +36,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   bool _loading = true;
   bool _saving = false;
   List<Map<String, dynamic>> _programs = [];
+  File? _image;
 
   @override
   void initState() {
@@ -52,7 +55,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
     try {
       final rows = await widget.client
           .from('programs')
-          .select('id, name, is_active')
+          .select('id, name, is_active, image_url')
           .eq('gym_id', widget.gymId)
           .order('name');
 
@@ -68,18 +71,45 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
   Future<void> _create() async {
     final name = _name.text.trim();
     if (name.isEmpty || _saving) return;
 
     setState(() => _saving = true);
     try {
+      String? imageUrl;
+
+      if (_image != null) {
+        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+        final path = 'programs/$fileName.jpg';
+
+        await widget.client.storage
+            .from('workout-images')
+            .upload(path, _image!);
+
+        imageUrl = widget.client.storage
+            .from('workout-images')
+            .getPublicUrl(path);
+      }
+
       await widget.client.from('programs').insert({
         'gym_id': widget.gymId,
         'name': name,
+        'image_url': imageUrl,
       });
 
       _name.clear();
+      _image = null;
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -88,6 +118,41 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
       ).showSnackBar(SnackBar(content: Text(appStrings.createProgramError(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _updateProgramImage(Map<String, dynamic> program) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked == null) return;
+
+    final id = program['id'].toString();
+
+    try {
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final path = 'programs/$id-$fileName.jpg';
+      final file = File(picked.path);
+
+      await widget.client.storage.from('workout-images').upload(path, file);
+
+      final imageUrl = widget.client.storage
+          .from('workout-images')
+          .getPublicUrl(path);
+
+      setState(() {
+        program['image_url'] = imageUrl;
+      });
+
+      await widget.client
+          .from('programs')
+          .update({'image_url': imageUrl})
+          .eq('id', id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
     }
   }
 
@@ -148,6 +213,36 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                 ),
               ),
               const SizedBox(height: 12),
+
+              InkWell(
+                onTap: _pickImage,
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F5F7),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  alignment: Alignment.center,
+                  child: _image == null
+                      ? const Icon(
+                          Icons.image_outlined,
+                          size: 30,
+                          color: Color(0xFF8F96A3),
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.file(
+                            _image!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
               AppButton(
                 label: appStrings.createProgram,
                 loading: _saving,
@@ -176,6 +271,34 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                         padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
                         child: Row(
                           children: [
+                            InkWell(
+                              onTap: () => _updateProgramImage(program),
+                              borderRadius: BorderRadius.circular(14),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child:
+                                    (program['image_url']
+                                            ?.toString()
+                                            .isNotEmpty ??
+                                        false)
+                                    ? Image.network(
+                                        program['image_url'].toString(),
+                                        width: 54,
+                                        height: 54,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(
+                                        width: 54,
+                                        height: 54,
+                                        color: const Color(0xFFE8EAF0),
+                                        child: const Icon(
+                                          Icons.image_outlined,
+                                          color: Color(0xFF8F96A3),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

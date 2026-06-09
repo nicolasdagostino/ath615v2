@@ -329,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final avatarUrl = _profile?['avatar_url']?.toString();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF171717),
+      backgroundColor: const Color(0xFF252525),
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
