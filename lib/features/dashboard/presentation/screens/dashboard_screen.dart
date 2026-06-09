@@ -878,7 +878,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 height: 54,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF7F3EA),
+                                  color: const Color(0xFF262626),
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                                 child: Text(
@@ -1206,249 +1206,245 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final members = _filteredMembers;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _DashboardHeader(
-              gymName: widget.gymName,
-              unreadNotifications: widget.unreadNotifications,
-              onManagePlans: _openPlans,
-              onOpenNotifications: widget.onOpenNotifications,
+      backgroundColor: const Color(0xFF171717),
+      body: Column(
+        children: [
+          _DashboardHeader(
+            gymName: widget.gymName,
+            unreadNotifications: widget.unreadNotifications,
+            onManagePlans: _openPlans,
+            onOpenNotifications: widget.onOpenNotifications,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.dashboardTitle,
+                    selected: _selectedTab == _DashboardTab.overview,
+                    onTap: () {
+                      setState(() {
+                        _selectedTab = _DashboardTab.overview;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.members,
+                    selected: _selectedTab == _DashboardTab.members,
+                    onTap: () {
+                      setState(() {
+                        _selectedTab = _DashboardTab.members;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.membershipTitle,
+                    selected: _selectedTab == _DashboardTab.plans,
+                    onTap: () {
+                      setState(() {
+                        _selectedTab = _DashboardTab.plans;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-              child: Row(
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFFB59B6A),
+              onRefresh: _loadMembers,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                 children: [
-                  Expanded(
-                    child: _DashboardTabChip(
-                      label: appStrings.dashboardTitle,
-                      selected: _selectedTab == _DashboardTab.overview,
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = _DashboardTab.overview;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _DashboardTabChip(
-                      label: appStrings.members,
-                      selected: _selectedTab == _DashboardTab.members,
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = _DashboardTab.members;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _DashboardTabChip(
-                      label: appStrings.membershipTitle,
-                      selected: _selectedTab == _DashboardTab.plans,
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = _DashboardTab.plans;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                color: const Color(0xFFB59B6A),
-                onRefresh: _loadMembers,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-                  children: [
-                    if (_selectedTab == _DashboardTab.overview) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricCard(
-                              label: appStrings.members,
-                              value: '${_members.length}',
-                            ),
+                  if (_selectedTab == _DashboardTab.overview) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.members,
+                            value: '${_members.length}',
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _MetricCard(
-                              label: appStrings.active,
-                              value:
-                                  '${_members.where((m) => m['is_active'] == true).length}',
-                            ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.active,
+                            value:
+                                '${_members.where((m) => m['is_active'] == true).length}',
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
+                  ],
 
-                    if (_selectedTab == _DashboardTab.members) ...[
-                      _DashboardCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        appStrings.members.toUpperCase(),
-                                        style: _DashText.section,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        appStrings.dashboardHeaderSubtitle,
-                                        style: _DashText.subtle,
-                                      ),
-                                    ],
-                                  ),
+                  if (_selectedTab == _DashboardTab.members) ...[
+                    _DashboardCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      appStrings.members.toUpperCase(),
+                                      style: _DashText.section,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      appStrings.dashboardHeaderSubtitle,
+                                      style: _DashText.subtle,
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 160,
-                                  child: AppButton(
-                                    label: appStrings.inviteAthlete,
-                                    onPressed: _openInviteMemberSheet,
-                                  ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                width: 160,
+                                child: AppButton(
+                                  label: appStrings.inviteAthlete,
+                                  onPressed: _openInviteMemberSheet,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          TextField(
+                            controller: _search,
+                            onChanged: (_) => setState(() {}),
+                            style: _DashText.body,
+                            decoration: _dashInput(
+                              appStrings.searchMember,
+                              Icons.search,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _RoleFilterChip(
+                                  label: appStrings.all,
+                                  selected:
+                                      _roleFilter == _MemberRoleFilter.all,
+                                  onTap: () {
+                                    setState(() {
+                                      _roleFilter = _MemberRoleFilter.all;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                _RoleFilterChip(
+                                  label: 'Athletes ($_athletesCount)',
+                                  selected:
+                                      _roleFilter == _MemberRoleFilter.athlete,
+                                  onTap: () {
+                                    setState(() {
+                                      _roleFilter = _MemberRoleFilter.athlete;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                _RoleFilterChip(
+                                  label: 'Coaches ($_coachesCount)',
+                                  selected:
+                                      _roleFilter == _MemberRoleFilter.coach,
+                                  onTap: () {
+                                    setState(() {
+                                      _roleFilter = _MemberRoleFilter.coach;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                _RoleFilterChip(
+                                  label: 'Admins ($_adminsCount)',
+                                  selected:
+                                      _roleFilter == _MemberRoleFilter.admin,
+                                  onTap: () {
+                                    setState(() {
+                                      _roleFilter = _MemberRoleFilter.admin;
+                                    });
+                                  },
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 18),
-                            TextField(
-                              controller: _search,
-                              onChanged: (_) => setState(() {}),
-                              style: _DashText.body,
-                              decoration: _dashInput(
-                                appStrings.searchMember,
-                                Icons.search,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
+                          ),
 
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  _RoleFilterChip(
-                                    label: appStrings.all,
-                                    selected:
-                                        _roleFilter == _MemberRoleFilter.all,
-                                    onTap: () {
-                                      setState(() {
-                                        _roleFilter = _MemberRoleFilter.all;
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 10),
-                                  _RoleFilterChip(
-                                    label: 'Athletes ($_athletesCount)',
-                                    selected:
-                                        _roleFilter ==
-                                        _MemberRoleFilter.athlete,
-                                    onTap: () {
-                                      setState(() {
-                                        _roleFilter = _MemberRoleFilter.athlete;
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 10),
-                                  _RoleFilterChip(
-                                    label: 'Coaches ($_coachesCount)',
-                                    selected:
-                                        _roleFilter == _MemberRoleFilter.coach,
-                                    onTap: () {
-                                      setState(() {
-                                        _roleFilter = _MemberRoleFilter.coach;
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 10),
-                                  _RoleFilterChip(
-                                    label: 'Admins ($_adminsCount)',
-                                    selected:
-                                        _roleFilter == _MemberRoleFilter.admin,
-                                    onTap: () {
-                                      setState(() {
-                                        _roleFilter = _MemberRoleFilter.admin;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
+                          const SizedBox(height: 16),
 
-                            const SizedBox(height: 16),
-
-                            if (_loadingMembers)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 22),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFFB59B6A),
-                                  ),
-                                ),
-                              )
-                            else if (members.isEmpty)
-                              Text(
-                                appStrings.noMembersFound,
-                                style: _DashText.subtle,
-                              )
-                            else
-                              ...members.map(
-                                (member) => _MemberTile(
-                                  member: member,
-                                  onTap: () => _openMember(member),
-                                  onAssignPlan: () =>
-                                      _openAssignPlan(member['id'].toString()),
-                                  onToggleActive: () =>
-                                      _toggleMemberActive(member),
-                                  onResendInvitation: () =>
-                                      _resendInvitation(member),
-                                  onDeletePendingMember: () =>
-                                      _deletePendingMember(member),
+                          if (_loadingMembers)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 22),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFB59B6A),
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    if (_selectedTab == _DashboardTab.plans) ...[
-                      _DashboardCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                            )
+                          else if (members.isEmpty)
                             Text(
-                              appStrings.managePlans.toUpperCase(),
-                              style: _DashText.section,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              appStrings.manageMembershipsDescription,
+                              appStrings.noMembersFound,
                               style: _DashText.subtle,
+                            )
+                          else
+                            ...members.map(
+                              (member) => _MemberTile(
+                                member: member,
+                                onTap: () => _openMember(member),
+                                onAssignPlan: () =>
+                                    _openAssignPlan(member['id'].toString()),
+                                onToggleActive: () =>
+                                    _toggleMemberActive(member),
+                                onResendInvitation: () =>
+                                    _resendInvitation(member),
+                                onDeletePendingMember: () =>
+                                    _deletePendingMember(member),
+                              ),
                             ),
-                            const SizedBox(height: 18),
-                            AppButton(
-                              label: appStrings.managePlans,
-                              onPressed: _openPlans,
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ],
-                ),
+
+                  if (_selectedTab == _DashboardTab.plans) ...[
+                    _DashboardCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appStrings.managePlans.toUpperCase(),
+                            style: _DashText.section,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            appStrings.manageMembershipsDescription,
+                            style: _DashText.subtle,
+                          ),
+                          const SizedBox(height: 18),
+                          AppButton(
+                            label: appStrings.managePlans,
+                            onPressed: _openPlans,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1695,7 +1691,7 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: const Color(0xFF171717),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -1714,7 +1710,7 @@ class _DashboardHeader extends StatelessWidget {
                     width: 132,
                     child: Text(
                       gymName ?? appStrings.appBrand,
-                      style: _DashText.title,
+                      style: _DashText.title.copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -1725,12 +1721,14 @@ class _DashboardHeader extends StatelessWidget {
                   children: [
                     Text(
                       appStrings.dashboardTitle.toUpperCase(),
-                      style: _DashText.title,
+                      style: _DashText.title.copyWith(color: Colors.white),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       appStrings.dashboardHeaderSubtitle,
-                      style: _DashText.subtle,
+                      style: _DashText.subtle.copyWith(
+                        color: const Color(0xFFB8BDC7),
+                      ),
                     ),
                   ],
                 ),

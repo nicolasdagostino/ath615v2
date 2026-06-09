@@ -307,206 +307,195 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final filteredWorkouts = _filteredWorkouts;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            ExploreHeader(
-              gymName: widget.gymName,
-              unreadNotifications: widget.unreadNotifications,
-              onOpenNotifications: widget.onOpenNotifications,
-            ),
-            const SizedBox(height: 22),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-              child: TextField(
-                style: GoogleFonts.barlowCondensed(
-                  color: const Color(0xFF384152),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-                decoration: InputDecoration(
-                  hintText: appStrings.exploreSearchWorkouts,
-                  hintStyle: GoogleFonts.barlowCondensed(
-                    color: const Color(0xFF8F96A3),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Color(0xFF8F96A3),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 15,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) => setState(() => _search = value),
+      backgroundColor: const Color(0xFF171717),
+      body: Column(
+        children: [
+          ExploreHeader(
+            gymName: widget.gymName,
+            unreadNotifications: widget.unreadNotifications,
+            onOpenNotifications: widget.onOpenNotifications,
+          ),
+          const SizedBox(height: 22),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+            child: TextField(
+              style: GoogleFonts.barlowCondensed(
+                color: const Color(0xFF384152),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
               ),
+              decoration: InputDecoration(
+                hintText: appStrings.exploreSearchWorkouts,
+                hintStyle: GoogleFonts.barlowCondensed(
+                  color: const Color(0xFF8F96A3),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF8F96A3)),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 15,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) => setState(() => _search = value),
             ),
-            SizedBox(
-              height: 48,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: _showFuture
-                    ? 2
-                    : _programs.length + 1 + (_role == 'admin' ? 1 : 0),
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final all = index == 0;
-                  final future = _role == 'admin' && index == 1;
-                  final programIndex = _role == 'admin' ? index - 2 : index - 1;
-                  final program = all || future
-                      ? null
-                      : _programs[programIndex];
-                  final id = program?['id']?.toString();
-                  final selected = future
-                      ? _showFuture
-                      : all
-                      ? !_showFuture && _selectedProgramId == null
-                      : !_showFuture && _selectedProgramId == id;
+          ),
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: _showFuture
+                  ? 2
+                  : _programs.length + 1 + (_role == 'admin' ? 1 : 0),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final all = index == 0;
+                final future = _role == 'admin' && index == 1;
+                final programIndex = _role == 'admin' ? index - 2 : index - 1;
+                final program = all || future ? null : _programs[programIndex];
+                final id = program?['id']?.toString();
+                final selected = future
+                    ? _showFuture
+                    : all
+                    ? !_showFuture && _selectedProgramId == null
+                    : !_showFuture && _selectedProgramId == id;
 
-                  final count = future
-                      ? _workouts.length
-                      : _programWorkoutCount(id);
+                final count = future
+                    ? _workouts.length
+                    : _programWorkoutCount(id);
 
-                  final baseLabel = future
-                      ? 'Future'
-                      : all
-                      ? appStrings.exploreAllPrograms
-                      : program?['name']?.toString() ??
-                            appStrings.workoutProgram;
+                final baseLabel = future
+                    ? 'Future'
+                    : all
+                    ? appStrings.exploreAllPrograms
+                    : program?['name']?.toString() ?? appStrings.workoutProgram;
 
-                  final label = future && !_showFuture
-                      ? baseLabel
-                      : '$baseLabel ($count)';
+                final label = future && !_showFuture
+                    ? baseLabel
+                    : '$baseLabel ($count)';
 
-                  return ChoiceChip(
-                    selected: selected,
-                    label: Text(
-                      label.toUpperCase(),
-                      style: GoogleFonts.barlowCondensed(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF8F96A3),
-                        height: 1.0,
-                      ),
+                return ChoiceChip(
+                  selected: selected,
+                  label: Text(
+                    label.toUpperCase(),
+                    style: GoogleFonts.barlowCondensed(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: selected ? Colors.white : const Color(0xFF8F96A3),
+                      height: 1.0,
                     ),
-                    selectedColor: const Color(0xFFB59B6A),
-                    backgroundColor: Colors.white,
-                    side: BorderSide.none,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    onSelected: (_) async {
-                      if (future) {
-                        setState(() {
-                          _showFuture = true;
-                          _selectedProgramId = null;
-                        });
-                        await _load(showLoading: false);
-                        return;
-                      }
-
+                  ),
+                  selectedColor: const Color(0xFFB59B6A),
+                  backgroundColor: Colors.white,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  onSelected: (_) async {
+                    if (future) {
                       setState(() {
-                        _showFuture = false;
-                        _selectedProgramId = all ? null : id;
+                        _showFuture = true;
+                        _selectedProgramId = null;
                       });
                       await _load(showLoading: false);
-                    },
-                  );
-                },
-              ),
+                      return;
+                    }
+
+                    setState(() {
+                      _showFuture = false;
+                      _selectedProgramId = all ? null : id;
+                    });
+                    await _load(showLoading: false);
+                  },
+                );
+              },
             ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: RefreshIndicator(
-                color: const Color(0xFFB59B6A),
-                onRefresh: _refresh,
-                child: _loading
-                    ? const WorkoutsLoadingState()
-                    : _role == 'athlete' && !_isAccountActive
-                    ? const _InactiveExploreState()
-                    : filteredWorkouts.isEmpty
-                    ? const WorkoutsEmptyState()
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                        itemCount: filteredWorkouts.length,
-                        itemBuilder: (context, index) {
-                          final workout = filteredWorkouts[index];
-                          final program =
-                              workout['programs'] as Map<String, dynamic>?;
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFFB59B6A),
+              onRefresh: _refresh,
+              child: _loading
+                  ? const WorkoutsLoadingState()
+                  : _role == 'athlete' && !_isAccountActive
+                  ? const _InactiveExploreState()
+                  : filteredWorkouts.isEmpty
+                  ? const WorkoutsEmptyState()
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      itemCount: filteredWorkouts.length,
+                      itemBuilder: (context, index) {
+                        final workout = filteredWorkouts[index];
+                        final program =
+                            workout['programs'] as Map<String, dynamic>?;
 
-                          final likes = List<Map<String, dynamic>>.from(
-                            workout['workout_likes'] ?? [],
-                          );
+                        final likes = List<Map<String, dynamic>>.from(
+                          workout['workout_likes'] ?? [],
+                        );
 
-                          final comments =
-                              List<Map<String, dynamic>>.from(
-                                workout['workout_comments'] ?? [],
-                              )..sort(
-                                (a, b) => (b['created_at'] ?? '')
-                                    .toString()
-                                    .compareTo(
-                                      (a['created_at'] ?? '').toString(),
-                                    ),
-                              );
+                        final comments =
+                            List<Map<String, dynamic>>.from(
+                              workout['workout_comments'] ?? [],
+                            )..sort(
+                              (a, b) =>
+                                  (b['created_at'] ?? '').toString().compareTo(
+                                    (a['created_at'] ?? '').toString(),
+                                  ),
+                            );
 
-                          return TweenAnimationBuilder<double>(
-                            key: ValueKey(workout['id'].toString()),
-                            tween: Tween(begin: 0, end: 1),
-                            duration: Duration(
-                              milliseconds: 220 + (index * 35).clamp(0, 220),
-                            ),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 18 * (1 - value)),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: WorkoutCard(
-                              workoutId: workout['id'].toString(),
-                              program:
-                                  program?['name']?.toString() ??
-                                  appStrings.workoutFallbackTitle,
-                              description:
-                                  workout['description']?.toString() ?? '',
-                              date: _formatDate(
-                                workout['workout_date'].toString(),
+                        return TweenAnimationBuilder<double>(
+                          key: ValueKey(workout['id'].toString()),
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(
+                            milliseconds: 220 + (index * 35).clamp(0, 220),
+                          ),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 18 * (1 - value)),
+                                child: child,
                               ),
-                              imageUrl: workout['image_url']?.toString(),
-                              likes: likes,
-                              comments: comments,
-                              canManage: _canManage,
-                              onEdit: () => _editWorkout(workout),
-                              onDelete: () =>
-                                  _deleteWorkout(workout['id'].toString()),
-                              onChanged: _load,
+                            );
+                          },
+                          child: WorkoutCard(
+                            workoutId: workout['id'].toString(),
+                            program:
+                                program?['name']?.toString() ??
+                                appStrings.workoutFallbackTitle,
+                            description:
+                                workout['description']?.toString() ?? '',
+                            date: _formatDate(
+                              workout['workout_date'].toString(),
                             ),
-                          );
-                        },
-                      ),
-              ),
+                            imageUrl: workout['image_url']?.toString(),
+                            likes: likes,
+                            comments: comments,
+                            canManage: _canManage,
+                            onEdit: () => _editWorkout(workout),
+                            onDelete: () =>
+                                _deleteWorkout(workout['id'].toString()),
+                            onChanged: _load,
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

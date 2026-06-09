@@ -329,126 +329,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final avatarUrl = _profile?['avatar_url']?.toString();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            _ProfileHeader(
-              gymName: widget.gymName,
-              unreadNotifications: widget.unreadNotifications,
-              onOpenNotifications: widget.onOpenNotifications,
-            ),
-            if (_profile == null)
-              const _ProfileSkeleton()
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileCard(
-                      child: Row(
-                        children: [
-                          _ProfileAvatar(
-                            displayName: displayName,
-                            avatarUrl: avatarUrl,
-                            uploading: _uploadingAvatar,
-                            onTap: _uploadAvatar,
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(displayName, style: _ProfileText.title),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _displayRole(_profile?['role']?.toString()),
-                                  style: _ProfileText.subtle,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _ProfileCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appStrings.personalInformation.toUpperCase(),
-                            style: _ProfileText.sectionTitle,
-                          ),
-                          const SizedBox(height: 14),
-                          _InfoRow(
-                            label: appStrings.fullName,
-                            value: profileName.isEmpty
-                                ? appStrings.notSet
-                                : profileName,
-                          ),
-                          _InfoRow(label: appStrings.authEmail, value: email),
-                          _InfoRow(
-                            label: appStrings.phone,
-                            value:
-                                (_profile?['phone']
-                                        ?.toString()
-                                        .trim()
-                                        .isEmpty ??
-                                    true)
-                                ? appStrings.notSet
-                                : _profile!['phone'].toString(),
-                          ),
-                          _InfoRow(
-                            label: appStrings.birthDate,
-                            value: _formatDate(
-                              _profile?['birth_date']?.toString(),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            label: appStrings.editPersonalInformation,
-                            onPressed: _openPersonalInfoSheet,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _ProfileListCard(
+      backgroundColor: const Color(0xFF171717),
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _ProfileHeader(
+            gymName: widget.gymName,
+            unreadNotifications: widget.unreadNotifications,
+            onOpenNotifications: widget.onOpenNotifications,
+          ),
+          if (_profile == null)
+            const _ProfileSkeleton()
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ProfileCard(
+                    child: Row(
                       children: [
-                        _ProfileMenuRow(
-                          icon: Icons.fitness_center_rounded,
-                          title: appStrings.profileTraining,
-                          onTap: () => context.push('/training'),
+                        _ProfileAvatar(
+                          displayName: displayName,
+                          avatarUrl: avatarUrl,
+                          uploading: _uploadingAvatar,
+                          onTap: _uploadAvatar,
                         ),
-                        _ProfileMenuRow(
-                          icon: Icons.workspace_premium_outlined,
-                          title: appStrings.profileMembership,
-                          onTap: () => context.push('/membership'),
-                        ),
-                        _ProfileMenuRow(
-                          icon: Icons.settings_outlined,
-                          title: appStrings.profileSettings,
-                          onTap: () => context.push('/settings'),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(displayName, style: _ProfileText.title),
+                              const SizedBox(height: 4),
+                              Text(
+                                _displayRole(_profile?['role']?.toString()),
+                                style: _ProfileText.subtle,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    if (_appVersion.isNotEmpty) ...[
-                      Center(
-                        child: Text(
-                          'ATHLETE615 · $_appVersion',
-                          style: _ProfileText.subtle,
+                  ),
+                  const SizedBox(height: 18),
+                  _ProfileCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appStrings.personalInformation.toUpperCase(),
+                          style: _ProfileText.sectionTitle,
                         ),
+                        const SizedBox(height: 14),
+                        _InfoRow(
+                          label: appStrings.fullName,
+                          value: profileName.isEmpty
+                              ? appStrings.notSet
+                              : profileName,
+                        ),
+                        _InfoRow(label: appStrings.authEmail, value: email),
+                        _InfoRow(
+                          label: appStrings.phone,
+                          value:
+                              (_profile?['phone']?.toString().trim().isEmpty ??
+                                  true)
+                              ? appStrings.notSet
+                              : _profile!['phone'].toString(),
+                        ),
+                        _InfoRow(
+                          label: appStrings.birthDate,
+                          value: _formatDate(
+                            _profile?['birth_date']?.toString(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton(
+                          label: appStrings.editPersonalInformation,
+                          onPressed: _openPersonalInfoSheet,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _ProfileListCard(
+                    children: [
+                      _ProfileMenuRow(
+                        icon: Icons.fitness_center_rounded,
+                        title: appStrings.profileTraining,
+                        onTap: () => context.push('/training'),
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.workspace_premium_outlined,
+                        title: appStrings.profileMembership,
+                        onTap: () => context.push('/membership'),
+                      ),
+                      _ProfileMenuRow(
+                        icon: Icons.settings_outlined,
+                        title: appStrings.profileSettings,
+                        onTap: () => context.push('/settings'),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 18),
+                  if (_appVersion.isNotEmpty) ...[
+                    Center(
+                      child: Text(
+                        'ATHLETE615 · $_appVersion',
+                        style: _ProfileText.subtle,
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -458,7 +453,7 @@ InputDecoration _inputDecoration(String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFF8F96A3),
+      color: const Color(0xFFB8BDC7),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
@@ -479,7 +474,7 @@ class _ProfileText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1.0,
   );
@@ -487,7 +482,7 @@ class _ProfileText {
   static TextStyle sectionTitle = GoogleFonts.barlowCondensed(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
   );
@@ -546,7 +541,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: const Color(0xFF171717),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -568,7 +563,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: _font(
                         18,
                         weight: FontWeight.w800,
-                        color: const Color(0xFF0E0E11),
+                        color: Colors.white,
                         letterSpacing: -0.3,
                         height: 1.0,
                       ),
@@ -585,7 +580,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: _font(
                         18,
                         weight: FontWeight.w800,
-                        color: const Color(0xFF0E0E11),
+                        color: Colors.white,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -595,7 +590,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: _font(
                         12,
                         weight: FontWeight.w500,
-                        color: const Color(0xFF8F96A3),
+                        color: const Color(0xFFB8BDC7),
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -617,7 +612,7 @@ class _ProfileHeader extends StatelessWidget {
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF7F3EA),
+                          color: const Color(0xFF262626),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Badge(
@@ -702,7 +697,7 @@ class _ProfileAvatar extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: const Color(0xFF0E0E11),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: Colors.white, width: 2),
               ),

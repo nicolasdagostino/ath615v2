@@ -238,101 +238,98 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            WorkoutsHeader(
-              gymName: widget.gymName,
-              canManage: _canManage,
-              onPrograms: _openPrograms,
-              unreadNotifications: widget.unreadNotifications,
-              onOpenNotifications: widget.onOpenNotifications,
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                color: const Color(0xFFB59B6A),
-                onRefresh: _refresh,
-                child: _loading
-                    ? const WorkoutsLoadingState()
-                    : _role == 'athlete' && !_isAccountActive
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
-                        children: const [_InactiveAccountState()],
-                      )
-                    : _workouts.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
-                        children: const [_RestDayEmptyState()],
-                      )
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 34, 24, 24),
-                        itemCount: _workouts.length,
-                        itemBuilder: (context, index) {
-                          final workout = _workouts[index];
-                          final program =
-                              workout['programs'] as Map<String, dynamic>?;
+      backgroundColor: const Color(0xFF171717),
+      body: Column(
+        children: [
+          WorkoutsHeader(
+            gymName: widget.gymName,
+            canManage: _canManage,
+            onPrograms: _openPrograms,
+            unreadNotifications: widget.unreadNotifications,
+            onOpenNotifications: widget.onOpenNotifications,
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFFB59B6A),
+              onRefresh: _refresh,
+              child: _loading
+                  ? const WorkoutsLoadingState()
+                  : _role == 'athlete' && !_isAccountActive
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
+                      children: const [_InactiveAccountState()],
+                    )
+                  : _workouts.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
+                      children: const [_RestDayEmptyState()],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 34, 24, 24),
+                      itemCount: _workouts.length,
+                      itemBuilder: (context, index) {
+                        final workout = _workouts[index];
+                        final program =
+                            workout['programs'] as Map<String, dynamic>?;
 
-                          final likes = List<Map<String, dynamic>>.from(
-                            workout['workout_likes'] ?? [],
-                          );
+                        final likes = List<Map<String, dynamic>>.from(
+                          workout['workout_likes'] ?? [],
+                        );
 
-                          final comments =
-                              List<Map<String, dynamic>>.from(
-                                workout['workout_comments'] ?? [],
-                              )..sort(
-                                (a, b) => (b['created_at'] ?? '')
-                                    .toString()
-                                    .compareTo(
-                                      (a['created_at'] ?? '').toString(),
-                                    ),
-                              );
+                        final comments =
+                            List<Map<String, dynamic>>.from(
+                              workout['workout_comments'] ?? [],
+                            )..sort(
+                              (a, b) =>
+                                  (b['created_at'] ?? '').toString().compareTo(
+                                    (a['created_at'] ?? '').toString(),
+                                  ),
+                            );
 
-                          return TweenAnimationBuilder<double>(
-                            key: ValueKey(workout['id'].toString()),
-                            tween: Tween(begin: 0, end: 1),
-                            duration: Duration(
-                              milliseconds: 220 + (index * 35).clamp(0, 220),
-                            ),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 18 * (1 - value)),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: WorkoutCard(
-                              workoutId: workout['id'].toString(),
-                              program:
-                                  program?['name']?.toString() ??
-                                  appStrings.workoutFallbackTitle,
-                              description:
-                                  workout['description']?.toString() ?? '',
-                              date: _formatDate(
-                                workout['workout_date'].toString(),
+                        return TweenAnimationBuilder<double>(
+                          key: ValueKey(workout['id'].toString()),
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(
+                            milliseconds: 220 + (index * 35).clamp(0, 220),
+                          ),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 18 * (1 - value)),
+                                child: child,
                               ),
-                              imageUrl: workout['image_url']?.toString(),
-                              likes: likes,
-                              comments: comments,
-                              canManage: _canManage,
-                              onEdit: () => _editWorkout(workout),
-                              onDelete: () =>
-                                  _deleteWorkout(workout['id'].toString()),
-                              onChanged: _load,
+                            );
+                          },
+                          child: WorkoutCard(
+                            workoutId: workout['id'].toString(),
+                            program:
+                                program?['name']?.toString() ??
+                                appStrings.workoutFallbackTitle,
+                            description:
+                                workout['description']?.toString() ?? '',
+                            date: _formatDate(
+                              workout['workout_date'].toString(),
                             ),
-                          );
-                        },
-                      ),
-              ),
+                            imageUrl: workout['image_url']?.toString(),
+                            likes: likes,
+                            comments: comments,
+                            canManage: _canManage,
+                            onEdit: () => _editWorkout(workout),
+                            onDelete: () =>
+                                _deleteWorkout(workout['id'].toString()),
+                            onChanged: _load,
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
