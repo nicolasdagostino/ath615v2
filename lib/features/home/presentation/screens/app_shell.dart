@@ -206,8 +206,8 @@ class _ShellBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEDEFF3), width: 0.8)),
+        color: Color(0xFF171717),
+        border: Border(top: BorderSide(color: Color(0xFF262626), width: 0.8)),
       ),
       child: SafeArea(
         top: false,
@@ -236,17 +236,15 @@ class _ShellBottomNav extends StatelessWidget {
                             height: 28,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFFF7F3EA)
-                                  : Colors.transparent,
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Icon(
                               selected ? item.activeIcon : item.icon,
                               size: 22,
                               color: selected
-                                  ? const Color(0xFFB59B6A)
-                                  : const Color(0xFF8F96A3),
+                                  ? const Color(0xFFAF986C)
+                                  : const Color(0xFFABABAB),
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -260,8 +258,8 @@ class _ShellBottomNav extends StatelessWidget {
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                               color: selected
-                                  ? const Color(0xFF111318)
-                                  : const Color(0xFF8F96A3),
+                                  ? const Color(0xFFAF986C)
+                                  : const Color(0xFFABABAB),
                               letterSpacing: 0.1,
                               height: 1.0,
                             ),

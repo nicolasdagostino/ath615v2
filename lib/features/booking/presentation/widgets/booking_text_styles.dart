@@ -78,7 +78,7 @@ class BookingTextStyles {
 
   static TextStyle dayNumber({required bool selected}) =>
       GoogleFonts.barlowCondensed(
-        color: selected ? Colors.white : const Color(0xFF090B12),
+        color: Colors.white,
         fontSize: 15,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,

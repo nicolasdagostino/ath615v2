@@ -546,22 +546,29 @@ class _BookingScreenState extends State<BookingScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFF171717),
+      backgroundColor: const Color(0xFF252525),
       body: Column(
         children: [
-          BookingHeader(
-            gymName: widget.gymName,
-            selectedDay: _selectedDay,
-            unreadNotifications: widget.unreadNotifications,
-            onOpenNotifications: widget.onOpenNotifications,
-          ),
-          const SizedBox(height: 0),
-          BookingDayChips(
-            selectedDay: _selectedDay,
-            onSelected: (day) {
-              setState(() => _selectedDay = day);
-              _load();
-            },
+          Container(
+            color: const Color(0xFF171717),
+            child: Column(
+              children: [
+                BookingHeader(
+                  gymName: widget.gymName,
+                  selectedDay: _selectedDay,
+                  unreadNotifications: widget.unreadNotifications,
+                  onOpenNotifications: widget.onOpenNotifications,
+                ),
+                const SizedBox(height: 0),
+                BookingDayChips(
+                  selectedDay: _selectedDay,
+                  onSelected: (day) {
+                    setState(() => _selectedDay = day);
+                    _load();
+                  },
+                ),
+              ],
+            ),
           ),
           if (_role == 'athlete')
             MembershipStatusCard(
