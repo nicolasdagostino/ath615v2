@@ -43,7 +43,7 @@ class WorkoutsHeader extends StatelessWidget {
         style: _font(
           18,
           weight: FontWeight.w800,
-          color: const Color(0xFF0E0E11),
+          color: Colors.white,
           letterSpacing: -0.3,
           height: 1.0,
         ),
@@ -56,7 +56,7 @@ class WorkoutsHeader extends StatelessWidget {
     final todayText = appStrings.formatHeaderDate(DateTime.now());
 
     return Container(
-      color: Colors.white,
+      color: const Color(0xFF171717),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -76,7 +76,7 @@ class WorkoutsHeader extends StatelessWidget {
                         style: _font(
                           18,
                           weight: FontWeight.w800,
-                          color: const Color(0xFF0E0E11),
+                          color: Colors.white,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -87,7 +87,7 @@ class WorkoutsHeader extends StatelessWidget {
                       style: _font(
                         12,
                         weight: FontWeight.w500,
-                        color: const Color(0xFF8F96A3),
+                        color: const Color(0xFFB8BDC7),
                         letterSpacing: 0.35,
                       ),
                     ),
@@ -118,7 +118,7 @@ class WorkoutsHeader extends StatelessWidget {
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF7F3EA),
+                          color: const Color(0xFF262626),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Badge(

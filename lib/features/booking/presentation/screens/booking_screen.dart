@@ -537,149 +537,145 @@ class _BookingScreenState extends State<BookingScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            BookingHeader(
-              gymName: widget.gymName,
-              selectedDay: _selectedDay,
-              unreadNotifications: widget.unreadNotifications,
-              onOpenNotifications: widget.onOpenNotifications,
+      backgroundColor: const Color(0xFF171717),
+      body: Column(
+        children: [
+          BookingHeader(
+            gymName: widget.gymName,
+            selectedDay: _selectedDay,
+            unreadNotifications: widget.unreadNotifications,
+            onOpenNotifications: widget.onOpenNotifications,
+          ),
+          const SizedBox(height: 18),
+          BookingDayChips(
+            selectedDay: _selectedDay,
+            onSelected: (day) {
+              setState(() => _selectedDay = day);
+              _load();
+            },
+          ),
+          if (_role == 'athlete')
+            MembershipStatusCard(
+              hasActiveMembership: _hasActiveMembership,
+              creditsRemaining: _creditsRemaining,
             ),
-            const SizedBox(height: 18),
-            BookingDayChips(
-              selectedDay: _selectedDay,
-              onSelected: (day) {
-                setState(() => _selectedDay = day);
-                _load();
-              },
-            ),
-            if (_role == 'athlete')
-              MembershipStatusCard(
-                hasActiveMembership: _hasActiveMembership,
-                creditsRemaining: _creditsRemaining,
-              ),
-            Expanded(
-              child: RefreshIndicator(
-                color: const Color(0xFFB59B6A),
-                onRefresh: _refresh,
-                child: _loading
-                    ? const BookingLoadingState()
-                    : _classes.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(28, 115, 28, 24),
-                        children: const [_BookingRestDayEmptyState()],
-                      )
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                        itemCount: _classes.length,
-                        itemBuilder: (context, index) {
-                          final klass = _classes[index];
-                          final id = klass['id'].toString();
-                          final myStatus = _myClassStatuses[id];
-                          final booked = myStatus != null;
-                          final bookedCount =
-                              klass['booked_count'] as int? ?? 0;
-                          final capacity = klass['capacity'] as int? ?? 0;
-                          final full = bookedCount >= capacity;
-                          final state = _classState(klass);
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFFB59B6A),
+              onRefresh: _refresh,
+              child: _loading
+                  ? const BookingLoadingState()
+                  : _classes.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(28, 115, 28, 24),
+                      children: const [_BookingRestDayEmptyState()],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      itemCount: _classes.length,
+                      itemBuilder: (context, index) {
+                        final klass = _classes[index];
+                        final id = klass['id'].toString();
+                        final myStatus = _myClassStatuses[id];
+                        final booked = myStatus != null;
+                        final bookedCount = klass['booked_count'] as int? ?? 0;
+                        final capacity = klass['capacity'] as int? ?? 0;
+                        final full = bookedCount >= capacity;
+                        final state = _classState(klass);
 
-                          String buttonLabel;
-                          VoidCallback? buttonAction;
+                        String buttonLabel;
+                        VoidCallback? buttonAction;
 
-                          if (state == 'in_progress') {
-                            buttonLabel = appStrings.bookingInProgress;
-                            buttonAction = null;
-                          } else if (state == 'finished') {
-                            buttonLabel = appStrings.bookingFinished;
-                            buttonAction = null;
-                          } else if (booked) {
-                            if (state == 'upcoming') {
-                              if (_canCancelClass(klass)) {
-                                buttonLabel = appStrings.bookingCancel;
-                                buttonAction = () => _cancelBooking(klass);
-                              } else {
-                                buttonLabel = appStrings.bookingBooked;
-                                buttonAction = null;
-                              }
-                            } else if (myStatus == 'attended') {
-                              buttonLabel = appStrings.attended;
-                              buttonAction = null;
-                            } else if (myStatus == 'no_show') {
-                              buttonLabel = appStrings.noShow;
-                              buttonAction = null;
+                        if (state == 'in_progress') {
+                          buttonLabel = appStrings.bookingInProgress;
+                          buttonAction = null;
+                        } else if (state == 'finished') {
+                          buttonLabel = appStrings.bookingFinished;
+                          buttonAction = null;
+                        } else if (booked) {
+                          if (state == 'upcoming') {
+                            if (_canCancelClass(klass)) {
+                              buttonLabel = appStrings.bookingCancel;
+                              buttonAction = () => _cancelBooking(klass);
                             } else {
                               buttonLabel = appStrings.bookingBooked;
                               buttonAction = null;
                             }
-                          } else if (!_isAccountActive) {
-                            buttonLabel = 'Activate account';
+                          } else if (myStatus == 'attended') {
+                            buttonLabel = appStrings.attended;
                             buttonAction = null;
-                          } else if (!_hasActiveMembership) {
-                            buttonLabel = appStrings.bookingMembershipRequired;
-                            buttonAction = null;
-                          } else if (_role == 'athlete' &&
-                              _creditsRemaining != null &&
-                              _creditsRemaining! <= 0) {
-                            buttonLabel = appStrings.bookingNoCreditsButton;
-                            buttonAction = null;
-                          } else if (full) {
-                            buttonLabel = appStrings.bookingFull;
+                          } else if (myStatus == 'no_show') {
+                            buttonLabel = appStrings.noShow;
                             buttonAction = null;
                           } else {
-                            buttonLabel = appStrings.bookingBook;
-                            buttonAction = () => _bookClass(klass);
-                          }
-
-                          final isProcessing = _bookingActionClassId == id;
-
-                          if (isProcessing) {
+                            buttonLabel = appStrings.bookingBooked;
                             buttonAction = null;
                           }
+                        } else if (!_isAccountActive) {
+                          buttonLabel = 'Activate account';
+                          buttonAction = null;
+                        } else if (!_hasActiveMembership) {
+                          buttonLabel = appStrings.bookingMembershipRequired;
+                          buttonAction = null;
+                        } else if (_role == 'athlete' &&
+                            _creditsRemaining != null &&
+                            _creditsRemaining! <= 0) {
+                          buttonLabel = appStrings.bookingNoCreditsButton;
+                          buttonAction = null;
+                        } else if (full) {
+                          buttonLabel = appStrings.bookingFull;
+                          buttonAction = null;
+                        } else {
+                          buttonLabel = appStrings.bookingBook;
+                          buttonAction = () => _bookClass(klass);
+                        }
 
-                          return TweenAnimationBuilder<double>(
-                            key: ValueKey(
-                              '${klass['id']}-${_selectedDay.toIso8601String()}',
-                            ),
-                            tween: Tween(begin: 0, end: 1),
-                            duration: Duration(
-                              milliseconds: 220 + (index * 35).clamp(0, 220),
-                            ),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 18 * (1 - value)),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: BookingClassCard(
-                              klass: klass,
-                              bookedCount: bookedCount,
-                              capacity: capacity,
-                              buttonLabel: buttonLabel,
-                              buttonAction: buttonAction,
-                              isLoading: isProcessing,
-                              canManageAttendance: _canManageAttendance,
-                              onOpenAttendance: () =>
-                                  _openAttendanceSheet(klass),
-                              onMorePressed: _canCreateClass
-                                  ? () => _deleteClassOptions(klass)
-                                  : null,
-                              formatDateTime: _formatDateTime,
-                            ),
-                          );
-                        },
-                      ),
-              ),
+                        final isProcessing = _bookingActionClassId == id;
+
+                        if (isProcessing) {
+                          buttonAction = null;
+                        }
+
+                        return TweenAnimationBuilder<double>(
+                          key: ValueKey(
+                            '${klass['id']}-${_selectedDay.toIso8601String()}',
+                          ),
+                          tween: Tween(begin: 0, end: 1),
+                          duration: Duration(
+                            milliseconds: 220 + (index * 35).clamp(0, 220),
+                          ),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 18 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: BookingClassCard(
+                            klass: klass,
+                            bookedCount: bookedCount,
+                            capacity: capacity,
+                            buttonLabel: buttonLabel,
+                            buttonAction: buttonAction,
+                            isLoading: isProcessing,
+                            canManageAttendance: _canManageAttendance,
+                            onOpenAttendance: () => _openAttendanceSheet(klass),
+                            onMorePressed: _canCreateClass
+                                ? () => _deleteClassOptions(klass)
+                                : null,
+                            formatDateTime: _formatDateTime,
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
