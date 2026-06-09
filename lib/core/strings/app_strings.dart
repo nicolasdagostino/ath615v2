@@ -54,7 +54,7 @@ class AppStrings {
   String get bookingFull => pick('Full', 'Completa');
   String get bookingMembershipRequired =>
       pick('Membership required', 'Membresía requerida');
-  String get bookingInProgress => pick('Class in progress', 'Clase en curso');
+  String get bookingInProgress => pick('In progress', 'Clase en curso');
   String get bookingFinished => pick('Finished', 'Finalizada');
 
   String get bookingConfirmed =>

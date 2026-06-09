@@ -168,7 +168,7 @@ class BookingClassCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 14),
                           SizedBox(
-                            width: 132,
+                            width: 180,
                             child: _ActionButton(
                               label: isLoading
                                   ? '...'
@@ -274,7 +274,12 @@ class _ActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(label, style: BookingTextStyles.button),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: BookingTextStyles.button,
+        ),
       ),
     );
   }
