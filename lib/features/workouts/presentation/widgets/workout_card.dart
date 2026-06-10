@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import '../../../booking/presentation/widgets/booking_text_styles.dart';
 import '../screens/workout_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'workout_text_styles.dart';
@@ -106,8 +105,9 @@ class _WorkoutCardState extends State<WorkoutCard> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -146,12 +146,15 @@ class _WorkoutCardState extends State<WorkoutCard> {
     );
   }
 
-  String get _commentsLabel {
-    if (_comments.isEmpty) {
-      return appStrings.workoutPostScore;
-    }
+  String get _previewDescription {
+    final lines = widget.description
+        .trim()
+        .split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .take(4)
+        .join('\n');
 
-    return appStrings.workoutCommentCount(_comments.length);
+    return lines.isEmpty ? appStrings.workoutDescription : lines;
   }
 
   @override
@@ -161,8 +164,9 @@ class _WorkoutCardState extends State<WorkoutCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -177,7 +181,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
         child: InkWell(
           onTap: _openDetail,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -189,7 +193,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                         style: GoogleFonts.barlowCondensed(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0E0E11),
+                          color: Colors.white,
                           letterSpacing: -0.3,
                           height: 1.0,
                         ),
@@ -198,7 +202,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     if (widget.canManage)
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.more_horiz),
+                        icon: const Icon(
+                          Icons.more_horiz,
+                          color: Color(0xFFABABAB),
+                        ),
                         onPressed: _showManageActions,
                       ),
                   ],
@@ -209,7 +216,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   style: GoogleFonts.barlowCondensed(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8F96A3),
+                    color: const Color(0xFFABABAB),
                     letterSpacing: 0.3,
                     height: 1.0,
                   ),
@@ -217,32 +224,51 @@ class _WorkoutCardState extends State<WorkoutCard> {
                 if (hasImage) ...[
                   const SizedBox(height: 18),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       widget.imageUrl!,
                       width: double.infinity,
-                      height: 230,
+                      height: 172,
                       fit: BoxFit.cover,
                     ),
                   ),
                 ],
-                const SizedBox(height: 18),
-                Text(widget.description, style: WorkoutTextStyles.body),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
+                Text(
+                  _previewDescription,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: WorkoutTextStyles.body.copyWith(
+                    color: Colors.white,
+                    height: 1.28,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'TAP TO VIEW',
+                  style: GoogleFonts.barlowCondensed(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFB59B6A),
+                    letterSpacing: 0.8,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    _StatButton(
+                    _InlineStat(
                       icon: _liked ? Icons.favorite : Icons.favorite_border,
                       label: '${_likes.length}',
                       active: _liked,
                       onTap: _toggleLike,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _OpenCommentsButton(
-                        label: _commentsLabel,
-                        onTap: _openDetail,
-                      ),
+                    const SizedBox(width: 18),
+                    _InlineStat(
+                      icon: Icons.chat_bubble_outline,
+                      label: '${_comments.length}',
+                      active: false,
+                      onTap: _openDetail,
                     ),
                   ],
                 ),
@@ -255,8 +281,8 @@ class _WorkoutCardState extends State<WorkoutCard> {
   }
 }
 
-class _StatButton extends StatelessWidget {
-  const _StatButton({
+class _InlineStat extends StatelessWidget {
+  const _InlineStat({
     required this.icon,
     required this.label,
     required this.active,
@@ -270,54 +296,28 @@ class _StatButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: active ? const Color(0xFFFFEEF1) : const Color(0xFFF2F3F6),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: active
-                    ? const Color(0xFFE11D48)
-                    : const Color(0xFF667085),
+    final color = active ? const Color(0xFFE11D48) : const Color(0xFFABABAB);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFABABAB),
+                height: 1,
               ),
-              const SizedBox(width: 8),
-              Text(label, style: WorkoutTextStyles.stat),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OpenCommentsButton extends StatelessWidget {
-  const _OpenCommentsButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: FilledButton.icon(
-        onPressed: onTap,
-        icon: const Icon(Icons.chat_bubble_outline, size: 18),
-        label: Text(label.toUpperCase(), style: BookingTextStyles.button),
-        style: FilledButton.styleFrom(
-          elevation: 0,
-          backgroundColor: const Color(0xFFB59B6A),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -330,7 +330,7 @@ class _WorkoutOptionsText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -338,7 +338,7 @@ class _WorkoutOptionsText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
@@ -346,7 +346,7 @@ class _WorkoutOptionsText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1,
   );
@@ -372,10 +372,10 @@ class _SheetAction extends StatelessWidget {
     final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
 
     return Material(
-      color: const Color(0xFFF7F8FA),
-      borderRadius: BorderRadius.circular(18),
+      color: const Color(0xFF171717),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -405,7 +405,7 @@ class _SheetAction extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
             ],
           ),
         ),
