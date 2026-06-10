@@ -579,6 +579,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 const SizedBox(height: 0),
                 BookingDayChips(
                   selectedDay: _selectedDay,
+                  canViewPastDays: _canManageAttendance,
                   onSelected: (day) {
                     setState(() => _selectedDay = day);
                     _load();

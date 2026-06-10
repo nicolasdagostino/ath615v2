@@ -78,45 +78,36 @@ Future<void> showAttendanceSheet({
                   maxHeight: MediaQuery.of(context).size.height * 0.86,
                 ),
                 margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+                padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
+                  color: const Color(0xFF252525),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFF323232), width: 1),
                 ),
                 child: ListView(
                   shrinkWrap: false,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 48,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD7DAE0),
-                          borderRadius: BorderRadius.circular(999),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            appStrings.attendance.toUpperCase(),
+                            style: _AttendanceText.title,
+                          ),
                         ),
-                      ),
+                        _AttendanceCountPill(label: '${bookingRows.length}'),
+                      ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
                     Text(
                       (klass['title']?.toString() ?? appStrings.classFallback)
                           .toUpperCase(),
-                      style: _AttendanceText.title,
+                      style: _AttendanceText.rowTitle,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       formatDateTime(klass['starts_at']),
                       style: _AttendanceText.subtle,
-                    ),
-                    const SizedBox(height: 22),
-                    Row(
-                      children: [
-                        Text(
-                          appStrings.attendance.toUpperCase(),
-                          style: _AttendanceText.section,
-                        ),
-                        const Spacer(),
-                        _AttendanceCountPill(label: '${bookingRows.length}'),
-                      ],
                     ),
                     const SizedBox(height: 12),
                     if (bookingRows.isEmpty)
@@ -169,7 +160,7 @@ class _AttendanceText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 20,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -177,7 +168,7 @@ class _AttendanceText {
   static TextStyle section = GoogleFonts.barlowCondensed(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: 0.8,
     height: 1,
   );
@@ -185,7 +176,7 @@ class _AttendanceText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
@@ -193,7 +184,7 @@ class _AttendanceText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1,
   );
@@ -211,8 +202,9 @@ class _AttendanceCountPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F3EA),
+        color: const Color(0xFF171717),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Text(
         label,
@@ -249,8 +241,9 @@ class _AttendanceMemberCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Column(
         children: [
@@ -360,26 +353,44 @@ class _AttendanceStatusButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = danger
-        ? const Color(0xFFB42318)
-        : const Color(0xFFB59B6A);
+    final disabled = onTap == null;
+
+    final background = selected
+        ? (danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A))
+        : const Color(0xFF252525);
+
+    final foreground = selected
+        ? (danger ? Colors.white : const Color(0xFF111111))
+        : disabled
+        ? const Color(0xFFABABAB)
+        : Colors.white;
 
     return SizedBox(
       height: 42,
-      child: FilledButton(
+      child: OutlinedButton(
         onPressed: onTap,
-        style: FilledButton.styleFrom(
-          elevation: 0,
-          backgroundColor: selected ? activeColor : Colors.white,
-          foregroundColor: selected ? Colors.white : const Color(0xFF384152),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: background,
+          disabledBackgroundColor: const Color(0xFF252525),
+          foregroundColor: foreground,
+          disabledForegroundColor: const Color(0xFFABABAB),
+          side: BorderSide(
+            color: selected ? background : const Color(0xFF3A3A3A),
+            width: 1,
+          ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _AttendanceText.section.copyWith(
-            color: selected ? Colors.white : const Color(0xFF384152),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
+            height: 1,
           ),
         ),
       ),

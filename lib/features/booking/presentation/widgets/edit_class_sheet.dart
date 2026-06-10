@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showEditClassSheet({
@@ -13,11 +12,12 @@ Future<void> showEditClassSheet({
   required Map<String, dynamic> klass,
   required Future<void> Function() onUpdated,
 }) async {
-  await showModalBottomSheet(
+  await showGeneralDialog(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _EditClassSheet(
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (_, _, _) => _EditClassSheet(
       client: client,
       gymId: gymId,
       klass: klass,
@@ -216,130 +216,266 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Text(
-                appStrings.editClass.toUpperCase(),
-                style: _EditClassSheetText.title,
+    return Scaffold(
+      backgroundColor: const Color(0xFF252525),
+      body: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF171717),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
               ),
-              const SizedBox(height: 18),
-              if (_loadingPrograms)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
-                  ),
-                )
-              else if (_programs.isEmpty)
-                Text(
-                  appStrings.classNeedProgram,
-                  style: _EditClassSheetText.body,
-                )
-              else
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedProgramId,
-                  decoration: _editClassInput(
-                    appStrings.workoutProgram,
-                    Icons.fitness_center_outlined,
-                  ),
-                  items: _programs.map((program) {
-                    return DropdownMenuItem<String>(
-                      value: program['id'].toString(),
-                      child: Text(
-                        program['name']?.toString() ??
-                            appStrings.workoutProgram,
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                height: 50,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFFB59B6A),
+                            size: 34,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (value) =>
-                      setState(() => _selectedProgramId = value),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          appStrings.editClass.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _EditClassSheetText.title.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 44),
+                  ],
                 ),
-              const SizedBox(height: 12),
-              _EditClassActionRow(
-                icon: Icons.calendar_month_outlined,
-                title: appStrings.workoutDate,
-                subtitle: _selectedDate == null
-                    ? appStrings.selectDate
-                    : _formatDate(_selectedDate!),
-                onTap: _pickDate,
               ),
-              const SizedBox(height: 12),
-              _EditClassActionRow(
-                icon: Icons.schedule_rounded,
-                title: appStrings.time,
-                subtitle: _selectedTime == null
-                    ? appStrings.selectTime
-                    : _selectedTime!.format(context),
-                onTap: _pickTime,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const SizedBox(height: 12),
-              Row(
+              child: ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(22, 12, 22, 110),
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _duration,
-                      keyboardType: TextInputType.number,
-                      style: _EditClassSheetText.body,
-                      decoration: _editClassInput(
-                        appStrings.durationMinutes,
-                        Icons.timer_outlined,
+                  if (_loadingPrograms)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFB59B6A),
+                        ),
                       ),
+                    )
+                  else if (_programs.isEmpty)
+                    Text(
+                      appStrings.classNeedProgram,
+                      style: _EditClassSheetText.body,
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedProgramId,
+                      dropdownColor: const Color(0xFF171717),
+                      iconEnabledColor: const Color(0xFFABABAB),
+                      style: _EditClassSheetText.body.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      hint: Text(
+                        appStrings.workoutProgram,
+                        style: _EditClassSheetText.body.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      decoration: _programDropdownInput(
+                        appStrings.workoutProgram,
+                        Icons.fitness_center_outlined,
+                      ),
+                      items: [
+                        DropdownMenuItem<String>(
+                          enabled: false,
+                          child: Text(
+                            appStrings.workoutProgram,
+                            style: _EditClassSheetText.subtle.copyWith(
+                              color: const Color(0xFFABABAB),
+                            ),
+                          ),
+                        ),
+                        ..._programs.map((program) {
+                          return DropdownMenuItem<String>(
+                            value: program['id'].toString(),
+                            child: Text(
+                              program['name']?.toString() ??
+                                  appStrings.workoutProgram,
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _selectedProgramId = value),
                     ),
+                  const SizedBox(height: 12),
+                  _EditClassActionRow(
+                    icon: Icons.calendar_month_outlined,
+                    title: appStrings.workoutDate,
+                    subtitle: _selectedDate == null
+                        ? ''
+                        : _formatDate(_selectedDate!),
+                    onTap: _pickDate,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _capacity,
-                      keyboardType: TextInputType.number,
-                      style: _EditClassSheetText.body,
-                      decoration: _editClassInput(
-                        appStrings.capacity,
-                        Icons.groups_outlined,
+                  const SizedBox(height: 12),
+                  _EditClassActionRow(
+                    icon: Icons.schedule_rounded,
+                    title: appStrings.time,
+                    subtitle: _selectedTime == null
+                        ? ''
+                        : _selectedTime!.format(context),
+                    onTap: _pickTime,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 150,
+                        child: TextField(
+                          controller: _duration,
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                          keyboardType: TextInputType.number,
+                          style: _EditClassSheetText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: _editClassInput(
+                            appStrings.durationMinutes,
+                            Icons.timer_outlined,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 150,
+                        child: TextField(
+                          controller: _capacity,
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                          keyboardType: TextInputType.number,
+                          style: _EditClassSheetText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: _editClassInput(
+                            appStrings.capacity,
+                            Icons.groups_outlined,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              AppButton(
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF252525),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, -10),
+                  ),
+                ],
+              ),
+              child: _EditClassButton(
                 label: appStrings.workoutSaveChanges,
                 loading: _saving,
-                onPressed: _canSave ? _save : null,
+                enabled: _canSave,
+                onPressed: _save,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
+InputDecoration _programDropdownInput(String hint, IconData icon) {
+  return InputDecoration(
+    hintText: hint,
+    labelText: null,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
+    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    filled: true,
+    fillColor: const Color(0xFF171717),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+  );
+}
+
 InputDecoration _editClassInput(String hint, IconData icon) {
   return InputDecoration(
     hintText: hint,
-    labelText: hint,
-    hintStyle: _EditClassSheetText.subtle,
-    labelStyle: _EditClassSheetText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    labelText: null,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
+    hintStyle: _EditClassSheetText.subtle.copyWith(
+      color: const Color(0xFFABABAB),
+    ),
+    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
     filled: true,
-    fillColor: const Color(0xFFF4F5F7),
+    fillColor: const Color(0xFF171717),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
 }
@@ -358,13 +494,13 @@ class _EditClassSheetText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -373,10 +509,65 @@ class _EditClassSheetText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1,
   );
+}
+
+class _EditClassButton extends StatelessWidget {
+  const _EditClassButton({
+    required this.label,
+    required this.loading,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool loading;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = enabled && !loading;
+
+    return SizedBox(
+      height: 58,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: active ? onPressed : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: active
+              ? const Color(0xFFB59B6A)
+              : const Color(0xFF343434),
+          disabledBackgroundColor: const Color(0xFF343434),
+          foregroundColor: active
+              ? const Color(0xFF111111)
+              : const Color(0xFF777777),
+          disabledForegroundColor: const Color(0xFF777777),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                label.toUpperCase(),
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                  height: 1,
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 class _EditClassActionRow extends StatelessWidget {
@@ -395,10 +586,10 @@ class _EditClassActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF7F8FA),
-      borderRadius: BorderRadius.circular(18),
+      color: const Color(0xFF171717),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -411,12 +602,14 @@ class _EditClassActionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title, style: _EditClassSheetText.rowTitle),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: _EditClassSheetText.subtle),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(subtitle, style: _EditClassSheetText.subtle),
+                    ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
             ],
           ),
         ),
