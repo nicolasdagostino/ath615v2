@@ -420,8 +420,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   )
                 : Container(
                     color: const Color(0xFF252525),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 28),
+                    child: Column(
                       children: [
                         Container(
                           decoration: const BoxDecoration(
@@ -474,375 +473,426 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF171717),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFF323232),
-                                width: 1,
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(0, 12, 0, 28),
+                            children: [
+                              const SizedBox(height: 12),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    18,
+                                    20,
+                                    18,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF171717),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFF323232),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.04,
+                                        ),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 12),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        programName.toUpperCase(),
+                                        style: GoogleFonts.barlowCondensed(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: -0.3,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _formatDate(
+                                          workout['workout_date'].toString(),
+                                        ),
+                                        style: GoogleFonts.barlowCondensed(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFFABABAB),
+                                          letterSpacing: 0.3,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      if (hasImage) ...[
+                                        const SizedBox(height: 18),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child: Image.network(
+                                            imageUrl,
+                                            width: double.infinity,
+                                            height: 180,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 18),
+                                      Text(
+                                        workout['description']?.toString() ??
+                                            '',
+                                        style: WorkoutTextStyles.body.copyWith(
+                                          color: Colors.white,
+                                          height: 1.28,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 18),
+                                      Row(
+                                        children: [
+                                          _DetailInlineStat(
+                                            icon: _liked
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            label: '${_likes.length}',
+                                            active: _liked,
+                                            onTap: _toggleLike,
+                                          ),
+                                          const SizedBox(width: 18),
+                                          _DetailInlineStat(
+                                            icon: Icons.chat_bubble_outline,
+                                            label: '${_comments.length}',
+                                            active: false,
+                                            onTap: () =>
+                                                _commentFocus.requestFocus(),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 12),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  programName.toUpperCase(),
-                                  style: GoogleFonts.barlowCondensed(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.3,
-                                    height: 1.0,
+                              const SizedBox(height: 18),
+                              if (_comments.isEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 16,
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _formatDate(
-                                    workout['workout_date'].toString(),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF252525),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  style: GoogleFonts.barlowCondensed(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFFABABAB),
-                                    letterSpacing: 0.3,
-                                    height: 1.0,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.chat_bubble_outline,
+                                        color: Color(0xFFB59B6A),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        appStrings.workoutNoComments,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.barlowCondensed(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFFABABAB),
+                                          letterSpacing: 0.3,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                if (hasImage) ...[
-                                  const SizedBox(height: 18),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      imageUrl,
-                                      width: double.infinity,
-                                      height: 180,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 18),
-                                Text(
-                                  workout['description']?.toString() ?? '',
-                                  style: WorkoutTextStyles.body.copyWith(
-                                    color: Colors.white,
-                                    height: 1.28,
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                Row(
-                                  children: [
-                                    _DetailInlineStat(
-                                      icon: _liked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      label: '${_likes.length}',
-                                      active: _liked,
-                                      onTap: _toggleLike,
-                                    ),
-                                    const SizedBox(width: 18),
-                                    _DetailInlineStat(
-                                      icon: Icons.chat_bubble_outline,
-                                      label: '${_comments.length}',
-                                      active: false,
-                                      onTap: () => _commentFocus.requestFocus(),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        if (_comments.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF252525),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.chat_bubble_outline,
-                                  color: Color(0xFFB59B6A),
-                                  size: 20,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  appStrings.workoutNoComments,
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.barlowCondensed(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFFABABAB),
-                                    letterSpacing: 0.3,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          ..._comments.map((comment) {
-                            final userId = comment['user_id']?.toString();
-                            final name = _displayAuthorName(
-                              _authorNames[userId],
-                            );
+                                )
+                              else
+                                ..._comments.map((comment) {
+                                  final userId = comment['user_id']?.toString();
+                                  final name = _displayAuthorName(
+                                    _authorNames[userId],
+                                  );
 
-                            final initial = name.trim().isEmpty
-                                ? '?'
-                                : name.trim()[0].toUpperCase();
-                            final avatarUrl = _authorAvatars[userId];
+                                  final initial = name.trim().isEmpty
+                                      ? '?'
+                                      : name.trim()[0].toUpperCase();
+                                  final avatarUrl = _authorAvatars[userId];
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                14,
-                                16,
-                                14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF171717),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFF323232),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 18,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipOval(
-                                    child: Container(
-                                      width: 38,
-                                      height: 38,
-                                      alignment: Alignment.center,
-                                      color: const Color(0xFF252525),
-                                      child:
-                                          avatarUrl == null ||
-                                              avatarUrl.trim().isEmpty
-                                          ? Text(
-                                              initial,
-                                              style:
-                                                  GoogleFonts.barlowCondensed(
-                                                    color: const Color(
-                                                      0xFFB59B6A,
-                                                    ),
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w700,
-                                                    height: 1.0,
-                                                  ),
-                                            )
-                                          : Image.network(
-                                              avatarUrl,
-                                              width: 38,
-                                              height: 38,
-                                              fit: BoxFit.cover,
-                                            ),
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      14,
+                                      16,
+                                      14,
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF171717),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFF323232),
+                                        width: 1,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.03,
+                                          ),
+                                          blurRadius: 18,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                name,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                        ClipOval(
+                                          child: Container(
+                                            width: 38,
+                                            height: 38,
+                                            alignment: Alignment.center,
+                                            color: const Color(0xFF252525),
+                                            child:
+                                                avatarUrl == null ||
+                                                    avatarUrl.trim().isEmpty
+                                                ? Text(
+                                                    initial,
+                                                    style:
+                                                        GoogleFonts.barlowCondensed(
+                                                          color: const Color(
+                                                            0xFFB59B6A,
+                                                          ),
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          height: 1.0,
+                                                        ),
+                                                  )
+                                                : Image.network(
+                                                    avatarUrl,
+                                                    width: 38,
+                                                    height: 38,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      name,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style:
+                                                          GoogleFonts.barlowCondensed(
+                                                            color: Colors.white,
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            height: 1.0,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    _timeAgo(
+                                                      comment['created_at']
+                                                          ?.toString(),
+                                                    ),
+                                                    style:
+                                                        GoogleFonts.barlowCondensed(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: const Color(
+                                                            0xFFABABAB,
+                                                          ),
+                                                          letterSpacing: 0.3,
+                                                          height: 1.0,
+                                                        ),
+                                                  ),
+                                                  if (_canDeleteComment(
+                                                    comment,
+                                                  )) ...[
+                                                    const SizedBox(width: 4),
+                                                    IconButton(
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      padding: EdgeInsets.zero,
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                            minWidth: 28,
+                                                            minHeight: 28,
+                                                          ),
+                                                      onPressed: () =>
+                                                          _deleteComment(
+                                                            comment,
+                                                          ),
+                                                      icon: const Icon(
+                                                        Icons.delete_outline,
+                                                        size: 18,
+                                                        color: Color(
+                                                          0xFFABABAB,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                              const SizedBox(height: 5),
+                                              Text(
+                                                comment['body']?.toString() ??
+                                                    '',
                                                 style:
                                                     GoogleFonts.barlowCondensed(
                                                       color: Colors.white,
-                                                      fontSize: 15,
+                                                      fontSize: 16,
                                                       fontWeight:
-                                                          FontWeight.w700,
-                                                      height: 1.0,
+                                                          FontWeight.w500,
+                                                      letterSpacing: 0.0,
+                                                      height: 1.3,
                                                     ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              _timeAgo(
-                                                comment['created_at']
-                                                    ?.toString(),
-                                              ),
-                                              style:
-                                                  GoogleFonts.barlowCondensed(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: const Color(
-                                                      0xFFABABAB,
-                                                    ),
-                                                    letterSpacing: 0.3,
-                                                    height: 1.0,
-                                                  ),
-                                            ),
-                                            if (_canDeleteComment(comment)) ...[
-                                              const SizedBox(width: 4),
-                                              IconButton(
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      minWidth: 28,
-                                                      minHeight: 28,
-                                                    ),
-                                                onPressed: () =>
-                                                    _deleteComment(comment),
-                                                icon: const Icon(
-                                                  Icons.delete_outline,
-                                                  size: 18,
-                                                  color: Color(0xFFABABAB),
-                                                ),
                                               ),
                                             ],
-                                          ],
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          comment['body']?.toString() ?? '',
-                                          style: GoogleFonts.barlowCondensed(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            letterSpacing: 0.0,
-                                            height: 1.3,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF171717),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF323232),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                appStrings.workoutPostScoreComments
-                                    .toUpperCase(),
-                                style: GoogleFonts.barlowCondensed(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: 0.8,
-                                  height: 1.0,
+                                  );
+                                }),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  18,
+                                  18,
+                                  18,
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _commentCtrl,
-                                focusNode: _commentFocus,
-                                minLines: 1,
-                                maxLines: 4,
-                                style: GoogleFonts.barlowCondensed(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.2,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF171717),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFF323232),
+                                    width: 1,
+                                  ),
                                 ),
-                                decoration: InputDecoration(
-                                  hintText: appStrings.workoutCommentHint,
-                                  hintStyle: GoogleFonts.barlowCondensed(
-                                    color: const Color(0xFFABABAB),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                  ),
-                                  filled: true,
-                                  fillColor: const Color(0xFF252525),
-                                  contentPadding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    15,
-                                    8,
-                                    15,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF323232),
-                                      width: 1,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      appStrings.workoutPostScoreComments
+                                          .toUpperCase(),
+                                      style: GoogleFonts.barlowCondensed(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: 0.8,
+                                        height: 1.0,
+                                      ),
                                     ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFB59B6A),
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF323232),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  suffixIcon: Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Material(
-                                      color: const Color(0xFFB59B6A),
-                                      borderRadius: BorderRadius.circular(999),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          999,
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _commentCtrl,
+                                      focusNode: _commentFocus,
+                                      minLines: 1,
+                                      maxLines: 4,
+                                      style: GoogleFonts.barlowCondensed(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.2,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: appStrings.workoutCommentHint,
+                                        hintStyle: GoogleFonts.barlowCondensed(
+                                          color: const Color(0xFFABABAB),
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.2,
                                         ),
-                                        onTap: _addComment,
-                                        child: const SizedBox(
-                                          width: 42,
-                                          height: 42,
-                                          child: Icon(
-                                            Icons.send_rounded,
-                                            color: Color(0xFF111111),
-                                            size: 20,
+                                        filled: true,
+                                        fillColor: const Color(0xFF252525),
+                                        contentPadding:
+                                            const EdgeInsets.fromLTRB(
+                                              16,
+                                              15,
+                                              8,
+                                              15,
+                                            ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFF323232),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFB59B6A),
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFF323232),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        suffixIcon: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: Material(
+                                            color: const Color(0xFFB59B6A),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                              onTap: _addComment,
+                                              child: const SizedBox(
+                                                width: 42,
+                                                height: 42,
+                                                child: Icon(
+                                                  Icons.send_rounded,
+                                                  color: Color(0xFF111111),
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
+                                      onSubmitted: (_) => _addComment(),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                onSubmitted: (_) => _addComment(),
                               ),
                             ],
                           ),
