@@ -15,19 +15,13 @@ Future<void> showCreateWorkoutSheet({
   required String gymId,
   required Future<void> Function() onCreated,
 }) async {
-  await showModalBottomSheet(
+  await showGeneralDialog(
     context: context,
-    isScrollControlled: true,
-    isDismissible: false,
-    enableDrag: false,
-    backgroundColor: Colors.transparent,
-    builder: (_) => SizedBox.expand(
-      child: _CreateWorkoutSheet(
-        client: client,
-        gymId: gymId,
-        onCreated: onCreated,
-      ),
-    ),
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (_, _, _) =>
+        _CreateWorkoutSheet(client: client, gymId: gymId, onCreated: onCreated),
   );
 }
 
@@ -176,42 +170,48 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                 bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
             child: SafeArea(
               bottom: false,
               child: SizedBox(
-                height: 58,
-                child: Stack(
-                  alignment: Alignment.center,
+                height: 50,
+                child: Row(
                   children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: Color(0xFFB59B6A),
-                          size: 34,
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 54),
-                      child: Text(
-                        appStrings.workoutCreateTitle.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: _WorkoutSheetText.title.copyWith(
-                          color: Colors.white,
-                          fontSize: 24,
-                          letterSpacing: -0.4,
+                    SizedBox(
+                      width: 44,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFFB59B6A),
+                            size: 34,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
                     ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          appStrings.workoutCreateTitle.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _WorkoutSheetText.title.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 44),
                   ],
                 ),
               ),
@@ -262,8 +262,8 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                             appStrings.workoutProgram,
                             Icons.fitness_center_outlined,
                           ).copyWith(
-                            labelText: appStrings.workoutProgram,
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            labelText: null,
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
                           ),
                       items: [
                         DropdownMenuItem<String>(
@@ -336,10 +336,10 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                       height: 1.25,
                     ),
                     decoration: InputDecoration(
-                      labelText: appStrings.workoutDescription,
+                      labelText: null,
                       hintText: appStrings.workoutWriteWod,
                       alignLabelWithHint: true,
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      floatingLabelBehavior: FloatingLabelBehavior.never,
                       labelStyle: _WorkoutSheetText.subtle.copyWith(
                         color: const Color(0xFFABABAB),
                         fontSize: 13,
