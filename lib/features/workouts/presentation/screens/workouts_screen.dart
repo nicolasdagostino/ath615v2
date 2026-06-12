@@ -137,17 +137,30 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text(
-                    appStrings.workoutsDeleteTitle.toUpperCase(),
-                    style: _WorkoutDeleteSheetText.title,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Color(0xFFB42318),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appStrings.workoutsDeleteTitle.toUpperCase(),
+                          style: _WorkoutDeleteSheetText.title,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Text(
                     appStrings.workoutsDeleteMessage,
                     style: _WorkoutDeleteSheetText.body,
@@ -428,9 +441,9 @@ class _WorkoutDeleteSheetText {
   const _WorkoutDeleteSheetText._();
 
   static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -438,13 +451,13 @@ class _WorkoutDeleteSheetText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: const Color(0xFFABABAB),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -467,10 +480,11 @@ class _WorkoutDeleteSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF384152),
-          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Color(0xFF323232)),
+          backgroundColor: const Color(0xFF171717),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
@@ -498,7 +512,7 @@ class _WorkoutDeleteDangerButton extends StatelessWidget {
           backgroundColor: const Color(0xFFB42318),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
