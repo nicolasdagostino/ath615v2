@@ -330,32 +330,54 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
           const SizedBox(height: 22),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
             child: TextField(
               style: GoogleFonts.barlowCondensed(
-                color: const Color(0xFF384152),
+                color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 height: 1.2,
               ),
+              cursorColor: const Color(0xFFB59B6A),
               decoration: InputDecoration(
                 hintText: appStrings.exploreSearchWorkouts,
                 hintStyle: GoogleFonts.barlowCondensed(
-                  color: const Color(0xFF8F96A3),
+                  color: const Color(0xFFABABAB),
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF8F96A3)),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFFB59B6A),
+                  size: 20,
+                ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: const Color(0xFF171717),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 15,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF323232),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFAF986C),
+                    width: 1.2,
+                  ),
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF323232),
+                    width: 1,
+                  ),
                 ),
               ),
               onChanged: (value) => setState(() => _search = value),
