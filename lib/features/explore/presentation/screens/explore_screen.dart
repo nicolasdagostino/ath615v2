@@ -387,11 +387,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
             height: 48,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               itemCount: _showFuture
                   ? 2
                   : _programs.length + 1 + (_role == 'admin' ? 1 : 0),
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final all = index == 0;
                 final future = _role == 'admin' && index == 1;
@@ -420,21 +420,31 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
                 return ChoiceChip(
                   selected: selected,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   label: Text(
                     label.toUpperCase(),
                     style: GoogleFonts.barlowCondensed(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: selected ? Colors.white : const Color(0xFF8F96A3),
+                      letterSpacing: 0.7,
+                      color: selected
+                          ? const Color(0xFF111111)
+                          : const Color(0xFFABABAB),
                       height: 1.0,
                     ),
                   ),
                   selectedColor: const Color(0xFFB59B6A),
-                  backgroundColor: Colors.white,
-                  side: BorderSide.none,
+                  backgroundColor: const Color(0xFF171717),
+                  side: BorderSide(
+                    color: selected
+                        ? const Color(0xFFB59B6A)
+                        : const Color(0xFF323232),
+                    width: 1,
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   onSelected: (_) async {
                     if (future) {
