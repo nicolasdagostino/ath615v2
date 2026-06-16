@@ -21,7 +21,7 @@ class WorkoutTextStyles {
   );
 
   static TextStyle headerSubtitle = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     fontSize: 15,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
@@ -68,7 +68,7 @@ class WorkoutTextStyles {
   );
 
   static TextStyle emptyTitle = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF111318),
+    color: Colors.white,
     fontSize: 22,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
@@ -76,7 +76,7 @@ class WorkoutTextStyles {
   );
 
   static TextStyle emptyMessage = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.2,

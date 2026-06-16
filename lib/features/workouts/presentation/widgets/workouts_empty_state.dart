@@ -15,15 +15,9 @@ class WorkoutsEmptyState extends StatelessWidget {
         Container(
           padding: const EdgeInsets.fromLTRB(24, 34, 24, 34),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF171717),
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            border: Border.all(color: const Color(0xFF323232), width: 1),
           ),
           child: Column(
             children: [
@@ -31,7 +25,7 @@ class WorkoutsEmptyState extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F3EA),
+                  color: const Color(0xFF252525),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: const Icon(
