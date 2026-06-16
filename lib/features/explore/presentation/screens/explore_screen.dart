@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
 import '../../../workouts/presentation/widgets/workout_card.dart';
 import '../../../workouts/presentation/widgets/workouts_empty_state.dart';
@@ -18,18 +16,15 @@ class ExploreScreen extends StatefulWidget {
     required this.unreadNotifications,
     required this.onOpenNotifications,
   });
-
   final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
-
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
 class _InactiveExploreState extends StatelessWidget {
   const _InactiveExploreState();
-
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -39,7 +34,6 @@ class _InactiveExploreState extends StatelessWidget {
         statusBarBrightness: Brightness.dark,
       ),
     );
-
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(28, 155, 28, 24),
@@ -88,25 +82,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
   String _search = '';
   String? _selectedProgramId;
   bool _showFuture = false;
-
   List<Map<String, dynamic>> _workouts = [];
   List<Map<String, dynamic>> _programs = [];
-
   int _programWorkoutCount(String? programId) {
     if (programId == null) return _workouts.length;
-
     return _workouts
         .where((w) => w['program_id']?.toString() == programId)
         .length;
   }
 
   SupabaseClient get _client => Supabase.instance.client;
-
   bool get _canManage => _role == 'admin' || _role == 'owner';
-
   List<Map<String, dynamic>> get _filteredWorkouts {
     final query = _search.trim().toLowerCase();
-
     return _workouts.where((workout) {
       final description =
           workout['description']?.toString().toLowerCase() ?? '';
@@ -116,15 +104,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
               .toLowerCase() ??
           '';
       final programId = workout['program_id']?.toString();
-
       final matchesSearch =
           query.isEmpty ||
           description.contains(query) ||
           programName.contains(query);
-
       final matchesProgram =
           _selectedProgramId == null || programId == _selectedProgramId;
-
       return matchesSearch && matchesProgram;
     }).toList();
   }
@@ -139,22 +124,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
     if (showLoading) {
       setState(() => _loading = true);
     }
-
     try {
       final user = _client.auth.currentUser;
       if (user == null) return;
-
       final profile = await _client
           .from('profiles')
           .select('role, gym_id, is_active')
           .eq('id', user.id)
           .single();
-
       final gymId = profile['gym_id'] as String?;
       final role = profile['role'] as String?;
       final isAccountActive = profile['is_active'] == true;
       final today = DateTime.now().toIso8601String().split('T').first;
-
       final programs = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
           : await _client
@@ -163,9 +144,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 .eq('gym_id', gymId)
                 .eq('is_active', true)
                 .order('name');
-
       final canSeeFuture = role == 'admin';
-
       final workouts = gymId == null || (role == 'athlete' && !isAccountActive)
           ? <Map<String, dynamic>>[]
           : _showFuture && canSeeFuture
@@ -187,7 +166,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 .lt('workout_date', today)
                 .order('workout_date', ascending: false)
                 .limit(60);
-
       if (!mounted) return;
       setState(() {
         _role = role;
@@ -278,9 +256,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         );
       },
     );
-
     if (confirmed != true) return;
-
     try {
       await _client.from('workouts').delete().eq('id', workoutId);
       await _load();
@@ -295,7 +271,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Future<void> _editWorkout(Map<String, dynamic> workout) async {
     final gymId = _gymId;
     if (gymId == null) return;
-
     await showEditWorkoutSheet(
       context: context,
       client: _client,
@@ -318,7 +293,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredWorkouts = _filteredWorkouts;
-
     return Scaffold(
       backgroundColor: const Color(0xFF252525),
       body: Column(
@@ -403,50 +377,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     : all
                     ? !_showFuture && _selectedProgramId == null
                     : !_showFuture && _selectedProgramId == id;
-
                 final count = future
                     ? _workouts.length
                     : _programWorkoutCount(id);
-
                 final baseLabel = future
                     ? 'Future'
                     : all
                     ? appStrings.exploreAllPrograms
                     : program?['name']?.toString() ?? appStrings.workoutProgram;
-
                 final label = future && !_showFuture
                     ? baseLabel
                     : '$baseLabel ($count)';
-
-                return ChoiceChip(
-                  selected: selected,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 10),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  label: Text(
-                    label.toUpperCase(),
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.7,
-                      color: selected
-                          ? const Color(0xFF111111)
-                          : const Color(0xFFABABAB),
-                      height: 1.0,
-                    ),
-                  ),
-                  selectedColor: const Color(0xFFB59B6A),
-                  backgroundColor: const Color(0xFF171717),
-                  side: BorderSide(
-                    color: selected
-                        ? const Color(0xFFB59B6A)
-                        : const Color(0xFF323232),
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  onSelected: (_) async {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
                     if (future) {
                       setState(() {
                         _showFuture = true;
@@ -455,13 +399,46 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       await _load(showLoading: false);
                       return;
                     }
-
                     setState(() {
                       _showFuture = false;
                       _selectedProgramId = all ? null : id;
                     });
                     await _load(showLoading: false);
                   },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFFB59B6A)
+                          : const Color(0xFF171717),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected
+                            ? const Color(0xFFB59B6A)
+                            : const Color(0xFF323232),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label.toUpperCase(),
+                        style: GoogleFonts.barlowCondensed(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.7,
+                          color: selected
+                              ? const Color(0xFF111111)
+                              : const Color(0xFFABABAB),
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -485,11 +462,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         final workout = filteredWorkouts[index];
                         final program =
                             workout['programs'] as Map<String, dynamic>?;
-
                         final likes = List<Map<String, dynamic>>.from(
                           workout['workout_likes'] ?? [],
                         );
-
                         final comments =
                             List<Map<String, dynamic>>.from(
                               workout['workout_comments'] ?? [],
@@ -499,7 +474,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                     (a['created_at'] ?? '').toString(),
                                   ),
                             );
-
                         return TweenAnimationBuilder<double>(
                           key: ValueKey(workout['id'].toString()),
                           tween: Tween(begin: 0, end: 1),
@@ -548,7 +522,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
 class _ExploreDeleteSheetText {
   const _ExploreDeleteSheetText._();
-
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 20,
     fontWeight: FontWeight.w800,
@@ -556,7 +529,6 @@ class _ExploreDeleteSheetText {
     letterSpacing: -0.3,
     height: 1,
   );
-
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
@@ -564,7 +536,6 @@ class _ExploreDeleteSheetText {
     letterSpacing: -0.2,
     height: 1,
   );
-
   static TextStyle body = GoogleFonts.barlowCondensed(
     color: const Color(0xFFABABAB),
     fontSize: 16,
@@ -578,10 +549,8 @@ class _ExploreDeleteSecondaryButton extends StatelessWidget {
     required this.label,
     required this.onTap,
   });
-
   final String label;
   final VoidCallback onTap;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -607,10 +576,8 @@ class _ExploreDeleteSecondaryButton extends StatelessWidget {
 
 class _ExploreDeleteDangerButton extends StatelessWidget {
   const _ExploreDeleteDangerButton({required this.label, required this.onTap});
-
   final String label;
   final VoidCallback onTap;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
