@@ -260,7 +260,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                       decoration:
                           _programDropdownInput(
                             appStrings.workoutProgram,
-                            Icons.fitness_center_outlined,
+                            Icons.grid_view_rounded,
                           ).copyWith(
                             labelText: null,
                             floatingLabelBehavior: FloatingLabelBehavior.never,

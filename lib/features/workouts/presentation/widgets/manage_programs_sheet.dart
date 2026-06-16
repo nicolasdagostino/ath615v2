@@ -6,18 +6,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-import '../../../../core/widgets/app_button.dart';
-
 Future<void> showManageProgramsSheet({
   required BuildContext context,
   required SupabaseClient client,
   required String gymId,
 }) async {
-  await showModalBottomSheet(
+  await showGeneralDialog(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _ManageProgramsSheet(client: client, gymId: gymId),
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (_, _, _) =>
+        _ManageProgramsSheet(client: client, gymId: gymId),
   );
 }
 
@@ -183,155 +183,215 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Text(
-                appStrings.manageProgramsTitle.toUpperCase(),
-                style: _ProgramsText.title,
+    return Scaffold(
+      backgroundColor: const Color(0xFF252525),
+      body: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF171717),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                style: _ProgramsText.body,
-                decoration: _programsInput(
-                  appStrings.programName,
-                  Icons.badge_outlined,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              InkWell(
-                onTap: _pickImage,
-                borderRadius: BorderRadius.circular(18),
-                child: Container(
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F5F7),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  alignment: Alignment.center,
-                  child: _image == null
-                      ? const Icon(
-                          Icons.image_outlined,
-                          size: 30,
-                          color: Color(0xFF8F96A3),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.file(
-                            _image!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                height: 50,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
                           ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              AppButton(
-                label: appStrings.createProgram,
-                loading: _saving,
-                onPressed: _create,
-              ),
-              const SizedBox(height: 20),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
-                  ),
-                )
-              else if (_programs.isEmpty)
-                Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
-              else
-                ..._programs.map((program) {
-                  final active = program['is_active'] == true;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Material(
-                      color: const Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.circular(18),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                        child: Row(
-                          children: [
-                            InkWell(
-                              onTap: () => _updateProgramImage(program),
-                              borderRadius: BorderRadius.circular(14),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child:
-                                    (program['image_url']
-                                            ?.toString()
-                                            .isNotEmpty ??
-                                        false)
-                                    ? Image.network(
-                                        program['image_url'].toString(),
-                                        width: 54,
-                                        height: 54,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(
-                                        width: 54,
-                                        height: 54,
-                                        color: const Color(0xFFE8EAF0),
-                                        child: const Icon(
-                                          Icons.image_outlined,
-                                          color: Color(0xFF8F96A3),
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    program['name']?.toString() ??
-                                        appStrings.workoutProgram,
-                                    style: _ProgramsText.rowTitle,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    active
-                                        ? appStrings.active
-                                        : appStrings.inactive,
-                                    style: _ProgramsText.subtle,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: active,
-                              activeThumbColor: const Color(0xFFB59B6A),
-                              onChanged: (_) => _toggle(program),
-                            ),
-                          ],
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFFB59B6A),
+                            size: 34,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
                     ),
-                  );
-                }),
-            ],
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          appStrings.manageProgramsTitle.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _ProgramsText.title.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 44),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+                children: [
+                  TextField(
+                    controller: _name,
+                    textCapitalization: TextCapitalization.words,
+                    onChanged: (_) => setState(() {}),
+                    style: _ProgramsText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    cursorColor: const Color(0xFFB59B6A),
+                    decoration: _programsInput(
+                      appStrings.programName,
+                      Icons.grid_view_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  InkWell(
+                    onTap: _pickImage,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF171717),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Color(0xFF323232), width: 1),
+                      ),
+                      alignment: Alignment.center,
+                      child: _image == null
+                          ? const Icon(
+                              Icons.image_outlined,
+                              size: 30,
+                              color: Color(0xFFB59B6A),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                _image!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _ProgramButton(
+                    label: appStrings.createProgram,
+                    loading: _saving,
+                    enabled: _name.text.trim().isNotEmpty,
+                    onPressed: _create,
+                  ),
+                  const SizedBox(height: 20),
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFB59B6A),
+                        ),
+                      ),
+                    )
+                  else if (_programs.isEmpty)
+                    Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
+                  else
+                    ..._programs.map((program) {
+                      final active = program['is_active'] == true;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Material(
+                          color: const Color(0xFF171717),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                            child: Row(
+                              children: [
+                                InkWell(
+                                  onTap: () => _updateProgramImage(program),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child:
+                                        (program['image_url']
+                                                ?.toString()
+                                                .isNotEmpty ??
+                                            false)
+                                        ? Image.network(
+                                            program['image_url'].toString(),
+                                            width: 54,
+                                            height: 54,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: 54,
+                                            height: 54,
+                                            color: const Color(0xFF252525),
+                                            child: const Icon(
+                                              Icons.image_outlined,
+                                              color: Color(0xFFB59B6A),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        program['name']?.toString() ??
+                                            appStrings.workoutProgram,
+                                        style: _ProgramsText.rowTitle,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        active
+                                            ? appStrings.active
+                                            : appStrings.inactive,
+                                        style: _ProgramsText.subtle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: active,
+                                  activeThumbColor: const Color(0xFFB59B6A),
+                                  onChanged: (_) => _toggle(program),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -340,18 +400,80 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
 InputDecoration _programsInput(String hint, IconData icon) {
   return InputDecoration(
     hintText: hint,
-    labelText: hint,
+    labelText: null,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
     hintStyle: _ProgramsText.subtle,
     labelStyle: _ProgramsText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
     filled: true,
-    fillColor: const Color(0xFFF4F5F7),
+    fillColor: const Color(0xFF171717),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
+}
+
+class _ProgramButton extends StatelessWidget {
+  const _ProgramButton({
+    required this.label,
+    required this.loading,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool loading;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: loading || !enabled ? null : onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB59B6A),
+          disabledBackgroundColor: const Color(0xFF171717),
+          foregroundColor: const Color(0xFF111111),
+          disabledForegroundColor: const Color(0xFF6F6F6F),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF111111),
+                ),
+              )
+            : Text(
+                label.toUpperCase(),
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  height: 1,
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 class _ProgramsText {
@@ -360,7 +482,7 @@ class _ProgramsText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -368,13 +490,13 @@ class _ProgramsText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -383,7 +505,7 @@ class _ProgramsText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1,
   );

@@ -99,26 +99,45 @@ class WorkoutsHeader extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
                       onTap: canManage ? onPrograms : onOpenNotifications,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF262626),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Badge(
-                          isLabelVisible: unreadNotifications > 0 && !canManage,
-                          label: Text(
-                            unreadNotifications > 99
-                                ? '99+'
-                                : unreadNotifications.toString(),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: Icon(
+                              Icons.fitness_center_rounded,
+                              size: 28,
+                              color: Color(0xFFB59B6A),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.fitness_center_rounded,
-                            size: 18,
-                            color: Color(0xFFB59B6A),
-                          ),
-                        ),
+                          if (unreadNotifications > 0 && !canManage)
+                            Positioned(
+                              right: -7,
+                              top: -7,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFB42318),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  unreadNotifications > 99
+                                      ? '99+'
+                                      : unreadNotifications.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

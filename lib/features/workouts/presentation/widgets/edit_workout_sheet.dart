@@ -257,7 +257,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                       ),
                       decoration: _editWorkoutInput(
                         '',
-                        Icons.fitness_center_outlined,
+                        Icons.grid_view_rounded,
                       ),
                       items: _programs.map((p) {
                         return DropdownMenuItem<String>(
