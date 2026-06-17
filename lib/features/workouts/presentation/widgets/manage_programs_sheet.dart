@@ -55,7 +55,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
     try {
       final rows = await widget.client
           .from('programs')
-          .select('id, name, is_active, image_url')
+          .select('id, name, is_active, image_url, workouts(count)')
           .eq('gym_id', widget.gymId)
           .order('name');
 
@@ -150,6 +150,108 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
           .eq('id', id);
     } catch (e) {
       if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
+    }
+  }
+
+  Future<void> _renameProgram(Map<String, dynamic> program) async {
+    final id = program['id'].toString();
+    final controller = TextEditingController(
+      text: program['name']?.toString() ?? '',
+    );
+
+    final newName = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    appStrings.workoutEdit.toUpperCase(),
+                    style: _ProgramsText.title.copyWith(fontSize: 22),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.words,
+                    cursorColor: const Color(0xFFB59B6A),
+                    style: _ProgramsText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: _programsInput(
+                      appStrings.programName,
+                      Icons.grid_view_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ProgramSecondaryButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.pop(sheetContext),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ProgramButton(
+                          label: appStrings.workoutSaveChanges,
+                          loading: false,
+                          enabled: true,
+                          onPressed: () {
+                            Navigator.pop(sheetContext, controller.text.trim());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (newName == null || newName.isEmpty) return;
+    if (newName == (program['name']?.toString() ?? '')) return;
+
+    final previousName = program['name'];
+
+    setState(() {
+      program['name'] = newName;
+    });
+
+    try {
+      await widget.client
+          .from('programs')
+          .update({'name': newName})
+          .eq('id', id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        program['name'] = previousName;
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
@@ -318,6 +420,10 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   else
                     ..._programs.map((program) {
                       final active = program['is_active'] == true;
+                      final workoutCount =
+                          ((program['workouts'] as List?)?.firstOrNull
+                              as Map<String, dynamic>?)?['count'] ??
+                          0;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -368,13 +474,31 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
+                                        '$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}',
+                                        style: _ProgramsText.subtle,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
                                         active
                                             ? appStrings.active
                                             : appStrings.inactive,
-                                        style: _ProgramsText.subtle,
+                                        style: _ProgramsText.subtle.copyWith(
+                                          color: active
+                                              ? const Color(0xFFB59B6A)
+                                              : const Color(0xFFABABAB),
+                                        ),
                                       ),
                                     ],
                                   ),
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    color: Color(0xFFB59B6A),
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _renameProgram(program),
                                 ),
                                 Switch(
                                   value: active,
@@ -421,6 +545,41 @@ InputDecoration _programsInput(String hint, IconData icon) {
       borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
+}
+
+class _ProgramSecondaryButton extends StatelessWidget {
+  const _ProgramSecondaryButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Color(0xFF323232)),
+          backgroundColor: const Color(0xFF171717),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProgramButton extends StatelessWidget {
