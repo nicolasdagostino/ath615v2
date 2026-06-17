@@ -258,6 +258,63 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
     }
   }
 
+  Future<void> _showProgramOptions(Map<String, dynamic> program) async {
+    final name = program['name']?.toString() ?? appStrings.workoutProgram;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    appStrings.workoutOptions.toUpperCase(),
+                    style: _ProgramsText.title,
+                  ),
+                  const SizedBox(height: 16),
+                  _ProgramSheetAction(
+                    icon: Icons.edit_outlined,
+                    label: appStrings.workoutEdit,
+                    subtitle: name,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _renameProgram(program);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ProgramSheetAction(
+                    icon: Icons.image_outlined,
+                    label: appStrings.changeImage,
+                    subtitle: name,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _updateProgramImage(program);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _toggle(Map<String, dynamic> program) async {
     final id = program['id'].toString();
     final active = program['is_active'] == true;
@@ -494,11 +551,11 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
                                   icon: const Icon(
-                                    Icons.edit_outlined,
+                                    Icons.more_horiz,
                                     color: Color(0xFFB59B6A),
-                                    size: 20,
+                                    size: 24,
                                   ),
-                                  onPressed: () => _renameProgram(program),
+                                  onPressed: () => _showProgramOptions(program),
                                 ),
                                 Switch(
                                   value: active,
@@ -545,6 +602,64 @@ InputDecoration _programsInput(String hint, IconData icon) {
       borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
+}
+
+class _ProgramSheetAction extends StatelessWidget {
+  const _ProgramSheetAction({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
+
+    return Material(
+      color: const Color(0xFF171717),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: _ProgramsText.rowTitle.copyWith(color: color),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _ProgramsText.subtle,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProgramSecondaryButton extends StatelessWidget {
