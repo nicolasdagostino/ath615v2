@@ -306,6 +306,17 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                       _updateProgramImage(program);
                     },
                   ),
+                  const SizedBox(height: 12),
+                  _ProgramSheetAction(
+                    icon: Icons.delete_outline,
+                    label: appStrings.workoutDelete,
+                    subtitle: name,
+                    danger: true,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _deleteProgram(program);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -313,6 +324,98 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
         );
       },
     );
+  }
+
+  Future<void> _deleteProgram(Map<String, dynamic> program) async {
+    final id = program['id'].toString();
+    final name = program['name']?.toString() ?? appStrings.workoutProgram;
+    final workoutCount =
+        ((program['workouts'] as List?)?.firstOrNull
+            as Map<String, dynamic>?)?['count'] ??
+        0;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Color(0xFFB42318),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appStrings.delete.toUpperCase(),
+                          style: _ProgramsText.title.copyWith(fontSize: 22),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$name\n$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}\n\nThis will permanently delete this program and all associated workouts. This action cannot be undone.',
+                    style: _ProgramsText.body.copyWith(
+                      color: const Color(0xFFABABAB),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ProgramSecondaryButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.pop(sheetContext, false),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ProgramDangerButton(
+                          label: appStrings.delete,
+                          onTap: () => Navigator.pop(sheetContext, true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await widget.client.from('workouts').delete().eq('program_id', id);
+      await widget.client.from('programs').delete().eq('id', id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
+    }
   }
 
   Future<void> _toggle(Map<String, dynamic> program) async {
@@ -655,6 +758,41 @@ class _ProgramSheetAction extends StatelessWidget {
               ),
               const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgramDangerButton extends StatelessWidget {
+  const _ProgramDangerButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB42318),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
+            height: 1,
           ),
         ),
       ),
