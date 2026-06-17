@@ -330,119 +330,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF252525),
-      body: ListView(
-        padding: EdgeInsets.zero,
+      body: Column(
         children: [
           _ProfileHeader(
             gymName: widget.gymName,
             unreadNotifications: widget.unreadNotifications,
             onOpenNotifications: widget.onOpenNotifications,
           ),
-          if (_profile == null)
-            const _ProfileSkeleton()
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ProfileCard(
-                    child: Row(
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                if (_profile == null)
+                  const _ProfileSkeleton()
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _ProfileAvatar(
-                          displayName: displayName,
-                          avatarUrl: avatarUrl,
-                          uploading: _uploadingAvatar,
-                          onTap: _uploadAvatar,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        _ProfileCard(
+                          child: Row(
                             children: [
-                              Text(displayName, style: _ProfileText.title),
-                              const SizedBox(height: 4),
-                              Text(
-                                _displayRole(_profile?['role']?.toString()),
-                                style: _ProfileText.subtle,
+                              _ProfileAvatar(
+                                displayName: displayName,
+                                avatarUrl: avatarUrl,
+                                uploading: _uploadingAvatar,
+                                onTap: _uploadAvatar,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName,
+                                      style: _ProfileText.title,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _displayRole(
+                                        _profile?['role']?.toString(),
+                                      ),
+                                      style: _ProfileText.subtle,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          appStrings.personalInformation.toUpperCase(),
-                          style: _ProfileText.sectionTitle,
-                        ),
-                        const SizedBox(height: 14),
-                        _InfoRow(
-                          label: appStrings.fullName,
-                          value: profileName.isEmpty
-                              ? appStrings.notSet
-                              : profileName,
-                        ),
-                        _InfoRow(label: appStrings.authEmail, value: email),
-                        _InfoRow(
-                          label: appStrings.phone,
-                          value:
-                              (_profile?['phone']?.toString().trim().isEmpty ??
-                                  true)
-                              ? appStrings.notSet
-                              : _profile!['phone'].toString(),
-                        ),
-                        _InfoRow(
-                          label: appStrings.birthDate,
-                          value: _formatDate(
-                            _profile?['birth_date']?.toString(),
+                        const SizedBox(height: 18),
+                        _ProfileCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appStrings.personalInformation.toUpperCase(),
+                                style: _ProfileText.sectionTitle,
+                              ),
+                              const SizedBox(height: 14),
+                              _InfoRow(
+                                label: appStrings.fullName,
+                                value: profileName.isEmpty
+                                    ? appStrings.notSet
+                                    : profileName,
+                              ),
+                              _InfoRow(
+                                label: appStrings.authEmail,
+                                value: email,
+                              ),
+                              _InfoRow(
+                                label: appStrings.phone,
+                                value:
+                                    (_profile?['phone']
+                                            ?.toString()
+                                            .trim()
+                                            .isEmpty ??
+                                        true)
+                                    ? appStrings.notSet
+                                    : _profile!['phone'].toString(),
+                              ),
+                              _InfoRow(
+                                label: appStrings.birthDate,
+                                value: _formatDate(
+                                  _profile?['birth_date']?.toString(),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              AppButton(
+                                label: appStrings.editPersonalInformation,
+                                onPressed: _openPersonalInfoSheet,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          label: appStrings.editPersonalInformation,
-                          onPressed: _openPersonalInfoSheet,
+                        const SizedBox(height: 20),
+                        _ProfileListCard(
+                          children: [
+                            _ProfileMenuRow(
+                              icon: Icons.fitness_center_rounded,
+                              title: appStrings.profileTraining,
+                              onTap: () => context.push('/training'),
+                            ),
+                            _ProfileMenuRow(
+                              icon: Icons.workspace_premium_outlined,
+                              title: appStrings.profileMembership,
+                              onTap: () => context.push('/membership'),
+                            ),
+                            _ProfileMenuRow(
+                              icon: Icons.settings_outlined,
+                              title: appStrings.profileSettings,
+                              onTap: () => context.push('/settings'),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 18),
+                        if (_appVersion.isNotEmpty) ...[
+                          Center(
+                            child: Text(
+                              'ATHLETE615 · $_appVersion',
+                              style: _ProfileText.subtle,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  _ProfileListCard(
-                    children: [
-                      _ProfileMenuRow(
-                        icon: Icons.fitness_center_rounded,
-                        title: appStrings.profileTraining,
-                        onTap: () => context.push('/training'),
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.workspace_premium_outlined,
-                        title: appStrings.profileMembership,
-                        onTap: () => context.push('/membership'),
-                      ),
-                      _ProfileMenuRow(
-                        icon: Icons.settings_outlined,
-                        title: appStrings.profileSettings,
-                        onTap: () => context.push('/settings'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  if (_appVersion.isNotEmpty) ...[
-                    Center(
-                      child: Text(
-                        'ATHLETE615 · $_appVersion',
-                        style: _ProfileText.subtle,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -488,7 +505,7 @@ class _ProfileText {
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.0,
@@ -498,7 +515,7 @@ class _ProfileText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1.0,
   );
@@ -598,26 +615,45 @@ class _ProfileHeader extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
                       onTap: onOpenNotifications,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF262626),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Badge(
-                          isLabelVisible: unreadNotifications > 0,
-                          label: Text(
-                            unreadNotifications > 99
-                                ? '99+'
-                                : unreadNotifications.toString(),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: Icon(
+                              Icons.notifications_outlined,
+                              size: 28,
+                              color: Color(0xFFB59B6A),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.notifications_outlined,
-                            size: 18,
-                            color: Color(0xFFB59B6A),
-                          ),
-                        ),
+                          if (unreadNotifications > 0)
+                            Positioned(
+                              right: -7,
+                              top: -7,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFB42318),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  unreadNotifications > 99
+                                      ? '99+'
+                                      : unreadNotifications.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -687,9 +723,9 @@ class _ProfileAvatar extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFFB59B6A),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: const Color(0xFF171717), width: 2),
               ),
               child: uploading
                   ? const Padding(
@@ -701,7 +737,7 @@ class _ProfileAvatar extends StatelessWidget {
                     )
                   : const Icon(
                       Icons.camera_alt_rounded,
-                      color: Colors.white,
+                      color: Color(0xFF111111),
                       size: 12,
                     ),
             ),
@@ -723,8 +759,9 @@ class _ProfileCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -771,8 +808,9 @@ class _ProfileListCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -799,7 +837,7 @@ class _ProfileMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color(0xFF0E0E11);
+    const color = Colors.white;
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
@@ -813,11 +851,11 @@ class _ProfileMenuRow extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F5F7),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8EAF0)),
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF323232)),
               ),
-              child: Icon(icon, size: 20, color: const Color(0xFF8F96A3)),
+              child: Icon(icon, size: 20, color: const Color(0xFFB59B6A)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -835,7 +873,7 @@ class _ProfileMenuRow extends StatelessWidget {
             const Icon(
               Icons.chevron_right_rounded,
               size: 24,
-              color: Color(0xFF8F96A3),
+              color: Color(0xFFABABAB),
             ),
           ],
         ),
@@ -876,8 +914,9 @@ class _SkeletonCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -885,7 +924,7 @@ class _SkeletonCard extends StatelessWidget {
           if (avatar) ...[
             Row(
               children: [
-                const _SkeletonBox(width: 54, height: 54, radius: 18),
+                const _SkeletonBox(width: 54, height: 54, radius: 14),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -936,7 +975,7 @@ class _SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EAF0),
+        color: const Color(0xFF2A2A2A),
         borderRadius: BorderRadius.circular(radius),
       ),
     );
