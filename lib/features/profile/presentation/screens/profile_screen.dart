@@ -155,37 +155,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Text(
-                    appStrings.editPersonalInformation.toUpperCase(),
-                    style: _ProfileText.sectionTitle,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person_outline_rounded,
+                        color: Color(0xFFB59B6A),
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appStrings.editPersonalInformation.toUpperCase(),
+                          style: _ProfileText.sectionTitle.copyWith(
+                            fontSize: 20,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: _fullName,
                     textCapitalization: TextCapitalization.words,
-                    style: _ProfileText.input,
+                    cursorColor: const Color(0xFFB59B6A),
+                    style: _ProfileText.input.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                     decoration: _inputDecoration(appStrings.fullName),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _phone,
                     keyboardType: TextInputType.phone,
-                    style: _ProfileText.input,
+                    cursorColor: const Color(0xFFB59B6A),
+                    style: _ProfileText.input.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                     decoration: _inputDecoration(appStrings.phone),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _birthDate,
                     readOnly: true,
-                    style: _ProfileText.input,
+                    cursorColor: const Color(0xFFB59B6A),
+                    style: _ProfileText.input.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                     decoration: _inputDecoration(appStrings.birthDate).copyWith(
-                      suffixIcon: const Icon(Icons.calendar_month_rounded),
+                      suffixIcon: const Icon(
+                        Icons.calendar_month_rounded,
+                        color: Color(0xFFB59B6A),
+                      ),
                     ),
                     onTap: _pickBirthDate,
                   ),
@@ -475,12 +506,22 @@ InputDecoration _inputDecoration(String hint) {
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
+    labelText: null,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true,
-    fillColor: const Color(0xFFF4F5F7),
+    fillColor: const Color(0xFF171717),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
 }
