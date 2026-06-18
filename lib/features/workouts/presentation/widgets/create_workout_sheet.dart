@@ -218,164 +218,162 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                22,
+                22,
+                22,
+                110 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 110),
-                children: [
-                  if (_loadingPrograms)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFB59B6A),
-                        ),
+              children: [
+                if (_loadingPrograms)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB59B6A),
                       ),
-                    )
-                  else if (_programs.isEmpty)
-                    Text(
-                      appStrings.workoutNeedProgram,
-                      style: _WorkoutSheetText.body,
-                    )
-                  else
-                    DropdownButtonFormField<String>(
-                      initialValue: _programId,
-                      dropdownColor: const Color(0xFF171717),
-                      iconEnabledColor: const Color(0xFFABABAB),
+                    ),
+                  )
+                else if (_programs.isEmpty)
+                  Text(
+                    appStrings.workoutNeedProgram,
+                    style: _WorkoutSheetText.body,
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _programId,
+                    dropdownColor: const Color(0xFF171717),
+                    iconEnabledColor: const Color(0xFFABABAB),
+                    style: _WorkoutSheetText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    hint: Text(
+                      appStrings.workoutProgram,
                       style: _WorkoutSheetText.body.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
-                      hint: Text(
-                        appStrings.workoutProgram,
-                        style: _WorkoutSheetText.body.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                    ),
+                    decoration:
+                        _programDropdownInput(
+                          appStrings.workoutProgram,
+                          Icons.grid_view_rounded,
+                        ).copyWith(
+                          labelText: null,
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                        ),
+                    items: [
+                      DropdownMenuItem<String>(
+                        enabled: false,
+                        child: Text(
+                          appStrings.workoutProgram,
+                          style: _WorkoutSheetText.subtle.copyWith(
+                            color: const Color(0xFFABABAB),
+                          ),
                         ),
                       ),
-                      decoration:
-                          _programDropdownInput(
-                            appStrings.workoutProgram,
-                            Icons.grid_view_rounded,
-                          ).copyWith(
-                            labelText: null,
-                            floatingLabelBehavior: FloatingLabelBehavior.never,
-                          ),
-                      items: [
-                        DropdownMenuItem<String>(
-                          enabled: false,
+                      ..._programs.map((p) {
+                        return DropdownMenuItem<String>(
+                          value: p['id'].toString(),
                           child: Text(
-                            appStrings.workoutProgram,
-                            style: _WorkoutSheetText.subtle.copyWith(
-                              color: const Color(0xFFABABAB),
-                            ),
+                            p['name']?.toString() ?? appStrings.workoutProgram,
                           ),
-                        ),
-                        ..._programs.map((p) {
-                          return DropdownMenuItem<String>(
-                            value: p['id'].toString(),
-                            child: Text(
-                              p['name']?.toString() ??
-                                  appStrings.workoutProgram,
-                            ),
-                          );
-                        }),
-                      ],
-                      onChanged: (v) => setState(() => _programId = v),
-                    ),
-                  const SizedBox(height: 12),
-                  _WorkoutSheetActionRow(
-                    icon: Icons.calendar_month_outlined,
-                    title: appStrings.workoutDate,
-                    subtitle: '${_date.day}/${_date.month}/${_date.year}',
-                    onTap: () async {
-                      final picked = await showAppDatePicker(
-                        context: context,
-                        initialDate: _date,
-                        firstDate: DateTime.now().subtract(
-                          const Duration(days: 7),
-                        ),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (picked != null) setState(() => _date = picked);
-                    },
+                        );
+                      }),
+                    ],
+                    onChanged: (v) => setState(() => _programId = v),
                   ),
+                const SizedBox(height: 12),
+                _WorkoutSheetActionRow(
+                  icon: Icons.calendar_month_outlined,
+                  title: appStrings.workoutDate,
+                  subtitle: '${_date.day}/${_date.month}/${_date.year}',
+                  onTap: () async {
+                    final picked = await showAppDatePicker(
+                      context: context,
+                      initialDate: _date,
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 7),
+                      ),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) setState(() => _date = picked);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _WorkoutSheetActionRow(
+                  icon: Icons.image_outlined,
+                  title: appStrings.workoutSelectImage,
+                  subtitle: _image == null ? '' : appStrings.imageSelected,
+                  onTap: _pickImage,
+                ),
+                if (_image != null) ...[
                   const SizedBox(height: 12),
-                  _WorkoutSheetActionRow(
-                    icon: Icons.image_outlined,
-                    title: appStrings.workoutSelectImage,
-                    subtitle: _image == null ? '' : appStrings.imageSelected,
-                    onTap: _pickImage,
-                  ),
-                  if (_image != null) ...[
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.file(
-                        _image!,
-                        height: 170,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _description,
-                    onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                    minLines: 10,
-                    maxLines: 18,
-                    keyboardType: TextInputType.multiline,
-                    style: _WorkoutSheetText.body.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: null,
-                      hintText: appStrings.workoutWriteWod,
-                      alignLabelWithHint: true,
-                      floatingLabelBehavior: FloatingLabelBehavior.never,
-                      labelStyle: _WorkoutSheetText.subtle.copyWith(
-                        color: const Color(0xFFABABAB),
-                        fontSize: 13,
-                      ),
-                      hintStyle: _WorkoutSheetText.subtle.copyWith(
-                        color: const Color(0xFFABABAB),
-                        fontSize: 15,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF171717),
-                      contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1.2,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1,
-                        ),
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _image!,
+                      height: 170,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ],
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _description,
+                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                  minLines: 10,
+                  maxLines: 18,
+                  keyboardType: TextInputType.multiline,
+                  style: _WorkoutSheetText.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: null,
+                    hintText: appStrings.workoutWriteWod,
+                    alignLabelWithHint: true,
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
+                    labelStyle: _WorkoutSheetText.subtle.copyWith(
+                      color: const Color(0xFFABABAB),
+                      fontSize: 13,
+                    ),
+                    hintStyle: _WorkoutSheetText.subtle.copyWith(
+                      color: const Color(0xFFABABAB),
+                      fontSize: 15,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF171717),
+                    contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1.2,
+                      ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           SafeArea(

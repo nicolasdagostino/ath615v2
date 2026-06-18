@@ -504,175 +504,173 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                22,
+                12,
+                22,
+                22 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
-                children: [
-                  TextField(
-                    controller: _name,
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) => setState(() {}),
-                    style: _ProgramsText.body.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    cursorColor: const Color(0xFFB59B6A),
-                    decoration: _programsInput(
-                      appStrings.programName,
-                      Icons.grid_view_rounded,
-                    ),
+              children: [
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.words,
+                  onChanged: (_) => setState(() {}),
+                  style: _ProgramsText.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 12),
+                  cursorColor: const Color(0xFFB59B6A),
+                  decoration: _programsInput(
+                    appStrings.programName,
+                    Icons.grid_view_rounded,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-                  InkWell(
-                    onTap: _pickImage,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF171717),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Color(0xFF323232), width: 1),
-                      ),
-                      alignment: Alignment.center,
-                      child: _image == null
-                          ? const Icon(
-                              Icons.image_outlined,
-                              size: 30,
-                              color: Color(0xFFB59B6A),
-                            )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                _image!,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                InkWell(
+                  onTap: _pickImage,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF171717),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Color(0xFF323232), width: 1),
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _ProgramButton(
-                    label: appStrings.createProgram,
-                    loading: _saving,
-                    enabled: _name.text.trim().isNotEmpty,
-                    onPressed: _create,
-                  ),
-                  const SizedBox(height: 20),
-                  if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFB59B6A),
-                        ),
-                      ),
-                    )
-                  else if (_programs.isEmpty)
-                    Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
-                  else
-                    ..._programs.map((program) {
-                      final active = program['is_active'] == true;
-                      final workoutCount =
-                          ((program['workouts'] as List?)?.firstOrNull
-                              as Map<String, dynamic>?)?['count'] ??
-                          0;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Material(
-                          color: const Color(0xFF171717),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                            child: Row(
-                              children: [
-                                InkWell(
-                                  onTap: () => _updateProgramImage(program),
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child:
-                                        (program['image_url']
-                                                ?.toString()
-                                                .isNotEmpty ??
-                                            false)
-                                        ? Image.network(
-                                            program['image_url'].toString(),
-                                            width: 54,
-                                            height: 54,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Container(
-                                            width: 54,
-                                            height: 54,
-                                            color: const Color(0xFF252525),
-                                            child: const Icon(
-                                              Icons.image_outlined,
-                                              color: Color(0xFFB59B6A),
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        program['name']?.toString() ??
-                                            appStrings.workoutProgram,
-                                        style: _ProgramsText.rowTitle,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}',
-                                        style: _ProgramsText.subtle,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        active
-                                            ? appStrings.active
-                                            : appStrings.inactive,
-                                        style: _ProgramsText.subtle.copyWith(
-                                          color: active
-                                              ? const Color(0xFFB59B6A)
-                                              : const Color(0xFFABABAB),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  icon: const Icon(
-                                    Icons.more_horiz,
-                                    color: Color(0xFFB59B6A),
-                                    size: 24,
-                                  ),
-                                  onPressed: () => _showProgramOptions(program),
-                                ),
-                                Switch(
-                                  value: active,
-                                  activeThumbColor: const Color(0xFFB59B6A),
-                                  onChanged: (_) => _toggle(program),
-                                ),
-                              ],
+                    alignment: Alignment.center,
+                    child: _image == null
+                        ? const Icon(
+                            Icons.image_outlined,
+                            size: 30,
+                            color: Color(0xFFB59B6A),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              _image!,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
                           ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                _ProgramButton(
+                  label: appStrings.createProgram,
+                  loading: _saving,
+                  enabled: _name.text.trim().isNotEmpty,
+                  onPressed: _create,
+                ),
+                const SizedBox(height: 20),
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB59B6A),
+                      ),
+                    ),
+                  )
+                else if (_programs.isEmpty)
+                  Text(appStrings.noProgramsYet, style: _ProgramsText.subtle)
+                else
+                  ..._programs.map((program) {
+                    final active = program['is_active'] == true;
+                    final workoutCount =
+                        ((program['workouts'] as List?)?.firstOrNull
+                            as Map<String, dynamic>?)?['count'] ??
+                        0;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Material(
+                        color: const Color(0xFF171717),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                onTap: () => _updateProgramImage(program),
+                                borderRadius: BorderRadius.circular(10),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child:
+                                      (program['image_url']
+                                              ?.toString()
+                                              .isNotEmpty ??
+                                          false)
+                                      ? Image.network(
+                                          program['image_url'].toString(),
+                                          width: 54,
+                                          height: 54,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          width: 54,
+                                          height: 54,
+                                          color: const Color(0xFF252525),
+                                          child: const Icon(
+                                            Icons.image_outlined,
+                                            color: Color(0xFFB59B6A),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      program['name']?.toString() ??
+                                          appStrings.workoutProgram,
+                                      style: _ProgramsText.rowTitle,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}',
+                                      style: _ProgramsText.subtle,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      active
+                                          ? appStrings.active
+                                          : appStrings.inactive,
+                                      style: _ProgramsText.subtle.copyWith(
+                                        color: active
+                                            ? const Color(0xFFB59B6A)
+                                            : const Color(0xFFABABAB),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.more_horiz,
+                                  color: Color(0xFFB59B6A),
+                                  size: 24,
+                                ),
+                                onPressed: () => _showProgramOptions(program),
+                              ),
+                              Switch(
+                                value: active,
+                                activeThumbColor: const Color(0xFFB59B6A),
+                                onChanged: (_) => _toggle(program),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    }),
-                ],
-              ),
+                      ),
+                    );
+                  }),
+              ],
             ),
           ),
         ],

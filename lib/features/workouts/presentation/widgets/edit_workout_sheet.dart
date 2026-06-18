@@ -228,153 +228,149 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                22,
+                12,
+                22,
+                110 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 110),
-                children: [
-                  if (_loadingPrograms)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFB59B6A),
-                        ),
-                      ),
-                    )
-                  else
-                    DropdownButtonFormField<String>(
-                      initialValue: _programId,
-                      dropdownColor: const Color(0xFF171717),
-                      iconEnabledColor: const Color(0xFFABABAB),
-                      style: _EditWorkoutSheetText.body.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      decoration: _editWorkoutInput(
-                        '',
-                        Icons.grid_view_rounded,
-                      ),
-                      items: _programs.map((p) {
-                        return DropdownMenuItem<String>(
-                          value: p['id'].toString(),
-                          child: Text(
-                            p['name']?.toString() ?? appStrings.workoutProgram,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) setState(() => _programId = value);
-                      },
-                    ),
-                  const SizedBox(height: 12),
-                  _EditWorkoutActionRow(
-                    icon: Icons.calendar_month_outlined,
-                    title: appStrings.workoutDate,
-                    subtitle: _formatDate(_date),
-                    onTap: () async {
-                      final picked = await showAppDatePicker(
-                        context: context,
-                        initialDate: _date,
-                        firstDate: DateTime.now().subtract(
-                          const Duration(days: 365),
-                        ),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (picked != null) setState(() => _date = picked);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _EditWorkoutActionRow(
-                    icon: Icons.image_outlined,
-                    title: appStrings.changeImage,
-                    subtitle: _image != null
-                        ? appStrings.newImageSelected
-                        : (_imageUrl != null && _imageUrl!.isNotEmpty
-                              ? appStrings.currentImage
-                              : appStrings.noImage),
-                    onTap: _pickImage,
-                  ),
-                  if (_image != null) ...[
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.file(
-                        _image!,
-                        height: 170,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+              children: [
+                if (_loadingPrograms)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB59B6A),
                       ),
                     ),
-                  ] else if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        _imageUrl!,
-                        height: 170,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _description,
-                    onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                    minLines: 10,
-                    maxLines: 18,
-                    keyboardType: TextInputType.multiline,
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _programId,
+                    dropdownColor: const Color(0xFF171717),
+                    iconEnabledColor: const Color(0xFFABABAB),
                     style: _EditWorkoutSheetText.body.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
+                      fontWeight: FontWeight.w700,
                     ),
-                    decoration: InputDecoration(
-                      labelText: null,
-                      hintText: appStrings.workoutWriteWod,
-                      alignLabelWithHint: true,
-                      floatingLabelBehavior: FloatingLabelBehavior.never,
-                      labelStyle: _EditWorkoutSheetText.subtle.copyWith(
-                        color: const Color(0xFFABABAB),
-                        fontSize: 13,
-                      ),
-                      hintStyle: _EditWorkoutSheetText.subtle.copyWith(
-                        color: const Color(0xFFABABAB),
-                        fontSize: 15,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF171717),
-                      contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1,
+                    decoration: _editWorkoutInput('', Icons.grid_view_rounded),
+                    items: _programs.map((p) {
+                      return DropdownMenuItem<String>(
+                        value: p['id'].toString(),
+                        child: Text(
+                          p['name']?.toString() ?? appStrings.workoutProgram,
                         ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) setState(() => _programId = value);
+                    },
+                  ),
+                const SizedBox(height: 12),
+                _EditWorkoutActionRow(
+                  icon: Icons.calendar_month_outlined,
+                  title: appStrings.workoutDate,
+                  subtitle: _formatDate(_date),
+                  onTap: () async {
+                    final picked = await showAppDatePicker(
+                      context: context,
+                      initialDate: _date,
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 365),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1.2,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFB59B6A),
-                          width: 1,
-                        ),
-                      ),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) setState(() => _date = picked);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _EditWorkoutActionRow(
+                  icon: Icons.image_outlined,
+                  title: appStrings.changeImage,
+                  subtitle: _image != null
+                      ? appStrings.newImageSelected
+                      : (_imageUrl != null && _imageUrl!.isNotEmpty
+                            ? appStrings.currentImage
+                            : appStrings.noImage),
+                  onTap: _pickImage,
+                ),
+                if (_image != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _image!,
+                      height: 170,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ] else if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      _imageUrl!,
+                      height: 170,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ],
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _description,
+                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                  minLines: 10,
+                  maxLines: 18,
+                  keyboardType: TextInputType.multiline,
+                  style: _EditWorkoutSheetText.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: null,
+                    hintText: appStrings.workoutWriteWod,
+                    alignLabelWithHint: true,
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
+                    labelStyle: _EditWorkoutSheetText.subtle.copyWith(
+                      color: const Color(0xFFABABAB),
+                      fontSize: 13,
+                    ),
+                    hintStyle: _EditWorkoutSheetText.subtle.copyWith(
+                      color: const Color(0xFFABABAB),
+                      fontSize: 15,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF171717),
+                    contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1.2,
+                      ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFB59B6A),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           SafeArea(
