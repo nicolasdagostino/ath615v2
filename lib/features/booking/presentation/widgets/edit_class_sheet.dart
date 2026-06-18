@@ -275,130 +275,129 @@ class _EditClassSheetState extends State<_EditClassSheet> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                22,
+                12,
+                22,
+                110 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 110),
-                children: [
-                  if (_loadingPrograms)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFB59B6A),
-                        ),
+              children: [
+                if (_loadingPrograms)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB59B6A),
                       ),
-                    )
-                  else if (_programs.isEmpty)
-                    Text(
-                      appStrings.classNeedProgram,
-                      style: _EditClassSheetText.body,
-                    )
-                  else
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedProgramId,
-                      dropdownColor: const Color(0xFF171717),
-                      iconEnabledColor: const Color(0xFFABABAB),
+                    ),
+                  )
+                else if (_programs.isEmpty)
+                  Text(
+                    appStrings.classNeedProgram,
+                    style: _EditClassSheetText.body,
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedProgramId,
+                    dropdownColor: const Color(0xFF171717),
+                    iconEnabledColor: const Color(0xFFABABAB),
+                    style: _EditClassSheetText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    hint: Text(
+                      appStrings.workoutProgram,
                       style: _EditClassSheetText.body.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
-                      hint: Text(
-                        appStrings.workoutProgram,
+                    ),
+                    decoration: _programDropdownInput(
+                      appStrings.workoutProgram,
+                      Icons.fitness_center_outlined,
+                    ),
+                    items: [
+                      DropdownMenuItem<String>(
+                        enabled: false,
+                        child: Text(
+                          appStrings.workoutProgram,
+                          style: _EditClassSheetText.subtle.copyWith(
+                            color: const Color(0xFFABABAB),
+                          ),
+                        ),
+                      ),
+                      ..._programs.map((program) {
+                        return DropdownMenuItem<String>(
+                          value: program['id'].toString(),
+                          child: Text(
+                            program['name']?.toString() ??
+                                appStrings.workoutProgram,
+                          ),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedProgramId = value),
+                  ),
+                const SizedBox(height: 12),
+                _EditClassActionRow(
+                  icon: Icons.calendar_month_outlined,
+                  title: appStrings.workoutDate,
+                  subtitle: _selectedDate == null
+                      ? ''
+                      : _formatDate(_selectedDate!),
+                  onTap: _pickDate,
+                ),
+                const SizedBox(height: 12),
+                _EditClassActionRow(
+                  icon: Icons.schedule_rounded,
+                  title: appStrings.time,
+                  subtitle: _selectedTime == null
+                      ? ''
+                      : _selectedTime!.format(context),
+                  onTap: _pickTime,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 150,
+                      child: TextField(
+                        controller: _duration,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
                         style: _EditClassSheetText.body.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
-                      ),
-                      decoration: _programDropdownInput(
-                        appStrings.workoutProgram,
-                        Icons.fitness_center_outlined,
-                      ),
-                      items: [
-                        DropdownMenuItem<String>(
-                          enabled: false,
-                          child: Text(
-                            appStrings.workoutProgram,
-                            style: _EditClassSheetText.subtle.copyWith(
-                              color: const Color(0xFFABABAB),
-                            ),
-                          ),
+                        decoration: _editClassInput(
+                          appStrings.durationMinutes,
+                          Icons.timer_outlined,
                         ),
-                        ..._programs.map((program) {
-                          return DropdownMenuItem<String>(
-                            value: program['id'].toString(),
-                            child: Text(
-                              program['name']?.toString() ??
-                                  appStrings.workoutProgram,
-                            ),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _selectedProgramId = value),
+                      ),
                     ),
-                  const SizedBox(height: 12),
-                  _EditClassActionRow(
-                    icon: Icons.calendar_month_outlined,
-                    title: appStrings.workoutDate,
-                    subtitle: _selectedDate == null
-                        ? ''
-                        : _formatDate(_selectedDate!),
-                    onTap: _pickDate,
-                  ),
-                  const SizedBox(height: 12),
-                  _EditClassActionRow(
-                    icon: Icons.schedule_rounded,
-                    title: appStrings.time,
-                    subtitle: _selectedTime == null
-                        ? ''
-                        : _selectedTime!.format(context),
-                    onTap: _pickTime,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 150,
-                        child: TextField(
-                          controller: _duration,
-                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                          keyboardType: TextInputType.number,
-                          style: _EditClassSheetText.body.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: _editClassInput(
-                            appStrings.durationMinutes,
-                            Icons.timer_outlined,
-                          ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 150,
+                      child: TextField(
+                        controller: _capacity,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
+                        style: _EditClassSheetText.body.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _editClassInput(
+                          appStrings.capacity,
+                          Icons.groups_outlined,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 150,
-                        child: TextField(
-                          controller: _capacity,
-                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                          keyboardType: TextInputType.number,
-                          style: _EditClassSheetText.body.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: _editClassInput(
-                            appStrings.capacity,
-                            Icons.groups_outlined,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SafeArea(

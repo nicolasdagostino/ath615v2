@@ -23,6 +23,40 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
+class _ExploreFilterChip extends StatelessWidget {
+  const _ExploreFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      selected: selected,
+      label: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.barlowCondensed(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: selected ? Colors.white : const Color(0xFF8F96A3),
+          height: 1.0,
+        ),
+      ),
+      selectedColor: const Color(0xFFB59B6A),
+      backgroundColor: const Color(0xFF171717),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) => onTap(),
+    );
+  }
+}
+
 class _InactiveExploreState extends StatelessWidget {
   const _InactiveExploreState();
   @override
@@ -388,8 +422,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 final label = future && !_showFuture
                     ? baseLabel
                     : '$baseLabel ($count)';
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                return _ExploreFilterChip(
+                  label: label,
+                  selected: selected,
                   onTap: () async {
                     if (future) {
                       setState(() {
@@ -405,40 +440,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     });
                     await _load(showLoading: false);
                   },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFFB59B6A)
-                          : const Color(0xFF171717),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: selected
-                            ? const Color(0xFFB59B6A)
-                            : const Color(0xFF323232),
-                        width: 1,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        label.toUpperCase(),
-                        style: GoogleFonts.barlowCondensed(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.7,
-                          color: selected
-                              ? const Color(0xFF111111)
-                              : const Color(0xFFABABAB),
-                          height: 1.0,
-                        ),
-                      ),
-                    ),
-                  ),
                 );
               },
             ),

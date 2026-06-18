@@ -301,222 +301,217 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                22,
+                12,
+                22,
+                110 + MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 110),
-                children: [
-                  if (_loadingPrograms)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFB59B6A),
-                        ),
+              children: [
+                if (_loadingPrograms)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB59B6A),
                       ),
-                    )
-                  else if (_programs.isEmpty)
-                    Text(
-                      appStrings.classNeedProgram,
-                      style: _ClassSheetText.body,
-                    )
-                  else
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedProgramId,
-                      dropdownColor: const Color(0xFF171717),
-                      iconEnabledColor: const Color(0xFFABABAB),
+                    ),
+                  )
+                else if (_programs.isEmpty)
+                  Text(appStrings.classNeedProgram, style: _ClassSheetText.body)
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedProgramId,
+                    dropdownColor: const Color(0xFF171717),
+                    iconEnabledColor: const Color(0xFFABABAB),
+                    style: _ClassSheetText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    hint: Text(
+                      appStrings.workoutProgram,
                       style: _ClassSheetText.body.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
-                      hint: Text(
-                        appStrings.workoutProgram,
+                    ),
+                    decoration: _programDropdownInput(
+                      appStrings.workoutProgram,
+                      Icons.fitness_center_outlined,
+                    ),
+                    items: [
+                      DropdownMenuItem<String>(
+                        enabled: false,
+                        child: Text(
+                          appStrings.workoutProgram,
+                          style: _ClassSheetText.subtle.copyWith(
+                            color: const Color(0xFFABABAB),
+                          ),
+                        ),
+                      ),
+                      ..._programs.map((program) {
+                        return DropdownMenuItem<String>(
+                          value: program['id'].toString(),
+                          child: Text(
+                            program['name']?.toString() ??
+                                appStrings.workoutProgram,
+                          ),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedProgramId = value),
+                  ),
+                const SizedBox(height: 12),
+                _ClassSheetActionRow(
+                  icon: Icons.calendar_month_outlined,
+                  title: appStrings.workoutDate,
+                  subtitle: _selectedDate == null
+                      ? ''
+                      : _formatDate(_selectedDate!),
+                  onTap: _pickDate,
+                ),
+                const SizedBox(height: 12),
+                _ClassSheetActionRow(
+                  icon: Icons.schedule_rounded,
+                  title: appStrings.time,
+                  subtitle: _selectedTime == null
+                      ? ''
+                      : _selectedTime!.format(context),
+                  onTap: _pickTime,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF171717),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF323232),
+                      width: 1,
+                    ),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: const EdgeInsets.fromLTRB(18, 6, 12, 6),
+                    activeThumbColor: const Color(0xFFB59B6A),
+                    activeTrackColor: const Color(0xFF3A3325),
+                    inactiveThumbColor: const Color(0xFFABABAB),
+                    inactiveTrackColor: const Color(0xFF323232),
+                    value: _repeatWeekly,
+                    onChanged: (value) => setState(() => _repeatWeekly = value),
+                    title: Text(
+                      appStrings.repeatWeekly,
+                      style: _ClassSheetText.rowTitle.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                    subtitle: Text(
+                      appStrings.repeatWeeklyDescription,
+                      style: _ClassSheetText.subtle.copyWith(
+                        color: const Color(0xFFABABAB),
+                      ),
+                    ),
+                  ),
+                ),
+                if (_repeatWeekly) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    appStrings.repeatOn.toUpperCase(),
+                    style: _ClassSheetText.section.copyWith(
+                      color: const Color(0xFFB59B6A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (
+                        var index = 0;
+                        index < appStrings.weekdayInitials.length;
+                        index++
+                      )
+                        ChoiceChip(
+                          label: Text(appStrings.weekdayInitials[index]),
+                          selected: _selectedDays.contains(index + 1),
+                          backgroundColor: const Color(0xFF171717),
+                          selectedColor: const Color(0xFFB59B6A),
+                          side: const BorderSide(
+                            color: Color(0xFF323232),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          labelStyle: _ClassSheetText.body.copyWith(
+                            color: _selectedDays.contains(index + 1)
+                                ? const Color(0xFF111111)
+                                : Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          onSelected: (selected) {
+                            final value = index + 1;
+                            setState(() {
+                              if (selected) {
+                                _selectedDays.add(value);
+                                _selectedDays.sort();
+                              } else {
+                                _selectedDays.remove(value);
+                              }
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 150,
+                      child: TextField(
+                        controller: _duration,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
                         style: _ClassSheetText.body.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
-                      ),
-                      decoration: _programDropdownInput(
-                        appStrings.workoutProgram,
-                        Icons.fitness_center_outlined,
-                      ),
-                      items: [
-                        DropdownMenuItem<String>(
-                          enabled: false,
-                          child: Text(
-                            appStrings.workoutProgram,
-                            style: _ClassSheetText.subtle.copyWith(
-                              color: const Color(0xFFABABAB),
-                            ),
-                          ),
+                        decoration: _classSheetInput(
+                          appStrings.durationMinutes,
+                          Icons.timer_outlined,
                         ),
-                        ..._programs.map((program) {
-                          return DropdownMenuItem<String>(
-                            value: program['id'].toString(),
-                            child: Text(
-                              program['name']?.toString() ??
-                                  appStrings.workoutProgram,
-                            ),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _selectedProgramId = value),
-                    ),
-                  const SizedBox(height: 12),
-                  _ClassSheetActionRow(
-                    icon: Icons.calendar_month_outlined,
-                    title: appStrings.workoutDate,
-                    subtitle: _selectedDate == null
-                        ? ''
-                        : _formatDate(_selectedDate!),
-                    onTap: _pickDate,
-                  ),
-                  const SizedBox(height: 12),
-                  _ClassSheetActionRow(
-                    icon: Icons.schedule_rounded,
-                    title: appStrings.time,
-                    subtitle: _selectedTime == null
-                        ? ''
-                        : _selectedTime!.format(context),
-                    onTap: _pickTime,
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF171717),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF323232),
-                        width: 1,
                       ),
                     ),
-                    child: SwitchListTile(
-                      contentPadding: const EdgeInsets.fromLTRB(18, 6, 12, 6),
-                      activeThumbColor: const Color(0xFFB59B6A),
-                      activeTrackColor: const Color(0xFF3A3325),
-                      inactiveThumbColor: const Color(0xFFABABAB),
-                      inactiveTrackColor: const Color(0xFF323232),
-                      value: _repeatWeekly,
-                      onChanged: (value) =>
-                          setState(() => _repeatWeekly = value),
-                      title: Text(
-                        appStrings.repeatWeekly,
-                        style: _ClassSheetText.rowTitle.copyWith(
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 150,
+                      child: TextField(
+                        controller: _capacity,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
+                        style: _ClassSheetText.body.copyWith(
                           color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _classSheetInput(
+                          appStrings.capacity,
+                          Icons.groups_outlined,
                         ),
                       ),
-                      subtitle: Text(
-                        appStrings.repeatWeeklyDescription,
-                        style: _ClassSheetText.subtle.copyWith(
-                          color: const Color(0xFFABABAB),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_repeatWeekly) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      appStrings.repeatOn.toUpperCase(),
-                      style: _ClassSheetText.section.copyWith(
-                        color: const Color(0xFFB59B6A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (
-                          var index = 0;
-                          index < appStrings.weekdayInitials.length;
-                          index++
-                        )
-                          ChoiceChip(
-                            label: Text(appStrings.weekdayInitials[index]),
-                            selected: _selectedDays.contains(index + 1),
-                            backgroundColor: const Color(0xFF171717),
-                            selectedColor: const Color(0xFFB59B6A),
-                            side: const BorderSide(
-                              color: Color(0xFF323232),
-                              width: 1,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            labelStyle: _ClassSheetText.body.copyWith(
-                              color: _selectedDays.contains(index + 1)
-                                  ? const Color(0xFF111111)
-                                  : Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            onSelected: (selected) {
-                              final value = index + 1;
-                              setState(() {
-                                if (selected) {
-                                  _selectedDays.add(value);
-                                  _selectedDays.sort();
-                                } else {
-                                  _selectedDays.remove(value);
-                                }
-                              });
-                            },
-                          ),
-                      ],
                     ),
                   ],
+                ),
+                if (_isPastClass) ...[
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 150,
-                        child: TextField(
-                          controller: _duration,
-                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                          keyboardType: TextInputType.number,
-                          style: _ClassSheetText.body.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: _classSheetInput(
-                            appStrings.durationMinutes,
-                            Icons.timer_outlined,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 150,
-                        child: TextField(
-                          controller: _capacity,
-                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                          keyboardType: TextInputType.number,
-                          style: _ClassSheetText.body.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: _classSheetInput(
-                            appStrings.capacity,
-                            Icons.groups_outlined,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_isPastClass) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      appStrings.chooseFutureDateTime,
-                      style: _ClassSheetText.body.copyWith(
-                        color: const Color(0xFFB42318),
-                      ),
+                  Text(
+                    appStrings.chooseFutureDateTime,
+                    style: _ClassSheetText.body.copyWith(
+                      color: const Color(0xFFB42318),
                     ),
-                  ],
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
           SafeArea(

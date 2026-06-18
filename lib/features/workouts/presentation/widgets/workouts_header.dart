@@ -94,58 +94,79 @@ class WorkoutsHeader extends StatelessWidget {
                 bottom: 0,
                 child: SizedBox(
                   width: 132,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: canManage ? onPrograms : onOpenNotifications,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const SizedBox(
-                            width: 38,
-                            height: 38,
-                            child: Icon(
-                              Icons.fitness_center_rounded,
-                              size: 28,
-                              color: Color(0xFFB59B6A),
-                            ),
-                          ),
-                          if (unreadNotifications > 0 && !canManage)
-                            Positioned(
-                              right: -7,
-                              top: -7,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFB42318),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  unreadNotifications > 99
-                                      ? '99+'
-                                      : unreadNotifications.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (canManage) ...[
+                        _HeaderIconButton(
+                          icon: Icons.fitness_center_rounded,
+                          onTap: onPrograms,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      _HeaderIconButton(
+                        icon: Icons.notifications_outlined,
+                        onTap: onOpenNotifications,
+                        badgeCount: unreadNotifications,
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(icon, size: 28, color: const Color(0xFFB59B6A)),
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -7,
+              top: -7,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB42318),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : badgeCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

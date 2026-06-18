@@ -308,7 +308,17 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         initialValue: selectedExercise,
-                        decoration: _inputDecoration(appStrings.exercise),
+                        dropdownColor: const Color(0xFF171717),
+                        iconEnabledColor: const Color(0xFFABABAB),
+                        style: _TrainingText.input.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _inputDecoration(appStrings.exercise)
+                            .copyWith(
+                              filled: true,
+                              fillColor: const Color(0xFF171717),
+                            ),
                         items: _recordExercises.map((exercise) {
                           return DropdownMenuItem<String>(
                             value: exercise,
