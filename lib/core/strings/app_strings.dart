@@ -399,6 +399,52 @@ class AppStrings {
   String get noMembersFound =>
       pick('No members found.', 'No se encontraron miembros.');
 
+  String get subscriptions => pick('Subscriptions', 'Suscripciones');
+  String get dropIns => pick('Drop-ins', 'Drop-ins');
+  String get mySubscription => pick('My Subscription', 'Mi suscripción');
+  String get getSubscription => pick('Get Subscription', 'Obtener suscripción');
+  String get noActiveSubscription => pick(
+    'You have no active subscription.',
+    'No tienes una suscripción activa.',
+  );
+  String get myDropIns => pick('My Drop-ins', 'Mis Drop-ins');
+  String get getDropIn => pick('Get Drop-in', 'Obtener Drop-in');
+  String get noActiveDropIns =>
+      pick('You have no active drop-ins.', 'No tienes Drop-ins activos.');
+
+  String get availableSubscriptions =>
+      pick('Available subscriptions', 'Suscripciones disponibles');
+  String get availableDropIns =>
+      pick('Available drop-ins', 'Drop-ins disponibles');
+  String get noSubscriptionsAvailable =>
+      pick('No subscriptions available.', 'No hay suscripciones disponibles.');
+  String get noDropInsAvailable =>
+      pick('No drop-ins available.', 'No hay Drop-ins disponibles.');
+  String get unlimitedAccess => pick('Unlimited access', 'Acceso ilimitado');
+  String classCredit(int count) =>
+      pick('$count class credit', '$count crédito de clase');
+  String classCredits(int count) =>
+      pick('$count class credits', '$count créditos de clase');
+  String get requestSubscription =>
+      pick('Request subscription', 'Solicitar suscripción');
+  String get requestDropIn => pick('Request drop-in', 'Solicitar Drop-in');
+  String get priceComingSoon =>
+      pick('Price coming soon', 'Precio próximamente');
+
+  String get requestMembershipTitle =>
+      pick('Request membership?', '¿Solicitar membresía?');
+  String get requestMembershipConfirm => pick(
+    'We will notify the gym so they can activate this plan for you.',
+    'Avisaremos al gym para que puedan activar este plan.',
+  );
+  String get request => pick('Request', 'Solicitar');
+  String get membershipRequestAlreadySent =>
+      pick('You already requested this plan.', 'Ya solicitaste este plan.');
+  String get membershipRequestSent =>
+      pick('Membership request sent.', 'Solicitud de membresía enviada.');
+  String membershipRequestError(Object e) =>
+      pick('Membership request error: $e', 'Error al solicitar membresía: $e');
+
   String get membershipTitle => pick('Membership', 'Membresía');
   String get profileTraining => pick('Training', 'Entrenamiento');
   String get profileMembership => pick('Membership', 'Membresía');
@@ -443,6 +489,7 @@ class AppStrings {
       pick('Update profile error: $e', 'Error al actualizar perfil: $e');
 
   String get profileRole => pick('Role', 'Rol');
+  String get profileAccount => pick('Account', 'Cuenta');
   String get profileGymName => pick('Gym name', 'Nombre del gym');
   String get profileSaveGymName =>
       pick('Save gym name', 'Guardar nombre del gym');
@@ -458,6 +505,7 @@ class AppStrings {
   String get profilePrivacyPolicy =>
       pick('Privacy Policy', 'Política de privacidad');
   String get profileTerms => pick('Terms of Service', 'Términos de servicio');
+
   String get profileHelp => pick('Help Center', 'Centro de ayuda');
 
   String get error => pick('Error', 'Error');

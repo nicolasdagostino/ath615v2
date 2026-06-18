@@ -16,6 +16,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
   bool _loading = true;
+  String _selectedTab = 'subscriptions';
 
   @override
   void initState() {
@@ -102,123 +103,265 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       style: _MembershipText.sectionTitle,
                     ),
                     const SizedBox(height: 14),
-                    if (_membership == null)
-                      Text(appStrings.noActivePlan, style: _MembershipText.body)
-                    else ...[
-                      _InfoRow(
-                        label: appStrings.activePlan,
-                        value:
-                            '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
-                      ),
-                      _InfoRow(
-                        label: appStrings.credits,
-                        value:
-                            '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
-                      ),
-                      _InfoRow(
-                        label: appStrings.expires,
-                        value: _formatDate(
-                          _membership?['expires_at']?.toString(),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    Text(
-                      appStrings.creditHistory.toUpperCase(),
-                      style: _MembershipText.sectionTitle,
-                    ),
-                    const SizedBox(height: 14),
-                    if (_creditLogs.isEmpty)
-                      Text(
-                        appStrings.noCreditHistory,
-                        style: _MembershipText.subtle,
-                      )
-                    else ...[
-                      Row(
+
+                    SizedBox(
+                      height: 48,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
                         children: [
-                          Expanded(
-                            child: _CreditSummaryChip(
-                              label: appStrings.assigned,
-                              value: _creditLogs
-                                  .where((log) => log['reason'] == 'assigned')
-                                  .fold<int>(
-                                    0,
-                                    (sum, log) =>
-                                        sum +
-                                        ((log['amount'] as num?) ?? 0).toInt(),
-                                  )
-                                  .toString(),
+                          ChoiceChip(
+                            selected: _selectedTab == 'subscriptions',
+                            label: Text(
+                              appStrings.subscriptions.toUpperCase(),
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: _selectedTab == 'subscriptions'
+                                    ? Colors.white
+                                    : const Color(0xFF8F96A3),
+                                height: 1.0,
+                              ),
                             ),
+                            selectedColor: const Color(0xFFB59B6A),
+                            backgroundColor: Colors.white,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTab = 'subscriptions';
+                              });
+                            },
                           ),
                           const SizedBox(width: 10),
-                          Expanded(
-                            child: _CreditSummaryChip(
-                              label: appStrings.booked,
-                              value: _creditLogs
-                                  .where((log) => log['reason'] == 'booked')
-                                  .length
-                                  .toString(),
+                          ChoiceChip(
+                            selected: _selectedTab == 'dropins',
+                            label: Text(
+                              appStrings.dropIns.toUpperCase(),
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: _selectedTab == 'dropins'
+                                    ? Colors.white
+                                    : const Color(0xFF8F96A3),
+                                height: 1.0,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _CreditSummaryChip(
-                              label: appStrings.cancelled,
-                              value: _creditLogs
-                                  .where((log) => log['reason'] == 'cancelled')
-                                  .length
-                                  .toString(),
+                            selectedColor: const Color(0xFFB59B6A),
+                            backgroundColor: Colors.white,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
                             ),
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTab = 'dropins';
+                              });
+                            },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                    ),
+
+                    const SizedBox(height: 18),
+                    if (_selectedTab == 'subscriptions') ...[
                       Text(
-                        'MEMBERSHIP HISTORY',
+                        appStrings.mySubscription.toUpperCase(),
                         style: _MembershipText.sectionTitle,
                       ),
                       const SizedBox(height: 14),
-                      ..._creditLogs.take(5).map((log) {
-                        final amount = ((log['amount'] as num?) ?? 0).toInt();
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F8FA),
-                              borderRadius: BorderRadius.circular(18),
+                      if (_membership == null ||
+                          _membership?['credits_remaining'] != null)
+                        Text(
+                          appStrings.noActiveSubscription,
+                          style: _MembershipText.body,
+                        )
+                      else ...[
+                        _InfoRow(
+                          label: appStrings.activePlan,
+                          value:
+                              '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                        ),
+                        _InfoRow(
+                          label: appStrings.expires,
+                          value: _formatDate(
+                            _membership?['expires_at']?.toString(),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _MembershipActionButton(
+                        label: appStrings.getSubscription.toUpperCase(),
+                        onPressed: () {
+                          context.push('/available-memberships/subscription');
+                        },
+                      ),
+                    ] else ...[
+                      Text(
+                        appStrings.myDropIns.toUpperCase(),
+                        style: _MembershipText.sectionTitle,
+                      ),
+                      const SizedBox(height: 14),
+                      if (_membership == null ||
+                          _membership?['credits_remaining'] == null)
+                        Text(
+                          appStrings.noActiveDropIns,
+                          style: _MembershipText.body,
+                        )
+                      else ...[
+                        _InfoRow(
+                          label: appStrings.credits,
+                          value:
+                              '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
+                        ),
+                        _InfoRow(
+                          label: appStrings.expires,
+                          value: _formatDate(
+                            _membership?['expires_at']?.toString(),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      _MembershipActionButton(
+                        label: appStrings.getDropIn.toUpperCase(),
+                        onPressed: () {
+                          context.push('/available-memberships/dropin');
+                        },
+                      ),
+                      const SizedBox(height: 22),
+                      Text(
+                        appStrings.creditHistory.toUpperCase(),
+                        style: _MembershipText.sectionTitle,
+                      ),
+                      const SizedBox(height: 14),
+                      if (_creditLogs.isEmpty)
+                        Text(
+                          appStrings.noCreditHistory,
+                          style: _MembershipText.subtle,
+                        )
+                      else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _CreditSummaryChip(
+                                label: appStrings.assigned,
+                                value: _creditLogs
+                                    .where((log) => log['reason'] == 'assigned')
+                                    .fold<int>(
+                                      0,
+                                      (sum, log) =>
+                                          sum +
+                                          ((log['amount'] as num?) ?? 0)
+                                              .toInt(),
+                                    )
+                                    .toString(),
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _creditReasonLabel(
-                                      log['reason']?.toString() ?? '',
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _CreditSummaryChip(
+                                label: appStrings.booked,
+                                value: _creditLogs
+                                    .where((log) => log['reason'] == 'booked')
+                                    .length
+                                    .toString(),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _CreditSummaryChip(
+                                label: appStrings.cancelled,
+                                value: _creditLogs
+                                    .where(
+                                      (log) => log['reason'] == 'cancelled',
+                                    )
+                                    .length
+                                    .toString(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          'MEMBERSHIP HISTORY',
+                          style: _MembershipText.sectionTitle,
+                        ),
+                        const SizedBox(height: 14),
+                        ..._creditLogs.take(5).map((log) {
+                          final amount = ((log['amount'] as num?) ?? 0).toInt();
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F8FA),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _creditReasonLabel(
+                                        log['reason']?.toString() ?? '',
+                                      ),
+                                      style: _MembershipText.title,
                                     ),
+                                  ),
+                                  Text(
+                                    '${amount > 0 ? '+' : ''}$amount',
                                     style: _MembershipText.title,
                                   ),
-                                ),
-                                Text(
-                                  '${amount > 0 ? '+' : ''}$amount',
-                                  style: _MembershipText.title,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _formatDate(log['created_at']?.toString()),
-                                  style: _MembershipText.subtle,
-                                ),
-                              ],
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    _formatDate(log['created_at']?.toString()),
+                                    style: _MembershipText.subtle,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
+                      ],
                     ],
                   ],
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MembershipActionButton extends StatelessWidget {
+  const _MembershipActionButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFB59B6A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        child: Text(label),
       ),
     );
   }
