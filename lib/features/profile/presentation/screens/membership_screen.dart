@@ -75,7 +75,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: const Color(0xFF252525),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -84,7 +84,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
               children: [
                 IconButton(
                   onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: Color(0xFFB59B6A),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(appStrings.membershipTitle, style: _MembershipText.header),
@@ -104,66 +108,32 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    SizedBox(
-                      height: 48,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          ChoiceChip(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MembershipTabChip(
+                            label: appStrings.subscriptions.toUpperCase(),
                             selected: _selectedTab == 'subscriptions',
-                            label: Text(
-                              appStrings.subscriptions.toUpperCase(),
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: _selectedTab == 'subscriptions'
-                                    ? Colors.white
-                                    : const Color(0xFF8F96A3),
-                                height: 1.0,
-                              ),
-                            ),
-                            selectedColor: const Color(0xFFB59B6A),
-                            backgroundColor: Colors.white,
-                            side: BorderSide.none,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            onSelected: (_) {
+                            onTap: () {
                               setState(() {
                                 _selectedTab = 'subscriptions';
                               });
                             },
                           ),
-                          const SizedBox(width: 10),
-                          ChoiceChip(
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _MembershipTabChip(
+                            label: appStrings.dropIns.toUpperCase(),
                             selected: _selectedTab == 'dropins',
-                            label: Text(
-                              appStrings.dropIns.toUpperCase(),
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: _selectedTab == 'dropins'
-                                    ? Colors.white
-                                    : const Color(0xFF8F96A3),
-                                height: 1.0,
-                              ),
-                            ),
-                            selectedColor: const Color(0xFFB59B6A),
-                            backgroundColor: Colors.white,
-                            side: BorderSide.none,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            onSelected: (_) {
+                            onTap: () {
                               setState(() {
                                 _selectedTab = 'dropins';
                               });
                             },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 18),
@@ -286,7 +256,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         ),
                         const SizedBox(height: 18),
                         Text(
-                          'MEMBERSHIP HISTORY',
+                          appStrings.creditHistory.toUpperCase(),
                           style: _MembershipText.sectionTitle,
                         ),
                         const SizedBox(height: 14),
@@ -342,6 +312,50 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 }
 
+class _MembershipTabChip extends StatelessWidget {
+  const _MembershipTabChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFB59B6A) : const Color(0xFF171717),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFFB59B6A) : const Color(0xFF323232),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: selected ? const Color(0xFF111111) : const Color(0xFFABABAB),
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MembershipActionButton extends StatelessWidget {
   const _MembershipActionButton({required this.label, required this.onPressed});
 
@@ -374,13 +388,13 @@ class _MembershipText {
     fontSize: 30,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
-    color: const Color(0xFF111827),
+    color: Colors.white,
   );
 
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1.0,
   );
@@ -388,13 +402,13 @@ class _MembershipText {
   static TextStyle sectionTitle = GoogleFonts.barlowCondensed(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.0,
@@ -404,7 +418,7 @@ class _MembershipText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: const Color(0xFFABABAB),
     letterSpacing: 0.3,
     height: 1.0,
   );
@@ -421,15 +435,9 @@ class _MembershipCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: child,
     );
@@ -470,8 +478,9 @@ class _CreditSummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF252525),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Column(
         children: [

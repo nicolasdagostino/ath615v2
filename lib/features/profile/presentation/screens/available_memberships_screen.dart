@@ -91,8 +91,9 @@ class _AvailableMembershipsScreenState
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF252525),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -115,8 +116,8 @@ class _AvailableMembershipsScreenState
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(sheetContext, false),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF384152),
-                              side: const BorderSide(color: Color(0xFFE1E4EA)),
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Color(0xFF323232)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -217,100 +218,142 @@ class _AvailableMembershipsScreenState
         : appStrings.availableDropIns.toUpperCase();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F5F7),
-        elevation: 0,
-        title: Text(
-          title,
-          style: GoogleFonts.barlowCondensed(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.2,
-            color: const Color(0xFF111827),
-          ),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _plans.isEmpty
-          ? Center(
-              child: Text(
-                _isSubscription
-                    ? appStrings.noSubscriptionsAvailable
-                    : appStrings.noDropInsAvailable,
-                style: _AvailableMembershipText.body,
+      backgroundColor: const Color(0xFF252525),
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 18, 24, 18),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Color(0xFFB59B6A),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.barlowCondensed(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-              itemCount: _plans.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                final plan = _plans[index];
-                final name = plan['name']?.toString() ?? 'Plan';
-                final credits = plan['credits'];
-                final price = plan['price'];
-
-                final subtitle = _isSubscription
-                    ? appStrings.unlimitedAccess
-                    : credits == 1
-                    ? appStrings.classCredit(credits)
-                    : appStrings.classCredits(credits);
-
-                final action = _isSubscription
-                    ? appStrings.requestSubscription.toUpperCase()
-                    : appStrings.requestDropIn.toUpperCase();
-
-                return Container(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name.toUpperCase(),
-                        style: _AvailableMembershipText.title,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        price == null
-                            ? appStrings.priceComingSoon.toUpperCase()
-                            : '€$price',
-                        style: _AvailableMembershipText.price,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(subtitle, style: _AvailableMembershipText.body),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: FilledButton(
-                          onPressed: () => _requestPlan(plan),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFB59B6A),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: Text(action),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _plans.isEmpty
+                ? Center(
+                    child: Text(
+                      _isSubscription
+                          ? appStrings.noSubscriptionsAvailable
+                          : appStrings.noDropInsAvailable,
+                      style: _AvailableMembershipText.body,
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                    itemCount: _plans.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final plan = _plans[index];
+                      final name = plan['name']?.toString() ?? 'Plan';
+                      final credits = plan['credits'];
+                      final price = plan['price'];
+
+                      final subtitle = _isSubscription
+                          ? appStrings.unlimitedAccess
+                          : credits == 1
+                          ? appStrings.classCredit(credits)
+                          : appStrings.classCredits(credits);
+
+                      final action = _isSubscription
+                          ? appStrings.requestSubscription.toUpperCase()
+                          : appStrings.requestDropIn.toUpperCase();
+
+                      return Container(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF171717),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: const Color(0xFF323232),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name.toUpperCase(),
+                              style: _AvailableMembershipText.title,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              price == null
+                                  ? appStrings.priceComingSoon.toUpperCase()
+                                  : '€$price',
+                              style: _AvailableMembershipText.price,
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF252525),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: const Color(0xFF323232),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                subtitle.toUpperCase(),
+                                style: _AvailableMembershipText.body.copyWith(
+                                  color: const Color(0xFFB59B6A),
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.7,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: FilledButton(
+                                onPressed: () => _requestPlan(plan),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFFB59B6A),
+                                  foregroundColor: const Color(0xFF111111),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: Text(action),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -322,7 +365,7 @@ class _AvailableMembershipText {
     fontSize: 22,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.2,
-    color: const Color(0xFF111827),
+    color: Colors.white,
   );
 
   static TextStyle price = GoogleFonts.barlowCondensed(
@@ -335,7 +378,7 @@ class _AvailableMembershipText {
   static TextStyle body = GoogleFonts.barlowCondensed(
     fontSize: 16,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF384152),
+    color: const Color(0xFFABABAB),
     height: 1.2,
   );
 }
