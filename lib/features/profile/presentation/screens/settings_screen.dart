@@ -84,8 +84,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF252525),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -149,8 +150,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
+                    color: const Color(0xFF252525),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0xFF323232),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -164,7 +169,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _password,
                         obscureText: obscurePassword,
-                        style: _SettingsText.input,
+                        cursorColor: const Color(0xFFB59B6A),
+                        style: _SettingsText.input.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                         decoration:
                             _inputDecoration(
                               appStrings.profileNewPassword,
@@ -175,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                 ),
-                                color: const Color(0xFF8F96A3),
+                                color: const Color(0xFFB59B6A),
                                 onPressed: () {
                                   setSheetState(() {
                                     obscurePassword = !obscurePassword;
@@ -188,7 +197,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _confirmPassword,
                         obscureText: obscureConfirmPassword,
-                        style: _SettingsText.input,
+                        cursorColor: const Color(0xFFB59B6A),
+                        style: _SettingsText.input.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                         decoration:
                             _inputDecoration(
                               appStrings.profileConfirmPassword,
@@ -199,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                 ),
-                                color: const Color(0xFF8F96A3),
+                                color: const Color(0xFFB59B6A),
                                 onPressed: () {
                                   setSheetState(() {
                                     obscureConfirmPassword =
@@ -300,7 +313,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: _gymName,
-                    style: _SettingsText.input,
+                    cursorColor: const Color(0xFFB59B6A),
+                    style: _SettingsText.input.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                     decoration: _inputDecoration(appStrings.profileGymName),
                   ),
                   const SizedBox(height: 16),
@@ -406,7 +423,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final canEditGym = role == 'admin' || role == 'owner';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: const Color(0xFF252525),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -415,7 +432,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 IconButton(
                   onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: Color(0xFFB59B6A),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text('Settings', style: _SettingsText.header),
@@ -498,17 +519,25 @@ InputDecoration _inputDecoration(String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFF8F96A3),
+      color: const Color(0xFFABABAB),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
     filled: true,
-    fillColor: const Color(0xFFF4F5F7),
+    fillColor: const Color(0xFF171717),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
 }
@@ -520,19 +549,19 @@ class _SettingsText {
     fontSize: 30,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
-    color: const Color(0xFF111827),
+    color: Colors.white,
   );
 
   static TextStyle sectionTitle = GoogleFonts.barlowCondensed(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
   );
 
   static TextStyle input = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.2,
@@ -549,15 +578,9 @@ class _SettingsListCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Column(children: children),
     );
@@ -579,7 +602,7 @@ class _SettingsMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFF0E0E11);
+    final color = danger ? const Color(0xFFB42318) : Colors.white;
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
@@ -593,16 +616,16 @@ class _SettingsMenuRow extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F5F7),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8EAF0)),
+                color: const Color(0xFF252525),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF323232)),
               ),
               child: Icon(
                 icon,
                 size: 20,
                 color: danger
                     ? const Color(0xFFB42318)
-                    : const Color(0xFF8F96A3),
+                    : const Color(0xFFB59B6A),
               ),
             ),
             const SizedBox(width: 14),
@@ -610,8 +633,8 @@ class _SettingsMenuRow extends StatelessWidget {
               child: Text(
                 title,
                 style: GoogleFonts.barlowCondensed(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                   color: color,
                   letterSpacing: -0.1,
                   height: 1.0,
@@ -636,7 +659,7 @@ class _SettingsConfirmText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -644,13 +667,13 @@ class _SettingsConfirmText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -673,8 +696,9 @@ class _SettingsConfirmSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF384152),
-          side: const BorderSide(color: Color(0xFFE1E4EA)),
+          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFF171717),
+          side: const BorderSide(color: Color(0xFF323232)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
