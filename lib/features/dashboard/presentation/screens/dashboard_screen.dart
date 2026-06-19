@@ -38,8 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
 
-  int get _allMembersCount => _members.length;
-
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
 
@@ -214,9 +212,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 top: 24,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              decoration: BoxDecoration(
+                color: const Color(0xFF252525),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -284,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icons.shield_outlined,
                       ),
                       style: _DashText.body,
-                      dropdownColor: Colors.white,
+                      dropdownColor: const Color(0xFF252525),
                       items: [
                         DropdownMenuItem(
                           value: 'athlete',
@@ -451,21 +452,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF252525),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
                   Text(
                     appStrings.editMember.toUpperCase(),
-                    style: _DashText.section,
+                    style: _DashText.section.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: fullName,
                     textCapitalization: TextCapitalization.words,
-                    style: _DashText.body,
+                    style: _DashText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: _dashInput(
                       appStrings.fullName,
                       Icons.person_outline_rounded,
@@ -475,7 +480,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   TextField(
                     controller: phone,
                     keyboardType: TextInputType.phone,
-                    style: _DashText.body,
+                    style: _DashText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: _dashInput(
                       appStrings.phone,
                       Icons.phone_outlined,
@@ -485,7 +493,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   TextField(
                     controller: birthDate,
                     readOnly: true,
-                    style: _DashText.body,
+                    style: _DashText.body.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: _dashInput(
                       appStrings.birthDate,
                       Icons.calendar_month_rounded,
@@ -690,25 +701,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SafeArea(
                 child: Container(
                   margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF252525),
                     borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: const Color(0xFF323232),
+                      width: 1,
+                    ),
                   ),
                   child: ListView(
                     shrinkWrap: true,
                     children: [
                       Text(
                         appStrings.assignPlan.toUpperCase(),
-                        style: _DashText.title,
+                        style: _DashText.title.copyWith(color: Colors.white),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
+                      Text(
+                        appStrings.selectPlan.toUpperCase(),
+                        style: _DashText.subtle.copyWith(
+                          color: const Color(0xFFABABAB),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
                         initialValue: selectedPlanId,
+                        dropdownColor: const Color(0xFF171717),
+                        iconEnabledColor: const Color(0xFFABABAB),
+                        style: _DashText.body.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        hint: Text(
+                          appStrings.selectPlan,
+                          style: _DashText.body.copyWith(
+                            color: const Color(0xFF8F96A3),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         decoration: _dashInput(
                           appStrings.selectPlan,
                           Icons.card_membership_outlined,
                         ),
+                        selectedItemBuilder: (context) {
+                          return List<Map<String, dynamic>>.from(plans).map((
+                            plan,
+                          ) {
+                            final name =
+                                plan['name']?.toString() ?? appStrings.plan;
+                            final credits = plan['credits'];
+
+                            final label = credits == null
+                                ? '$name · ${appStrings.unlimited}'
+                                : '$name · $credits ${appStrings.creditsLower}';
+
+                            return Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                label,
+                                style: _DashText.body.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          }).toList();
+                        },
                         items: List<Map<String, dynamic>>.from(plans).map((
                           plan,
                         ) {
@@ -722,7 +782,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                           return DropdownMenuItem<String>(
                             value: plan['id'].toString(),
-                            child: Text(label, style: _DashText.body),
+                            child: Text(
+                              label,
+                              style: _DashText.body.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: saving
@@ -854,8 +919,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
                       padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF252525),
                         borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: const Color(0xFF323232),
+                          width: 1,
+                        ),
                       ),
                       child: ListView(
                         shrinkWrap: false,
@@ -865,7 +934,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               width: 48,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD7DAE0),
+                                color: const Color(0xFF3A3A3A),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
@@ -873,25 +942,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 20),
                           Row(
                             children: [
-                              Container(
-                                width: 54,
-                                height: 54,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF262626),
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: Text(
-                                  name.trim().isEmpty
-                                      ? 'A'
-                                      : name.trim()[0].toUpperCase(),
-                                  style: GoogleFonts.barlowCondensed(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFFB59B6A),
-                                    height: 1,
-                                  ),
-                                ),
+                              _MemberAvatar(
+                                name: name,
+                                avatarUrl: member['avatar_url']?.toString(),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -902,7 +955,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: _DashText.title,
+                                      style: _DashText.title.copyWith(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -927,6 +982,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
                                 initialValue: selectedRole,
+                                dropdownColor: const Color(0xFF171717),
+                                iconEnabledColor: const Color(0xFFABABAB),
+                                style: _DashText.body.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
                                 decoration: _dashInput(
                                   appStrings.role,
                                   Icons.admin_panel_settings_outlined,
@@ -1131,7 +1192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Expanded(
                                 child: _MemberFilterChip(
                                   label:
-                                      '${appStrings.all} ($_allMembersCount)',
+                                      '${appStrings.all} (${history.length})',
                                   selected: historyFilter == 'all',
                                   onTap: () => setSheetState(
                                     () => historyFilter = 'all',
@@ -1141,7 +1202,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _MemberFilterChip(
-                                  label: appStrings.attended.toUpperCase(),
+                                  label:
+                                      '${appStrings.attended.toUpperCase()} '
+                                      '(${history.where((h) => h['status'] == 'attended').length})',
                                   selected: historyFilter == 'attended',
                                   onTap: () => setSheetState(
                                     () => historyFilter = 'attended',
@@ -1151,7 +1214,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _MemberFilterChip(
-                                  label: appStrings.noShow.toUpperCase(),
+                                  label:
+                                      '${appStrings.noShow.toUpperCase()} '
+                                      '(${history.where((h) => h['status'] == 'no_show').length})',
                                   selected: historyFilter == 'no_show',
                                   onTap: () => setSheetState(
                                     () => historyFilter = 'no_show',
@@ -1310,7 +1375,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               const SizedBox(width: 12),
                               SizedBox(
-                                width: 160,
+                                width: 145,
                                 child: AppButton(
                                   label: appStrings.inviteAthlete,
                                   onPressed: _openInviteMemberSheet,
@@ -1487,7 +1552,7 @@ class _MemberTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: const Color(0xFFF7F8FA),
+        color: const Color(0xFF171717),
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -1629,13 +1694,33 @@ InputDecoration _dashInput(String hint, IconData icon) {
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
-    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
+    labelStyle: GoogleFonts.barlowCondensed(
+      color: const Color(0xFF8F96A3),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    floatingLabelStyle: GoogleFonts.barlowCondensed(
+      color: const Color(0xFFB59B6A),
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+    ),
+    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
     filled: true,
-    fillColor: const Color(0xFFF4F5F7),
+    fillColor: const Color(0xFF171717),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
     ),
   );
 }
@@ -1646,7 +1731,7 @@ class _DashText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: -0.3,
     height: 1.0,
   );
@@ -1654,13 +1739,13 @@ class _DashText {
   static TextStyle section = GoogleFonts.barlowCondensed(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+    color: const Color(0xFFE5E7EB),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -1772,18 +1857,36 @@ class _HeaderIcon extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7F3EA),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Badge(
-          isLabelVisible: badgeCount > 0,
-          label: Text(badgeCount > 99 ? '99+' : badgeCount.toString()),
-          child: Icon(icon, size: 18, color: const Color(0xFFB59B6A)),
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(icon, size: 28, color: const Color(0xFFB59B6A)),
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -7,
+              top: -7,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB42318),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : badgeCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1815,7 +1918,7 @@ class _RoleFilterChip extends StatelessWidget {
         ),
       ),
       selectedColor: const Color(0xFFB59B6A),
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF171717),
       side: BorderSide.none,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       onSelected: (_) => onTap(),
@@ -1854,7 +1957,7 @@ class _DashboardTabChip extends StatelessWidget {
         ),
       ),
       selectedColor: const Color(0xFFB59B6A),
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF171717),
       side: BorderSide.none,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       onSelected: (_) => onTap(),
@@ -1873,7 +1976,8 @@ class _DashboardCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF111111),
+        border: Border.all(color: const Color(0xFF323232), width: 1),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -1907,7 +2011,7 @@ class _MetricCard extends StatelessWidget {
             style: GoogleFonts.barlowCondensed(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF0E0E11),
+              color: Colors.white,
               height: 1,
             ),
           ),
@@ -1984,7 +2088,7 @@ class _MemberDetailCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
+        color: const Color(0xFF171717),
         borderRadius: BorderRadius.circular(22),
       ),
       child: child,
@@ -2001,12 +2105,19 @@ class _MemberDetailInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label.toUpperCase(), style: _DashText.subtle)),
-          const SizedBox(width: 12),
-          Text(value, style: _DashText.body),
+          Text(label.toUpperCase(), style: _DashText.subtle),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: _DashText.body.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -2076,7 +2187,7 @@ class _MemberHistoryRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F8FA),
+          color: const Color(0xFF171717),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(

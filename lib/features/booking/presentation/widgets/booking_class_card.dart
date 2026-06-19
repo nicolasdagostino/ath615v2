@@ -34,7 +34,9 @@ class BookingClassCard extends StatelessWidget {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  bool get _isBooked => buttonLabel == appStrings.bookingBooked;
+  bool get _hasBooking =>
+      buttonLabel == appStrings.bookingBooked ||
+      buttonLabel == appStrings.bookingCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +53,12 @@ class BookingClassCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
+        border: _hasBooking
+            ? Border.all(
+                color: const Color(0xFFB59B6A).withValues(alpha: 0.55),
+                width: 1.2,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -179,12 +187,6 @@ class BookingClassCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (_isBooked) ...[
-                        const SizedBox(height: 8),
-                        _StatusPill(
-                          label: appStrings.bookingBooked.toUpperCase(),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -214,32 +216,6 @@ class _InlineSpots extends StatelessWidget {
         const SizedBox(width: 6),
         Text(value, style: BookingTextStyles.metaValue),
       ],
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4EDE1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF9B7F4A),
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.6,
-        ),
-      ),
     );
   }
 }
