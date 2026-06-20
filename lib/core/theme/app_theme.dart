@@ -2,6 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  static ThemeData get dark {
+    final baseTextTheme = ThemeData.dark().textTheme;
+    final textTheme = GoogleFonts.barlowCondensedTextTheme(
+      baseTextTheme,
+    ).apply(bodyColor: Colors.white, displayColor: Colors.white);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      textTheme: textTheme,
+      scaffoldBackgroundColor: const Color(0xFF171717),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFB59B6A),
+        brightness: Brightness.dark,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFFB59B6A),
+      ),
+    );
+  }
+
   static ThemeData get light {
     final baseTextTheme = ThemeData.light().textTheme;
     final textTheme = GoogleFonts.barlowCondensedTextTheme(baseTextTheme).apply(

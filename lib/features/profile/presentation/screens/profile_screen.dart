@@ -9,6 +9,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -153,11 +155,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -166,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       const Icon(
                         Icons.person_outline_rounded,
-                        color: Color(0xFFB59B6A),
+                        color: AppColors.accent,
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -174,6 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(
                           appStrings.editPersonalInformation.toUpperCase(),
                           style: _ProfileText.sectionTitle.copyWith(
+                            color: AppColors.textPrimary(context),
                             fontSize: 20,
                             letterSpacing: -0.2,
                           ),
@@ -185,39 +188,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextField(
                     controller: _fullName,
                     textCapitalization: TextCapitalization.words,
-                    cursorColor: const Color(0xFFB59B6A),
+                    cursorColor: AppColors.accent,
                     style: _ProfileText.input.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: _inputDecoration(appStrings.fullName),
+                    decoration: _inputDecoration(context, appStrings.fullName),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _phone,
                     keyboardType: TextInputType.phone,
-                    cursorColor: const Color(0xFFB59B6A),
+                    cursorColor: AppColors.accent,
                     style: _ProfileText.input.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: _inputDecoration(appStrings.phone),
+                    decoration: _inputDecoration(context, appStrings.phone),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _birthDate,
                     readOnly: true,
-                    cursorColor: const Color(0xFFB59B6A),
+                    cursorColor: AppColors.accent,
                     style: _ProfileText.input.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: _inputDecoration(appStrings.birthDate).copyWith(
-                      suffixIcon: const Icon(
-                        Icons.calendar_month_rounded,
-                        color: Color(0xFFB59B6A),
-                      ),
-                    ),
+                    decoration: _inputDecoration(context, appStrings.birthDate)
+                        .copyWith(
+                          suffixIcon: const Icon(
+                            Icons.calendar_month_rounded,
+                            color: AppColors.accent,
+                          ),
+                        ),
                     onTap: _pickBirthDate,
                   ),
                   const SizedBox(height: 16),
@@ -360,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final avatarUrl = _profile?['avatar_url']?.toString();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           _ProfileHeader(
@@ -396,14 +400,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   children: [
                                     Text(
                                       displayName,
-                                      style: _ProfileText.title,
+                                      style: _ProfileText.title.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       _displayRole(
                                         _profile?['role']?.toString(),
                                       ),
-                                      style: _ProfileText.subtle,
+                                      style: _ProfileText.subtle.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -418,7 +426,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Text(
                                 appStrings.personalInformation.toUpperCase(),
-                                style: _ProfileText.sectionTitle,
+                                style: _ProfileText.sectionTitle.copyWith(
+                                  color: AppColors.textPrimary(context),
+                                ),
                               ),
                               const SizedBox(height: 14),
                               _InfoRow(
@@ -481,7 +491,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Center(
                             child: Text(
                               'ATHLETE615 · $_appVersion',
-                              style: _ProfileText.subtle,
+                              style: _ProfileText.subtle.copyWith(
+                                color: AppColors.textSecondary(context),
+                              ),
                             ),
                           ),
                         ],
@@ -497,11 +509,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-InputDecoration _inputDecoration(String hint) {
+InputDecoration _inputDecoration(BuildContext context, String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFFB8BDC7),
+      color: AppColors.textSecondary(context),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
@@ -509,19 +521,19 @@ InputDecoration _inputDecoration(String hint) {
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surfaceAlt(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
@@ -621,7 +633,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: _font(
                         18,
                         weight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.3,
                         height: 1.0,
                       ),
@@ -638,7 +650,7 @@ class _ProfileHeader extends StatelessWidget {
                       style: _font(
                         24,
                         weight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.4,
                       ),
                     ),
@@ -665,7 +677,7 @@ class _ProfileHeader extends StatelessWidget {
                             child: Icon(
                               Icons.notifications_outlined,
                               size: 28,
-                              color: Color(0xFFB59B6A),
+                              color: AppColors.accent,
                             ),
                           ),
                           if (unreadNotifications > 0)
@@ -726,12 +738,12 @@ class _ProfileAvatar extends StatelessWidget {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadii.panel),
       onTap: uploading ? null : onTap,
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadii.panel),
             child: Container(
               width: 54,
               height: 54,
@@ -798,18 +810,12 @@ class _ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
       ),
       child: child,
     );
@@ -829,10 +835,20 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label.toUpperCase(), style: _ProfileText.subtle),
+            child: Text(
+              label.toUpperCase(),
+              style: _ProfileText.subtle.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
-          Text(value, style: _ProfileText.body),
+          Text(
+            value,
+            style: _ProfileText.body.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
         ],
       ),
     );
@@ -849,16 +865,10 @@ class _ProfileListCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
       ),
       child: Column(children: children),
     );
@@ -878,7 +888,7 @@ class _ProfileMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Colors.white;
+    final color = AppColors.textPrimary(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
@@ -892,11 +902,11 @@ class _ProfileMenuRow extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF323232)),
+                border: Border.all(color: AppColors.border(context)),
               ),
-              child: Icon(icon, size: 20, color: const Color(0xFFB59B6A)),
+              child: Icon(icon, size: 20, color: AppColors.accent),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -911,10 +921,10 @@ class _ProfileMenuRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               size: 24,
-              color: Color(0xFFABABAB),
+              color: AppColors.textSecondary(context),
             ),
           ],
         ),
@@ -953,10 +963,10 @@ class _SkeletonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
         border: Border.all(color: const Color(0xFF323232), width: 1),
       ),
       child: Column(

@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/data/auth_repository.dart';
 
@@ -458,6 +460,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() {});
                   },
                 ),
+                _SettingsMenuRow(
+                  icon: themeController.isDark
+                      ? Icons.dark_mode_outlined
+                      : Icons.light_mode_outlined,
+                  title:
+                      'Appearance · ${themeController.isDark ? 'Dark' : 'Light'}',
+                  onTap: () async {
+                    await themeController.toggle();
+                    if (mounted) setState(() {});
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -579,9 +592,9 @@ class _SettingsListCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(children: children),
     );
@@ -603,7 +616,7 @@ class _SettingsMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : Colors.white;
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
@@ -617,9 +630,9 @@ class _SettingsMenuRow extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF323232)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Icon(
                 icon,
@@ -642,10 +655,10 @@ class _SettingsMenuRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               size: 24,
-              color: Color(0xFF8F96A3),
+              color: AppColors.muted(context),
             ),
           ],
         ),
@@ -697,9 +710,9 @@ class _SettingsConfirmSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: const Color(0xFF171717),
-          side: const BorderSide(color: Color(0xFF323232)),
+          foregroundColor: AppColors.textPrimary(context),
+          backgroundColor: AppColors.surfaceAlt(context),
+          side: BorderSide(color: AppColors.border(context)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

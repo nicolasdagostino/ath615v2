@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/router/app_router.dart';
 import '../core/router/deep_link_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
 
 Future<void> setupPush() async {
@@ -146,12 +147,14 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: localeController,
+      animation: Listenable.merge([localeController, themeController]),
       builder: (context, _) {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Athlete 615',
           theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeController.themeMode,
           locale: localeController.locale,
           supportedLocales: const [Locale('en'), Locale('es')],
           localizationsDelegates: const [
