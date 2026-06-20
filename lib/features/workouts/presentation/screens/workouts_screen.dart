@@ -367,7 +367,7 @@ class _InactiveAccountState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF0E0E11),
+            color: Colors.white,
             letterSpacing: -0.2,
           ),
         ),
@@ -378,7 +378,7 @@ class _InactiveAccountState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF8F96A3),
+            color: const Color(0xFFABABAB),
             height: 1.25,
           ),
         ),
@@ -416,7 +416,7 @@ class _RestDayEmptyState extends StatelessWidget {
           style: _font(
             30,
             weight: FontWeight.w800,
-            color: const Color(0xFF0E0E11),
+            color: Colors.white,
             letterSpacing: -0.3,
           ),
         ),
@@ -427,7 +427,7 @@ class _RestDayEmptyState extends StatelessWidget {
           style: _font(
             12,
             weight: FontWeight.w500,
-            color: const Color(0xFF8F96A3),
+            color: const Color(0xFFABABAB),
             height: 1.35,
             letterSpacing: 0.3,
           ),
