@@ -1548,6 +1548,13 @@ class _MemberTile extends StatelessWidget {
         : isDisabled
         ? 'Disabled'
         : 'Active';
+    final membershipName = member['membership_name']?.toString();
+    final creditsRemaining = member['credits_remaining'];
+    final membershipLabel = membershipName == null || membershipName.isEmpty
+        ? null
+        : creditsRemaining == null
+        ? '$membershipName · ${appStrings.unlimited}'
+        : '$membershipName · $creditsRemaining ${appStrings.creditsLower}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1580,10 +1587,24 @@ class _MemberTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$email · $statusLabel · $role',
+                          email,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _DashText.subtle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          membershipLabel == null
+                              ? '$statusLabel · $role'
+                              : '$membershipLabel · $statusLabel',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _DashText.subtle.copyWith(
+                            color: active
+                                ? const Color(0xFFB59B6A)
+                                : const Color(0xFF8F96A3),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -2174,6 +2195,39 @@ class _MemberHistoryRow extends StatelessWidget {
   final String subtitle;
   final String status;
 
+  String get _formattedSubtitle {
+    try {
+      final dt = DateTime.parse(subtitle).toLocal();
+
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+
+      final day = days[dt.weekday - 1];
+      final month = months[dt.month - 1];
+
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+
+      return '$day · ${dt.day} $month · $hh:$mm';
+    } catch (_) {
+      return subtitle;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final marker = status == 'attended'
@@ -2198,7 +2252,7 @@ class _MemberHistoryRow extends StatelessWidget {
                 children: [
                   Text(title, style: _DashText.title),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: _DashText.subtle),
+                  Text(_formattedSubtitle, style: _DashText.subtle),
                 ],
               ),
             ),

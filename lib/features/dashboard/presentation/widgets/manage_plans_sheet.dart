@@ -87,12 +87,31 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   }
 
   Future<void> _toggle(Map<String, dynamic> plan) async {
-    await _client
-        .from('membership_plans')
-        .update({'is_active': plan['is_active'] != true})
-        .eq('id', plan['id']);
+    final id = plan['id'];
+    final nextActive = plan['is_active'] != true;
 
-    await _load();
+    setState(() {
+      final index = _plans.indexWhere((p) => p['id'] == id);
+      if (index != -1) {
+        _plans[index] = {..._plans[index], 'is_active': nextActive};
+      }
+    });
+
+    try {
+      await _client
+          .from('membership_plans')
+          .update({'is_active': nextActive})
+          .eq('id', id);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        final index = _plans.indexWhere((p) => p['id'] == id);
+        if (index != -1) {
+          _plans[index] = {..._plans[index], 'is_active': !nextActive};
+        }
+      });
+    }
   }
 
   @override
@@ -228,10 +247,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                                 ],
                               ),
                             ),
-                            Switch(
-                              value: active,
-                              activeThumbColor: const Color(0xFFB59B6A),
-                              onChanged: (_) => _toggle(plan),
+                            _PlanStatusBadge(
+                              active: active,
+                              onTap: () => _toggle(plan),
                             ),
                           ],
                         ),
@@ -240,6 +258,45 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   );
                 }),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanStatusBadge extends StatelessWidget {
+  const _PlanStatusBadge({required this.active, required this.onTap});
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? const Color(0xFFB59B6A) : const Color(0xFF8F96A3);
+    final background = active
+        ? const Color(0xFF2A2419)
+        : const Color(0xFF252525);
+    final label = active ? appStrings.active : appStrings.inactive;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.75), width: 1),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: GoogleFonts.barlowCondensed(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: color,
+            letterSpacing: 0.8,
+            height: 1,
           ),
         ),
       ),

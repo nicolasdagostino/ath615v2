@@ -728,7 +728,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 30,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF0E0E11),
+            color: Colors.white,
             letterSpacing: -0.3,
             height: 1.0,
           ),
@@ -740,7 +740,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF8F96A3),
+            color: const Color(0xFFABABAB),
             letterSpacing: 0.3,
             height: 1.35,
           ),

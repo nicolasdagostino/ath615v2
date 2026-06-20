@@ -45,6 +45,31 @@ serve(async (req) => {
 
     if (profilesError) throw profilesError
 
+    const userIds = (profiles ?? []).map((profile) => profile.id)
+
+    const { data: memberships, error: membershipsError } = userIds.length
+      ? await adminClient
+          .from('member_memberships')
+          .select(
+            'user_id, credits_remaining, expires_at, membership_plans(name, plan_type)',
+          )
+          .in('user_id', userIds)
+          .eq('is_active', true)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+      : { data: [], error: null }
+
+    if (membershipsError) throw membershipsError
+
+    const membershipByUserId = new Map()
+
+    for (const membership of memberships ?? []) {
+      const userId = membership.user_id
+      if (!membershipByUserId.has(userId)) {
+        membershipByUserId.set(userId, membership)
+      }
+    }
+
     const members = []
 
     for (const profile of profiles ?? []) {
@@ -53,6 +78,8 @@ serve(async (req) => {
       const authEmail = authUser.user?.email ?? null
       const emailConfirmedAt = authUser.user?.email_confirmed_at ?? null
       const lastSignInAt = authUser.user?.last_sign_in_at ?? null
+      const membership = membershipByUserId.get(profile.id) ?? null
+      const membershipPlan = membership?.membership_plans ?? null
 
       const invitationStatus = !profile.is_active
         ? 'disabled'
@@ -67,6 +94,10 @@ serve(async (req) => {
         email_confirmed_at: emailConfirmedAt,
         last_sign_in_at: lastSignInAt,
         invitation_status: invitationStatus,
+        membership_name: membershipPlan?.name ?? null,
+        membership_type: membershipPlan?.plan_type ?? null,
+        credits_remaining: membership?.credits_remaining ?? null,
+        membership_expires_at: membership?.expires_at ?? null,
       })
     }
 
