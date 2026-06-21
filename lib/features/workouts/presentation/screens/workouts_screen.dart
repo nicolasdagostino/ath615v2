@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/create_workout_sheet.dart';
@@ -135,12 +136,13 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -149,14 +151,16 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: Color(0xFFB42318),
+                        color: AppColors.danger,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           appStrings.workoutsDeleteTitle.toUpperCase(),
-                          style: _WorkoutDeleteSheetText.title,
+                          style: _WorkoutDeleteSheetText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         ),
                       ),
                     ],
@@ -164,7 +168,9 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                   const SizedBox(height: 12),
                   Text(
                     appStrings.workoutsDeleteMessage,
-                    style: _WorkoutDeleteSheetText.body,
+                    style: _WorkoutDeleteSheetText.body.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                   const SizedBox(height: 18),
                   Row(
@@ -489,12 +495,14 @@ class _WorkoutDeleteSecondaryButton extends StatelessWidget {
           side: BorderSide(color: AppColors.border(context)),
           backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.input),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _WorkoutDeleteSheetText.rowTitle,
+          style: _WorkoutDeleteSheetText.rowTitle.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
         ),
       ),
     );
@@ -517,7 +525,7 @@ class _WorkoutDeleteDangerButton extends StatelessWidget {
           backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.input),
           ),
         ),
         child: Text(

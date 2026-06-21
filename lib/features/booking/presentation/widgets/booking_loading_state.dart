@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+
 class BookingLoadingState extends StatelessWidget {
   const BookingLoadingState({super.key});
 
@@ -8,7 +11,7 @@ class BookingLoadingState extends StatelessWidget {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-      children: const [
+      children: [
         _BookingSkeletonCard(compact: true),
         SizedBox(height: 18),
         _BookingSkeletonCard(),
@@ -29,8 +32,8 @@ class _BookingSkeletonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: const Color(0xFF2E2E2E),
-        borderRadius: BorderRadius.circular(28),
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: compact
           ? Row(
@@ -90,7 +93,9 @@ class _SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFF3A3A3A),
+        color: AppColors.isDark(context)
+            ? const Color(0xFF3A3A3A)
+            : const Color(0xFFE7E9EE),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

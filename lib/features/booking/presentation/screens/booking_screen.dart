@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_sheet.dart';
@@ -335,12 +336,13 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -349,7 +351,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: Color(0xFFB42318),
+                        color: AppColors.danger,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
@@ -408,12 +410,13 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -807,10 +810,10 @@ class _BookingSheetActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
+    final color = danger ? AppColors.danger : AppColors.accent;
 
     return Material(
-      color: const Color(0xFF171717),
+      color: AppColors.surfaceAlt(context),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -834,7 +837,10 @@ class _BookingSheetActionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
             ],
           ),
         ),
@@ -859,9 +865,9 @@ class _BookingSheetSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: const Color(0xFF171717),
+          foregroundColor: AppColors.textPrimary(context),
+          side: BorderSide(color: AppColors.border(context)),
+          backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -885,7 +891,7 @@ class _BookingSheetDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
+          backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

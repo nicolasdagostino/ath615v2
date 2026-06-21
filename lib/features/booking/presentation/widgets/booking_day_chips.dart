@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'booking_text_styles.dart';
 
 class BookingDayChips extends StatefulWidget {
@@ -114,7 +115,12 @@ class _BookingDayChipsState extends State<BookingDayChips> {
                         height: 0.82,
                         forceStrutHeight: true,
                       ),
-                      style: BookingTextStyles.dayNumber(selected: selected),
+                      style: BookingTextStyles.dayNumber(selected: selected)
+                          .copyWith(
+                            color: selected
+                                ? Colors.white
+                                : AppColors.textPrimary(context),
+                          ),
                     ),
                   ),
                 ],

@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_pickers.dart';
 
 Future<void> showEditClassSheet({
@@ -217,14 +219,17 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF171717),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
               border: Border(
-                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
+                bottom: BorderSide(
+                  color: AppColors.border(context),
+                  width: 0.8,
+                ),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
@@ -247,7 +252,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                           ),
                           icon: const Icon(
                             Icons.close_rounded,
-                            color: Color(0xFFB59B6A),
+                            color: AppColors.accent,
                             size: 34,
                           ),
                           onPressed: () => Navigator.of(context).pop(),
@@ -261,7 +266,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _EditClassSheetText.title.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontSize: 24,
                             letterSpacing: -0.4,
                           ),
@@ -288,9 +293,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFB59B6A),
-                      ),
+                      child: CircularProgressIndicator(color: AppColors.accent),
                     ),
                   )
                 else if (_programs.isEmpty)
@@ -301,20 +304,21 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                 else
                   DropdownButtonFormField<String>(
                     initialValue: _selectedProgramId,
-                    dropdownColor: const Color(0xFF171717),
-                    iconEnabledColor: const Color(0xFFABABAB),
+                    dropdownColor: AppColors.surface(context),
+                    iconEnabledColor: AppColors.textSecondary(context),
                     style: _EditClassSheetText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                     hint: Text(
                       appStrings.workoutProgram,
                       style: _EditClassSheetText.body.copyWith(
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     decoration: _programDropdownInput(
+                      context,
                       appStrings.workoutProgram,
                       Icons.fitness_center_outlined,
                     ),
@@ -324,7 +328,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                         child: Text(
                           appStrings.workoutProgram,
                           style: _EditClassSheetText.subtle.copyWith(
-                            color: const Color(0xFFABABAB),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -334,6 +338,10 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                           child: Text(
                             program['name']?.toString() ??
                                 appStrings.workoutProgram,
+                            style: _EditClassSheetText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         );
                       }),
@@ -369,10 +377,11 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                         onTapOutside: (_) => FocusScope.of(context).unfocus(),
                         keyboardType: TextInputType.number,
                         style: _EditClassSheetText.body.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                         decoration: _editClassInput(
+                          context,
                           appStrings.durationMinutes,
                           Icons.timer_outlined,
                         ),
@@ -386,10 +395,11 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                         onTapOutside: (_) => FocusScope.of(context).unfocus(),
                         keyboardType: TextInputType.number,
                         style: _EditClassSheetText.body.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                         decoration: _editClassInput(
+                          context,
                           appStrings.capacity,
                           Icons.groups_outlined,
                         ),
@@ -405,14 +415,8 @@ class _EditClassSheetState extends State<_EditClassSheet> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 24,
-                    offset: const Offset(0, -10),
-                  ),
-                ],
+                color: AppColors.background(context),
+                boxShadow: AppShadows.card(context),
               ),
               child: _EditClassButton(
                 label: appStrings.workoutSaveChanges,
@@ -428,41 +432,49 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   }
 }
 
-InputDecoration _programDropdownInput(String hint, IconData icon) {
+InputDecoration _programDropdownInput(
+  BuildContext context,
+  String hint,
+  IconData icon,
+) {
   return InputDecoration(
     hintText: hint,
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surface(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
 
-InputDecoration _editClassInput(String hint, IconData icon) {
+InputDecoration _editClassInput(
+  BuildContext context,
+  String hint,
+  IconData icon,
+) {
   return InputDecoration(
     hintText: hint,
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
     hintStyle: _EditClassSheetText.subtle.copyWith(
-      color: const Color(0xFFABABAB),
+      color: AppColors.textSecondary(context),
     ),
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surface(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -470,7 +482,7 @@ InputDecoration _editClassInput(String hint, IconData icon) {
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -538,13 +550,13 @@ class _EditClassButton extends StatelessWidget {
         onPressed: active ? onPressed : null,
         style: FilledButton.styleFrom(
           backgroundColor: active
-              ? const Color(0xFFB59B6A)
-              : const Color(0xFF343434),
-          disabledBackgroundColor: const Color(0xFF343434),
+              ? AppColors.accent
+              : AppColors.surfaceAlt(context),
+          disabledBackgroundColor: AppColors.surfaceAlt(context),
           foregroundColor: active
-              ? const Color(0xFF111111)
-              : const Color(0xFF777777),
-          disabledForegroundColor: const Color(0xFF777777),
+              ? Colors.white
+              : AppColors.textSecondary(context),
+          disabledForegroundColor: AppColors.textSecondary(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -585,8 +597,8 @@ class _EditClassActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF171717),
-      borderRadius: BorderRadius.circular(10),
+      color: AppColors.surface(context),
+      borderRadius: BorderRadius.circular(AppRadii.input),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
@@ -594,21 +606,34 @@ class _EditClassActionRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+              Icon(icon, color: AppColors.accent, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: _EditClassSheetText.rowTitle),
+                    Text(
+                      title,
+                      style: _EditClassSheetText.rowTitle.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
+                    ),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(subtitle, style: _EditClassSheetText.subtle),
+                      Text(
+                        subtitle,
+                        style: _EditClassSheetText.subtle.copyWith(
+                          color: AppColors.textSecondary(context),
+                        ),
+                      ),
                     ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
             ],
           ),
         ),

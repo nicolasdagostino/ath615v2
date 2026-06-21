@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -160,14 +162,17 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF171717),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
               border: Border(
-                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
+                bottom: BorderSide(
+                  color: AppColors.border(context),
+                  width: 0.8,
+                ),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
@@ -204,7 +209,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _WorkoutSheetText.title.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontSize: 24,
                             letterSpacing: -0.4,
                           ),
@@ -244,21 +249,22 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                 else
                   DropdownButtonFormField<String>(
                     initialValue: _programId,
-                    dropdownColor: const Color(0xFF171717),
-                    iconEnabledColor: const Color(0xFFABABAB),
+                    dropdownColor: AppColors.surface(context),
+                    iconEnabledColor: AppColors.textSecondary(context),
                     style: _WorkoutSheetText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                     hint: Text(
                       appStrings.workoutProgram,
                       style: _WorkoutSheetText.body.copyWith(
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     decoration:
                         _programDropdownInput(
+                          context,
                           appStrings.workoutProgram,
                           Icons.grid_view_rounded,
                         ).copyWith(
@@ -271,7 +277,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                         child: Text(
                           appStrings.workoutProgram,
                           style: _WorkoutSheetText.subtle.copyWith(
-                            color: const Color(0xFFABABAB),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -280,6 +286,10 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                           value: p['id'].toString(),
                           child: Text(
                             p['name']?.toString() ?? appStrings.workoutProgram,
+                            style: _WorkoutSheetText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         );
                       }),
@@ -330,7 +340,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                   maxLines: 18,
                   keyboardType: TextInputType.multiline,
                   style: _WorkoutSheetText.body.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                     height: 1.25,
                   ),
@@ -340,7 +350,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                     alignLabelWithHint: true,
                     floatingLabelBehavior: FloatingLabelBehavior.never,
                     labelStyle: _WorkoutSheetText.subtle.copyWith(
-                      color: const Color(0xFFABABAB),
+                      color: AppColors.textSecondary(context),
                       fontSize: 13,
                     ),
                     hintStyle: _WorkoutSheetText.subtle.copyWith(
@@ -348,26 +358,26 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                       fontSize: 15,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFF171717),
+                    fillColor: AppColors.surface(context),
                     contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFB59B6A),
+                      borderRadius: BorderRadius.circular(AppRadii.input),
+                      borderSide: BorderSide(
+                        color: AppColors.border(context),
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadii.input),
                       borderSide: const BorderSide(
-                        color: Color(0xFFB59B6A),
+                        color: AppColors.accent,
                         width: 1.2,
                       ),
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFB59B6A),
+                      borderRadius: BorderRadius.circular(AppRadii.input),
+                      borderSide: BorderSide(
+                        color: AppColors.border(context),
                         width: 1,
                       ),
                     ),
@@ -381,14 +391,8 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 24,
-                    offset: const Offset(0, -10),
-                  ),
-                ],
+                color: AppColors.background(context),
+                boxShadow: [...AppShadows.card(context)],
               ),
               child: _CreateWorkoutButton(
                 label: appStrings.workoutCreateTitle,
@@ -404,18 +408,22 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   }
 }
 
-InputDecoration _programDropdownInput(String hint, IconData icon) {
+InputDecoration _programDropdownInput(
+  BuildContext context,
+  String hint,
+  IconData icon,
+) {
   return InputDecoration(
     hintText: hint,
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
     prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surface(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -423,7 +431,7 @@ InputDecoration _programDropdownInput(String hint, IconData icon) {
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
@@ -485,9 +493,11 @@ class _CreateWorkoutButton extends StatelessWidget {
         onPressed: loading || !enabled ? null : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFB59B6A),
-          disabledBackgroundColor: const Color(0xFF171717),
+          disabledBackgroundColor: AppColors.isDark(context)
+              ? AppColors.surface(context)
+              : const Color(0xFFE9E9EC),
           foregroundColor: const Color(0xFF111111),
-          disabledForegroundColor: const Color(0xFF6F6F6F),
+          disabledForegroundColor: AppColors.textSecondary(context),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -532,8 +542,8 @@ class _WorkoutSheetActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF171717),
-      borderRadius: BorderRadius.circular(10),
+      color: AppColors.surface(context),
+      borderRadius: BorderRadius.circular(AppRadii.input),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
@@ -541,7 +551,7 @@ class _WorkoutSheetActionRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+              Icon(icon, color: AppColors.accent, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -555,7 +565,10 @@ class _WorkoutSheetActionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF8F96A3)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
             ],
           ),
         ),
