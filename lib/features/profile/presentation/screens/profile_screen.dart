@@ -611,7 +611,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF171717),
+      color: AppColors.background(context),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -690,7 +690,7 @@ class _ProfileHeader extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFFB42318),
+                                  color: AppColors.danger,
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
@@ -748,7 +748,7 @@ class _ProfileAvatar extends StatelessWidget {
               width: 54,
               height: 54,
               alignment: Alignment.center,
-              color: const Color(0xFFF7F3EA),
+              color: AppColors.surfaceAlt(context),
               child: hasAvatar
                   ? Image.network(
                       avatarUrl!,
@@ -763,7 +763,7 @@ class _ProfileAvatar extends StatelessWidget {
                       style: GoogleFonts.barlowCondensed(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFFB59B6A),
+                        color: AppColors.accent,
                         height: 1.0,
                       ),
                     ),
@@ -776,9 +776,12 @@ class _ProfileAvatar extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: const Color(0xFFB59B6A),
+                color: AppColors.accent,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFF171717), width: 2),
+                border: Border.all(
+                  color: AppColors.background(context),
+                  width: 2,
+                ),
               ),
               child: uploading
                   ? const Padding(
@@ -788,9 +791,9 @@ class _ProfileAvatar extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(
+                  : Icon(
                       Icons.camera_alt_rounded,
-                      color: Color(0xFF111111),
+                      color: AppColors.textPrimary(context),
                       size: 12,
                     ),
             ),
@@ -965,9 +968,9 @@ class _SkeletonCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.background(context),
         borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
