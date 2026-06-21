@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_sheet.dart';
@@ -542,10 +543,14 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF171717),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+      SystemUiOverlayStyle(
+        statusBarColor: AppColors.surfaceAlt(context),
+        statusBarIconBrightness: AppColors.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: AppColors.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
       ),
     );
 
@@ -553,7 +558,7 @@ class _BookingScreenState extends State<BookingScreen> {
       floatingActionButton: _canCreateClass
           ? FloatingActionButton(
               heroTag: 'create-class',
-              backgroundColor: const Color(0xFFB59B6A),
+              backgroundColor: AppColors.accent,
               foregroundColor: Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -563,11 +568,11 @@ class _BookingScreenState extends State<BookingScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           Container(
-            color: const Color(0xFF171717),
+            color: AppColors.surfaceAlt(context),
             child: Column(
               children: [
                 BookingHeader(
@@ -595,7 +600,7 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFFB59B6A),
+              color: AppColors.accent,
               onRefresh: _refresh,
               child: _loading
                   ? const BookingLoadingState()
@@ -728,7 +733,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 30,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             letterSpacing: -0.3,
             height: 1.0,
           ),
@@ -740,7 +745,7 @@ class _BookingRestDayEmptyState extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFFABABAB),
+            color: AppColors.textSecondary(context),
             letterSpacing: 0.3,
             height: 1.35,
           ),

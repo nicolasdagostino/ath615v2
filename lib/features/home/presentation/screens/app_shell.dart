@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/theme/app_colors.dart';
+
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -97,9 +99,7 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     if (_role == null) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
       );
     }
 
@@ -205,9 +205,11 @@ class _ShellBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF171717),
-        border: Border(top: BorderSide(color: Color(0xFF262626), width: 0.8)),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        border: Border(
+          top: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -243,8 +245,8 @@ class _ShellBottomNav extends StatelessWidget {
                               selected ? item.activeIcon : item.icon,
                               size: 22,
                               color: selected
-                                  ? const Color(0xFFAF986C)
-                                  : const Color(0xFFABABAB),
+                                  ? AppColors.accent
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -258,8 +260,8 @@ class _ShellBottomNav extends StatelessWidget {
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                               color: selected
-                                  ? const Color(0xFFAF986C)
-                                  : const Color(0xFFABABAB),
+                                  ? AppColors.accent
+                                  : AppColors.textSecondary(context),
                               letterSpacing: 0.1,
                               height: 1.0,
                             ),

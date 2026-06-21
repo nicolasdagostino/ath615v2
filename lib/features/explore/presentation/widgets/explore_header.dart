@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class ExploreHeader extends StatelessWidget {
   const ExploreHeader({
@@ -31,7 +32,7 @@ class ExploreHeader extends StatelessWidget {
     );
   }
 
-  Widget _brandLogo() {
+  Widget _brandLogo(BuildContext context) {
     return SizedBox(
       width: 132,
       child: Text(
@@ -39,7 +40,7 @@ class ExploreHeader extends StatelessWidget {
         style: _font(
           18,
           weight: FontWeight.w800,
-          color: Colors.white,
+          color: AppColors.textPrimary(context),
           letterSpacing: -0.3,
           height: 1.0,
         ),
@@ -50,7 +51,7 @@ class ExploreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF171717),
+      color: AppColors.surfaceAlt(context),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -68,7 +69,7 @@ class ExploreHeader extends StatelessWidget {
                       style: _font(
                         24,
                         weight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.4,
                       ),
                     ),
@@ -81,7 +82,7 @@ class ExploreHeader extends StatelessWidget {
                 bottom: 0,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: _brandLogo(),
+                  child: _brandLogo(context),
                 ),
               ),
               Positioned(
@@ -104,7 +105,7 @@ class ExploreHeader extends StatelessWidget {
                             child: Icon(
                               Icons.notifications_outlined,
                               size: 28,
-                              color: Color(0xFFB59B6A),
+                              color: AppColors.accent,
                             ),
                           ),
                           if (unreadNotifications > 0)
@@ -117,7 +118,7 @@ class ExploreHeader extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFFB42318),
+                                  color: AppColors.danger,
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(

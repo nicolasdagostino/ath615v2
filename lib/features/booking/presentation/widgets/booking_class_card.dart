@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import 'booking_text_styles.dart';
 
 class BookingClassCard extends StatelessWidget {
@@ -52,7 +53,7 @@ class BookingClassCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         border: _hasBooking
             ? Border.all(
                 color: const Color(0xFFB59B6A).withValues(alpha: 0.55),
@@ -62,13 +63,13 @@ class BookingClassCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Stack(
           children: [
             Positioned.fill(
@@ -135,7 +136,7 @@ class BookingClassCard extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppRadii.card),
                 onTap: canManageAttendance ? onOpenAttendance : null,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),

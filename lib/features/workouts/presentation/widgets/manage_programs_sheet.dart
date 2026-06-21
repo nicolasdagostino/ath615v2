@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -198,6 +200,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                       fontWeight: FontWeight.w700,
                     ),
                     decoration: _programsInput(
+                      context,
                       appStrings.programName,
                       Icons.grid_view_rounded,
                     ),
@@ -446,14 +449,17 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF171717),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
               border: Border(
-                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.8),
+                bottom: BorderSide(
+                  color: AppColors.border(context),
+                  width: 0.8,
+                ),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
@@ -476,7 +482,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                           ),
                           icon: const Icon(
                             Icons.close_rounded,
-                            color: Color(0xFFB59B6A),
+                            color: AppColors.accent,
                             size: 34,
                           ),
                           onPressed: () => Navigator.of(context).pop(),
@@ -490,7 +496,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: _ProgramsText.title.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontSize: 24,
                             letterSpacing: -0.4,
                           ),
@@ -518,11 +524,12 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => setState(() {}),
                   style: _ProgramsText.body.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                   ),
-                  cursorColor: const Color(0xFFB59B6A),
+                  cursorColor: AppColors.accent,
                   decoration: _programsInput(
+                    context,
                     appStrings.programName,
                     Icons.grid_view_rounded,
                   ),
@@ -535,16 +542,19 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   child: Container(
                     height: 120,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF171717),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Color(0xFF323232), width: 1),
+                      color: AppColors.surfaceAlt(context),
+                      borderRadius: BorderRadius.circular(AppRadii.input),
+                      border: Border.all(
+                        color: AppColors.border(context),
+                        width: 1,
+                      ),
                     ),
                     alignment: Alignment.center,
                     child: _image == null
                         ? const Icon(
                             Icons.image_outlined,
                             size: 30,
-                            color: Color(0xFFB59B6A),
+                            color: AppColors.accent,
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(10),
@@ -588,8 +598,8 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Material(
-                        color: const Color(0xFF171717),
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.surface(context),
+                        borderRadius: BorderRadius.circular(AppRadii.input),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
                           child: Row(
@@ -613,10 +623,10 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                       : Container(
                                           width: 54,
                                           height: 54,
-                                          color: const Color(0xFF252525),
+                                          color: AppColors.surfaceAlt(context),
                                           child: const Icon(
                                             Icons.image_outlined,
-                                            color: Color(0xFFB59B6A),
+                                            color: AppColors.accent,
                                           ),
                                         ),
                                 ),
@@ -629,7 +639,9 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                     Text(
                                       program['name']?.toString() ??
                                           appStrings.workoutProgram,
-                                      style: _ProgramsText.rowTitle,
+                                      style: _ProgramsText.rowTitle.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -679,28 +691,36 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
   }
 }
 
-InputDecoration _programsInput(String hint, IconData icon) {
+InputDecoration _programsInput(
+  BuildContext context,
+  String hint,
+  IconData icon,
+) {
   return InputDecoration(
     hintText: hint,
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
-    hintStyle: _ProgramsText.subtle,
-    labelStyle: _ProgramsText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    hintStyle: _ProgramsText.subtle.copyWith(
+      color: AppColors.textSecondary(context),
+    ),
+    labelStyle: _ProgramsText.subtle.copyWith(
+      color: AppColors.textSecondary(context),
+    ),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surfaceAlt(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }

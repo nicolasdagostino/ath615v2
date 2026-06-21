@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
 import '../../../workouts/presentation/widgets/workout_card.dart';
@@ -44,13 +46,17 @@ class _ExploreFilterChip extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
-          color: selected ? Colors.white : const Color(0xFF8F96A3),
+          color: selected ? Colors.white : AppColors.textSecondary(context),
           height: 1.0,
         ),
       ),
-      selectedColor: const Color(0xFFB59B6A),
-      backgroundColor: const Color(0xFF171717),
-      side: BorderSide.none,
+      selectedColor: AppColors.accent,
+      backgroundColor: AppColors.isDark(context)
+          ? AppColors.surfaceAlt(context)
+          : AppColors.surface(context),
+      side: selected
+          ? BorderSide.none
+          : BorderSide(color: AppColors.border(context)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       onSelected: (_) => onTap(),
     );
@@ -62,10 +68,14 @@ class _InactiveExploreState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF171717),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+      SystemUiOverlayStyle(
+        statusBarColor: AppColors.surfaceAlt(context),
+        statusBarIconBrightness: AppColors.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: AppColors.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
       ),
     );
     return ListView(
@@ -77,7 +87,7 @@ class _InactiveExploreState extends StatelessWidget {
             const Icon(
               Icons.lock_outline_rounded,
               size: 42,
-              color: Color(0xFFB59B6A),
+              color: AppColors.accent,
             ),
             const SizedBox(height: 14),
             Text(
@@ -86,7 +96,7 @@ class _InactiveExploreState extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF0E0E11),
+                color: AppColors.textPrimary(context),
                 letterSpacing: -0.2,
               ),
             ),
@@ -97,7 +107,7 @@ class _InactiveExploreState extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF8F96A3),
+                color: AppColors.textSecondary(context),
                 height: 1.25,
               ),
             ),
@@ -328,7 +338,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
     final filteredWorkouts = _filteredWorkouts;
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           ExploreHeader(
@@ -341,49 +351,49 @@ class _ExploreScreenState extends State<ExploreScreen> {
             padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
             child: TextField(
               style: GoogleFonts.barlowCondensed(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
               ),
-              cursorColor: const Color(0xFFB59B6A),
+              cursorColor: AppColors.accent,
               decoration: InputDecoration(
                 hintText: appStrings.exploreSearchWorkouts,
                 hintStyle: GoogleFonts.barlowCondensed(
-                  color: const Color(0xFFABABAB),
+                  color: AppColors.textSecondary(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: Color(0xFFB59B6A),
+                  color: AppColors.accent,
                   size: 20,
                 ),
                 filled: true,
-                fillColor: const Color(0xFF171717),
+                fillColor: AppColors.surfaceAlt(context),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 15,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF323232),
+                  borderRadius: BorderRadius.circular(AppRadii.input),
+                  borderSide: BorderSide(
+                    color: AppColors.border(context),
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadii.input),
                   borderSide: const BorderSide(
-                    color: Color(0xFFAF986C),
+                    color: AppColors.accent,
                     width: 1.2,
                   ),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF323232),
+                  borderRadius: BorderRadius.circular(AppRadii.input),
+                  borderSide: BorderSide(
+                    color: AppColors.border(context),
                     width: 1,
                   ),
                 ),
@@ -561,7 +571,9 @@ class _ExploreDeleteSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
           side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: const Color(0xFF171717),
+          backgroundColor: AppColors.isDark(context)
+              ? AppColors.surfaceAlt(context)
+              : AppColors.surface(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import '../screens/workout_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'workout_text_styles.dart';
@@ -102,12 +104,13 @@ class _WorkoutCardState extends State<WorkoutCard> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -164,16 +167,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -193,7 +190,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                         style: GoogleFonts.barlowCondensed(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           letterSpacing: -0.3,
                           height: 1.0,
                         ),
@@ -202,9 +199,9 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     if (widget.canManage)
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.more_horiz,
-                          color: Color(0xFFABABAB),
+                          color: AppColors.textSecondary(context),
                         ),
                         onPressed: _showManageActions,
                       ),
@@ -216,7 +213,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   style: GoogleFonts.barlowCondensed(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFFABABAB),
+                    color: AppColors.textSecondary(context),
                     letterSpacing: 0.3,
                     height: 1.0,
                   ),
@@ -239,7 +236,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                   style: WorkoutTextStyles.body.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     height: 1.28,
                   ),
                 ),
@@ -249,7 +246,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                   style: GoogleFonts.barlowCondensed(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFFB59B6A),
+                    color: AppColors.accent,
                     letterSpacing: 0.8,
                     height: 1,
                   ),
@@ -313,7 +310,7 @@ class _InlineStat extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFABABAB),
+                color: AppColors.textSecondary(context),
                 height: 1,
               ),
             ),
@@ -369,11 +366,11 @@ class _SheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
+    final color = danger ? AppColors.danger : const Color(0xFFB59B6A);
 
     return Material(
-      color: const Color(0xFF171717),
-      borderRadius: BorderRadius.circular(10),
+      color: AppColors.surfaceAlt(context),
+      borderRadius: BorderRadius.circular(AppRadii.input),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
@@ -391,7 +388,7 @@ class _SheetAction extends StatelessWidget {
                       label,
                       style: _WorkoutOptionsText.rowTitle.copyWith(
                         color: danger
-                            ? const Color(0xFFB42318)
+                            ? AppColors.danger
                             : const Color(0xFFB59B6A),
                       ),
                     ),

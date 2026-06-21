@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/create_workout_sheet.dart';
@@ -230,10 +231,14 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF171717),
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+      SystemUiOverlayStyle(
+        statusBarColor: AppColors.surfaceAlt(context),
+        statusBarIconBrightness: AppColors.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: AppColors.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
       ),
     );
 
@@ -241,7 +246,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       floatingActionButton: _canManage
           ? FloatingActionButton(
               heroTag: 'create-workout',
-              backgroundColor: const Color(0xFFB59B6A),
+              backgroundColor: AppColors.accent,
               foregroundColor: Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -251,7 +256,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           WorkoutsHeader(
@@ -263,7 +268,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ),
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFFB59B6A),
+              color: AppColors.accent,
               onRefresh: _refresh,
               child: _loading
                   ? const WorkoutsLoadingState()
@@ -416,7 +421,7 @@ class _RestDayEmptyState extends StatelessWidget {
           style: _font(
             30,
             weight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             letterSpacing: -0.3,
           ),
         ),
@@ -427,7 +432,7 @@ class _RestDayEmptyState extends StatelessWidget {
           style: _font(
             12,
             weight: FontWeight.w500,
-            color: const Color(0xFFABABAB),
+            color: AppColors.textSecondary(context),
             height: 1.35,
             letterSpacing: 0.3,
           ),
@@ -480,9 +485,9 @@ class _WorkoutDeleteSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: const Color(0xFF171717),
+          foregroundColor: AppColors.textPrimary(context),
+          side: BorderSide(color: AppColors.border(context)),
+          backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -509,7 +514,7 @@ class _WorkoutDeleteDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
+          backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

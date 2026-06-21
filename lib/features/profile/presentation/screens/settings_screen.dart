@@ -8,6 +8,7 @@ import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/data/auth_repository.dart';
 
@@ -83,12 +84,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -149,15 +151,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: SafeArea(
                 child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                  margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+                  padding: const EdgeInsets.all(AppSpacing.cardPadding),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF252525),
-                    borderRadius: BorderRadius.circular(18),
+                    color: AppColors.surface(context),
+                    borderRadius: BorderRadius.circular(AppRadii.panel),
                     border: Border.all(
-                      color: const Color(0xFF323232),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
+                    boxShadow: AppShadows.card(context),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -171,13 +174,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _password,
                         obscureText: obscurePassword,
-                        cursorColor: const Color(0xFFB59B6A),
+                        cursorColor: AppColors.accent,
                         style: _SettingsText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                         decoration:
                             _inputDecoration(
+                              context,
                               appStrings.profileNewPassword,
                             ).copyWith(
                               suffixIcon: IconButton(
@@ -186,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                 ),
-                                color: const Color(0xFFB59B6A),
+                                color: AppColors.accent,
                                 onPressed: () {
                                   setSheetState(() {
                                     obscurePassword = !obscurePassword;
@@ -199,13 +203,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _confirmPassword,
                         obscureText: obscureConfirmPassword,
-                        cursorColor: const Color(0xFFB59B6A),
+                        cursorColor: AppColors.accent,
                         style: _SettingsText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                         decoration:
                             _inputDecoration(
+                              context,
                               appStrings.profileConfirmPassword,
                             ).copyWith(
                               suffixIcon: IconButton(
@@ -214,7 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                 ),
-                                color: const Color(0xFFB59B6A),
+                                color: AppColors.accent,
                                 onPressed: () {
                                   setSheetState(() {
                                     obscureConfirmPassword =
@@ -298,12 +303,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -316,12 +322,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: _gymName,
-                    cursorColor: const Color(0xFFB59B6A),
+                    cursorColor: AppColors.accent,
                     style: _SettingsText.input.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: _inputDecoration(appStrings.profileGymName),
+                    decoration: _inputDecoration(
+                      context,
+                      appStrings.profileGymName,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   AppButton(
@@ -529,29 +538,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-InputDecoration _inputDecoration(String hint) {
+InputDecoration _inputDecoration(BuildContext context, String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFFABABAB),
+      color: AppColors.textSecondary(context),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surfaceAlt(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
@@ -593,7 +602,7 @@ class _SettingsListCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
         border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(children: children),
@@ -637,9 +646,7 @@ class _SettingsMenuRow extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 20,
-                color: danger
-                    ? const Color(0xFFB42318)
-                    : const Color(0xFFB59B6A),
+                color: danger ? AppColors.danger : AppColors.accent,
               ),
             ),
             const SizedBox(width: 14),
@@ -714,7 +721,7 @@ class _SettingsConfirmSecondaryButton extends StatelessWidget {
           backgroundColor: AppColors.surfaceAlt(context),
           side: BorderSide(color: AppColors.border(context)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: Text(label.toUpperCase(), style: _SettingsConfirmText.rowTitle),
@@ -739,10 +746,12 @@ class _SettingsConfirmPrimaryButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF111111),
+          backgroundColor: AppColors.isDark(context)
+              ? AppColors.surfaceAlt(context)
+              : const Color(0xFF111111),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: Text(
@@ -770,10 +779,10 @@ class _SettingsConfirmDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
+          backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: Text(

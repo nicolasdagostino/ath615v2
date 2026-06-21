@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class WorkoutsHeader extends StatelessWidget {
   const WorkoutsHeader({
@@ -35,7 +36,7 @@ class WorkoutsHeader extends StatelessWidget {
     );
   }
 
-  Widget _brandLogo() {
+  Widget _brandLogo(BuildContext context) {
     return SizedBox(
       width: 132,
       child: Text(
@@ -43,7 +44,7 @@ class WorkoutsHeader extends StatelessWidget {
         style: _font(
           18,
           weight: FontWeight.w800,
-          color: Colors.white,
+          color: AppColors.textPrimary(context),
           letterSpacing: -0.3,
           height: 1.0,
         ),
@@ -54,7 +55,7 @@ class WorkoutsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF171717),
+      color: AppColors.surfaceAlt(context),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
       child: SafeArea(
         bottom: false,
@@ -72,7 +73,7 @@ class WorkoutsHeader extends StatelessWidget {
                       style: _font(
                         24,
                         weight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.4,
                       ),
                     ),
@@ -85,7 +86,7 @@ class WorkoutsHeader extends StatelessWidget {
                 bottom: 0,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: _brandLogo(),
+                  child: _brandLogo(context),
                 ),
               ),
               Positioned(
@@ -143,7 +144,7 @@ class _HeaderIconButton extends StatelessWidget {
           SizedBox(
             width: 38,
             height: 38,
-            child: Icon(icon, size: 28, color: const Color(0xFFB59B6A)),
+            child: Icon(icon, size: 28, color: AppColors.accent),
           ),
           if (badgeCount > 0)
             Positioned(
@@ -152,7 +153,7 @@ class _HeaderIconButton extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFB42318),
+                  color: AppColors.danger,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(

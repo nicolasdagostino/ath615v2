@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 import '../widgets/workout_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -186,7 +188,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 borderRadius: BorderRadius.circular(28),
               ),
               child: ListView(
@@ -197,7 +199,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     style: GoogleFonts.barlowCondensed(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       letterSpacing: -0.3,
                       height: 1,
                     ),
@@ -224,7 +226,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               foregroundColor: const Color(0xFF384152),
                               side: const BorderSide(color: Color(0xFF323232)),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.card,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -232,7 +236,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                                 letterSpacing: -0.2,
                                 height: 1,
                               ),
@@ -250,7 +254,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               backgroundColor: const Color(0xFFB42318),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.card,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -258,7 +264,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                                 letterSpacing: -0.2,
                                 height: 1,
                               ),
@@ -370,14 +376,14 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF252525),
+        backgroundColor: AppColors.background(context),
         body: Container(
-          color: const Color(0xFF171717),
+          color: AppColors.surface(context),
           child: SafeArea(
             bottom: false,
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
+                    child: CircularProgressIndicator(color: AppColors.accent),
                   )
                 : workout == null
                 ? Center(
@@ -398,10 +404,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                             child: FilledButton(
                               onPressed: () => Navigator.of(context).pop(),
                               style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF111111),
+                                backgroundColor: AppColors.surfaceAlt(context),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.card,
+                                  ),
                                 ),
                               ),
                               child: Text(
@@ -419,15 +427,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     ),
                   )
                 : Container(
-                    color: const Color(0xFF252525),
+                    color: AppColors.surface(context),
                     child: Column(
                       children: [
                         Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF171717),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface(context),
                             border: Border(
                               bottom: BorderSide(
-                                color: Color(0xFF2A2A2A),
+                                color: AppColors.border(context),
                                 width: 0.8,
                               ),
                             ),
@@ -461,7 +469,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       style: GoogleFonts.barlowCondensed(
                                         fontSize: 24,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: AppColors.textPrimary(context),
                                         letterSpacing: -0.4,
                                         height: 1.0,
                                       ),
@@ -490,21 +498,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     18,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF171717),
-                                    borderRadius: BorderRadius.circular(16),
+                                    color: AppColors.surface(context),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.card,
+                                    ),
                                     border: Border.all(
-                                      color: const Color(0xFF323232),
+                                      color: AppColors.border(context),
                                       width: 1,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.04,
-                                        ),
-                                        blurRadius: 24,
-                                        offset: const Offset(0, 12),
-                                      ),
-                                    ],
+                                    boxShadow: AppShadows.card(context),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -515,7 +517,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         style: GoogleFonts.barlowCondensed(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white,
+                                          color: AppColors.textPrimary(context),
                                           letterSpacing: -0.3,
                                           height: 1.0,
                                         ),
@@ -528,7 +530,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         style: GoogleFonts.barlowCondensed(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFFABABAB),
+                                          color: AppColors.textSecondary(
+                                            context,
+                                          ),
                                           letterSpacing: 0.3,
                                           height: 1.0,
                                         ),
@@ -552,7 +556,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         workout['description']?.toString() ??
                                             '',
                                         style: WorkoutTextStyles.body.copyWith(
-                                          color: Colors.white,
+                                          color: AppColors.textPrimary(context),
                                           height: 1.28,
                                         ),
                                       ),
@@ -589,8 +593,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     vertical: 16,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF252525),
-                                    borderRadius: BorderRadius.circular(16),
+                                    color: AppColors.surface(context),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.card,
+                                    ),
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -607,7 +613,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         style: GoogleFonts.barlowCondensed(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFFABABAB),
+                                          color: AppColors.textSecondary(
+                                            context,
+                                          ),
                                           letterSpacing: 0.3,
                                           height: 1.0,
                                         ),
@@ -636,10 +644,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       14,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF171717),
+                                      color: AppColors.surface(context),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFF323232),
+                                        color: AppColors.border(context),
                                         width: 1,
                                       ),
                                       boxShadow: [
@@ -661,7 +669,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                             width: 38,
                                             height: 38,
                                             alignment: Alignment.center,
-                                            color: const Color(0xFF252525),
+                                            color: AppColors.surface(context),
                                             child:
                                                 avatarUrl == null ||
                                                     avatarUrl.trim().isEmpty
@@ -700,14 +708,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                       maxLines: 1,
                                                       overflow:
                                                           TextOverflow.ellipsis,
-                                                      style:
-                                                          GoogleFonts.barlowCondensed(
-                                                            color: Colors.white,
-                                                            fontSize: 15,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            height: 1.0,
-                                                          ),
+                                                      style: GoogleFonts.barlowCondensed(
+                                                        color:
+                                                            AppColors.textPrimary(
+                                                              context,
+                                                            ),
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        height: 1.0,
+                                                      ),
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
@@ -716,17 +726,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                       comment['created_at']
                                                           ?.toString(),
                                                     ),
-                                                    style:
-                                                        GoogleFonts.barlowCondensed(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: const Color(
-                                                            0xFFABABAB,
+                                                    style: GoogleFonts.barlowCondensed(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          AppColors.textSecondary(
+                                                            context,
                                                           ),
-                                                          letterSpacing: 0.3,
-                                                          height: 1.0,
-                                                        ),
+                                                      letterSpacing: 0.3,
+                                                      height: 1.0,
+                                                    ),
                                                   ),
                                                   if (_canDeleteComment(
                                                     comment,
@@ -745,12 +755,13 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                           _deleteComment(
                                                             comment,
                                                           ),
-                                                      icon: const Icon(
+                                                      icon: Icon(
                                                         Icons.delete_outline,
                                                         size: 18,
-                                                        color: Color(
-                                                          0xFFABABAB,
-                                                        ),
+                                                        color:
+                                                            AppColors.textSecondary(
+                                                              context,
+                                                            ),
                                                       ),
                                                     ),
                                                   ],
@@ -762,7 +773,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                     '',
                                                 style:
                                                     GoogleFonts.barlowCondensed(
-                                                      color: Colors.white,
+                                                      color:
+                                                          AppColors.textPrimary(
+                                                            context,
+                                                          ),
                                                       fontSize: 16,
                                                       fontWeight:
                                                           FontWeight.w500,
@@ -786,10 +800,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   18,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF171717),
-                                  borderRadius: BorderRadius.circular(16),
+                                  color: AppColors.surface(context),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.card,
+                                  ),
                                   border: Border.all(
-                                    color: const Color(0xFF323232),
+                                    color: AppColors.border(context),
                                     width: 1,
                                   ),
                                 ),
@@ -802,7 +818,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       style: GoogleFonts.barlowCondensed(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: AppColors.textPrimary(context),
                                         letterSpacing: 0.8,
                                         height: 1.0,
                                       ),
@@ -814,7 +830,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       minLines: 1,
                                       maxLines: 4,
                                       style: GoogleFonts.barlowCondensed(
-                                        color: Colors.white,
+                                        color: AppColors.textPrimary(context),
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                         height: 1.2,
@@ -822,13 +838,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       decoration: InputDecoration(
                                         hintText: appStrings.workoutCommentHint,
                                         hintStyle: GoogleFonts.barlowCondensed(
-                                          color: const Color(0xFFABABAB),
+                                          color: AppColors.textSecondary(
+                                            context,
+                                          ),
                                           fontSize: 15,
                                           fontWeight: FontWeight.w500,
                                           letterSpacing: 0.2,
                                         ),
                                         filled: true,
-                                        fillColor: const Color(0xFF252525),
+                                        fillColor: AppColors.surfaceAlt(
+                                          context,
+                                        ),
                                         contentPadding:
                                             const EdgeInsets.fromLTRB(
                                               16,
@@ -840,8 +860,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFF323232),
+                                          borderSide: BorderSide(
+                                            color: AppColors.border(context),
                                             width: 1,
                                           ),
                                         ),
@@ -849,8 +869,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFFB59B6A),
+                                          borderSide: BorderSide(
+                                            color: AppColors.accent,
                                             width: 1.2,
                                           ),
                                         ),
@@ -858,8 +878,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFF323232),
+                                          borderSide: BorderSide(
+                                            color: AppColors.border(context),
                                             width: 1,
                                           ),
                                         ),
@@ -868,7 +888,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                             right: 8,
                                           ),
                                           child: Material(
-                                            color: const Color(0xFFB59B6A),
+                                            color: AppColors.accent,
                                             borderRadius: BorderRadius.circular(
                                               999,
                                             ),
@@ -876,12 +896,19 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                               borderRadius:
                                                   BorderRadius.circular(999),
                                               onTap: _addComment,
-                                              child: const SizedBox(
+                                              child: SizedBox(
                                                 width: 42,
                                                 height: 42,
                                                 child: Icon(
                                                   Icons.send_rounded,
-                                                  color: Color(0xFF111111),
+                                                  color:
+                                                      AppColors.isDark(context)
+                                                      ? AppColors.surface(
+                                                          context,
+                                                        )
+                                                      : AppColors.textPrimary(
+                                                          context,
+                                                        ),
                                                   size: 20,
                                                 ),
                                               ),
@@ -939,7 +966,7 @@ class _DetailInlineStat extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFABABAB),
+                color: AppColors.textSecondary(context),
                 height: 1,
               ),
             ),
