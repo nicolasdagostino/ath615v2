@@ -325,14 +325,19 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     ),
                   )
                 else if (_programs.isEmpty)
-                  Text(appStrings.classNeedProgram, style: _ClassSheetText.body)
+                  Text(
+                    appStrings.classNeedProgram,
+                    style: _ClassSheetText.body.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
+                  )
                 else
                   DropdownButtonFormField<String>(
                     initialValue: _selectedProgramId,
                     dropdownColor: AppColors.surface(context),
                     iconEnabledColor: AppColors.textSecondary(context),
                     style: _ClassSheetText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                     hint: Text(
@@ -398,14 +403,14 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     color: AppColors.surfaceAlt(context),
                     borderRadius: BorderRadius.circular(AppRadii.input),
                     border: Border.all(
-                      color: const Color(0xFF323232),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
                   ),
                   child: SwitchListTile(
                     contentPadding: const EdgeInsets.fromLTRB(18, 6, 12, 6),
                     activeThumbColor: AppColors.accent,
-                    activeTrackColor: const Color(0xFF3A3325),
+                    activeTrackColor: AppColors.accent.withValues(alpha: 0.28),
                     inactiveThumbColor: AppColors.textSecondary(context),
                     inactiveTrackColor: AppColors.border(context),
                     value: _repeatWeekly,
@@ -585,14 +590,16 @@ InputDecoration _classSheetInput(
     hintText: hint,
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
-    hintStyle: _ClassSheetText.subtle.copyWith(color: const Color(0xFFABABAB)),
+    hintStyle: _ClassSheetText.subtle.copyWith(
+      color: AppColors.textSecondary(context),
+    ),
     prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
     fillColor: AppColors.surface(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -600,7 +607,7 @@ InputDecoration _classSheetInput(
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }

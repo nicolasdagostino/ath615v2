@@ -299,7 +299,9 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                 else if (_programs.isEmpty)
                   Text(
                     appStrings.classNeedProgram,
-                    style: _EditClassSheetText.body,
+                    style: _EditClassSheetText.body.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
                   )
                 else
                   DropdownButtonFormField<String>(
@@ -478,7 +480,7 @@ InputDecoration _editClassInput(
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -486,7 +488,7 @@ InputDecoration _editClassInput(
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
