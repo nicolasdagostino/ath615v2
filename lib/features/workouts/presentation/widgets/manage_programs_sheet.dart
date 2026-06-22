@@ -178,25 +178,28 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
                   Text(
                     appStrings.workoutEdit.toUpperCase(),
-                    style: _ProgramsText.title.copyWith(fontSize: 22),
+                    style: _ProgramsText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: controller,
                     autofocus: true,
                     textCapitalization: TextCapitalization.words,
-                    cursorColor: const Color(0xFFB59B6A),
+                    cursorColor: AppColors.accent,
                     style: _ProgramsText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                     decoration: _programsInput(
@@ -278,16 +281,26 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
                   Text(
+                    name.toUpperCase(),
+                    style: _ProgramsText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     appStrings.workoutOptions.toUpperCase(),
-                    style: _ProgramsText.title,
+                    style: _ProgramsText.subtle.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _ProgramSheetAction(
@@ -351,9 +364,9 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -362,14 +375,17 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: Color(0xFFB42318),
+                        color: AppColors.danger,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           appStrings.delete.toUpperCase(),
-                          style: _ProgramsText.title.copyWith(fontSize: 22),
+                          style: _ProgramsText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                            fontSize: 22,
+                          ),
                         ),
                       ),
                     ],
@@ -378,7 +394,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   Text(
                     '$name\n$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}\n\nThis will permanently delete this program and all associated workouts. This action cannot be undone.',
                     style: _ProgramsText.body.copyWith(
-                      color: const Color(0xFFABABAB),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -580,9 +596,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFB59B6A),
-                      ),
+                      child: CircularProgressIndicator(color: AppColors.accent),
                     ),
                   )
                 else if (_programs.isEmpty)
@@ -646,7 +660,9 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}',
-                                      style: _ProgramsText.subtle,
+                                      style: _ProgramsText.subtle.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -655,8 +671,8 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                           : appStrings.inactive,
                                       style: _ProgramsText.subtle.copyWith(
                                         color: active
-                                            ? const Color(0xFFB59B6A)
-                                            : const Color(0xFFABABAB),
+                                            ? AppColors.accent
+                                            : AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ],
@@ -666,14 +682,14 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                                 visualDensity: VisualDensity.compact,
                                 icon: const Icon(
                                   Icons.more_horiz,
-                                  color: Color(0xFFB59B6A),
+                                  color: AppColors.accent,
                                   size: 24,
                                 ),
                                 onPressed: () => _showProgramOptions(program),
                               ),
                               Switch(
                                 value: active,
-                                activeThumbColor: const Color(0xFFB59B6A),
+                                activeThumbColor: AppColors.accent,
                                 onChanged: (_) => _toggle(program),
                               ),
                             ],
@@ -742,10 +758,10 @@ class _ProgramSheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
 
     return Material(
-      color: const Color(0xFF171717),
+      color: AppColors.surface(context),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -754,7 +770,11 @@ class _ProgramSheetAction extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(
+                icon,
+                color: danger ? AppColors.danger : AppColors.accent,
+                size: 20,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -769,12 +789,17 @@ class _ProgramSheetAction extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: _ProgramsText.subtle,
+                      style: _ProgramsText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
             ],
           ),
         ),
@@ -797,8 +822,8 @@ class _ProgramDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.danger,
+          foregroundColor: AppColors.background(context),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -832,9 +857,9 @@ class _ProgramSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: const Color(0xFF171717),
+          foregroundColor: AppColors.textPrimary(context),
+          side: BorderSide(color: AppColors.border(context)),
+          backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -874,22 +899,22 @@ class _ProgramButton extends StatelessWidget {
       child: FilledButton(
         onPressed: loading || !enabled ? null : onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB59B6A),
-          disabledBackgroundColor: const Color(0xFF171717),
-          foregroundColor: const Color(0xFF111111),
-          disabledForegroundColor: const Color(0xFF6F6F6F),
+          backgroundColor: AppColors.accent,
+          disabledBackgroundColor: AppColors.surfaceAlt(context),
+          foregroundColor: AppColors.background(context),
+          disabledForegroundColor: AppColors.textSecondary(context),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFF111111),
+                  color: AppColors.background(context),
                 ),
               )
             : Text(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
@@ -214,7 +213,7 @@ class _ShellBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 68,
+          height: 58,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
@@ -228,7 +227,7 @@ class _ShellBottomNav extends StatelessWidget {
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      padding: const EdgeInsets.only(top: 8, bottom: 8),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -247,23 +246,6 @@ class _ShellBottomNav extends StatelessWidget {
                               color: selected
                                   ? AppColors.accent
                                   : AppColors.textSecondary(context),
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 11.5,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: selected
-                                  ? AppColors.accent
-                                  : AppColors.textSecondary(context),
-                              letterSpacing: 0.1,
-                              height: 1.0,
                             ),
                           ),
                         ],

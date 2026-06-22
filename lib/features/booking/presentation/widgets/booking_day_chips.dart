@@ -25,7 +25,7 @@ class _BookingDayChipsState extends State<BookingDayChips> {
 
   static const int _pastDays = 14;
   static const int _futureDays = 14;
-  static const double _itemExtent = 46 + 5;
+  static const double _itemExtent = 46 + 8;
 
   @override
   void initState() {
@@ -71,9 +71,9 @@ class _BookingDayChipsState extends State<BookingDayChips> {
       child: ListView.separated(
         controller: _controller,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 22),
         itemCount: itemCount,
-        separatorBuilder: (_, _) => const SizedBox(width: 5),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final day = DateTime(
             today.year,

@@ -71,7 +71,7 @@ class BookingTextStyles {
       GoogleFonts.barlowCondensed(
         color: selected ? const Color(0xFFB59B6A) : const Color(0xFF8F96A3),
         fontSize: 14,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.2,
         height: 0.82,
       );
