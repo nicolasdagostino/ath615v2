@@ -9,9 +9,14 @@ import '../widgets/workout_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
-  const WorkoutDetailScreen({super.key, required this.workoutId});
+  const WorkoutDetailScreen({
+    super.key,
+    required this.workoutId,
+    this.fromExplore = false,
+  });
 
   final String workoutId;
+  final bool fromExplore;
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
@@ -189,7 +194,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
                 color: AppColors.textPrimary(context),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -440,9 +445,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               ),
                             ),
                           ),
-                          padding: const EdgeInsets.fromLTRB(0, 6, 0, 8),
+                          padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
                           child: SizedBox(
-                            height: 50,
+                            height: 56,
                             child: Row(
                               children: [
                                 SizedBox(
@@ -456,21 +461,25 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     ),
                                     onPressed: Navigator.of(context).pop,
                                     icon: const Icon(
-                                      Icons.arrow_back_rounded,
-                                      color: Color(0xFFB59B6A),
-                                      size: 30,
+                                      Icons.arrow_back_ios_new_rounded,
+                                      color: AppColors.accent,
+                                      size: 20,
                                     ),
                                   ),
                                 ),
                                 Expanded(
                                   child: Center(
                                     child: Text(
-                                      appStrings.workoutsTitle.toUpperCase(),
+                                      widget.fromExplore
+                                          ? appStrings.workoutHistoryTitle
+                                                .toUpperCase()
+                                          : appStrings.workoutsTitle
+                                                .toUpperCase(),
                                       style: GoogleFonts.barlowCondensed(
-                                        fontSize: 24,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.w800,
                                         color: AppColors.textPrimary(context),
-                                        letterSpacing: -0.4,
+                                        letterSpacing: -0.2,
                                         height: 1.0,
                                       ),
                                     ),
@@ -824,99 +833,99 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    TextField(
-                                      controller: _commentCtrl,
-                                      focusNode: _commentFocus,
-                                      minLines: 1,
-                                      maxLines: 4,
-                                      style: GoogleFonts.barlowCondensed(
-                                        color: AppColors.textPrimary(context),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.2,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: appStrings.workoutCommentHint,
-                                        hintStyle: GoogleFonts.barlowCondensed(
-                                          color: AppColors.textSecondary(
-                                            context,
-                                          ),
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.2,
-                                        ),
-                                        filled: true,
-                                        fillColor: AppColors.surfaceAlt(
-                                          context,
-                                        ),
-                                        contentPadding:
-                                            const EdgeInsets.fromLTRB(
-                                              16,
-                                              15,
-                                              8,
-                                              15,
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _commentCtrl,
+                                            focusNode: _commentFocus,
+                                            minLines: 1,
+                                            maxLines: 4,
+                                            style: GoogleFonts.barlowCondensed(
+                                              color: AppColors.textPrimary(
+                                                context,
+                                              ),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              height: 1.2,
                                             ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: AppColors.border(context),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: AppColors.accent,
-                                            width: 1.2,
-                                          ),
-                                        ),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          borderSide: BorderSide(
-                                            color: AppColors.border(context),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        suffixIcon: Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: Material(
-                                            color: AppColors.accent,
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                              onTap: _addComment,
-                                              child: SizedBox(
-                                                width: 42,
-                                                height: 42,
-                                                child: Icon(
-                                                  Icons.send_rounded,
-                                                  color:
-                                                      AppColors.isDark(context)
-                                                      ? AppColors.surface(
-                                                          context,
-                                                        )
-                                                      : AppColors.textPrimary(
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  appStrings.workoutCommentHint,
+                                              hintStyle:
+                                                  GoogleFonts.barlowCondensed(
+                                                    color:
+                                                        AppColors.textSecondary(
                                                           context,
                                                         ),
-                                                  size: 20,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w500,
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                              filled: true,
+                                              fillColor: AppColors.surfaceAlt(
+                                                context,
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.fromLTRB(
+                                                    16,
+                                                    15,
+                                                    16,
+                                                    15,
+                                                  ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: AppColors.border(
+                                                    context,
+                                                  ),
+                                                  width: 1,
                                                 ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: AppColors.accent,
+                                                  width: 1.2,
+                                                ),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: AppColors.border(
+                                                    context,
+                                                  ),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                            ),
+                                            onSubmitted: (_) => _addComment(),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Material(
+                                          color: AppColors.accent,
+                                          shape: const CircleBorder(),
+                                          child: InkWell(
+                                            customBorder: const CircleBorder(),
+                                            onTap: _addComment,
+                                            child: const SizedBox(
+                                              width: 30,
+                                              height: 30,
+                                              child: Icon(
+                                                Icons.send_rounded,
+                                                color: Colors.white,
+                                                size: 17,
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      onSubmitted: (_) => _addComment(),
+                                      ],
                                     ),
                                   ],
                                 ),

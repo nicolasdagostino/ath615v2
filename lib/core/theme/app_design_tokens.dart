@@ -5,8 +5,8 @@ import 'app_colors.dart';
 class AppRadii {
   const AppRadii._();
 
-  static const double card = 28;
-  static const double sheet = 28;
+  static const double card = 16;
+  static const double sheet = 22;
   static const double panel = 18;
   static const double input = 10;
   static const double button = 16;

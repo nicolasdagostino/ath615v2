@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 Future<void> showAttendanceSheet({
   required BuildContext context,
@@ -82,7 +83,7 @@ Future<void> showAttendanceSheet({
                 padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                 decoration: BoxDecoration(
                   color: AppColors.surface(context),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadii.sheet),
                   border: Border.all(
                     color: AppColors.border(context),
                     width: 1,

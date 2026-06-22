@@ -42,7 +42,7 @@ class WorkoutsHeader extends StatelessWidget {
       child: Text(
         gymName ?? appStrings.appBrand,
         style: _font(
-          18,
+          16,
           weight: FontWeight.w800,
           color: AppColors.textPrimary(context),
           letterSpacing: -0.3,
@@ -56,7 +56,7 @@ class WorkoutsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.surfaceAlt(context),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -71,10 +71,10 @@ class WorkoutsHeader extends StatelessWidget {
                     Text(
                       appStrings.workoutsTitle.toUpperCase(),
                       style: _font(
-                        24,
+                        22,
                         weight: FontWeight.w800,
                         color: AppColors.textPrimary(context),
-                        letterSpacing: -0.4,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -106,7 +106,7 @@ class WorkoutsHeader extends StatelessWidget {
                         const SizedBox(width: 8),
                       ],
                       _HeaderIconButton(
-                        icon: Icons.notifications_outlined,
+                        icon: Icons.notifications,
                         onTap: onOpenNotifications,
                         badgeCount: unreadNotifications,
                       ),
@@ -144,7 +144,11 @@ class _HeaderIconButton extends StatelessWidget {
           SizedBox(
             width: 38,
             height: 38,
-            child: Icon(icon, size: 28, color: AppColors.accent),
+            child: Icon(
+              icon,
+              size: icon == Icons.notifications ? 32 : 28,
+              color: AppColors.accent,
+            ),
           ),
           if (badgeCount > 0)
             Positioned(
@@ -160,7 +164,7 @@ class _HeaderIconButton extends StatelessWidget {
                   badgeCount > 99 ? '99+' : badgeCount.toString(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),

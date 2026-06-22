@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../widgets/manage_plans_sheet.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -453,7 +455,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
                 color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
                 border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(
@@ -704,7 +706,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                   decoration: BoxDecoration(
                     color: const Color(0xFF252525),
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(AppRadii.sheet),
                     border: Border.all(
                       color: const Color(0xFF323232),
                       width: 1,
@@ -715,7 +717,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         appStrings.assignPlan.toUpperCase(),
-                        style: _DashText.title.copyWith(color: Colors.white),
+                        style: _DashText.title.copyWith(
+                          color: AppColors.textPrimary(context),
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Text(
@@ -920,7 +926,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
                       decoration: BoxDecoration(
                         color: const Color(0xFF252525),
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(AppRadii.sheet),
                         border: Border.all(
                           color: const Color(0xFF323232),
                           width: 1,
@@ -1797,8 +1803,8 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF171717),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      color: AppColors.surfaceAlt(context),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -1828,9 +1834,9 @@ class _DashboardHeader extends StatelessWidget {
                     Text(
                       appStrings.dashboardTitle.toUpperCase(),
                       style: _DashText.title.copyWith(
-                        color: Colors.white,
-                        fontSize: 24,
-                        letterSpacing: -0.4,
+                        color: AppColors.textPrimary(context),
+                        fontSize: 22,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -1846,7 +1852,7 @@ class _DashboardHeader extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       _HeaderIcon(
-                        icon: Icons.notifications_outlined,
+                        icon: Icons.notifications,
                         onTap: onOpenNotifications,
                         badgeCount: unreadNotifications,
                       ),
@@ -1884,7 +1890,11 @@ class _HeaderIcon extends StatelessWidget {
           SizedBox(
             width: 38,
             height: 38,
-            child: Icon(icon, size: 28, color: const Color(0xFFB59B6A)),
+            child: Icon(
+              icon,
+              size: icon == Icons.notifications ? 32 : 28,
+              color: AppColors.accent,
+            ),
           ),
           if (badgeCount > 0)
             Positioned(
@@ -1893,14 +1903,14 @@ class _HeaderIcon extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFB42318),
+                  color: AppColors.danger,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   badgeCount > 99 ? '99+' : badgeCount.toString(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),
@@ -1999,7 +2009,7 @@ class _DashboardCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
         border: Border.all(color: const Color(0xFF323232), width: 1),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppRadii.sheet),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),

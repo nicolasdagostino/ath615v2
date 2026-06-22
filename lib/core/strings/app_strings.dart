@@ -99,6 +99,7 @@ class AppStrings {
   );
 
   String get workoutsTitle => pick('WOD', 'WOD');
+  String get workoutHistoryTitle => pick('HISTORY', 'HISTORIAL');
 
   String get workoutCreateTitle => pick('Create workout', 'Crear WOD');
   String get workoutNeedProgram => pick(

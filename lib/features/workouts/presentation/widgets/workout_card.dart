@@ -21,6 +21,7 @@ class WorkoutCard extends StatefulWidget {
     this.canManage = false,
     this.onEdit,
     this.onDelete,
+    this.openDetailFromExplore = false,
     this.onChanged,
   });
 
@@ -34,6 +35,7 @@ class WorkoutCard extends StatefulWidget {
   final bool canManage;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final bool openDetailFromExplore;
   final Future<void> Function()? onChanged;
 
   @override
@@ -85,7 +87,10 @@ class _WorkoutCardState extends State<WorkoutCard> {
   Future<void> _openDetail() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => WorkoutDetailScreen(workoutId: widget.workoutId),
+        builder: (_) => WorkoutDetailScreen(
+          workoutId: widget.workoutId,
+          fromExplore: widget.openDetailFromExplore,
+        ),
       ),
     );
 

@@ -611,8 +611,8 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.background(context),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      color: AppColors.surfaceAlt(context),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -631,7 +631,7 @@ class _ProfileHeader extends StatelessWidget {
                     child: Text(
                       gymName ?? appStrings.appBrand,
                       style: _font(
-                        18,
+                        16,
                         weight: FontWeight.w800,
                         color: AppColors.textPrimary(context),
                         letterSpacing: -0.3,
@@ -648,10 +648,10 @@ class _ProfileHeader extends StatelessWidget {
                     Text(
                       appStrings.profileHeaderTitle,
                       style: _font(
-                        24,
+                        22,
                         weight: FontWeight.w800,
                         color: AppColors.textPrimary(context),
-                        letterSpacing: -0.4,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -675,8 +675,8 @@ class _ProfileHeader extends StatelessWidget {
                             width: 38,
                             height: 38,
                             child: Icon(
-                              Icons.notifications_outlined,
-                              size: 28,
+                              Icons.notifications,
+                              size: 32,
                               color: AppColors.accent,
                             ),
                           ),
@@ -699,7 +699,7 @@ class _ProfileHeader extends StatelessWidget {
                                       : unreadNotifications.toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                     height: 1,
                                   ),

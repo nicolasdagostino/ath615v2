@@ -126,7 +126,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(AppRadii.sheet),
               border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
@@ -467,7 +467,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(AppRadii.sheet),
               border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(

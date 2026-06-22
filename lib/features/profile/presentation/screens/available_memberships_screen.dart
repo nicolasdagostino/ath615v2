@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 class AvailableMembershipsScreen extends StatefulWidget {
   const AvailableMembershipsScreen({super.key, required this.type});
@@ -92,7 +93,7 @@ class _AvailableMembershipsScreenState
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
                 color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
                 border: Border.all(color: const Color(0xFF323232), width: 1),
               ),
               child: ListView(

@@ -495,6 +495,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             );
                           },
                           child: WorkoutCard(
+                            openDetailFromExplore: true,
                             workoutId: workout['id'].toString(),
                             program:
                                 program?['name']?.toString() ??
