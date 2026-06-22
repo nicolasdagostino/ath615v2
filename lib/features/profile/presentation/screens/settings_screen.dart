@@ -435,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final canEditGym = role == 'admin' || role == 'owner';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -447,7 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: const Icon(
                     Icons.arrow_back_ios_new_rounded,
                     size: 20,
-                    color: Color(0xFFB59B6A),
+                    color: AppColors.accent,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -746,17 +746,17 @@ class _SettingsConfirmPrimaryButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.isDark(context)
-              ? AppColors.surfaceAlt(context)
-              : const Color(0xFF111111),
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.surfaceAlt(context),
+          foregroundColor: AppColors.textPrimary(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _SettingsConfirmText.rowTitle.copyWith(color: Colors.white),
+          style: _SettingsConfirmText.rowTitle.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
         ),
       ),
     );
@@ -780,14 +780,16 @@ class _SettingsConfirmDangerButton extends StatelessWidget {
         onPressed: onTap,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.danger,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _SettingsConfirmText.rowTitle.copyWith(color: Colors.white),
+          style: _SettingsConfirmText.rowTitle.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
         ),
       ),
     );
