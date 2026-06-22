@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 
@@ -123,9 +125,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
             decoration: BoxDecoration(
-              color: const Color(0xFF252525),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFF323232), width: 1),
+              border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
               children: [
@@ -134,7 +136,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                     width: 48,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3A3A3A),
+                      color: AppColors.border(context),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -142,11 +144,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 const SizedBox(height: 20),
                 Text(
                   appStrings.classHistory.toUpperCase(),
-                  style: _TrainingText.sectionTitle,
+                  style: _TrainingText.sectionTitle.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 if (_classHistory.isEmpty)
-                  Text(appStrings.noClasses, style: _TrainingText.subtle)
+                  Text(
+                    appStrings.noClasses,
+                    style: _TrainingText.subtle.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  )
                 else
                   ..._classHistory.map((item) {
                     final klass =
@@ -160,7 +169,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF171717),
+                          color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: const Color(0xFF323232),
@@ -173,12 +182,17 @@ class _TrainingScreenState extends State<TrainingScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(title, style: _TrainingText.title),
+                                  Text(
+                                    title,
+                                    style: _TrainingText.title.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     appStrings.attended.toUpperCase(),
                                     style: _TrainingText.subtle.copyWith(
-                                      color: const Color(0xFFB59B6A),
+                                      color: AppColors.accent,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.7,
                                     ),
@@ -193,7 +207,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF111111),
+                                color: AppColors.surface(context),
                                 borderRadius: BorderRadius.circular(999),
                                 border: Border.all(
                                   color: const Color(0xFF323232),
@@ -203,7 +217,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                               child: Text(
                                 date,
                                 style: _TrainingText.subtle.copyWith(
-                                  color: const Color(0xFFABABAB),
+                                  color: AppColors.textSecondary(context),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -276,7 +290,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF252525),
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: const Color(0xFF323232),
@@ -290,7 +304,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         children: [
                           const Icon(
                             Icons.fitness_center_rounded,
-                            color: Color(0xFFB59B6A),
+                            color: AppColors.accent,
                             size: 22,
                           ),
                           const SizedBox(width: 10),
@@ -308,16 +322,19 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         initialValue: selectedExercise,
-                        dropdownColor: const Color(0xFF171717),
-                        iconEnabledColor: const Color(0xFFABABAB),
+                        dropdownColor: AppColors.surface(context),
+                        iconEnabledColor: AppColors.textSecondary(context),
                         style: _TrainingText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: _inputDecoration(appStrings.exercise)
-                            .copyWith(
+                        decoration:
+                            _inputDecoration(
+                              context,
+                              appStrings.exercise,
+                            ).copyWith(
                               filled: true,
-                              fillColor: const Color(0xFF171717),
+                              fillColor: AppColors.surface(context),
                             ),
                         items: _recordExercises.map((exercise) {
                           return DropdownMenuItem<String>(
@@ -325,7 +342,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                             child: Text(
                               exercise,
                               style: _TrainingText.input.copyWith(
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                           );
@@ -344,27 +361,33 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        cursorColor: const Color(0xFFB59B6A),
+                        cursorColor: AppColors.accent,
                         style: _TrainingText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: _inputDecoration(appStrings.weightKg),
+                        decoration: _inputDecoration(
+                          context,
+                          appStrings.weightKg,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: achievedAt,
                         readOnly: true,
-                        cursorColor: const Color(0xFFB59B6A),
+                        cursorColor: AppColors.accent,
                         style: _TrainingText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: _inputDecoration(appStrings.birthDate)
-                            .copyWith(
+                        decoration:
+                            _inputDecoration(
+                              context,
+                              appStrings.birthDate,
+                            ).copyWith(
                               suffixIcon: const Icon(
                                 Icons.calendar_month_rounded,
-                                color: Color(0xFFB59B6A),
+                                color: AppColors.accent,
                               ),
                             ),
                         onTap: () async {
@@ -387,12 +410,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         controller: notes,
                         minLines: 2,
                         maxLines: 3,
-                        cursorColor: const Color(0xFFB59B6A),
+                        cursorColor: AppColors.accent,
                         style: _TrainingText.input.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: _inputDecoration(appStrings.notes),
+                        decoration: _inputDecoration(context, appStrings.notes),
                       ),
                       const SizedBox(height: 16),
                       AppButton(
@@ -443,9 +466,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
             decoration: BoxDecoration(
-              color: const Color(0xFF252525),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFF323232), width: 1),
+              border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
               children: [
@@ -454,7 +477,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                     width: 48,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3A3A3A),
+                      color: AppColors.border(context),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -462,11 +485,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 const SizedBox(height: 20),
                 Text(
                   appStrings.personalRecords.toUpperCase(),
-                  style: _TrainingText.sectionTitle,
+                  style: _TrainingText.sectionTitle.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 if (_personalRecords.isEmpty)
-                  Text(appStrings.noRecordsYet, style: _TrainingText.subtle)
+                  Text(
+                    appStrings.noRecordsYet,
+                    style: _TrainingText.subtle.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  )
                 else
                   ..._personalRecords.map((record) {
                     final id = record['id']?.toString() ?? '';
@@ -480,7 +510,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF171717),
+                          color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: const Color(0xFF323232),
@@ -493,15 +523,27 @@ class _TrainingScreenState extends State<TrainingScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(exercise, style: _TrainingText.title),
+                                  Text(
+                                    exercise,
+                                    style: _TrainingText.title.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     '$weight kg · $date',
-                                    style: _TrainingText.subtle,
+                                    style: _TrainingText.subtle.copyWith(
+                                      color: AppColors.textSecondary(context),
+                                    ),
                                   ),
                                   if (notes.isNotEmpty) ...[
                                     const SizedBox(height: 4),
-                                    Text(notes, style: _TrainingText.body),
+                                    Text(
+                                      notes,
+                                      style: _TrainingText.body.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
+                                    ),
                                   ],
                                 ],
                               ),
@@ -516,7 +558,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                               },
                               icon: const Icon(
                                 Icons.more_horiz,
-                                color: Color(0xFFB59B6A),
+                                color: AppColors.accent,
                                 size: 24,
                               ),
                             ),
@@ -554,16 +596,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
             decoration: BoxDecoration(
-              color: const Color(0xFF252525),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFF323232), width: 1),
+              border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
               shrinkWrap: true,
               children: [
                 Text(
                   appStrings.personalRecords.toUpperCase(),
-                  style: _TrainingText.sectionTitle,
+                  style: _TrainingText.sectionTitle.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _TrainingSheetAction(
@@ -661,9 +705,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
             decoration: BoxDecoration(
-              color: const Color(0xFF252525),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFF323232), width: 1),
+              border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
               shrinkWrap: true,
@@ -672,7 +716,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFB42318),
+                      color: AppColors.danger,
                       size: 24,
                     ),
                     const SizedBox(width: 10),
@@ -690,7 +734,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 Text(
                   appStrings.deleteRecordMsg,
                   style: _TrainingConfirmText.body.copyWith(
-                    color: const Color(0xFFABABAB),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -739,7 +783,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -751,11 +795,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   icon: const Icon(
                     Icons.arrow_back_ios_new_rounded,
                     size: 20,
-                    color: Color(0xFFB59B6A),
+                    color: AppColors.accent,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('Training', style: _TrainingText.header),
+                Text(
+                  'Training',
+                  style: _TrainingText.header.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -780,11 +829,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 }
 
-InputDecoration _inputDecoration(String hint) {
+InputDecoration _inputDecoration(BuildContext context, String hint) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFFABABAB),
+      color: AppColors.textSecondary(context),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
@@ -792,19 +841,19 @@ InputDecoration _inputDecoration(String hint) {
     labelText: null,
     floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surface(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
@@ -871,9 +920,10 @@ class _TrainingCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
       ),
       child: child,
     );
@@ -906,7 +956,9 @@ class _TrainingMilestoneCard extends StatelessWidget {
         children: [
           Text(
             appStrings.milestone.toUpperCase(),
-            style: _TrainingText.sectionTitle,
+            style: _TrainingText.sectionTitle.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -914,12 +966,16 @@ class _TrainingMilestoneCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$attendedCount / $target ${appStrings.classesAttended}',
-                  style: _TrainingText.title,
+                  style: _TrainingText.title.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
               ),
               Text(
                 '$remaining ${appStrings.classesToGo}',
-                style: _TrainingText.subtle,
+                style: _TrainingText.subtle.copyWith(
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ],
           ),
@@ -929,8 +985,8 @@ class _TrainingMilestoneCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 9,
-              backgroundColor: const Color(0xFF2A2A2A),
-              color: const Color(0xFFB59B6A),
+              backgroundColor: AppColors.surface(context),
+              color: AppColors.accent,
             ),
           ),
         ],
@@ -956,13 +1012,17 @@ class _TrainingPersonalRecordsCard extends StatelessWidget {
         children: [
           Text(
             appStrings.personalRecords.toUpperCase(),
-            style: _TrainingText.sectionTitle,
+            style: _TrainingText.sectionTitle.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
           ),
           Text(
             records.isEmpty
                 ? appStrings.noRecordsYet
                 : '${records.length} ${appStrings.personalRecords}',
-            style: _TrainingText.subtle,
+            style: _TrainingText.subtle.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
           ),
           const SizedBox(height: 16),
           AppButton(label: appStrings.viewRecords, onPressed: onView),
@@ -991,21 +1051,23 @@ class _TrainingClassHistoryCard extends StatelessWidget {
         children: [
           Text(
             appStrings.classHistory.toUpperCase(),
-            style: _TrainingText.sectionTitle,
+            style: _TrainingText.sectionTitle.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
           ),
           const SizedBox(height: 10),
           if (history.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF171717),
+                color: AppColors.surfaceAlt(context),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFB59B6A), width: 1),
+                border: Border.all(color: AppColors.accent, width: 1),
               ),
               child: Text(
                 'ATTENDED ${history.length}',
                 style: _TrainingText.subtle.copyWith(
-                  color: const Color(0xFFB59B6A),
+                  color: AppColors.accent,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.7,
                 ),
@@ -1014,7 +1076,12 @@ class _TrainingClassHistoryCard extends StatelessWidget {
             const SizedBox(height: 14),
           ],
           if (history.isEmpty)
-            Text(appStrings.noClasses, style: _TrainingText.subtle)
+            Text(
+              appStrings.noClasses,
+              style: _TrainingText.subtle.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            )
           else
             ...history.map((item) {
               final klass = item['classes'] as Map<String, dynamic>? ?? {};
@@ -1027,7 +1094,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF252525),
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: const Color(0xFF323232),
@@ -1039,7 +1106,14 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [Text(title, style: _TrainingText.title)],
+                          children: [
+                            Text(
+                              title,
+                              style: _TrainingText.title.copyWith(
+                                color: AppColors.textPrimary(context),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1049,7 +1123,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF171717),
+                          color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
                             color: const Color(0xFF323232),
@@ -1059,7 +1133,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                         child: Text(
                           date.toUpperCase(),
                           style: _TrainingText.subtle.copyWith(
-                            color: const Color(0xFFABABAB),
+                            color: AppColors.textSecondary(context),
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
                           ),
@@ -1098,7 +1172,7 @@ class _TrainingSheetAction extends StatelessWidget {
     final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
 
     return Material(
-      color: const Color(0xFF171717),
+      color: AppColors.surfaceAlt(context),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -1122,7 +1196,9 @@ class _TrainingSheetAction extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: _TrainingText.subtle,
+                      style: _TrainingText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ],
                 ),
@@ -1180,8 +1256,8 @@ class _TrainingConfirmSecondaryButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: const Color(0xFF171717),
+          side: BorderSide(color: AppColors.border(context)),
+          backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1208,7 +1284,7 @@ class _TrainingConfirmDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
+          backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
 
 class MembershipScreen extends StatefulWidget {
   const MembershipScreen({super.key});
@@ -75,7 +77,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -87,11 +89,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   icon: const Icon(
                     Icons.arrow_back_ios_new_rounded,
                     size: 20,
-                    color: Color(0xFFB59B6A),
+                    color: AppColors.accent,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(appStrings.membershipTitle, style: _MembershipText.header),
+                Text(
+                  appStrings.membershipTitle,
+                  style: _MembershipText.header.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -104,7 +111,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   children: [
                     Text(
                       appStrings.membershipTitle.toUpperCase(),
-                      style: _MembershipText.sectionTitle,
+                      style: _MembershipText.sectionTitle.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
                     const SizedBox(height: 14),
 
@@ -140,14 +149,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     if (_selectedTab == 'subscriptions') ...[
                       Text(
                         appStrings.mySubscription.toUpperCase(),
-                        style: _MembershipText.sectionTitle,
+                        style: _MembershipText.sectionTitle.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
                       ),
                       const SizedBox(height: 14),
                       if (_membership == null ||
                           _membership?['credits_remaining'] != null)
                         Text(
                           appStrings.noActiveSubscription,
-                          style: _MembershipText.body,
+                          style: _MembershipText.body.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         )
                       else ...[
                         _InfoRow(
@@ -172,14 +185,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     ] else ...[
                       Text(
                         appStrings.myDropIns.toUpperCase(),
-                        style: _MembershipText.sectionTitle,
+                        style: _MembershipText.sectionTitle.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
                       ),
                       const SizedBox(height: 14),
                       if (_membership == null ||
                           _membership?['credits_remaining'] == null)
                         Text(
                           appStrings.noActiveDropIns,
-                          style: _MembershipText.body,
+                          style: _MembershipText.body.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         )
                       else ...[
                         _InfoRow(
@@ -204,13 +221,17 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       const SizedBox(height: 22),
                       Text(
                         appStrings.creditHistory.toUpperCase(),
-                        style: _MembershipText.sectionTitle,
+                        style: _MembershipText.sectionTitle.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
                       ),
                       const SizedBox(height: 14),
                       if (_creditLogs.isEmpty)
                         Text(
                           appStrings.noCreditHistory,
-                          style: _MembershipText.subtle,
+                          style: _MembershipText.subtle.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
                         )
                       else ...[
                         Row(
@@ -257,7 +278,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         const SizedBox(height: 18),
                         Text(
                           appStrings.creditHistory.toUpperCase(),
-                          style: _MembershipText.sectionTitle,
+                          style: _MembershipText.sectionTitle.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         ),
                         const SizedBox(height: 14),
                         ..._creditLogs.take(5).map((log) {
@@ -273,7 +296,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 12,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF7F8FA),
+                                color: AppColors.surface(context),
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Row(
@@ -283,17 +306,23 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                       _creditReasonLabel(
                                         log['reason']?.toString() ?? '',
                                       ),
-                                      style: _MembershipText.title,
+                                      style: _MembershipText.title.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
                                     ),
                                   ),
                                   Text(
                                     '${amount > 0 ? '+' : ''}$amount',
-                                    style: _MembershipText.title,
+                                    style: _MembershipText.title.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                    ),
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
                                     _formatDate(log['created_at']?.toString()),
-                                    style: _MembershipText.subtle,
+                                    style: _MembershipText.subtle.copyWith(
+                                      color: AppColors.textSecondary(context),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -334,10 +363,10 @@ class _MembershipTabChip extends StatelessWidget {
         height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFB59B6A) : const Color(0xFF171717),
+          color: selected ? AppColors.accent : AppColors.surfaceAlt(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? const Color(0xFFB59B6A) : const Color(0xFF323232),
+            color: selected ? AppColors.accent : AppColors.border(context),
             width: 1,
           ),
         ),
@@ -347,7 +376,9 @@ class _MembershipTabChip extends StatelessWidget {
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
-            color: selected ? const Color(0xFF111111) : const Color(0xFFABABAB),
+            color: selected
+                ? AppColors.background(context)
+                : AppColors.textSecondary(context),
             height: 1,
           ),
         ),
@@ -370,7 +401,7 @@ class _MembershipActionButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB59B6A),
+          backgroundColor: AppColors.accent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -435,9 +466,10 @@ class _MembershipCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
       ),
       child: child,
     );
@@ -457,10 +489,20 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label.toUpperCase(), style: _MembershipText.subtle),
+            child: Text(
+              label.toUpperCase(),
+              style: _MembershipText.subtle.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
-          Text(value, style: _MembershipText.body),
+          Text(
+            value,
+            style: _MembershipText.body.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
         ],
       ),
     );
@@ -478,15 +520,25 @@ class _CreditSummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF252525),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(
         children: [
-          Text(value, style: _MembershipText.title),
+          Text(
+            value,
+            style: _MembershipText.title.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label.toUpperCase(), style: _MembershipText.subtle),
+          Text(
+            label.toUpperCase(),
+            style: _MembershipText.subtle.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
         ],
       ),
     );

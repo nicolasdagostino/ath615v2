@@ -764,7 +764,7 @@ class _BookingSheetText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 20,
     fontWeight: FontWeight.w800,
-    color: Colors.white,
+    color: const Color(0xFF0E0E11),
     letterSpacing: -0.3,
     height: 1,
   );
@@ -772,13 +772,13 @@ class _BookingSheetText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: Colors.white,
+    color: const Color(0xFF0E0E11),
     letterSpacing: -0.2,
     height: 1,
   );
 
   static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFFABABAB),
+    color: const Color(0xFF666666),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -787,7 +787,7 @@ class _BookingSheetText {
   static TextStyle subtle = GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFFABABAB),
+    color: const Color(0xFF666666),
     letterSpacing: 0.3,
     height: 1,
   );
