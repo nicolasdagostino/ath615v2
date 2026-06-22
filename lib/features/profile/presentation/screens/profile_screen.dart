@@ -897,7 +897,7 @@ class _ProfileMenuRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(28),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+        padding: const EdgeInsets.fromLTRB(18, 15, 18, 15),
         child: Row(
           children: [
             Container(
@@ -1029,7 +1029,7 @@ class _SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(radius),
       ),
     );

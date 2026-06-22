@@ -140,30 +140,20 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
                 color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
                 border: Border.all(color: AppColors.border(context), width: 1),
                 boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.danger,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          appStrings.workoutsDeleteTitle.toUpperCase(),
-                          style: _WorkoutDeleteSheetText.title.copyWith(
-                            color: AppColors.textPrimary(context),
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    appStrings.workoutsDeleteTitle.toUpperCase(),
+                    textAlign: TextAlign.left,
+                    style: _WorkoutDeleteSheetText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(

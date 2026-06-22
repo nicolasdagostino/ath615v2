@@ -244,36 +244,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
           child: SafeArea(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Color(0xFFB42318),
-                        size: 24,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          appStrings.deleteWorkoutTitle.toUpperCase(),
-                          style: _ExploreDeleteSheetText.title,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    appStrings.deleteWorkoutTitle.toUpperCase(),
+                    style: _ExploreDeleteSheetText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     appStrings.deleteWorkoutMsg,
-                    style: _ExploreDeleteSheetText.body,
+                    style: _ExploreDeleteSheetText.body.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                   const SizedBox(height: 18),
                   Row(

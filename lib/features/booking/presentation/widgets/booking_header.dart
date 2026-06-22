@@ -5,6 +5,23 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class BookingHeader extends StatelessWidget {
+  static const _months = [
+    '',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  String _monthName(int month) => _months[month];
   const BookingHeader({
     super.key,
     required this.gymName,
@@ -40,7 +57,7 @@ class BookingHeader extends StatelessWidget {
       child: Text(
         gymName ?? appStrings.appBrand,
         style: _font(
-          18,
+          16,
           weight: FontWeight.w800,
           color: AppColors.textPrimary(context),
           letterSpacing: -0.3,
@@ -67,12 +84,12 @@ class BookingHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      appStrings.bookingTitle.toUpperCase(),
+                      '${_monthName(selectedDay.month).toUpperCase()} ${selectedDay.year}',
                       style: _font(
-                        24,
+                        22,
                         weight: FontWeight.w800,
                         color: AppColors.textPrimary(context),
-                        letterSpacing: -0.4,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -105,8 +122,8 @@ class BookingHeader extends StatelessWidget {
                             width: 38,
                             height: 38,
                             child: Icon(
-                              Icons.notifications_outlined,
-                              size: 28,
+                              Icons.notifications,
+                              size: 32,
                               color: AppColors.accent,
                             ),
                           ),

@@ -116,8 +116,18 @@ class _WorkoutCardState extends State<WorkoutCard> {
                 shrinkWrap: true,
                 children: [
                   Text(
+                    widget.program.toUpperCase(),
+                    style: _WorkoutOptionsText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     appStrings.workoutOptions.toUpperCase(),
-                    style: _WorkoutOptionsText.title,
+                    style: _WorkoutOptionsText.subtle.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _SheetAction(
@@ -366,8 +376,6 @@ class _SheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : const Color(0xFFB59B6A);
-
     return Material(
       color: AppColors.surfaceAlt(context),
       borderRadius: BorderRadius.circular(AppRadii.input),
@@ -378,7 +386,11 @@ class _SheetAction extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(
+                icon,
+                color: danger ? AppColors.danger : AppColors.accent,
+                size: 20,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -389,7 +401,7 @@ class _SheetAction extends StatelessWidget {
                       style: _WorkoutOptionsText.rowTitle.copyWith(
                         color: danger
                             ? AppColors.danger
-                            : const Color(0xFFB59B6A),
+                            : AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -397,12 +409,17 @@ class _SheetAction extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: _WorkoutOptionsText.subtle,
+                      style: _WorkoutOptionsText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
             ],
           ),
         ),

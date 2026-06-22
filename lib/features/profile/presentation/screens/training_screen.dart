@@ -172,7 +172,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF323232),
+                            color: AppColors.border(context),
                             width: 1,
                           ),
                         ),
@@ -293,7 +293,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                     color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: const Color(0xFF323232),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
                   ),
@@ -513,7 +513,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF323232),
+                            color: AppColors.border(context),
                             width: 1,
                           ),
                         ),
@@ -1016,16 +1016,29 @@ class _TrainingPersonalRecordsCard extends StatelessWidget {
               color: AppColors.textPrimary(context),
             ),
           ),
+          const SizedBox(height: 8),
           Text(
             records.isEmpty
                 ? appStrings.noRecordsYet
                 : '${records.length} ${appStrings.personalRecords}',
-            style: _TrainingText.subtle.copyWith(
-              color: AppColors.textSecondary(context),
+            style: _TrainingText.title.copyWith(
+              color: AppColors.textPrimary(context),
+              fontSize: 26,
+              letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 16),
-          AppButton(label: appStrings.viewRecords, onPressed: onView),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: onView,
+            child: Text(
+              appStrings.viewRecords.toUpperCase(),
+              style: _TrainingText.subtle.copyWith(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1097,7 +1110,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                     color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: const Color(0xFF323232),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
                   ),
@@ -1126,7 +1139,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                           color: AppColors.surfaceAlt(context),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: const Color(0xFF323232),
+                            color: AppColors.border(context),
                             width: 1,
                           ),
                         ),
