@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 
 Future<void> showAttendanceSheet({
   required BuildContext context,
@@ -80,9 +81,12 @@ Future<void> showAttendanceSheet({
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF252525),
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFF323232), width: 1),
+                  border: Border.all(
+                    color: AppColors.border(context),
+                    width: 1,
+                  ),
                 ),
                 child: ListView(
                   shrinkWrap: false,
@@ -92,7 +96,9 @@ Future<void> showAttendanceSheet({
                         Expanded(
                           child: Text(
                             appStrings.attendance.toUpperCase(),
-                            style: _AttendanceText.title,
+                            style: _AttendanceText.title.copyWith(
+                              color: AppColors.textPrimary(context),
+                            ),
                           ),
                         ),
                         _AttendanceCountPill(label: '${bookingRows.length}'),
@@ -102,18 +108,24 @@ Future<void> showAttendanceSheet({
                     Text(
                       (klass['title']?.toString() ?? appStrings.classFallback)
                           .toUpperCase(),
-                      style: _AttendanceText.rowTitle,
+                      style: _AttendanceText.rowTitle.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       formatDateTime(klass['starts_at']),
-                      style: _AttendanceText.subtle,
+                      style: _AttendanceText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (bookingRows.isEmpty)
                       Text(
                         appStrings.noBookingsYet,
-                        style: _AttendanceText.subtle,
+                        style: _AttendanceText.subtle.copyWith(
+                          color: AppColors.textSecondary(context),
+                        ),
                       )
                     else
                       ...bookingRows.map((booking) {
@@ -198,17 +210,18 @@ class _AttendanceCountPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 28,
+      height: 44,
+      constraints: const BoxConstraints(minWidth: 44),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Text(
         label,
-        style: _AttendanceText.section.copyWith(color: const Color(0xFFB59B6A)),
+        style: _AttendanceText.section.copyWith(color: AppColors.accent),
       ),
     );
   }
@@ -241,9 +254,9 @@ class _AttendanceMemberCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF323232), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(
         children: [
@@ -259,7 +272,9 @@ class _AttendanceMemberCard extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: _AttendanceText.rowTitle,
+                      style: _AttendanceText.rowTitle.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
                     if (email.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -267,13 +282,20 @@ class _AttendanceMemberCard extends StatelessWidget {
                         email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: _AttendanceText.subtle,
+                        style: _AttendanceText.subtle.copyWith(
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
-              Text(status.toUpperCase(), style: _AttendanceText.subtle),
+              Text(
+                status.toUpperCase(),
+                style: _AttendanceText.subtle.copyWith(
+                  color: AppColors.textSecondary(context),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -319,7 +341,7 @@ class _AttendanceAvatar extends StatelessWidget {
         width: 42,
         height: 42,
         alignment: Alignment.center,
-        color: const Color(0xFFF7F3EA),
+        color: AppColors.surface(context),
         child: hasAvatar
             ? Image.network(
                 avatarUrl!,
@@ -330,7 +352,7 @@ class _AttendanceAvatar extends StatelessWidget {
             : Text(
                 name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
                 style: _AttendanceText.rowTitle.copyWith(
-                  color: const Color(0xFFB59B6A),
+                  color: AppColors.accent,
                 ),
               ),
       ),
@@ -356,14 +378,14 @@ class _AttendanceStatusButton extends StatelessWidget {
     final disabled = onTap == null;
 
     final background = selected
-        ? (danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A))
-        : const Color(0xFF252525);
+        ? (danger ? AppColors.danger : AppColors.accent)
+        : AppColors.surface(context);
 
     final foreground = selected
-        ? (danger ? Colors.white : const Color(0xFF111111))
+        ? (danger ? Colors.white : AppColors.background(context))
         : disabled
-        ? const Color(0xFFABABAB)
-        : Colors.white;
+        ? AppColors.textSecondary(context)
+        : AppColors.textPrimary(context);
 
     return SizedBox(
       height: 42,
@@ -371,11 +393,11 @@ class _AttendanceStatusButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: background,
-          disabledBackgroundColor: const Color(0xFF252525),
+          disabledBackgroundColor: AppColors.surface(context),
           foregroundColor: foreground,
-          disabledForegroundColor: const Color(0xFFABABAB),
+          disabledForegroundColor: AppColors.textSecondary(context),
           side: BorderSide(
-            color: selected ? background : const Color(0xFF3A3A3A),
+            color: selected ? background : AppColors.border(context),
             width: 1,
           ),
           shape: RoundedRectangleBorder(
