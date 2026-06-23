@@ -3,12 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_pickers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -32,15 +29,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
-  final _gymName = TextEditingController();
   final _fullName = TextEditingController();
-  final _phone = TextEditingController();
-  final _birthDate = TextEditingController();
-  bool _loading = false;
   bool _uploadingAvatar = false;
-  String _appVersion = '';
   Map<String, dynamic>? _profile;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
@@ -48,232 +38,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAppVersion();
     _load();
-  }
-
-  Future<void> _loadAppVersion() async {
-    final info = await PackageInfo.fromPlatform();
-
-    if (!mounted) return;
-
-    setState(() {
-      _appVersion = 'v${info.version}+${info.buildNumber}';
-    });
   }
 
   @override
   void dispose() {
-    _password.dispose();
-    _confirmPassword.dispose();
-    _gymName.dispose();
     _fullName.dispose();
-    _phone.dispose();
-    _birthDate.dispose();
     super.dispose();
-  }
-
-  String _formatDate(String? raw) {
-    if (raw == null || raw.isEmpty) return '-';
-    final date = DateTime.tryParse(raw)?.toLocal();
-    if (date == null) return raw;
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  String _dateInputValue(DateTime date) {
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$month-$day';
-  }
-
-  Future<void> _pickBirthDate() async {
-    final current = DateTime.tryParse(_birthDate.text);
-    final now = DateTime.now();
-
-    final picked = await showAppDatePicker(
-      context: context,
-      initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
-      firstDate: DateTime(1900),
-      lastDate: now,
-    );
-
-    if (picked == null) return;
-
-    setState(() {
-      _birthDate.text = _dateInputValue(picked);
-    });
   }
 
   Future<void> _load() async {
     final profile = await _repo.myProfile();
-    final gymId = profile?['gym_id'] as String?;
-
-    String gymName = '';
-    if (gymId != null) {
-      final gym = await Supabase.instance.client
-          .from('gyms')
-          .select('name')
-          .eq('id', gymId)
-          .maybeSingle();
-
-      gymName = gym?['name']?.toString() ?? '';
-    }
-
     if (!mounted) return;
     setState(() {
       _profile = profile;
-      _gymName.text = gymName;
       _fullName.text = profile?['full_name']?.toString() ?? '';
-      _phone.text = profile?['phone']?.toString() ?? '';
-      _birthDate.text = profile?['birth_date']?.toString() ?? '';
     });
-  }
-
-  String _displayRole(String? role) {
-    switch (role) {
-      case 'athlete':
-        return 'MEMBER';
-      case 'admin':
-        return 'COACH';
-      case 'owner':
-        return 'OWNER';
-      default:
-        return role?.toUpperCase() ?? '-';
-    }
-  }
-
-  Future<void> _openPersonalInfoSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.panel),
-                border: Border.all(color: AppColors.border(context), width: 1),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.person_outline_rounded,
-                        color: AppColors.accent,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          appStrings.editPersonalInformation.toUpperCase(),
-                          style: _ProfileText.sectionTitle.copyWith(
-                            color: AppColors.textPrimary(context),
-                            fontSize: 20,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _fullName,
-                    textCapitalization: TextCapitalization.words,
-                    cursorColor: AppColors.accent,
-                    style: _ProfileText.input.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: _inputDecoration(context, appStrings.fullName),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    cursorColor: AppColors.accent,
-                    style: _ProfileText.input.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: _inputDecoration(context, appStrings.phone),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _birthDate,
-                    readOnly: true,
-                    cursorColor: AppColors.accent,
-                    style: _ProfileText.input.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: _inputDecoration(context, appStrings.birthDate)
-                        .copyWith(
-                          suffixIcon: const Icon(
-                            Icons.calendar_month_rounded,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                    onTap: _pickBirthDate,
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: appStrings.saveChanges,
-                    loading: _loading,
-                    onPressed: () async {
-                      final navigator = Navigator.of(sheetContext);
-                      await _savePersonalInfo();
-                      if (mounted) navigator.pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _savePersonalInfo() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    final fullName = _fullName.text.trim();
-    final phone = _phone.text.trim();
-    final birthDate = _birthDate.text.trim();
-
-    setState(() => _loading = true);
-
-    try {
-      await Supabase.instance.client
-          .from('profiles')
-          .update({
-            'full_name': fullName.isEmpty ? null : fullName,
-            'phone': phone.isEmpty ? null : phone,
-            'birth_date': birthDate.isEmpty ? null : birthDate,
-          })
-          .eq('id', userId);
-
-      await _load();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.updateProfileError(e))));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
   }
 
   Future<void> _uploadAvatar() async {
@@ -384,8 +164,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _ProfileCard(
-                          child: Row(
+                        Center(
+                          child: Column(
                             children: [
                               _ProfileAvatar(
                                 displayName: displayName,
@@ -393,110 +173,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 uploading: _uploadingAvatar,
                                 onTap: _uploadAvatar,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      displayName,
-                                      style: _ProfileText.title.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _displayRole(
-                                        _profile?['role']?.toString(),
-                                      ),
-                                      style: _ProfileText.subtle.copyWith(
-                                        color: AppColors.textSecondary(context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _ProfileCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                appStrings.personalInformation.toUpperCase(),
-                                style: _ProfileText.sectionTitle.copyWith(
-                                  color: AppColors.textPrimary(context),
-                                ),
-                              ),
                               const SizedBox(height: 14),
-                              _InfoRow(
-                                label: appStrings.fullName,
-                                value: profileName.isEmpty
-                                    ? appStrings.notSet
-                                    : profileName,
-                              ),
-                              _InfoRow(
-                                label: appStrings.authEmail,
-                                value: email,
-                              ),
-                              _InfoRow(
-                                label: appStrings.phone,
-                                value:
-                                    (_profile?['phone']
-                                            ?.toString()
-                                            .trim()
-                                            .isEmpty ??
-                                        true)
-                                    ? appStrings.notSet
-                                    : _profile!['phone'].toString(),
-                              ),
-                              _InfoRow(
-                                label: appStrings.birthDate,
-                                value: _formatDate(
-                                  _profile?['birth_date']?.toString(),
+                              Text(
+                                displayName.toUpperCase(),
+                                textAlign: TextAlign.center,
+                                style: _ProfileText.title.copyWith(
+                                  color: AppColors.textPrimary(context),
+                                  fontSize: 24,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              AppButton(
-                                label: appStrings.editPersonalInformation,
-                                onPressed: _openPersonalInfoSheet,
+                              const SizedBox(height: 6),
+                              Text(
+                                email,
+                                textAlign: TextAlign.center,
+                                style: _ProfileText.body.copyWith(
+                                  color: AppColors.textSecondary(context),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 28),
                         _ProfileListCard(
                           children: [
                             _ProfileMenuRow(
-                              icon: Icons.fitness_center_rounded,
-                              title: appStrings.profileTraining,
+                              title: appStrings.profileAccount,
+                              onTap: () => context.push('/account'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _ProfileListCard(
+                          children: [
+                            _ProfileMenuRow(
+                              title: appStrings.personalRecords,
                               onTap: () => context.push('/training'),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        _ProfileListCard(
+                          children: [
                             _ProfileMenuRow(
-                              icon: Icons.workspace_premium_outlined,
-                              title: appStrings.profileMembership,
-                              onTap: () => context.push('/membership'),
+                              title: appStrings.profileHelp,
+                              onTap: () => context.push('/settings'),
                             ),
                             _ProfileMenuRow(
-                              icon: Icons.settings_outlined,
-                              title: appStrings.profileSettings,
+                              title: appStrings.profilePrivacyPolicy,
+                              onTap: () => context.push('/settings'),
+                            ),
+                            _ProfileMenuRow(
+                              title: appStrings.profileTerms,
                               onTap: () => context.push('/settings'),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
-                        if (_appVersion.isNotEmpty) ...[
-                          Center(
-                            child: Text(
-                              'ATHLETE615 · $_appVersion',
-                              style: _ProfileText.subtle.copyWith(
-                                color: AppColors.textSecondary(context),
-                              ),
+                        const SizedBox(height: 28),
+                        _ProfileListCard(
+                          children: [
+                            _ProfileMenuRow(
+                              title: appStrings.profileLogout,
+                              isDanger: true,
+                              onTap: () => context.push('/settings'),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -507,35 +250,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-}
-
-InputDecoration _inputDecoration(BuildContext context, String hint) {
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.textSecondary(context),
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.2,
-    ),
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
-    filled: true,
-    fillColor: AppColors.surfaceAlt(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
 }
 
 class _ProfileText {
@@ -549,35 +263,12 @@ class _ProfileText {
     height: 1.0,
   );
 
-  static TextStyle sectionTitle = GoogleFonts.barlowCondensed(
-    fontSize: 13,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: 0.8,
-    height: 1.0,
-  );
-
   static TextStyle body = GoogleFonts.barlowCondensed(
     color: Colors.white,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.0,
     height: 1.3,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFFABABAB),
-    letterSpacing: 0.3,
-    height: 1.0,
-  );
-
-  static TextStyle input = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.2,
   );
 }
 
@@ -745,15 +436,15 @@ class _ProfileAvatar extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadii.panel),
             child: Container(
-              width: 54,
-              height: 54,
+              width: 82,
+              height: 82,
               alignment: Alignment.center,
               color: AppColors.surfaceAlt(context),
               child: hasAvatar
                   ? Image.network(
                       avatarUrl!,
-                      width: 54,
-                      height: 54,
+                      width: 82,
+                      height: 82,
                       fit: BoxFit.cover,
                     )
                   : Text(
@@ -773,8 +464,8 @@ class _ProfileAvatar extends StatelessWidget {
             right: -2,
             bottom: -2,
             child: Container(
-              width: 22,
-              height: 22,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 color: AppColors.accent,
                 borderRadius: BorderRadius.circular(999),
@@ -794,62 +485,8 @@ class _ProfileAvatar extends StatelessWidget {
                   : Icon(
                       Icons.camera_alt_rounded,
                       color: AppColors.textPrimary(context),
-                      size: 12,
+                      size: 14,
                     ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border(context), width: 1),
-        boxShadow: AppShadows.card(context),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label.toUpperCase(),
-              style: _ProfileText.subtle.copyWith(
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            value,
-            style: _ProfileText.body.copyWith(
-              color: AppColors.textPrimary(context),
             ),
           ),
         ],
@@ -880,55 +517,44 @@ class _ProfileListCard extends StatelessWidget {
 
 class _ProfileMenuRow extends StatelessWidget {
   const _ProfileMenuRow({
-    required this.icon,
     required this.title,
     required this.onTap,
+    this.isDanger = false,
   });
 
-  final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final bool isDanger;
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.textPrimary(context);
+    final color = isDanger ? AppColors.danger : AppColors.textPrimary(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 15, 18, 15),
+        padding: const EdgeInsets.fromLTRB(28, 16, 18, 16),
         child: Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border(context)),
-              ),
-              child: Icon(icon, size: 20, color: AppColors.accent),
-            ),
-            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
                 style: GoogleFonts.barlowCondensed(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w600,
                   color: color,
-                  letterSpacing: -0.1,
-                  height: 1.0,
+                  letterSpacing: 0,
+                  height: 1.2,
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 24,
-              color: AppColors.textSecondary(context),
-            ),
+            if (!isDanger)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textSecondary(context),
+              ),
           ],
         ),
       ),
