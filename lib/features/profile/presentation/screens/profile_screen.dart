@@ -250,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               _ProfileMenuRow(
                                 title: appStrings.personalRecords,
-                                onTap: () => context.push('/training'),
+                                onTap: () => context.push('/records'),
                               ),
                             ],
                           ),

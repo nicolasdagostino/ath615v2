@@ -54,6 +54,10 @@ class AppRouter {
           builder: (context, state) => const TrainingScreen(),
         ),
         GoRoute(
+          path: '/records',
+          builder: (context, state) => const TrainingScreen(recordsOnly: true),
+        ),
+        GoRoute(
           path: '/membership',
           builder: (context, state) => const MembershipScreen(),
         ),

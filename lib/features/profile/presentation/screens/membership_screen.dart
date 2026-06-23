@@ -23,7 +23,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
   Map<String, dynamic>? _membership;
   List<Map<String, dynamic>> _creditLogs = [];
   bool _loading = true;
-  String _selectedTab = 'subscriptions';
 
   @override
   void initState() {
@@ -113,77 +112,33 @@ class _MembershipScreenState extends State<MembershipScreen> {
               children: [
                 if (_loading)
                   const Center(child: CircularProgressIndicator())
-                else
+                else ...[
                   _MembershipCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          appStrings.membershipTitle.toUpperCase(),
+                          'CURRENT MEMBERSHIP',
                           style: _MembershipText.sectionTitle.copyWith(
                             color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 14),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _MembershipTabChip(
-                                label: appStrings.subscriptions.toUpperCase(),
-                                selected: _selectedTab == 'subscriptions',
-                                onTap: () {
-                                  setState(() {
-                                    _selectedTab = 'subscriptions';
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _MembershipTabChip(
-                                label: appStrings.dropIns.toUpperCase(),
-                                selected: _selectedTab == 'dropins',
-                                onTap: () {
-                                  setState(() {
-                                    _selectedTab = 'dropins';
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 18),
-                        if (_selectedTab == 'subscriptions') ...[
+                        if (_membership == null) ...[
                           Text(
-                            appStrings.mySubscription.toUpperCase(),
-                            style: _MembershipText.sectionTitle.copyWith(
+                            'No active membership',
+                            style: _MembershipText.title.copyWith(
                               color: AppColors.textPrimary(context),
+                              fontSize: 24,
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          if (_membership == null ||
-                              _membership?['credits_remaining'] != null)
-                            Text(
-                              appStrings.noActiveSubscription,
-                              style: _MembershipText.body.copyWith(
-                                color: AppColors.textPrimary(context),
-                              ),
-                            )
-                          else ...[
-                            _InfoRow(
-                              label: appStrings.activePlan,
-                              value:
-                                  '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                          const SizedBox(height: 8),
+                          Text(
+                            'Choose a plan to keep booking classes.',
+                            style: _MembershipText.body.copyWith(
+                              color: AppColors.textSecondary(context),
                             ),
-                            _InfoRow(
-                              label: appStrings.expires,
-                              value: _formatDate(
-                                _membership?['expires_at']?.toString(),
-                              ),
-                            ),
-                          ],
+                          ),
                           const SizedBox(height: 18),
                           _MembershipActionButton(
                             label: appStrings.getSubscription.toUpperCase(),
@@ -193,169 +148,179 @@ class _MembershipScreenState extends State<MembershipScreen> {
                               );
                             },
                           ),
-                        ] else ...[
-                          Text(
-                            appStrings.myDropIns.toUpperCase(),
-                            style: _MembershipText.sectionTitle.copyWith(
-                              color: AppColors.textPrimary(context),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          if (_membership == null ||
-                              _membership?['credits_remaining'] == null)
-                            Text(
-                              appStrings.noActiveDropIns,
-                              style: _MembershipText.body.copyWith(
-                                color: AppColors.textPrimary(context),
-                              ),
-                            )
-                          else ...[
-                            _InfoRow(
-                              label: appStrings.credits,
-                              value:
-                                  '${_membership?['credits_remaining'] ?? appStrings.unlimited}',
-                            ),
-                            _InfoRow(
-                              label: appStrings.expires,
-                              value: _formatDate(
-                                _membership?['expires_at']?.toString(),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 10),
                           _MembershipActionButton(
                             label: appStrings.getDropIn.toUpperCase(),
                             onPressed: () {
                               context.push('/available-memberships/dropin');
                             },
                           ),
-                          const SizedBox(height: 22),
+                        ] else ...[
                           Text(
-                            appStrings.creditHistory.toUpperCase(),
-                            style: _MembershipText.sectionTitle.copyWith(
+                            '${(_membership?['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
+                            style: _MembershipText.title.copyWith(
                               color: AppColors.textPrimary(context),
+                              fontSize: 26,
+                              letterSpacing: -0.4,
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          if (_creditLogs.isEmpty)
-                            Text(
-                              appStrings.noCreditHistory,
-                              style: _MembershipText.subtle.copyWith(
-                                color: AppColors.textSecondary(context),
-                              ),
-                            )
-                          else ...[
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _CreditSummaryChip(
-                                    label: appStrings.assigned,
-                                    value: _creditLogs
-                                        .where(
-                                          (log) => log['reason'] == 'assigned',
-                                        )
-                                        .fold<int>(
-                                          0,
-                                          (sum, log) =>
-                                              sum +
-                                              ((log['amount'] as num?) ?? 0)
-                                                  .toInt(),
-                                        )
-                                        .toString(),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _CreditSummaryChip(
-                                    label: appStrings.booked,
-                                    value: _creditLogs
-                                        .where(
-                                          (log) => log['reason'] == 'booked',
-                                        )
-                                        .length
-                                        .toString(),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _CreditSummaryChip(
-                                    label: appStrings.cancelled,
-                                    value: _creditLogs
-                                        .where(
-                                          (log) => log['reason'] == 'cancelled',
-                                        )
-                                        .length
-                                        .toString(),
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 16),
+                          _InfoRow(
+                            label: appStrings.expires,
+                            value: _formatDate(
+                              _membership?['expires_at']?.toString(),
                             ),
-                            const SizedBox(height: 18),
-                            Text(
-                              appStrings.creditHistory.toUpperCase(),
-                              style: _MembershipText.sectionTitle.copyWith(
-                                color: AppColors.textPrimary(context),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            ..._creditLogs.take(5).map((log) {
-                              final amount = ((log['amount'] as num?) ?? 0)
-                                  .toInt();
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Container(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    14,
-                                    12,
-                                    14,
-                                    12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface(context),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          _creditReasonLabel(
-                                            log['reason']?.toString() ?? '',
-                                          ),
-                                          style: _MembershipText.title.copyWith(
-                                            color: AppColors.textPrimary(
-                                              context,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        '${amount > 0 ? '+' : ''}$amount',
-                                        style: _MembershipText.title.copyWith(
-                                          color: AppColors.textPrimary(context),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        _formatDate(
-                                          log['created_at']?.toString(),
-                                        ),
-                                        style: _MembershipText.subtle.copyWith(
-                                          color: AppColors.textSecondary(
-                                            context,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                          ),
+                          _InfoRow(
+                            label: appStrings.credits,
+                            value: _membership?['credits_remaining'] == null
+                                ? appStrings.unlimited
+                                : '${_membership?['credits_remaining']}',
+                          ),
+                        ],
+                        if (_membership != null) ...[
+                          const SizedBox(height: 18),
+                          _MembershipActionButton(
+                            label: appStrings.getSubscription.toUpperCase(),
+                            onPressed: () {
+                              context.push(
+                                '/available-memberships/subscription',
                               );
-                            }),
-                          ],
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          _MembershipActionButton(
+                            label: appStrings.getDropIn.toUpperCase(),
+                            onPressed: () {
+                              context.push('/available-memberships/dropin');
+                            },
+                          ),
                         ],
                       ],
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  _MembershipCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appStrings.creditHistory.toUpperCase(),
+                          style: _MembershipText.sectionTitle.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        if (_creditLogs.isEmpty)
+                          Text(
+                            appStrings.noCreditHistory,
+                            style: _MembershipText.subtle.copyWith(
+                              color: AppColors.textSecondary(context),
+                            ),
+                          )
+                        else ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _CreditSummaryChip(
+                                  label: appStrings.assigned,
+                                  value: _creditLogs
+                                      .where(
+                                        (log) => log['reason'] == 'assigned',
+                                      )
+                                      .fold<int>(
+                                        0,
+                                        (sum, log) =>
+                                            sum +
+                                            ((log['amount'] as num?) ?? 0)
+                                                .toInt(),
+                                      )
+                                      .toString(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _CreditSummaryChip(
+                                  label: appStrings.booked,
+                                  value: _creditLogs
+                                      .where((log) => log['reason'] == 'booked')
+                                      .length
+                                      .toString(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _CreditSummaryChip(
+                                  label: appStrings.cancelled,
+                                  value: _creditLogs
+                                      .where(
+                                        (log) => log['reason'] == 'cancelled',
+                                      )
+                                      .length
+                                      .toString(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          ..._creditLogs.take(5).map((log) {
+                            final amount = ((log['amount'] as num?) ?? 0)
+                                .toInt();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  12,
+                                  14,
+                                  12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface(context),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.border(context),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _creditReasonLabel(
+                                          log['reason']?.toString() ?? '',
+                                        ),
+                                        style: _MembershipText.title.copyWith(
+                                          color: AppColors.textPrimary(context),
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${amount > 0 ? '+' : ''}$amount',
+                                      style: _MembershipText.title.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _formatDate(
+                                        log['created_at']?.toString(),
+                                      ),
+                                      style: _MembershipText.subtle.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -380,52 +345,6 @@ class _MembershipMenuSection extends StatelessWidget {
       color: _profileHubBackground(context),
       padding: const EdgeInsets.fromLTRB(24, 34, 24, 72),
       child: Column(children: children),
-    );
-  }
-}
-
-class _MembershipTabChip extends StatelessWidget {
-  const _MembershipTabChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.accent : AppColors.surfaceAlt(context),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border(context),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.barlowCondensed(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: selected
-                ? AppColors.background(context)
-                : AppColors.textSecondary(context),
-            height: 1,
-          ),
-        ),
-      ),
     );
   }
 }

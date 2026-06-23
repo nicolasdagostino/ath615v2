@@ -7,7 +7,6 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_pickers.dart';
 
 Color _profileHubBackground(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -15,7 +14,9 @@ Color _profileHubBackground(BuildContext context) {
 }
 
 class TrainingScreen extends StatefulWidget {
-  const TrainingScreen({super.key});
+  const TrainingScreen({super.key, this.recordsOnly = false});
+
+  final bool recordsOnly;
 
   @override
   State<TrainingScreen> createState() => _TrainingScreenState();
@@ -273,8 +274,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
       weight.text = record['weight_kg']?.toString() ?? '';
       notes.text = record['notes']?.toString() ?? '';
-      achievedAt.text =
-          record['achieved_at']?.toString() ?? _dateInputValue(DateTime.now());
+      achievedAt.text = _dateInputValue(DateTime.now());
     }
 
     fillFromExisting(selectedExercise);
@@ -325,40 +325,36 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedExercise,
-                        dropdownColor: AppColors.surface(context),
-                        iconEnabledColor: AppColors.textSecondary(context),
-                        style: _TrainingText.input.copyWith(
-                          color: AppColors.textPrimary(context),
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface(context),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.border(context),
+                            width: 1,
+                          ),
                         ),
-                        decoration:
-                            _inputDecoration(
-                              context,
-                              appStrings.exercise,
-                            ).copyWith(
-                              filled: true,
-                              fillColor: AppColors.surface(context),
-                            ),
-                        items: _recordExercises.map((exercise) {
-                          return DropdownMenuItem<String>(
-                            value: exercise,
-                            child: Text(
-                              exercise,
-                              style: _TrainingText.input.copyWith(
-                                color: AppColors.textPrimary(context),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                selectedExercise,
+                                style: _TrainingText.input.copyWith(
+                                  color: AppColors.textPrimary(context),
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setSheetState(() {
-                            selectedExercise = value;
-                            fillFromExisting(value);
-                          });
-                        },
+                            Text(
+                              appStrings.exercise.toUpperCase(),
+                              style: _TrainingText.subtle.copyWith(
+                                color: AppColors.textSecondary(context),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -375,40 +371,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           context,
                           appStrings.weightKg,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: achievedAt,
-                        readOnly: true,
-                        cursorColor: AppColors.accent,
-                        style: _TrainingText.input.copyWith(
-                          color: AppColors.textPrimary(context),
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration:
-                            _inputDecoration(
-                              context,
-                              appStrings.birthDate,
-                            ).copyWith(
-                              suffixIcon: const Icon(
-                                Icons.calendar_month_rounded,
-                                color: AppColors.accent,
-                              ),
-                            ),
-                        onTap: () async {
-                          final current = DateTime.tryParse(achievedAt.text);
-                          final now = DateTime.now();
-                          final picked = await showAppDatePicker(
-                            context: context,
-                            initialDate: current ?? now,
-                            firstDate: DateTime(2000),
-                            lastDate: now,
-                          );
-                          if (picked == null) return;
-                          setSheetState(() {
-                            achievedAt.text = _dateInputValue(picked);
-                          });
-                        },
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -452,194 +414,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             );
           },
-        );
-      },
-    );
-  }
-
-  Future<void> _openPersonalRecordsListSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(sheetContext).size.height * 0.82,
-            ),
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(AppRadii.sheet),
-              border: Border.all(color: AppColors.border(context), width: 1),
-            ),
-            child: ListView(
-              children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.border(context),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  appStrings.personalRecords.toUpperCase(),
-                  style: _TrainingText.sectionTitle.copyWith(
-                    color: AppColors.textPrimary(context),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                if (_personalRecords.isEmpty)
-                  Text(
-                    appStrings.noRecordsYet,
-                    style: _TrainingText.subtle.copyWith(
-                      color: AppColors.textSecondary(context),
-                    ),
-                  )
-                else
-                  ..._personalRecords.map((record) {
-                    final id = record['id']?.toString() ?? '';
-                    final exercise = record['exercise_name']?.toString() ?? '-';
-                    final weight = record['weight_kg']?.toString() ?? '-';
-                    final date = _formatDate(record['achieved_at']?.toString());
-                    final notes = record['notes']?.toString().trim() ?? '';
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceAlt(context),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.border(context),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    exercise,
-                                    style: _TrainingText.title.copyWith(
-                                      color: AppColors.textPrimary(context),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '$weight kg · $date',
-                                    style: _TrainingText.subtle.copyWith(
-                                      color: AppColors.textSecondary(context),
-                                    ),
-                                  ),
-                                  if (notes.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      notes,
-                                      style: _TrainingText.body.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () async {
-                                await _showRecordOptions(
-                                  id: id,
-                                  exercise: exercise,
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.more_horiz,
-                                color: AppColors.accent,
-                                size: 24,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                const SizedBox(height: 8),
-                AppButton(
-                  label: appStrings.addRecord,
-                  onPressed: () async {
-                    await _openPersonalRecordSheet();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showRecordOptions({
-    required String id,
-    required String exercise,
-  }) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border(context), width: 1),
-            ),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                Text(
-                  appStrings.personalRecords.toUpperCase(),
-                  style: _TrainingText.sectionTitle.copyWith(
-                    color: AppColors.textPrimary(context),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _TrainingSheetAction(
-                  icon: Icons.edit_outlined,
-                  label: appStrings.workoutEdit,
-                  subtitle: exercise,
-                  onTap: () async {
-                    await _openPersonalRecordSheet(initialExercise: exercise);
-                    if (sheetContext.mounted) Navigator.pop(sheetContext);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _TrainingSheetAction(
-                  icon: Icons.delete_outline,
-                  label: appStrings.delete,
-                  subtitle: exercise,
-                  danger: true,
-                  onTap: id.isEmpty
-                      ? () {}
-                      : () async {
-                          await _deletePersonalRecord(id);
-                          if (sheetContext.mounted) Navigator.pop(sheetContext);
-                        },
-                ),
-              ],
-            ),
-          ),
         );
       },
     );
@@ -696,95 +470,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
     }
   }
 
-  Future<void> _deletePersonalRecord(String recordId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border(context), width: 1),
-            ),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.danger,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        appStrings.deleteRecordTitle.toUpperCase(),
-                        style: _TrainingConfirmText.title.copyWith(
-                          fontSize: 22,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  appStrings.deleteRecordMsg,
-                  style: _TrainingConfirmText.body.copyWith(
-                    color: AppColors.textSecondary(context),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TrainingConfirmSecondaryButton(
-                        label: appStrings.cancel,
-                        onTap: () => Navigator.pop(context, false),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _TrainingConfirmDangerButton(
-                        label: appStrings.delete,
-                        onTap: () => Navigator.pop(context, true),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await Supabase.instance.client
-          .from('personal_records')
-          .delete()
-          .eq('id', recordId)
-          .eq('user_id', userId);
-
-      await _load();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.deleteRecordError(e))));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -807,7 +492,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Training',
+                    widget.recordsOnly
+                        ? appStrings.personalRecords
+                        : appStrings.profileTraining,
                     style: _TrainingText.header.copyWith(
                       color: AppColors.textPrimary(context),
                     ),
@@ -819,12 +506,17 @@ class _TrainingScreenState extends State<TrainingScreen> {
               children: [
                 if (_loading)
                   const Center(child: CircularProgressIndicator())
+                else if (widget.recordsOnly)
+                  _TrainingRecordsHubCard(
+                    recordExercises: _recordExercises,
+                    personalRecordForExercise: _personalRecordForExercise,
+                    formatDate: _formatDate,
+                    onAdd: () => _openPersonalRecordSheet(),
+                    onEdit: (exercise) =>
+                        _openPersonalRecordSheet(initialExercise: exercise),
+                  )
                 else ...[
                   _TrainingMilestoneCard(attendedCount: _attendedCount),
-                  _TrainingPersonalRecordsCard(
-                    records: _personalRecords.take(5).toList(),
-                    onView: _openPersonalRecordsListSheet,
-                  ),
                   _TrainingClassHistoryCard(
                     history: _classHistory.take(3).toList(),
                     formatDate: _formatDate,
@@ -893,14 +585,6 @@ class _TrainingText {
     color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.0,
-    height: 1.3,
   );
 
   static TextStyle subtle = GoogleFonts.barlowCondensed(
@@ -1025,14 +709,21 @@ class _TrainingMilestoneCard extends StatelessWidget {
   }
 }
 
-class _TrainingPersonalRecordsCard extends StatelessWidget {
-  const _TrainingPersonalRecordsCard({
-    required this.records,
-    required this.onView,
+class _TrainingRecordsHubCard extends StatelessWidget {
+  const _TrainingRecordsHubCard({
+    required this.recordExercises,
+    required this.personalRecordForExercise,
+    required this.formatDate,
+    required this.onAdd,
+    required this.onEdit,
   });
 
-  final List<Map<String, dynamic>> records;
-  final VoidCallback onView;
+  final List<String> recordExercises;
+  final Map<String, dynamic>? Function(String exercise)
+  personalRecordForExercise;
+  final String Function(String? raw) formatDate;
+  final VoidCallback onAdd;
+  final void Function(String exercise) onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1046,29 +737,66 @@ class _TrainingPersonalRecordsCard extends StatelessWidget {
               color: AppColors.textPrimary(context),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            records.isEmpty
-                ? appStrings.noRecordsYet
-                : '${records.length} ${appStrings.personalRecords}',
-            style: _TrainingText.title.copyWith(
-              color: AppColors.textPrimary(context),
-              fontSize: 26,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: onView,
-            child: Text(
-              appStrings.viewRecords.toUpperCase(),
-              style: _TrainingText.subtle.copyWith(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
+          const SizedBox(height: 14),
+          ...recordExercises.map((exercise) {
+            final record = personalRecordForExercise(exercise);
+            final weight = record?['weight_kg']?.toString();
+            final date = formatDate(record?['achieved_at']?.toString());
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => onEdit(exercise),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface(context),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.border(context),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exercise,
+                          style: _TrainingText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                            fontSize: 17,
+                          ),
+                        ),
+                      ),
+                      if (record == null)
+                        Text(
+                          appStrings.notSet.toUpperCase(),
+                          style: _TrainingText.subtle.copyWith(
+                            color: AppColors.textSecondary(context),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        )
+                      else
+                        Text(
+                          '$weight kg · $date',
+                          style: _TrainingText.subtle.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 22,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -1190,153 +918,6 @@ class _TrainingClassHistoryCard extends StatelessWidget {
           const SizedBox(height: 8),
           AppButton(label: appStrings.viewAllHistory, onPressed: onViewAll),
         ],
-      ),
-    );
-  }
-}
-
-class _TrainingSheetAction extends StatelessWidget {
-  const _TrainingSheetAction({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFB42318) : const Color(0xFFB59B6A);
-
-    return Material(
-      color: AppColors.surfaceAlt(context),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: _TrainingText.title.copyWith(color: color),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _TrainingText.subtle.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFABABAB)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TrainingConfirmText {
-  const _TrainingConfirmText._();
-
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-}
-
-class _TrainingConfirmSecondaryButton extends StatelessWidget {
-  const _TrainingConfirmSecondaryButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: BorderSide(color: AppColors.border(context)),
-          backgroundColor: AppColors.surfaceAlt(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(label.toUpperCase(), style: _TrainingConfirmText.rowTitle),
-      ),
-    );
-  }
-}
-
-class _TrainingConfirmDangerButton extends StatelessWidget {
-  const _TrainingConfirmDangerButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.danger,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: _TrainingConfirmText.rowTitle.copyWith(color: Colors.white),
-        ),
       ),
     );
   }

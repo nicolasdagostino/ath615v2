@@ -3,7 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+
+Color _profileHubBackground(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
+}
 
 class AvailableMembershipsScreen extends StatefulWidget {
   const AvailableMembershipsScreen({super.key, required this.type});
@@ -92,9 +98,9 @@ class _AvailableMembershipsScreenState
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(AppRadii.sheet),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -117,8 +123,10 @@ class _AvailableMembershipsScreenState
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(sheetContext, false),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Color(0xFF323232)),
+                              foregroundColor: AppColors.textPrimary(context),
+                              side: BorderSide(
+                                color: AppColors.border(context),
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -134,8 +142,8 @@ class _AvailableMembershipsScreenState
                           child: FilledButton(
                             onPressed: () => Navigator.pop(sheetContext, true),
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFB59B6A),
-                              foregroundColor: Colors.white,
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: AppColors.textPrimary(context),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -219,7 +227,7 @@ class _AvailableMembershipsScreenState
         : appStrings.availableDropIns.toUpperCase();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: _profileHubBackground(context),
       body: Column(
         children: [
           SafeArea(
@@ -232,7 +240,7 @@ class _AvailableMembershipsScreenState
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      color: Color(0xFFB59B6A),
+                      color: AppColors.accent,
                       size: 20,
                     ),
                   ),
@@ -241,7 +249,7 @@ class _AvailableMembershipsScreenState
                     child: Text(
                       title,
                       style: GoogleFonts.barlowCondensed(
-                        fontSize: 30,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: -0.3,
@@ -253,105 +261,112 @@ class _AvailableMembershipsScreenState
             ),
           ),
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _plans.isEmpty
-                ? Center(
-                    child: Text(
-                      _isSubscription
-                          ? appStrings.noSubscriptionsAvailable
-                          : appStrings.noDropInsAvailable,
-                      style: _AvailableMembershipText.body,
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-                    itemCount: _plans.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final plan = _plans[index];
-                      final name = plan['name']?.toString() ?? 'Plan';
-                      final credits = plan['credits'];
-                      final price = plan['price'];
+            child: Container(
+              width: double.infinity,
+              color: _profileHubBackground(context),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _plans.isEmpty
+                  ? Center(
+                      child: Text(
+                        _isSubscription
+                            ? appStrings.noSubscriptionsAvailable
+                            : appStrings.noDropInsAvailable,
+                        style: _AvailableMembershipText.body,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                      itemCount: _plans.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final plan = _plans[index];
+                        final name = plan['name']?.toString() ?? 'Plan';
+                        final credits = plan['credits'];
+                        final price = plan['price'];
 
-                      final subtitle = _isSubscription
-                          ? appStrings.unlimitedAccess
-                          : credits == 1
-                          ? appStrings.classCredit(credits)
-                          : appStrings.classCredits(credits);
+                        final subtitle = _isSubscription
+                            ? appStrings.unlimitedAccess
+                            : credits == 1
+                            ? appStrings.classCredit(credits)
+                            : appStrings.classCredits(credits);
 
-                      final action = _isSubscription
-                          ? appStrings.requestSubscription.toUpperCase()
-                          : appStrings.requestDropIn.toUpperCase();
+                        final action = _isSubscription
+                            ? appStrings.requestSubscription.toUpperCase()
+                            : appStrings.requestDropIn.toUpperCase();
 
-                      return Container(
-                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF171717),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: const Color(0xFF323232),
-                            width: 1,
+                        return Container(
+                          padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceAlt(context),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.border(context),
+                              width: 1,
+                            ),
+                            boxShadow: AppShadows.card(context),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name.toUpperCase(),
-                              style: _AvailableMembershipText.title,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              price == null
-                                  ? appStrings.priceComingSoon.toUpperCase()
-                                  : '€$price',
-                              style: _AvailableMembershipText.price,
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name.toUpperCase(),
+                                style: _AvailableMembershipText.title,
                               ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF252525),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: const Color(0xFF323232),
-                                  width: 1,
+                              const SizedBox(height: 10),
+                              Text(
+                                price == null
+                                    ? appStrings.priceComingSoon.toUpperCase()
+                                    : '€$price',
+                                style: _AvailableMembershipText.price,
+                              ),
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
                                 ),
-                              ),
-                              child: Text(
-                                subtitle.toUpperCase(),
-                                style: _AvailableMembershipText.body.copyWith(
-                                  color: const Color(0xFFB59B6A),
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.7,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: FilledButton(
-                                onPressed: () => _requestPlan(plan),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFFB59B6A),
-                                  foregroundColor: const Color(0xFF111111),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface(context),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: AppColors.border(context),
+                                    width: 1,
                                   ),
                                 ),
-                                child: Text(action),
+                                child: Text(
+                                  subtitle.toUpperCase(),
+                                  style: _AvailableMembershipText.body.copyWith(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.7,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: FilledButton(
+                                  onPressed: () => _requestPlan(plan),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.accent,
+                                    foregroundColor: AppColors.background(
+                                      context,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: Text(action),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),
@@ -372,7 +387,7 @@ class _AvailableMembershipText {
   static TextStyle price = GoogleFonts.barlowCondensed(
     fontSize: 30,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFFB59B6A),
+    color: AppColors.accent,
     height: 1,
   );
 
