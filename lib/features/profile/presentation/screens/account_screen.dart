@@ -1,14 +1,279 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AccountScreen extends StatelessWidget {
+import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pickers.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../auth/data/auth_repository.dart';
+
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
   @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  final _fullName = TextEditingController();
+  final _birthDate = TextEditingController();
+
+  bool _loading = false;
+  bool _uploadingAvatar = false;
+  Map<String, dynamic>? _profile;
+
+  AuthRepository get _repo => AuthRepository(Supabase.instance.client);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _fullName.dispose();
+    _birthDate.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final profile = await _repo.myProfile();
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _fullName.text = profile?['full_name']?.toString() ?? '';
+      _birthDate.text = profile?['birth_date']?.toString() ?? '';
+    });
+  }
+
+  String _formatDate(String? raw) {
+    if (raw == null || raw.isEmpty) return appStrings.notSet;
+    final date = DateTime.tryParse(raw)?.toLocal();
+    if (date == null) return raw;
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _dateInputValue(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  Future<void> _pickBirthDate() async {
+    final current = DateTime.tryParse(_birthDate.text);
+    final now = DateTime.now();
+
+    final picked = await showAppDatePicker(
+      context: context,
+      initialDate: current ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _birthDate.text = _dateInputValue(picked);
+    });
+  }
+
+  Future<void> _openEditAccountSheet({required bool editBirthDate}) async {
+    final title = editBirthDate ? appStrings.birthDate : appStrings.fullName;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border(context), width: 1),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    style: _AccountText.header.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: editBirthDate ? _birthDate : _fullName,
+                    readOnly: editBirthDate,
+                    textCapitalization: TextCapitalization.words,
+                    cursorColor: AppColors.accent,
+                    style: _AccountText.body.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: _inputDecoration(context, title).copyWith(
+                      suffixIcon: editBirthDate
+                          ? const Icon(
+                              Icons.calendar_month_rounded,
+                              color: AppColors.accent,
+                            )
+                          : null,
+                    ),
+                    onTap: editBirthDate ? _pickBirthDate : null,
+                  ),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: appStrings.saveChanges,
+                    loading: _loading,
+                    onPressed: () async {
+                      final navigator = Navigator.of(sheetContext);
+                      await _saveAccountInfo();
+                      if (mounted) navigator.pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _saveAccountInfo() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final fullName = _fullName.text.trim();
+    final birthDate = _birthDate.text.trim();
+
+    setState(() => _loading = true);
+
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({
+            'full_name': fullName.isEmpty ? null : fullName,
+            'birth_date': birthDate.isEmpty ? null : birthDate,
+          })
+          .eq('id', userId);
+
+      await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.profileUpdated)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.updateProfileError(e))));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null || _uploadingAvatar) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 900,
+    );
+
+    if (picked == null) return;
+
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 88,
+      uiSettings: [
+        IOSUiSettings(
+          title: appStrings.updatePhoto,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+        AndroidUiSettings(
+          toolbarTitle: appStrings.updatePhoto,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+      ],
+    );
+
+    if (cropped == null) return;
+
+    setState(() => _uploadingAvatar = true);
+
+    try {
+      final bytes = await cropped.readAsBytes();
+      final path = '$userId.jpg';
+
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      final publicUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(path);
+
+      final freshUrl = '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'avatar_url': freshUrl})
+          .eq('id', userId);
+
+      await _load();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.photoUpdated)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.updatePhotoError(e))));
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
+    final fullName = _profile?['full_name']?.toString().trim() ?? '';
+    final displayName = fullName.isNotEmpty ? fullName : 'ATHLETE615 Member';
+    final avatarUrl = _profile?['avatar_url']?.toString();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -17,25 +282,358 @@ class AccountScreen extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: AppColors.accent,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Account',
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: const Color(0xFF111827),
+                  appStrings.profileAccount,
+                  style: _AccountText.header.copyWith(
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Center(child: Text('Account')),
+            const SizedBox(height: 24),
+            if (_profile == null)
+              const _AccountSkeleton()
+            else ...[
+              Center(
+                child: Column(
+                  children: [
+                    _AccountAvatar(
+                      displayName: displayName,
+                      avatarUrl: avatarUrl,
+                      uploading: _uploadingAvatar,
+                      onTap: _uploadAvatar,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      appStrings.updatePhoto.toUpperCase(),
+                      style: _AccountText.body.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      email,
+                      textAlign: TextAlign.center,
+                      style: _AccountText.body.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              _AccountListCard(
+                children: [
+                  _AccountInfoRow(
+                    label: appStrings.fullName,
+                    value: fullName.isEmpty ? appStrings.notSet : fullName,
+                    onTap: () => _openEditAccountSheet(editBirthDate: false),
+                  ),
+                  _AccountInfoRow(
+                    label: appStrings.birthDate,
+                    value: _formatDate(_profile?['birth_date']?.toString()),
+                    onTap: () => _openEditAccountSheet(editBirthDate: true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _AccountListCard(
+                children: [
+                  _AccountMenuRow(
+                    title: appStrings.profileChangePassword,
+                    onTap: () => context.push('/settings'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _AccountListCard(
+                children: [
+                  _AccountMenuRow(
+                    title: appStrings.profileSettings,
+                    onTap: () => context.push('/settings'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              _AccountListCard(
+                children: [
+                  _AccountMenuRow(
+                    title: appStrings.profileDeleteAccount,
+                    danger: true,
+                    onTap: () => context.push('/settings'),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+class _AccountText {
+  const _AccountText._();
+
+  static TextStyle header = GoogleFonts.barlowCondensed(
+    fontSize: 30,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -0.3,
+    height: 1,
+  );
+
+  static TextStyle body = GoogleFonts.barlowCondensed(
+    fontSize: 15.5,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0,
+    height: 1.2,
+  );
+}
+
+class _AccountAvatar extends StatelessWidget {
+  const _AccountAvatar({
+    required this.displayName,
+    required this.avatarUrl,
+    required this.uploading,
+    required this.onTap,
+  });
+
+  final String displayName;
+  final String? avatarUrl;
+  final bool uploading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+      onTap: uploading ? null : onTap,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+            child: Container(
+              width: 82,
+              height: 82,
+              alignment: Alignment.center,
+              color: AppColors.surfaceAlt(context),
+              child: hasAvatar
+                  ? Image.network(
+                      avatarUrl!,
+                      width: 82,
+                      height: 82,
+                      fit: BoxFit.cover,
+                    )
+                  : Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'A',
+                      style: GoogleFonts.barlowCondensed(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.accent,
+                        height: 1.0,
+                      ),
+                    ),
+            ),
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: AppColors.accent,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.background(context),
+                  width: 2,
+                ),
+              ),
+              child: uploading
+                  ? const Padding(
+                      padding: EdgeInsets.all(5),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      Icons.camera_alt_rounded,
+                      color: AppColors.textPrimary(context),
+                      size: 14,
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountListCard extends StatelessWidget {
+  const _AccountListCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border(context), width: 1),
+        boxShadow: AppShadows.card(context),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _AccountInfoRow extends StatelessWidget {
+  const _AccountInfoRow({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: _AccountText.body.copyWith(
+                  color: AppColors.textPrimary(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                style: _AccountText.body.copyWith(
+                  color: AppColors.textSecondary(context),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 22,
+              color: AppColors.textSecondary(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountMenuRow extends StatelessWidget {
+  const _AccountMenuRow({
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final String title;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: _AccountText.body.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (!danger)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textSecondary(context),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+InputDecoration _inputDecoration(BuildContext context, String hint) {
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: GoogleFonts.barlowCondensed(
+      color: AppColors.textSecondary(context),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    labelText: null,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
+    filled: true,
+    fillColor: AppColors.surfaceAlt(context),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
+    ),
+  );
+}
+
+class _AccountSkeleton extends StatelessWidget {
+  const _AccountSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(height: 220);
   }
 }
