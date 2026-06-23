@@ -496,7 +496,7 @@ class _EditWorkoutButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.isDark(context)
               ? AppColors.surface(context)
               : const Color(0xFFE9E9EC),
-          foregroundColor: const Color(0xFF111111),
+          foregroundColor: Colors.white,
           disabledForegroundColor: AppColors.textSecondary(context),
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -509,7 +509,7 @@ class _EditWorkoutButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFF111111),
+                  color: Colors.white,
                 ),
               )
             : Text(
@@ -557,7 +557,12 @@ class _EditWorkoutActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: _EditWorkoutSheetText.rowTitle),
+                    Text(
+                      title,
+                      style: _EditWorkoutSheetText.rowTitle.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(subtitle, style: _EditWorkoutSheetText.subtle),
                   ],

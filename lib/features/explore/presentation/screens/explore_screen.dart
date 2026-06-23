@@ -7,7 +7,6 @@ import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
 import '../../../workouts/presentation/widgets/workout_card.dart';
-import '../../../workouts/presentation/widgets/workouts_empty_state.dart';
 import '../../../workouts/presentation/widgets/workouts_loading_state.dart';
 import '../widgets/explore_header.dart';
 
@@ -250,6 +249,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(AppRadii.panel),
                 border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -457,7 +457,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   : _role == 'athlete' && !_isAccountActive
                   ? const _InactiveExploreState()
                   : filteredWorkouts.isEmpty
-                  ? const WorkoutsEmptyState()
+                  ? _ExploreEmptyResultState(
+                      title: appStrings.exploreSearchEmptyTitle,
+                      message: appStrings.exploreSearchEmptyMessage,
+                    )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -525,6 +528,46 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
+class _ExploreEmptyResultState extends StatelessWidget {
+  const _ExploreEmptyResultState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(28, 120, 28, 28),
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            color: AppColors.textPrimary(context),
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.barlowCondensed(
+            color: AppColors.textSecondary(context),
+            fontSize: 17,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.1,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ExploreDeleteSheetText {
   const _ExploreDeleteSheetText._();
   static TextStyle title = GoogleFonts.barlowCondensed(
@@ -563,18 +606,18 @@ class _ExploreDeleteSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF323232)),
-          backgroundColor: AppColors.isDark(context)
-              ? AppColors.surfaceAlt(context)
-              : AppColors.surface(context),
+          foregroundColor: AppColors.textPrimary(context),
+          side: BorderSide(color: AppColors.border(context)),
+          backgroundColor: AppColors.surfaceAlt(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _ExploreDeleteSheetText.rowTitle,
+          style: _ExploreDeleteSheetText.rowTitle.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
         ),
       ),
     );
@@ -592,7 +635,7 @@ class _ExploreDeleteDangerButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB42318),
+          backgroundColor: AppColors.danger,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

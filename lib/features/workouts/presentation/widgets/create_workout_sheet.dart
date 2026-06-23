@@ -496,7 +496,7 @@ class _CreateWorkoutButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.isDark(context)
               ? AppColors.surface(context)
               : const Color(0xFFE9E9EC),
-          foregroundColor: const Color(0xFF111111),
+          foregroundColor: Colors.white,
           disabledForegroundColor: AppColors.textSecondary(context),
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -509,7 +509,7 @@ class _CreateWorkoutButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFF111111),
+                  color: Colors.white,
                 ),
               )
             : Text(

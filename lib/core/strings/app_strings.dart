@@ -555,6 +555,13 @@ class AppStrings {
     'Delete account error: $error',
     'Error al eliminar la cuenta: $error',
   );
+  String get exploreSearchEmptyTitle =>
+      pick('No workouts found.', 'No se encontraron WODs.');
+
+  String get exploreSearchEmptyMessage => pick(
+    'Try another search or change the selected program.',
+    'Probá con otra búsqueda o cambiá el programa seleccionado.',
+  );
 }
 
 const appStrings = AppStrings();

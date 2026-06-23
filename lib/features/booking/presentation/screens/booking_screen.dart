@@ -358,13 +358,21 @@ class _BookingScreenState extends State<BookingScreen> {
                       Expanded(
                         child: Text(
                           title.toUpperCase(),
-                          style: _BookingSheetText.title,
+                          style: _BookingSheetText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                            fontSize: 22,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(message, style: _BookingSheetText.body),
+                  Text(
+                    message,
+                    style: _BookingSheetText.body.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -423,7 +431,10 @@ class _BookingScreenState extends State<BookingScreen> {
                 children: [
                   Text(
                     appStrings.classOptions.toUpperCase(),
-                    style: _BookingSheetText.title,
+                    style: _BookingSheetText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _BookingSheetActionRow(
@@ -830,10 +841,19 @@ class _BookingSheetActionRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: _BookingSheetText.rowTitle.copyWith(color: color),
+                      style: _BookingSheetText.rowTitle.copyWith(
+                        color: danger
+                            ? AppColors.danger
+                            : AppColors.textPrimary(context),
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: _BookingSheetText.subtle),
+                    Text(
+                      subtitle,
+                      style: _BookingSheetText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -872,7 +892,12 @@ class _BookingSheetSecondaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        child: Text(label.toUpperCase(), style: _BookingSheetText.rowTitle),
+        child: Text(
+          label.toUpperCase(),
+          style: _BookingSheetText.rowTitle.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
+        ),
       ),
     );
   }

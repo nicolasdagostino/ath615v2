@@ -597,6 +597,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               const SizedBox(height: 18),
                               if (_comments.isEmpty)
                                 Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 18,
                                     vertical: 16,
@@ -645,12 +648,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                   final avatarUrl = _authorAvatars[userId];
 
                                   return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
+                                    margin: const EdgeInsets.fromLTRB(
+                                      8,
+                                      0,
+                                      8,
+                                      12,
+                                    ),
                                     padding: const EdgeInsets.fromLTRB(
                                       16,
-                                      14,
+                                      12,
                                       16,
-                                      14,
+                                      12,
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.surface(context),
@@ -776,7 +784,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                   ],
                                                 ],
                                               ),
-                                              const SizedBox(height: 5),
+                                              const SizedBox(height: 3),
                                               Text(
                                                 comment['body']?.toString() ??
                                                     '',
@@ -800,13 +808,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     ),
                                   );
                                 }),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 padding: const EdgeInsets.fromLTRB(
                                   18,
-                                  18,
-                                  18,
-                                  18,
+                                  16,
+                                  16,
+                                  16,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColors.surface(context),
@@ -870,10 +881,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                               ),
                                               contentPadding:
                                                   const EdgeInsets.fromLTRB(
-                                                    16,
-                                                    15,
-                                                    16,
-                                                    15,
+                                                    14,
+                                                    12,
+                                                    14,
+                                                    12,
                                                   ),
                                               enabledBorder: OutlineInputBorder(
                                                 borderRadius:
@@ -907,7 +918,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                             onSubmitted: (_) => _addComment(),
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
+                                        const SizedBox(width: 6),
                                         Material(
                                           color: AppColors.accent,
                                           shape: const CircleBorder(),
@@ -915,8 +926,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                             customBorder: const CircleBorder(),
                                             onTap: _addComment,
                                             child: const SizedBox(
-                                              width: 30,
-                                              height: 30,
+                                              width: 34,
+                                              height: 34,
                                               child: Icon(
                                                 Icons.send_rounded,
                                                 color: Colors.white,
