@@ -227,6 +227,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 34),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileTraining,
+                                onTap: () => context.push('/training'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileMembership,
+                                onTap: () => context.push('/membership'),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 10),
                           _ProfileListCard(
                             children: [

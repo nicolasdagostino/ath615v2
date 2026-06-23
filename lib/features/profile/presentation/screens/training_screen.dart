@@ -9,6 +9,11 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 
+Color _profileHubBackground(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
+}
+
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
 
@@ -291,7 +296,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                   decoration: BoxDecoration(
                     color: AppColors.surface(context),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: AppColors.border(context),
                       width: 1,
@@ -597,7 +602,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
@@ -706,7 +711,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.border(context), width: 1),
             ),
             child: ListView(
@@ -783,45 +788,51 @@ class _TrainingScreenState extends State<TrainingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background(context),
+      backgroundColor: _profileHubBackground(context),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+          padding: EdgeInsets.zero,
           children: [
-            Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Training',
+                    style: _TrainingText.header.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _TrainingMenuSection(
               children: [
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: AppColors.accent,
+                if (_loading)
+                  const Center(child: CircularProgressIndicator())
+                else ...[
+                  _TrainingMilestoneCard(attendedCount: _attendedCount),
+                  _TrainingPersonalRecordsCard(
+                    records: _personalRecords.take(5).toList(),
+                    onView: _openPersonalRecordsListSheet,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Training',
-                  style: _TrainingText.header.copyWith(
-                    color: AppColors.textPrimary(context),
+                  _TrainingClassHistoryCard(
+                    history: _classHistory.take(3).toList(),
+                    formatDate: _formatDate,
+                    onViewAll: _openFullHistorySheet,
                   ),
-                ),
+                ],
               ],
             ),
-            const SizedBox(height: 20),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              _TrainingMilestoneCard(attendedCount: _attendedCount),
-              _TrainingPersonalRecordsCard(
-                records: _personalRecords.take(5).toList(),
-                onView: _openPersonalRecordsListSheet,
-              ),
-              _TrainingClassHistoryCard(
-                history: _classHistory.take(3).toList(),
-                formatDate: _formatDate,
-                onViewAll: _openFullHistorySheet,
-              ),
-            ],
           ],
         ),
       ),
@@ -862,7 +873,7 @@ class _TrainingText {
   const _TrainingText._();
 
   static TextStyle header = GoogleFonts.barlowCondensed(
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
     color: Colors.white,
@@ -908,6 +919,25 @@ class _TrainingText {
   );
 }
 
+class _TrainingMenuSection extends StatelessWidget {
+  const _TrainingMenuSection({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height * 0.72,
+      ),
+      color: _profileHubBackground(context),
+      padding: const EdgeInsets.fromLTRB(24, 34, 24, 72),
+      child: Column(children: children),
+    );
+  }
+}
+
 class _TrainingCard extends StatelessWidget {
   const _TrainingCard({required this.child});
 
@@ -921,7 +951,7 @@ class _TrainingCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: AppShadows.card(context),
       ),
