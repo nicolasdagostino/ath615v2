@@ -12,6 +12,11 @@ import '../../../../core/widgets/app_pickers.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../auth/data/auth_repository.dart';
 
+Color _profileHubBackground(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
+}
+
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
@@ -22,6 +27,8 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   final _fullName = TextEditingController();
   final _birthDate = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
 
   bool _loading = false;
   bool _uploadingAvatar = false;
@@ -39,6 +46,8 @@ class _AccountScreenState extends State<AccountScreen> {
   void dispose() {
     _fullName.dispose();
     _birthDate.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -101,7 +110,7 @@ class _AccountScreenState extends State<AccountScreen> {
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
                 color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.panel),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
@@ -182,6 +191,262 @@ class _AccountScreenState extends State<AccountScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.updateProfileError(e))));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<bool> _confirmAction({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    bool danger = false,
+  }) async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: _AccountText.header.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: _AccountText.body.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AccountConfirmButton(
+                          label: appStrings.cancel,
+                          onTap: () => Navigator.of(sheetContext).pop(false),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _AccountConfirmButton(
+                          label: confirmLabel,
+                          danger: danger,
+                          onTap: () => Navigator.of(sheetContext).pop(true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _openChangePasswordSheet() async {
+    _password.clear();
+    _confirmPassword.clear();
+
+    var obscurePassword = true;
+    var obscureConfirmPassword = true;
+    var loading = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: SafeArea(
+                child: Container(
+                  margin: const EdgeInsets.all(AppSpacing.sheetMargin),
+                  padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface(context),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.border(context),
+                      width: 1,
+                    ),
+                    boxShadow: AppShadows.card(context),
+                  ),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text(
+                        appStrings.profileChangePassword.toUpperCase(),
+                        style: _AccountText.header.copyWith(
+                          color: AppColors.textPrimary(context),
+                          fontSize: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _password,
+                        obscureText: obscurePassword,
+                        cursorColor: AppColors.accent,
+                        style: _AccountText.body.copyWith(
+                          color: AppColors.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration:
+                            _inputDecoration(
+                              context,
+                              appStrings.profileNewPassword,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                color: AppColors.accent,
+                                onPressed: () {
+                                  setSheetState(() {
+                                    obscurePassword = !obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _confirmPassword,
+                        obscureText: obscureConfirmPassword,
+                        cursorColor: AppColors.accent,
+                        style: _AccountText.body.copyWith(
+                          color: AppColors.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration:
+                            _inputDecoration(
+                              context,
+                              appStrings.profileConfirmPassword,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscureConfirmPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                color: AppColors.accent,
+                                onPressed: () {
+                                  setSheetState(() {
+                                    obscureConfirmPassword =
+                                        !obscureConfirmPassword;
+                                  });
+                                },
+                              ),
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label: appStrings.profileChangePassword,
+                        loading: loading,
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                final navigator = Navigator.of(sheetContext);
+
+                                setSheetState(() => loading = true);
+                                final updated = await _changePassword();
+                                if (!context.mounted) return;
+                                setSheetState(() => loading = false);
+
+                                if (mounted && updated) navigator.pop();
+                              },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool> _changePassword() async {
+    if (_password.text != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.profilePasswordsDoNotMatch)),
+      );
+      return false;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      await _repo.updatePassword(_password.text);
+      _password.clear();
+      _confirmPassword.clear();
+
+      if (!mounted) return false;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.passwordUpdated)));
+
+      return true;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await _confirmAction(
+      title: appStrings.profileDeleteAccount,
+      message: appStrings.profileDeleteConfirm,
+      confirmLabel: appStrings.profileDeleteAccount,
+      danger: true,
+    );
+
+    if (!confirmed) return;
+
+    setState(() => _loading = true);
+
+    try {
+      await _repo.deleteMyAccount();
+      if (!mounted) return;
+      context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.deleteAccountError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -273,103 +538,115 @@ class _AccountScreenState extends State<AccountScreen> {
     final avatarUrl = _profile?['avatar_url']?.toString();
 
     return Scaffold(
-      backgroundColor: AppColors.background(context),
+      backgroundColor: _profileHubBackground(context),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+          padding: EdgeInsets.zero,
           children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: AppColors.accent,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: AppColors.accent,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  appStrings.profileAccount,
-                  style: _AccountText.header.copyWith(
-                    color: AppColors.textPrimary(context),
+                  const SizedBox(width: 8),
+                  Text(
+                    appStrings.profileAccount,
+                    style: _AccountText.header.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             if (_profile == null)
               const _AccountSkeleton()
             else ...[
-              Center(
-                child: Column(
-                  children: [
-                    _AccountAvatar(
-                      displayName: displayName,
-                      avatarUrl: avatarUrl,
-                      uploading: _uploadingAvatar,
-                      onTap: _uploadAvatar,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      appStrings.updatePhoto.toUpperCase(),
-                      style: _AccountText.body.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      _AccountAvatar(
+                        displayName: displayName,
+                        avatarUrl: avatarUrl,
+                        uploading: _uploadingAvatar,
+                        onTap: _uploadAvatar,
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      email,
-                      textAlign: TextAlign.center,
-                      style: _AccountText.body.copyWith(
-                        color: AppColors.textSecondary(context),
+                      const SizedBox(height: 10),
+                      Text(
+                        appStrings.updatePhoto.toUpperCase(),
+                        style: _AccountText.body.copyWith(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 14),
+                      Text(
+                        email,
+                        textAlign: TextAlign.center,
+                        style: _AccountText.body.copyWith(
+                          color: AppColors.textSecondary(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 28),
-              _AccountListCard(
+              const SizedBox(height: 36),
+              _AccountMenuSection(
                 children: [
-                  _AccountInfoRow(
-                    label: appStrings.fullName,
-                    value: fullName.isEmpty ? appStrings.notSet : fullName,
-                    onTap: () => _openEditAccountSheet(editBirthDate: false),
+                  _AccountListCard(
+                    children: [
+                      _AccountInfoRow(
+                        label: appStrings.fullName,
+                        value: fullName.isEmpty ? appStrings.notSet : fullName,
+                        onTap: () =>
+                            _openEditAccountSheet(editBirthDate: false),
+                      ),
+                      const _AccountInsetDivider(),
+                      _AccountInfoRow(
+                        label: appStrings.birthDate,
+                        value: _formatDate(_profile?['birth_date']?.toString()),
+                        onTap: () => _openEditAccountSheet(editBirthDate: true),
+                      ),
+                    ],
                   ),
-                  _AccountInfoRow(
-                    label: appStrings.birthDate,
-                    value: _formatDate(_profile?['birth_date']?.toString()),
-                    onTap: () => _openEditAccountSheet(editBirthDate: true),
+                  const SizedBox(height: 12),
+                  _AccountListCard(
+                    children: [
+                      _AccountMenuRow(
+                        title: appStrings.profileChangePassword,
+                        onTap: _openChangePasswordSheet,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _AccountListCard(
-                children: [
-                  _AccountMenuRow(
-                    title: appStrings.profileChangePassword,
-                    onTap: () => context.push('/settings'),
+                  const SizedBox(height: 12),
+                  _AccountListCard(
+                    children: [
+                      _AccountMenuRow(
+                        title: appStrings.profileSettings,
+                        onTap: () => context.push('/settings'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _AccountListCard(
-                children: [
-                  _AccountMenuRow(
-                    title: appStrings.profileSettings,
-                    onTap: () => context.push('/settings'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              _AccountListCard(
-                children: [
-                  _AccountMenuRow(
-                    title: appStrings.profileDeleteAccount,
-                    danger: true,
-                    onTap: () => context.push('/settings'),
+                  const SizedBox(height: 34),
+                  _AccountListCard(
+                    children: [
+                      _AccountMenuRow(
+                        title: appStrings.profileDeleteAccount,
+                        danger: true,
+                        onTap: _deleteAccount,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -385,7 +662,7 @@ class _AccountText {
   const _AccountText._();
 
   static TextStyle header = GoogleFonts.barlowCondensed(
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
     height: 1,
@@ -417,12 +694,12 @@ class _AccountAvatar extends StatelessWidget {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(AppRadii.panel),
+      borderRadius: BorderRadius.circular(14),
       onTap: uploading ? null : onTap,
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.panel),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
               width: 82,
               height: 82,
@@ -483,6 +760,25 @@ class _AccountAvatar extends StatelessWidget {
   }
 }
 
+class _AccountMenuSection extends StatelessWidget {
+  const _AccountMenuSection({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height * 0.62,
+      ),
+      color: _profileHubBackground(context),
+      padding: const EdgeInsets.fromLTRB(24, 34, 24, 72),
+      child: Column(children: children),
+    );
+  }
+}
+
 class _AccountListCard extends StatelessWidget {
   const _AccountListCard({required this.children});
 
@@ -494,7 +790,7 @@ class _AccountListCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(AppRadii.panel),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: AppShadows.card(context),
       ),
@@ -556,6 +852,24 @@ class _AccountInfoRow extends StatelessWidget {
   }
 }
 
+class _AccountInsetDivider extends StatelessWidget {
+  const _AccountInsetDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Container(
+        width: double.infinity,
+        height: 1,
+        color: isDark ? const Color(0xFF4A4A4A) : const Color(0xFFE1E4E8),
+      ),
+    );
+  }
+}
+
 class _AccountMenuRow extends StatelessWidget {
   const _AccountMenuRow({
     required this.title,
@@ -594,6 +908,45 @@ class _AccountMenuRow extends StatelessWidget {
                 color: AppColors.textSecondary(context),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountConfirmButton extends StatelessWidget {
+  const _AccountConfirmButton({
+    required this.label,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt(context),
+          borderRadius: BorderRadius.circular(AppRadii.input),
+          border: Border.all(color: AppColors.border(context), width: 1),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: _AccountText.body.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
         ),
       ),
     );

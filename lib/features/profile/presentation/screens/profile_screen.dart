@@ -4,11 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../auth/data/auth_repository.dart';
+
+Color _profileHubBackground(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -134,6 +140,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    await _repo.signOut();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.couldNotOpenLink)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '-';
@@ -144,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final avatarUrl = _profile?['avatar_url']?.toString();
 
     return Scaffold(
-      backgroundColor: AppColors.background(context),
+      backgroundColor: _profileHubBackground(context),
       body: Column(
         children: [
           _ProfileHeader(
@@ -159,12 +181,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (_profile == null)
                   const _ProfileSkeleton()
                 else
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
+                        child: Center(
                           child: Column(
                             children: [
                               _ProfileAvatar(
@@ -195,53 +216,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 28),
-                        _ProfileListCard(
-                          children: [
-                            _ProfileMenuRow(
-                              title: appStrings.profileAccount,
-                              onTap: () => context.push('/account'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        _ProfileListCard(
-                          children: [
-                            _ProfileMenuRow(
-                              title: appStrings.personalRecords,
-                              onTap: () => context.push('/training'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        _ProfileListCard(
-                          children: [
-                            _ProfileMenuRow(
-                              title: appStrings.profileHelp,
-                              onTap: () => context.push('/settings'),
-                            ),
-                            _ProfileMenuRow(
-                              title: appStrings.profilePrivacyPolicy,
-                              onTap: () => context.push('/settings'),
-                            ),
-                            _ProfileMenuRow(
-                              title: appStrings.profileTerms,
-                              onTap: () => context.push('/settings'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        _ProfileListCard(
-                          children: [
-                            _ProfileMenuRow(
-                              title: appStrings.profileLogout,
-                              isDanger: true,
-                              onTap: () => context.push('/settings'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                      _ProfileMenuSection(
+                        children: [
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileAccount,
+                                onTap: () => context.push('/account'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.personalRecords,
+                                onTap: () => context.push('/training'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 34),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileHelp,
+                                onTap: () =>
+                                    _openUrl('https://athlete615.com/support'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profilePrivacyPolicy,
+                                onTap: () => _openUrl(
+                                  'https://athlete615.com/privacy-policy',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileTerms,
+                                onTap: () => _openUrl(
+                                  'https://athlete615.com/terms-and-conditions',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 34),
+                          _ProfileListCard(
+                            children: [
+                              _ProfileMenuRow(
+                                title: appStrings.profileLogout,
+                                isDanger: true,
+                                onTap: _logout,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -495,6 +534,25 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
+class _ProfileMenuSection extends StatelessWidget {
+  const _ProfileMenuSection({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height * 0.62,
+      ),
+      color: _profileHubBackground(context),
+      padding: const EdgeInsets.fromLTRB(24, 34, 24, 72),
+      child: Column(children: children),
+    );
+  }
+}
+
 class _ProfileListCard extends StatelessWidget {
   const _ProfileListCard({required this.children});
 
@@ -506,7 +564,7 @@ class _ProfileListCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(AppRadii.panel),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: AppShadows.card(context),
       ),
@@ -531,7 +589,7 @@ class _ProfileMenuRow extends StatelessWidget {
     final color = isDanger ? AppColors.danger : AppColors.textPrimary(context);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(28, 16, 18, 16),
