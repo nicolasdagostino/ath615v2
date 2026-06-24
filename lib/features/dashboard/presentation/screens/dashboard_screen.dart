@@ -1277,7 +1277,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final members = _filteredMembers;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           _DashboardHeader(
@@ -1382,9 +1382,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(width: 12),
                               SizedBox(
                                 width: 145,
-                                child: AppButton(
-                                  label: appStrings.inviteAthlete,
+                                height: 48,
+                                child: FilledButton(
                                   onPressed: _openInviteMemberSheet,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.surfaceAlt(
+                                      context,
+                                    ),
+                                    foregroundColor: AppColors.textPrimary(
+                                      context,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      side: BorderSide(
+                                        color: AppColors.border(context),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    appStrings.inviteAthlete,
+                                    textAlign: TextAlign.center,
+                                    style: _DashText.body.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                      height: 1.0,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -1393,10 +1418,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           TextField(
                             controller: _search,
                             onChanged: (_) => setState(() {}),
-                            style: _DashText.body,
-                            decoration: _dashInput(
-                              appStrings.searchMember,
-                              Icons.search,
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: appStrings.searchMember,
+                              hintStyle: GoogleFonts.barlowCondensed(
+                                color: AppColors.textSecondary(context),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: AppColors.accent,
+                                size: 20,
+                              ),
+                              filled: true,
+                              fillColor: AppColors.surfaceAlt(context),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 15,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.input,
+                                ),
+                                borderSide: BorderSide(
+                                  color: AppColors.border(context),
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.input,
+                                ),
+                                borderSide: const BorderSide(
+                                  color: AppColors.accent,
+                                  width: 1.2,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.input,
+                                ),
+                                borderSide: BorderSide(
+                                  color: AppColors.border(context),
+                                  width: 1,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -1565,7 +1635,7 @@ class _MemberTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: const Color(0xFF171717),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -1589,7 +1659,9 @@ class _MemberTile extends StatelessWidget {
                           name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: _DashText.title,
+                          style: _DashText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
