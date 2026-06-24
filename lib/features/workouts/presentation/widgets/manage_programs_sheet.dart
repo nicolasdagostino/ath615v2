@@ -220,7 +220,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _ProgramButton(
-                          label: appStrings.workoutSaveChanges,
+                          label: appStrings.save,
                           loading: false,
                           enabled: true,
                           onPressed: () {
@@ -392,7 +392,7 @@ class _ManageProgramsSheetState extends State<_ManageProgramsSheet> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '$name\n$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}\n\nThis will permanently delete this program and all associated workouts. This action cannot be undone.',
+                    '$name\n$workoutCount ${workoutCount == 1 ? appStrings.workoutFallbackTitle : appStrings.workoutsTitle}\n\n${appStrings.deleteProgramWarning}',
                     style: _ProgramsText.body.copyWith(
                       color: AppColors.textSecondary(context),
                     ),

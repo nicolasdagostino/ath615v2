@@ -118,7 +118,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'CURRENT MEMBERSHIP',
+                          appStrings.currentMembership.toUpperCase(),
                           style: _MembershipText.sectionTitle.copyWith(
                             color: AppColors.textPrimary(context),
                           ),

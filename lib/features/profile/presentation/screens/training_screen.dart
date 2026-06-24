@@ -836,7 +836,7 @@ class _TrainingClassHistoryCard extends StatelessWidget {
                 border: Border.all(color: AppColors.accent, width: 1),
               ),
               child: Text(
-                'ATTENDED ${history.length}',
+                '${appStrings.attended.toUpperCase()} ${history.length}',
                 style: _TrainingText.subtle.copyWith(
                   color: AppColors.accent,
                   fontWeight: FontWeight.w700,

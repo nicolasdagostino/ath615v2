@@ -212,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _SettingsMenuRow(
                       title:
-                          'Appearance · ${themeController.isDark ? 'Dark' : 'Light'}',
+                          '${appStrings.appearance} · ${themeController.isDark ? appStrings.dark : appStrings.light}',
                       onTap: () async {
                         await themeController.toggle();
                         if (mounted) setState(() {});

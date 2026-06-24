@@ -257,7 +257,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'TAP TO VIEW',
+                  appStrings.tapToView.toUpperCase(),
                   style: GoogleFonts.barlowCondensed(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,

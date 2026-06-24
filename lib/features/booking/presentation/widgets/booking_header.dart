@@ -5,14 +5,14 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class BookingHeader extends StatelessWidget {
-  static const _months = [
+  static List<String> get _months => [
     '',
     'January',
     'February',
     'March',
     'April',
     'May',
-    'June',
+    appStrings.isEs ? 'Junio' : 'June',
     'July',
     'August',
     'September',

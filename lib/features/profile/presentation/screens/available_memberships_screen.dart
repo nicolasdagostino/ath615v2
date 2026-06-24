@@ -107,7 +107,9 @@ class _AvailableMembershipsScreenState
                 children: [
                   Text(
                     appStrings.requestMembershipTitle.toUpperCase(),
-                    style: _AvailableMembershipText.title,
+                    style: _AvailableMembershipText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -251,7 +253,7 @@ class _AvailableMembershipsScreenState
                       style: GoogleFonts.barlowCondensed(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -311,7 +313,9 @@ class _AvailableMembershipsScreenState
                             children: [
                               Text(
                                 name.toUpperCase(),
-                                style: _AvailableMembershipText.title,
+                                style: _AvailableMembershipText.title.copyWith(
+                                  color: AppColors.textPrimary(context),
+                                ),
                               ),
                               const SizedBox(height: 10),
                               Text(

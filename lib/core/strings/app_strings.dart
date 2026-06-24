@@ -481,6 +481,20 @@ class AppStrings {
   String get fullName => pick('Full name', 'Nombre completo');
   String get phone => pick('Phone', 'Teléfono');
   String get saveChanges => pick('Save changes', 'Guardar cambios');
+
+  String get save => pick('Save', 'Guardar');
+  String get deleteProgramWarning => pick(
+    'This will permanently delete this program and all associated workouts. This action cannot be undone.',
+    'Esto eliminará permanentemente este programa y todos sus workouts asociados. Esta acción no se puede deshacer.',
+  );
+  String get future => pick('Future', 'Futuras');
+  String get tapToView => pick('Tap to view', 'Toca para ver');
+  String get appearance => pick('Appearance', 'Apariencia');
+  String get dark => pick('Dark', 'Oscuro');
+  String get light => pick('Light', 'Claro');
+  String get currentMembership =>
+      pick('Current membership', 'Membresía actual');
+
   String get profileUpdated => pick('Profile updated', 'Perfil actualizado');
   String get updatePhoto => pick('Update photo', 'Actualizar foto');
   String get photoUpdated => pick('Photo updated', 'Foto actualizada');
