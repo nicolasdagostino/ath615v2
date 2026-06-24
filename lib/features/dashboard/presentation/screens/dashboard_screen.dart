@@ -1687,59 +1687,149 @@ class _MemberTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(
+                  IconButton(
+                    icon: Icon(
                       Icons.more_horiz_rounded,
-                      color: Color(0xFF8F96A3),
+                      color: AppColors.textSecondary(context),
                     ),
-                    onSelected: (value) async {
-                      if (value == 'plan') {
-                        await onAssignPlan();
-                      }
-
-                      if (value == 'toggle_active') {
-                        await onToggleActive();
-                      }
-
-                      if (value == 'resend') {
-                        debugPrint('RESEND CLICKED');
-                        await onResendInvitation();
-                      }
-
-                      if (value == 'delete_pending') {
-                        await onDeletePendingMember();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      if (!isDisabled)
-                        PopupMenuItem(
-                          value: 'plan',
-                          child: Text(appStrings.assignPlan),
-                        ),
-                      PopupMenuItem(
-                        value: 'toggle_active',
-                        child: Text(
-                          active
-                              ? appStrings.deactivateMember
-                              : appStrings.activateMember,
-                        ),
-                      ),
-                      if (isPending)
-                        PopupMenuItem(
-                          value: 'resend',
-                          child: Text(appStrings.resendInvitation),
-                        ),
-                      if (isPending)
-                        const PopupMenuItem(
-                          value: 'delete_pending',
-                          child: Text('Delete invitation'),
-                        ),
-                    ],
+                    onPressed: () => _openMemberActionsSheet(
+                      context: context,
+                      active: active,
+                      isPending: isPending,
+                      isDisabled: isDisabled,
+                      onAssignPlan: onAssignPlan,
+                      onToggleActive: onToggleActive,
+                      onResendInvitation: onResendInvitation,
+                      onDeletePendingMember: onDeletePendingMember,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _openMemberActionsSheet({
+  required BuildContext context,
+  required bool active,
+  required bool isPending,
+  required bool isDisabled,
+  required Future<void> Function() onAssignPlan,
+  required Future<void> Function() onToggleActive,
+  required Future<void> Function() onResendInvitation,
+  required Future<void> Function() onDeletePendingMember,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border(context), width: 1),
+            boxShadow: AppShadows.card(context),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isDisabled)
+                _MemberActionRow(
+                  icon: Icons.card_membership_outlined,
+                  label: appStrings.assignPlan,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await onAssignPlan();
+                  },
+                ),
+              _MemberActionRow(
+                icon: active
+                    ? Icons.person_off_outlined
+                    : Icons.person_add_alt_1_outlined,
+                label: active
+                    ? appStrings.deactivateMember
+                    : appStrings.activateMember,
+                danger: active,
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await onToggleActive();
+                },
+              ),
+              if (isPending)
+                _MemberActionRow(
+                  icon: Icons.mail_outline_rounded,
+                  label: appStrings.resendInvitation,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await onResendInvitation();
+                  },
+                ),
+              if (isPending)
+                _MemberActionRow(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Delete invitation',
+                  danger: true,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await onDeletePendingMember();
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _MemberActionRow extends StatelessWidget {
+  const _MemberActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 13, 4, 13),
+        child: Row(
+          children: [
+            Icon(icon, color: danger ? AppColors.danger : AppColors.accent),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: _DashText.body.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary(context),
+            ),
+          ],
         ),
       ),
     );
