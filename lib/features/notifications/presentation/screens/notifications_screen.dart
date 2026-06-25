@@ -149,12 +149,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   Text(
                     appStrings.notificationsClearTitle.toUpperCase(),
-                    style: _NotificationText.title,
+                    style: _NotificationText.title(context),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     appStrings.notificationsClearMessage,
-                    style: _NotificationText.body,
+                    style: _NotificationText.body(context),
                   ),
                   const SizedBox(height: 18),
                   Row(
@@ -171,7 +171,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           child: Text(
                             appStrings.cancel.toUpperCase(),
-                            style: _NotificationText.button,
+                            style: _NotificationText.button(context),
                           ),
                         ),
                       ),
@@ -188,9 +188,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           child: Text(
                             appStrings.clear.toUpperCase(),
-                            style: _NotificationText.button.copyWith(
-                              color: AppColors.surface(context),
-                            ),
+                            style: _NotificationText.button(
+                              context,
+                            ).copyWith(color: AppColors.surface(context)),
                           ),
                         ),
                       ),
@@ -361,14 +361,14 @@ class _NotificationsHeader extends StatelessWidget {
                 children: [
                   Text(
                     appStrings.notificationsTitle.toUpperCase(),
-                    style: _NotificationText.title,
+                    style: _NotificationText.title(context),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     unreadCount == 0
                         ? appStrings.allCaughtUp
                         : appStrings.unreadCount(unreadCount),
-                    style: _NotificationText.subtle,
+                    style: _NotificationText.subtle(context),
                   ),
                 ],
               ),
@@ -489,13 +489,13 @@ class _NotificationCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: _NotificationText.cardTitle),
+                      Text(title, style: _NotificationText.cardTitle(context)),
                       if (body.isNotEmpty) ...[
                         const SizedBox(height: 6),
-                        Text(body, style: _NotificationText.body),
+                        Text(body, style: _NotificationText.body(context)),
                       ],
                       const SizedBox(height: 8),
-                      Text(meta, style: _NotificationText.subtle),
+                      Text(meta, style: _NotificationText.subtle(context)),
                     ],
                   ),
                 ),
@@ -525,13 +525,13 @@ class _NotificationsEmptyState extends StatelessWidget {
         Text(
           appStrings.noNotificationsTitle.toUpperCase(),
           textAlign: TextAlign.center,
-          style: _NotificationText.emptyTitle,
+          style: _NotificationText.emptyTitle(context),
         ),
         const SizedBox(height: 14),
         Text(
           message,
           textAlign: TextAlign.center,
-          style: _NotificationText.subtle,
+          style: _NotificationText.subtle(context),
         ),
       ],
     );
@@ -616,49 +616,51 @@ class _SkeletonBox extends StatelessWidget {
 class _NotificationText {
   const _NotificationText._();
 
-  static TextStyle title = GoogleFonts.barlowCondensed(
+  static TextStyle title(BuildContext context) => GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: AppColors.textPrimary(context),
     letterSpacing: -0.3,
     height: 1,
   );
 
-  static TextStyle cardTitle = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.2,
-    height: 1.05,
-  );
+  static TextStyle cardTitle(BuildContext context) =>
+      GoogleFonts.barlowCondensed(
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary(context),
+        letterSpacing: -0.2,
+        height: 1.05,
+      );
 
-  static TextStyle emptyTitle = GoogleFonts.barlowCondensed(
-    fontSize: 30,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.3,
-    height: 1,
-  );
+  static TextStyle emptyTitle(BuildContext context) =>
+      GoogleFonts.barlowCondensed(
+        fontSize: 30,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary(context),
+        letterSpacing: -0.3,
+        height: 1,
+      );
 
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
+  static TextStyle body(BuildContext context) => GoogleFonts.barlowCondensed(
+    color: AppColors.textSecondary(context),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
   );
 
-  static TextStyle button = GoogleFonts.barlowCondensed(
+  static TextStyle button(BuildContext context) => GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
+    color: AppColors.textPrimary(context),
     letterSpacing: -0.2,
     height: 1,
   );
 
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
+  static TextStyle subtle(BuildContext context) => GoogleFonts.barlowCondensed(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: AppColors.textSecondary(context),
     letterSpacing: 0.3,
     height: 1,
   );
