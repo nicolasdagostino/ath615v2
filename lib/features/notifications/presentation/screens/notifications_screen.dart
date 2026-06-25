@@ -336,63 +336,73 @@ class _NotificationsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
-      child: SizedBox(
-        height: 56,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _HeaderIcon(
-                  icon: Icons.chevron_left_rounded,
-                  onTap: onBack,
-                ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    appStrings.notificationsTitle.toUpperCase(),
-                    style: _NotificationText.title(context),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    unreadCount == 0
-                        ? appStrings.allCaughtUp
-                        : appStrings.unreadCount(unreadCount),
-                    style: _NotificationText.subtle(context),
-                  ),
-                ],
-              ),
-            ),
-            if (unreadCount > 0)
+      color: AppColors.surfaceAlt(context),
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
               Positioned(
-                right: 0,
+                left: 0,
                 top: 0,
                 bottom: 0,
-                child: Row(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _HeaderIcon(
+                    icon: Icons.chevron_left_rounded,
+                    onTap: onBack,
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _HeaderIcon(
-                      icon: Icons.done_all_rounded,
-                      onTap: onMarkAllRead,
+                    Text(
+                      appStrings.notificationsTitle.toUpperCase(),
+                      style: _NotificationText.title(
+                        context,
+                      ).copyWith(fontSize: 22, letterSpacing: -0.2),
                     ),
-                    const SizedBox(width: 8),
-                    _HeaderIcon(
-                      icon: Icons.delete_sweep_outlined,
-                      onTap: onClear,
+                    const SizedBox(height: 2),
+                    Text(
+                      unreadCount == 0
+                          ? appStrings.allCaughtUp
+                          : appStrings.unreadCount(unreadCount),
+                      style: _NotificationText.subtle(context),
                     ),
                   ],
                 ),
               ),
-          ],
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 132,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (unreadCount > 0) ...[
+                        _HeaderIcon(
+                          icon: Icons.done_all_rounded,
+                          onTap: onMarkAllRead,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      _HeaderIcon(
+                        icon: Icons.delete_sweep_outlined,
+                        onTap: onClear,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -410,14 +420,14 @@ class _HeaderIcon extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
-      child: Container(
+      child: SizedBox(
         width: 38,
         height: 38,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt(context),
-          borderRadius: BorderRadius.circular(10),
+        child: Icon(
+          icon,
+          size: icon == Icons.chevron_left_rounded ? 34 : 28,
+          color: AppColors.accent,
         ),
-        child: Icon(icon, size: 20, color: const Color(0xFFB59B6A)),
       ),
     );
   }
