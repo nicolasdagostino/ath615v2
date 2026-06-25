@@ -451,15 +451,9 @@ class _NotificationCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -478,15 +472,15 @@ class _NotificationCard extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isUnread
-                        ? const Color(0xFFF7F3EA)
-                        : const Color(0xFFF4F5F7),
+                        ? AppColors.surfaceAlt(context)
+                        : AppColors.surfaceAlt(context),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     icon,
                     color: isUnread
-                        ? const Color(0xFFB59B6A)
-                        : const Color(0xFF8F96A3),
+                        ? AppColors.accent
+                        : AppColors.muted(context),
                     size: 20,
                   ),
                 ),
@@ -506,9 +500,9 @@ class _NotificationCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
-                  color: Color(0xFF8F96A3),
+                  color: AppColors.muted(context),
                 ),
               ],
             ),
@@ -570,7 +564,7 @@ class _NotificationSkeletonCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
@@ -612,7 +606,7 @@ class _SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EAF0),
+        color: AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(radius),
       ),
     );
