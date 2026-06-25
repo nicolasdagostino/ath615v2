@@ -363,6 +363,13 @@ class AppStrings {
   String get recentClasses => pick('Recent classes', 'Clases recientes');
   String get weeklyBookings => pick('Weekly bookings', 'Reservas semanales');
   String get recentActivity => pick('Recent activity', 'Actividad reciente');
+  String get communicationTitle => pick('Communication', 'Comunicación');
+  String get communicationSubtitle =>
+      pick('Keep your members informed.', 'Mantén informados a tus miembros.');
+  String get sendNotification =>
+      pick('Send notification', 'Enviar notificación');
+  String get comingSoon => pick('Coming soon', 'Próximamente');
+
   String get noRecentActivity =>
       pick('No recent activity yet.', 'Sin actividad reciente.');
   String get missed => pick('Missed', 'Ausente');
@@ -454,6 +461,13 @@ class AppStrings {
       pick('Membership request error: $e', 'Error al solicitar membresía: $e');
 
   String get membershipTitle => pick('Membership', 'Membresía');
+  String get membershipRequests =>
+      pick('Membership requests', 'Solicitudes de membresía');
+  String pendingApprovalCount(int count) => count == 1
+      ? pick('1 pending approval', '1 pendiente de aprobación')
+      : pick('$count pending approvals', '$count pendientes de aprobación');
+  String get approve => pick('Approve', 'Aprobar');
+  String get reject => pick('Reject', 'Rechazar');
   String get profileTraining => pick('Training', 'Entrenamiento');
   String get profileMembership => pick('Membership', 'Membresía');
   String get profileSettings => pick('Settings', 'Configuración');

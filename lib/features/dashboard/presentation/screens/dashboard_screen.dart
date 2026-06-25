@@ -38,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _DashboardTab _selectedTab = _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
+  List<Map<String, dynamic>> _membershipRequests = [];
   String? _gymId;
   int _todayBookings = 0;
   int _todayClasses = 0;
@@ -61,6 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadMembers();
     await _loadOverviewStats();
     await _loadRecentActivity();
+    await _loadMembershipRequests();
   }
 
   Future<void> _loadMembers() async {
@@ -170,6 +172,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _loadMembershipRequests() async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    try {
+      final requests = await Supabase.instance.client
+          .from('membership_requests')
+          .select('id, user_id, plan_id, status, created_at')
+          .eq('gym_id', gymId)
+          .eq('status', 'pending')
+          .order('created_at', ascending: false);
+
+      final plans = await Supabase.instance.client
+          .from('membership_plans')
+          .select('id, name, plan_type, credits')
+          .eq('gym_id', gymId);
+
+      final planRows = List<Map<String, dynamic>>.from(plans);
+      final requestRows = List<Map<String, dynamic>>.from(requests).map((row) {
+        final userId = row['user_id']?.toString();
+        final planId = row['plan_id']?.toString();
+
+        final member = _members.firstWhere(
+          (m) => m['id']?.toString() == userId,
+          orElse: () => const {},
+        );
+
+        final plan = planRows.firstWhere(
+          (p) => p['id']?.toString() == planId,
+          orElse: () => const {},
+        );
+
+        return {
+          ...row,
+          'member_name':
+              member['full_name']?.toString() ??
+              member['email']?.toString() ??
+              appStrings.member,
+          'plan_name': plan['name']?.toString() ?? appStrings.plan,
+          'plan_type': plan['plan_type']?.toString(),
+          'credits': plan['credits'],
+        };
+      }).toList();
+
+      if (!mounted) return;
+      setState(() => _membershipRequests = requestRows);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _membershipRequests = []);
+    }
+  }
+
   Future<void> _loadRecentActivity() async {
     final gymId = _gymId;
     if (gymId == null) return;
@@ -213,6 +267,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _recentActivity = []);
+    }
+  }
+
+  Future<void> _approveMembershipRequest(Map<String, dynamic> request) async {
+    final userId = request['user_id']?.toString();
+    final planId = request['plan_id']?.toString();
+    final requestId = request['id']?.toString();
+
+    if (userId == null || planId == null || requestId == null) return;
+
+    try {
+      await Supabase.instance.client.rpc(
+        'assign_membership_plan',
+        params: {'p_user_id': userId, 'p_plan_id': planId},
+      );
+
+      await Supabase.instance.client
+          .from('membership_requests')
+          .update({'status': 'approved'})
+          .eq('id', requestId);
+
+      await _loadDashboardData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.assignPlanError(e))));
+    }
+  }
+
+  Future<void> _rejectMembershipRequest(Map<String, dynamic> request) async {
+    final requestId = request['id']?.toString();
+
+    if (requestId == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('membership_requests')
+          .update({'status': 'rejected'})
+          .eq('id', requestId);
+
+      await _loadDashboardData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.assignPlanError(e))));
     }
   }
 
@@ -1502,6 +1603,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
+                    if (_membershipRequests.isNotEmpty) ...[
+                      _MembershipRequestsCard(
+                        requests: _membershipRequests,
+                        onApprove: _approveMembershipRequest,
+                        onReject: _rejectMembershipRequest,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     Row(
                       children: [
                         Expanded(
@@ -1546,6 +1655,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _WeeklyBookingsCard(bookings: _weeklyBookings),
                     const SizedBox(height: 14),
                     _RecentActivityCard(activity: _recentActivity),
+                    const SizedBox(height: 14),
+                    const _CommunicationCard(),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -2417,6 +2528,136 @@ class _DashboardCard extends StatelessWidget {
   }
 }
 
+class _MembershipRequestsCard extends StatelessWidget {
+  const _MembershipRequestsCard({
+    required this.requests,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  final List<Map<String, dynamic>> requests;
+  final Future<void> Function(Map<String, dynamic> request) onApprove;
+  final Future<void> Function(Map<String, dynamic> request) onReject;
+
+  String _planLabel(Map<String, dynamic> request) {
+    final name = request['plan_name']?.toString() ?? appStrings.plan;
+    final credits = request['credits'];
+
+    if (credits == null) return '$name · ${appStrings.unlimited}';
+
+    return '$name · $credits ${appStrings.creditsLower}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.membershipRequests.toUpperCase(),
+            style: _DashText.section,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            appStrings.pendingApprovalCount(requests.length),
+            style: _DashText.subtle,
+          ),
+          const SizedBox(height: 16),
+          ...requests.map((request) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAlt(context),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Icon(
+                          Icons.card_membership_outlined,
+                          color: AppColors.accent,
+                          size: 19,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              request['member_name']?.toString() ??
+                                  appStrings.member,
+                              style: _DashText.body.copyWith(
+                                color: AppColors.textPrimary(context),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(_planLabel(request), style: _DashText.subtle),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => onReject(request),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary(context),
+                            side: BorderSide(color: AppColors.border(context)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            appStrings.reject.toUpperCase(),
+                            style: _DashText.body.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => onApprove(request),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            appStrings.approve.toUpperCase(),
+                            style: _DashText.body.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.label,
@@ -2538,6 +2779,56 @@ class _WeeklyBookingsCard extends StatelessWidget {
                   ),
                 );
               }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommunicationCard extends StatelessWidget {
+  const _CommunicationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.communicationTitle.toUpperCase(),
+            style: _DashText.section,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            appStrings.communicationSubtitle,
+            style: _DashText.body.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(appStrings.comingSoon)));
+              },
+              icon: const Icon(Icons.campaign_outlined, size: 18),
+              label: Text(appStrings.sendNotification),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary(context),
+                side: BorderSide(color: AppColors.border(context)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
           ),
         ],
