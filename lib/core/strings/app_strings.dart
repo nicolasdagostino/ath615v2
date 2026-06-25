@@ -396,6 +396,8 @@ class AppStrings {
   );
   String get athleteEmail => pick('Athlete email', 'Email del atleta');
   String get members => pick('Members', 'Miembros');
+  String get bookingsToday => pick('Bookings Today', 'Reservas hoy');
+  String get classesToday => pick('Classes Today', 'Clases hoy');
   String get searchMember => pick('Search member', 'Buscar miembro');
   String get noMembersFound =>
       pick('No members found.', 'No se encontraron miembros.');

@@ -1443,14 +1443,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: _MetricCard(
-                            label: 'Bookings Today',
+                            label: appStrings.bookingsToday,
                             value: '$_todayBookings',
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: _MetricCard(
-                            label: 'Classes Today',
+                            label: appStrings.classesToday,
                             value: '$_todayClasses',
                           ),
                         ),
