@@ -182,15 +182,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .order('created_at', ascending: false)
           .limit(5);
 
-      final activity = List<Map<String, dynamic>>.from(rows).where((row) {
-        final klass = row['classes'];
-        if (klass is! Map) return false;
+      final activity = List<Map<String, dynamic>>.from(rows)
+          .where((row) {
+            final klass = row['classes'];
+            if (klass is! Map) return false;
 
-        return _members.any((m) {
-          return m['id']?.toString() == row['user_id']?.toString() &&
-              m['gym_id']?.toString() == gymId;
-        });
-      }).toList();
+            return _members.any((m) {
+              return m['id']?.toString() == row['user_id']?.toString() &&
+                  m['gym_id']?.toString() == gymId;
+            });
+          })
+          .map((row) {
+            final member = _members.firstWhere(
+              (m) => m['id']?.toString() == row['user_id']?.toString(),
+              orElse: () => const {},
+            );
+
+            return {
+              ...row,
+              'member_name':
+                  member['full_name']?.toString() ??
+                  member['email']?.toString() ??
+                  'Member',
+            };
+          })
+          .toList();
 
       if (!mounted) return;
       setState(() => _recentActivity = activity);
@@ -1492,6 +1508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: _MetricCard(
                             label: appStrings.members,
                             value: '${_members.length}',
+                            icon: Icons.groups_rounded,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -1500,6 +1517,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: appStrings.active,
                             value:
                                 '${_members.where((m) => m['is_active'] == true).length}',
+                            icon: Icons.verified_user_rounded,
                           ),
                         ),
                       ],
@@ -1511,6 +1529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: _MetricCard(
                             label: appStrings.bookingsToday,
                             value: '$_todayBookings',
+                            icon: Icons.event_available_rounded,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -1518,6 +1537,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: _MetricCard(
                             label: appStrings.classesToday,
                             value: '$_todayClasses',
+                            icon: Icons.fitness_center_rounded,
                           ),
                         ),
                       ],
@@ -2398,10 +2418,15 @@ class _DashboardCard extends StatelessWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value});
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -2409,12 +2434,27 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: _DashText.subtle),
+          Row(
+            children: [
+              Expanded(
+                child: Text(label.toUpperCase(), style: _DashText.subtle),
+              ),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceAlt(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Icon(icon, size: 18, color: AppColors.accent),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
           Text(
             value,
             style: GoogleFonts.barlowCondensed(
-              fontSize: 30,
+              fontSize: 38,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary(context),
               height: 1,
