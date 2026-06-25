@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -140,7 +141,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(28),
               ),
               child: ListView(
@@ -163,7 +164,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           onPressed: () => Navigator.pop(context, false),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF384152),
-                            side: const BorderSide(color: Color(0xFFE1E4EA)),
+                            side: BorderSide(color: AppColors.border(context)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -188,7 +189,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           child: Text(
                             appStrings.clear.toUpperCase(),
                             style: _NotificationText.button.copyWith(
-                              color: Colors.white,
+                              color: AppColors.surface(context),
                             ),
                           ),
                         ),
@@ -252,7 +253,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -413,7 +414,7 @@ class _HeaderIcon extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F3EA),
+          color: AppColors.surfaceAlt(context),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: const Color(0xFFB59B6A)),
