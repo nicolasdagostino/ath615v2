@@ -37,7 +37,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             'id, title, body, type, data, scheduled_for, sent_at, read_at',
           )
           .eq('user_id', user.id)
-          .isFilter('read_at', null)
           .not('sent_at', 'is', null)
           .order('scheduled_for', ascending: false)
           .limit(50);
@@ -46,6 +45,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(() {
         _notifications = List<Map<String, dynamic>>.from(rows);
       });
+
+      await _markLoadedNotificationsAsRead();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +63,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (date == null) return raw;
 
     return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _markLoadedNotificationsAsRead() async {
+    final user = _client.auth.currentUser;
+    if (user == null || _notifications.isEmpty) return;
+
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    try {
+      await _client
+          .from('notifications')
+          .update({'read_at': now})
+          .eq('user_id', user.id)
+          .isFilter('read_at', null)
+          .not('sent_at', 'is', null);
+
+      if (!mounted) return;
+      setState(() {
+        for (final notification in _notifications) {
+          notification['read_at'] ??= now;
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _markAsRead(Map<String, dynamic> notification) async {
