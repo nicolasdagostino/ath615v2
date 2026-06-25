@@ -39,6 +39,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
   String? _gymId;
+  int _todayBookings = 0;
+  int _todayClasses = 0;
 
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
@@ -50,7 +52,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMembers();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    await _loadMembers();
+    await _loadOverviewStats();
   }
 
   Future<void> _loadMembers() async {
@@ -80,6 +87,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ).showSnackBar(SnackBar(content: Text(appStrings.loadMembersError(e))));
     } finally {
       if (mounted) setState(() => _loadingMembers = false);
+    }
+  }
+
+  Future<void> _loadOverviewStats() async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    try {
+      final classes = await Supabase.instance.client
+          .from('classes')
+          .select('id')
+          .eq('gym_id', gymId)
+          .gte('starts_at', dayStart.toUtc().toIso8601String())
+          .lt('starts_at', dayEnd.toUtc().toIso8601String());
+
+      final classRows = List<Map<String, dynamic>>.from(classes);
+      var bookingsCount = 0;
+
+      for (final klass in classRows) {
+        final count = await Supabase.instance.client
+            .from('class_bookings')
+            .select('id')
+            .eq('class_id', klass['id'])
+            .neq('status', 'cancelled')
+            .count(CountOption.exact);
+
+        bookingsCount += count.count;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _todayClasses = classRows.length;
+        _todayBookings = bookingsCount;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _todayClasses = 0;
+        _todayBookings = 0;
+      });
     }
   }
 
@@ -1364,7 +1415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: RefreshIndicator(
               color: const Color(0xFFB59B6A),
-              onRefresh: _loadMembers,
+              onRefresh: _loadDashboardData,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                 children: [
@@ -1383,6 +1434,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: appStrings.active,
                             value:
                                 '${_members.where((m) => m['is_active'] == true).length}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Bookings Today',
+                            value: '$_todayBookings',
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Classes Today',
+                            value: '$_todayClasses',
                           ),
                         ),
                       ],
