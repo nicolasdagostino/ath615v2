@@ -215,11 +215,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(32),
                 ),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                boxShadow: AppShadows.card(context),
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -228,18 +229,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       appStrings.inviteAthlete.toUpperCase(),
-                      style: _DashText.section,
+                      style: _DashText.section.copyWith(
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       appStrings.inviteAthleteDescription,
-                      style: _DashText.subtle,
+                      style: _DashText.subtle.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     TextField(
                       controller: fullName,
-                      style: _DashText.body,
-                      decoration: _dashInput(
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: _dashboardInviteInput(
+                        context,
                         appStrings.fullName,
                         Icons.person_outline,
                       ),
@@ -248,8 +257,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     TextField(
                       controller: email,
                       keyboardType: TextInputType.emailAddress,
-                      style: _DashText.body,
-                      decoration: _dashInput(
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: _dashboardInviteInput(
+                        context,
                         appStrings.athleteEmail,
                         Icons.email_outlined,
                       ),
@@ -258,8 +271,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     TextField(
                       controller: phone,
                       keyboardType: TextInputType.phone,
-                      style: _DashText.body,
-                      decoration: _dashInput(
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: _dashboardInviteInput(
+                        context,
                         appStrings.phone,
                         Icons.phone_outlined,
                       ),
@@ -271,8 +288,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: IgnorePointer(
                         child: TextField(
                           controller: birthDate,
-                          style: _DashText.body,
-                          decoration: _dashInput(
+                          style: _DashText.body.copyWith(
+                            color: AppColors.textPrimary(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: _dashboardInviteInput(
+                            context,
                             appStrings.birthDate,
                             Icons.cake_outlined,
                           ),
@@ -282,24 +303,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: role,
-                      decoration: _dashInput(
+                      decoration: _dashboardInviteInput(
+                        context,
                         appStrings.role,
                         Icons.shield_outlined,
                       ),
-                      style: _DashText.body,
-                      dropdownColor: const Color(0xFF252525),
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                      dropdownColor: AppColors.surface(context),
                       items: [
                         DropdownMenuItem(
                           value: 'athlete',
-                          child: Text(appStrings.member),
+                          child: Text(
+                            appStrings.member,
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 'coach',
-                          child: Text(appStrings.coach),
+                          child: Text(
+                            appStrings.coach,
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: 'admin',
-                          child: Text('Admin'),
+                          child: Text(
+                            'Admin',
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ],
                       onChanged: inviting
@@ -312,41 +355,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
-                            label: appStrings.cancel,
-                            onPressed: inviting ? null : () => context.pop(),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: AppButton(
-                            label: appStrings.inviteAthlete,
-                            loading: inviting,
-                            onPressed: inviting
-                                ? null
-                                : () async {
-                                    setSheetState(() {
-                                      inviting = true;
-                                    });
+                    AppButton(
+                      label: appStrings.inviteAthlete,
+                      loading: inviting,
+                      onPressed: inviting
+                          ? null
+                          : () async {
+                              setSheetState(() {
+                                inviting = true;
+                              });
 
-                                    await _inviteAthlete(
-                                      email: email.text,
-                                      fullName: fullName.text,
-                                      phone: phone.text,
-                                      birthDate: birthDate.text,
-                                      role: role,
-                                    );
+                              await _inviteAthlete(
+                                email: email.text,
+                                fullName: fullName.text,
+                                phone: phone.text,
+                                birthDate: birthDate.text,
+                                role: role,
+                              );
 
-                                    if (context.mounted) {
-                                      context.pop();
-                                    }
-                                  },
-                          ),
-                        ),
-                      ],
+                              if (context.mounted) {
+                                context.pop();
+                              }
+                            },
                     ),
                   ],
                 ),
@@ -473,7 +503,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
-                    decoration: _dashInput(
+                    decoration: _dashboardInviteInput(
+                      context,
                       appStrings.fullName,
                       Icons.person_outline_rounded,
                     ),
@@ -486,7 +517,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
-                    decoration: _dashInput(
+                    decoration: _dashboardInviteInput(
+                      context,
                       appStrings.phone,
                       Icons.phone_outlined,
                     ),
@@ -499,7 +531,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
-                    decoration: _dashInput(
+                    decoration: _dashboardInviteInput(
+                      context,
                       appStrings.birthDate,
                       Icons.calendar_month_rounded,
                     ),
@@ -1872,6 +1905,50 @@ class _MemberAvatar extends StatelessWidget {
       ),
     );
   }
+}
+
+InputDecoration _dashboardInviteInput(
+  BuildContext context,
+  String hint,
+  IconData icon,
+) {
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: GoogleFonts.barlowCondensed(
+      color: AppColors.textSecondary(context),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    labelStyle: GoogleFonts.barlowCondensed(
+      color: AppColors.textSecondary(context),
+      fontSize: 15,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.2,
+    ),
+    floatingLabelStyle: GoogleFonts.barlowCondensed(
+      color: AppColors.accent,
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+    ),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
+    filled: true,
+    fillColor: AppColors.surfaceAlt(context),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
+    ),
+  );
 }
 
 InputDecoration _dashInput(String hint, IconData icon) {
