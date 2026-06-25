@@ -203,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               'member_name':
                   member['full_name']?.toString() ??
                   member['email']?.toString() ??
-                  'Member',
+                  appStrings.member,
             };
           })
           .toList();
@@ -2483,7 +2483,10 @@ class _WeeklyBookingsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('WEEKLY BOOKINGS', style: _DashText.section),
+          Text(
+            appStrings.weeklyBookings.toUpperCase(),
+            style: _DashText.section,
+          ),
           const SizedBox(height: 18),
           SizedBox(
             height: 92,
@@ -2551,7 +2554,7 @@ class _RecentActivityCard extends StatelessWidget {
   String _memberName(Map<String, dynamic> row) {
     return row['member_name']?.toString().trim().isNotEmpty == true
         ? row['member_name'].toString()
-        : 'Member';
+        : appStrings.member;
   }
 
   String _activityText(Map<String, dynamic> row) {
@@ -2562,10 +2565,10 @@ class _RecentActivityCard extends StatelessWidget {
         : appStrings.classFallback;
 
     final action = status == 'attended'
-        ? 'attended'
+        ? appStrings.attended.toLowerCase()
         : status == 'no_show'
-        ? 'missed'
-        : 'booked';
+        ? appStrings.missed.toLowerCase()
+        : appStrings.booked.toLowerCase();
 
     return '${_memberName(row)} $action $classTitle';
   }
@@ -2582,10 +2585,13 @@ class _RecentActivityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('RECENT ACTIVITY', style: _DashText.section),
+          Text(
+            appStrings.recentActivity.toUpperCase(),
+            style: _DashText.section,
+          ),
           const SizedBox(height: 14),
           if (activity.isEmpty)
-            Text('No recent activity yet.', style: _DashText.subtle)
+            Text(appStrings.noRecentActivity, style: _DashText.subtle)
           else
             ...activity.map((row) {
               return Padding(

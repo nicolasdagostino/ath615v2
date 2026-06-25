@@ -361,6 +361,11 @@ class AppStrings {
   String get birthDate => pick('Birth date', 'Fecha de nacimiento');
   String get notSet => pick('Not set', 'Sin completar');
   String get recentClasses => pick('Recent classes', 'Clases recientes');
+  String get weeklyBookings => pick('Weekly bookings', 'Reservas semanales');
+  String get recentActivity => pick('Recent activity', 'Actividad reciente');
+  String get noRecentActivity =>
+      pick('No recent activity yet.', 'Sin actividad reciente.');
+  String get missed => pick('Missed', 'Ausente');
   String get milestone => pick('Milestone', 'Objetivo');
   String get classesAttended => pick('Classes attended', 'Clases asistidas');
   String get classesToGo => pick('to go', 'para llegar');
