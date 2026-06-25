@@ -30,6 +30,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   Map<String, String> _authorNames = {};
   Map<String, String> _authorAvatars = {};
   String? _role;
+  bool _isPostingComment = false;
 
   final _commentCtrl = TextEditingController();
   final _commentFocus = FocusNode();
@@ -308,35 +309,48 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final text = _commentCtrl.text.trim();
     final userId = _userId;
 
-    if (text.isEmpty || userId == null) return;
+    if (text.isEmpty || userId == null || _isPostingComment) return;
 
-    final res = await _client
-        .from('workout_comments')
-        .insert({
-          'workout_id': widget.workoutId,
-          'user_id': userId,
-          'body': text,
-        })
-        .select('id, body, user_id, created_at')
-        .single();
+    setState(() => _isPostingComment = true);
 
-    final profile = await _client
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', userId)
-        .single();
+    try {
+      final res = await _client
+          .from('workout_comments')
+          .insert({
+            'workout_id': widget.workoutId,
+            'user_id': userId,
+            'body': text,
+          })
+          .select('id, body, user_id, created_at')
+          .single();
 
-    if (!mounted) return;
-    setState(() {
-      _comments.insert(0, Map<String, dynamic>.from(res));
-      _authorNames[userId] =
-          profile['full_name']?.toString() ?? appStrings.userFallbackName;
-      final avatarUrl = profile['avatar_url']?.toString();
-      if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
-        _authorAvatars[userId] = avatarUrl;
+      final profile = await _client
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', userId)
+          .single();
+
+      if (!mounted) return;
+      setState(() {
+        _comments.insert(0, Map<String, dynamic>.from(res));
+        _authorNames[userId] =
+            profile['full_name']?.toString() ?? appStrings.userFallbackName;
+        final avatarUrl = profile['avatar_url']?.toString();
+        if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
+          _authorAvatars[userId] = avatarUrl;
+        }
+        _commentCtrl.clear();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not post comment: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isPostingComment = false);
       }
-      _commentCtrl.clear();
-    });
+    }
   }
 
   String _formatDate(String raw) {
@@ -915,7 +929,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                 ),
                                               ),
                                             ),
-                                            onSubmitted: (_) => _addComment(),
+                                            onSubmitted: (_) {
+                                              if (!_isPostingComment) {
+                                                _addComment();
+                                              }
+                                            },
                                           ),
                                         ),
                                         const SizedBox(width: 6),
@@ -924,15 +942,27 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           shape: const CircleBorder(),
                                           child: InkWell(
                                             customBorder: const CircleBorder(),
-                                            onTap: _addComment,
-                                            child: const SizedBox(
+                                            onTap: _isPostingComment
+                                                ? null
+                                                : _addComment,
+                                            child: SizedBox(
                                               width: 34,
                                               height: 34,
-                                              child: Icon(
-                                                Icons.send_rounded,
-                                                color: Colors.white,
-                                                size: 17,
-                                              ),
+                                              child: _isPostingComment
+                                                  ? SizedBox(
+                                                      width: 16,
+                                                      height: 16,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Colors.white,
+                                                          ),
+                                                    )
+                                                  : Icon(
+                                                      Icons.send_rounded,
+                                                      color: Colors.white,
+                                                      size: 17,
+                                                    ),
                                             ),
                                           ),
                                         ),
