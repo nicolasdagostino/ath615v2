@@ -41,6 +41,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _gymId;
   int _todayBookings = 0;
   int _todayClasses = 0;
+  List<int> _weeklyBookings = List<int>.filled(7, 0);
+  List<Map<String, dynamic>> _recentActivity = [];
 
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
@@ -58,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadDashboardData() async {
     await _loadMembers();
     await _loadOverviewStats();
+    await _loadRecentActivity();
   }
 
   Future<void> _loadMembers() async {
@@ -120,17 +123,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
         bookingsCount += count.count;
       }
 
+      final weekStart = dayStart.subtract(const Duration(days: 6));
+      final weekClasses = await Supabase.instance.client
+          .from('classes')
+          .select('id, starts_at')
+          .eq('gym_id', gymId)
+          .gte('starts_at', weekStart.toUtc().toIso8601String())
+          .lt('starts_at', dayEnd.toUtc().toIso8601String());
+
+      final weeklyRows = List<Map<String, dynamic>>.from(weekClasses);
+      final weeklyCounts = List<int>.filled(7, 0);
+
+      for (final klass in weeklyRows) {
+        final startsAt = DateTime.tryParse(
+          klass['starts_at']?.toString() ?? '',
+        )?.toLocal();
+
+        if (startsAt == null) continue;
+
+        final index = startsAt.difference(weekStart).inDays;
+        if (index < 0 || index > 6) continue;
+
+        final count = await Supabase.instance.client
+            .from('class_bookings')
+            .select('id')
+            .eq('class_id', klass['id'])
+            .neq('status', 'cancelled')
+            .count(CountOption.exact);
+
+        weeklyCounts[index] += count.count;
+      }
+
       if (!mounted) return;
       setState(() {
         _todayClasses = classRows.length;
         _todayBookings = bookingsCount;
+        _weeklyBookings = weeklyCounts;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _todayClasses = 0;
         _todayBookings = 0;
+        _weeklyBookings = List<int>.filled(7, 0);
       });
+    }
+  }
+
+  Future<void> _loadRecentActivity() async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('class_bookings')
+          .select('user_id, status, created_at, classes(title, starts_at)')
+          .neq('status', 'cancelled')
+          .order('created_at', ascending: false)
+          .limit(5);
+
+      final activity = List<Map<String, dynamic>>.from(rows).where((row) {
+        final klass = row['classes'];
+        if (klass is! Map) return false;
+
+        return _members.any((m) {
+          return m['id']?.toString() == row['user_id']?.toString() &&
+              m['gym_id']?.toString() == gymId;
+        });
+      }).toList();
+
+      if (!mounted) return;
+      setState(() => _recentActivity = activity);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _recentActivity = []);
     }
   }
 
@@ -1456,6 +1522,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 14),
+                    _WeeklyBookingsCard(bookings: _weeklyBookings),
+                    const SizedBox(height: 14),
+                    _RecentActivityCard(activity: _recentActivity),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -2350,6 +2420,166 @@ class _MetricCard extends StatelessWidget {
               height: 1,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyBookingsCard extends StatelessWidget {
+  const _WeeklyBookingsCard({required this.bookings});
+
+  final List<int> bookings;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxValue = bookings.isEmpty
+        ? 0
+        : bookings.reduce(
+            (value, element) => value > element ? value : element,
+          );
+
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('WEEKLY BOOKINGS', style: _DashText.section),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 92,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (index) {
+                final value = index < bookings.length ? bookings[index] : 0;
+                final height = maxValue == 0
+                    ? 10.0
+                    : 18.0 + (value / maxValue) * 64.0;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              width: double.infinity,
+                              height: height,
+                              decoration: BoxDecoration(
+                                color: value == maxValue && maxValue > 0
+                                    ? AppColors.accent
+                                    : AppColors.surfaceAlt(context),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: value == maxValue && maxValue > 0
+                                      ? AppColors.accent
+                                      : AppColors.border(context),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$value',
+                          style: _DashText.subtle.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentActivityCard extends StatelessWidget {
+  const _RecentActivityCard({required this.activity});
+
+  final List<Map<String, dynamic>> activity;
+
+  String _memberName(Map<String, dynamic> row) {
+    return row['member_name']?.toString().trim().isNotEmpty == true
+        ? row['member_name'].toString()
+        : 'Member';
+  }
+
+  String _activityText(Map<String, dynamic> row) {
+    final status = row['status']?.toString() ?? '';
+    final klass = row['classes'];
+    final classTitle = klass is Map
+        ? klass['title']?.toString() ?? appStrings.classFallback
+        : appStrings.classFallback;
+
+    final action = status == 'attended'
+        ? 'attended'
+        : status == 'no_show'
+        ? 'missed'
+        : 'booked';
+
+    return '${_memberName(row)} $action $classTitle';
+  }
+
+  String _timeLabel(String? raw) {
+    final date = DateTime.tryParse(raw ?? '')?.toLocal();
+    if (date == null) return '';
+    return '${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('RECENT ACTIVITY', style: _DashText.section),
+          const SizedBox(height: 14),
+          if (activity.isEmpty)
+            Text('No recent activity yet.', style: _DashText.subtle)
+          else
+            ...activity.map((row) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      margin: const EdgeInsets.only(top: 7),
+                      decoration: const BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _activityText(row),
+                        style: _DashText.body.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _timeLabel(row['created_at']?.toString()),
+                      style: _DashText.subtle,
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
