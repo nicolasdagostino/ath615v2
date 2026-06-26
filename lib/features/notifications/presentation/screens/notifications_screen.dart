@@ -237,7 +237,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (data is Map && data['workoutId'] != null) {
       if (!mounted) return;
       context.push('/workout/${data['workoutId']}');
+      return;
     }
+
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NotificationDetailsSheet(
+        title:
+            notification['title']?.toString() ??
+            appStrings.notificationFallbackTitle,
+        body: notification['body']?.toString() ?? '',
+        meta: notification['sent_at'] != null
+            ? appStrings.notificationSent(
+                _formatDate(notification['sent_at']?.toString()),
+              )
+            : appStrings.notificationScheduled(
+                _formatDate(notification['scheduled_for']?.toString()),
+              ),
+      ),
+    );
   }
 
   int get _unreadCount {
@@ -433,6 +454,114 @@ class _HeaderIcon extends StatelessWidget {
   }
 }
 
+class _NotificationDetailsSheet extends StatelessWidget {
+  const _NotificationDetailsSheet({
+    required this.title,
+    required this.body,
+    required this.meta,
+  });
+
+  final String title;
+  final String body;
+  final String meta;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.border(context)),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border(context),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceAlt(context),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.campaign_outlined,
+                      color: AppColors.accent,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: _NotificationText.title(
+                        context,
+                      ).copyWith(fontSize: 24),
+                    ),
+                  ),
+                ],
+              ),
+              if (body.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Text(
+                  body,
+                  style: _NotificationText.body(context).copyWith(
+                    color: AppColors.textPrimary(context),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              Text(meta, style: _NotificationText.subtle(context)),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary(context),
+                    side: BorderSide(color: AppColors.border(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    appStrings.close.toUpperCase(),
+                    style: _NotificationText.button(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NotificationCard extends StatelessWidget {
   const _NotificationCard({
     required this.title,
@@ -502,7 +631,12 @@ class _NotificationCard extends StatelessWidget {
                       Text(title, style: _NotificationText.cardTitle(context)),
                       if (body.isNotEmpty) ...[
                         const SizedBox(height: 6),
-                        Text(body, style: _NotificationText.body(context)),
+                        Text(
+                          body,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: _NotificationText.body(context),
+                        ),
                       ],
                       const SizedBox(height: 8),
                       Text(meta, style: _NotificationText.subtle(context)),

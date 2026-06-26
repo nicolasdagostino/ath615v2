@@ -65,6 +65,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadMembershipRequests();
   }
 
+  Future<void> _openCommunicationSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _CommunicationSheet(),
+    );
+  }
+
   Future<void> _loadMembers() async {
     setState(() => _loadingMembers = true);
 
@@ -1656,7 +1665,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 14),
                     _RecentActivityCard(activity: _recentActivity),
                     const SizedBox(height: 14),
-                    const _CommunicationCard(),
+                    _CommunicationCard(
+                      onSendNotification: _openCommunicationSheet,
+                    ),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -2788,7 +2799,9 @@ class _WeeklyBookingsCard extends StatelessWidget {
 }
 
 class _CommunicationCard extends StatelessWidget {
-  const _CommunicationCard();
+  const _CommunicationCard({required this.onSendNotification});
+
+  final VoidCallback onSendNotification;
 
   @override
   Widget build(BuildContext context) {
@@ -2811,11 +2824,7 @@ class _CommunicationCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(appStrings.comingSoon)));
-              },
+              onPressed: onSendNotification,
               icon: const Icon(Icons.campaign_outlined, size: 18),
               label: Text(appStrings.sendNotification),
               style: OutlinedButton.styleFrom(
@@ -2832,6 +2841,204 @@ class _CommunicationCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CommunicationSheet extends StatefulWidget {
+  const _CommunicationSheet();
+
+  @override
+  State<_CommunicationSheet> createState() => _CommunicationSheetState();
+}
+
+class _CommunicationSheetState extends State<_CommunicationSheet> {
+  final _title = TextEditingController();
+  final _message = TextEditingController();
+  String _recipients = 'all';
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _message.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendNotification() async {
+    final title = _title.text.trim();
+    final message = _message.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationTitleRequired)),
+      );
+      return;
+    }
+
+    if (message.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationMessageRequired)),
+      );
+      return;
+    }
+
+    setState(() => _sending = true);
+
+    try {
+      final result = await Supabase.instance.client.functions.invoke(
+        'admin-send-notification',
+        body: {'title': title, 'body': message, 'audience': _recipients},
+      );
+
+      final data = Map<String, dynamic>.from(result.data as Map);
+      final count = (data['count'] as num?)?.toInt() ?? 0;
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationSentTo(count))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.notificationSendError(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  InputDecoration _decoration(BuildContext context, String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: _DashText.subtle,
+      filled: true,
+      fillColor: AppColors.surfaceAlt(context),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.border(context)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.accent),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, bottom + 18),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppColors.border(context)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border(context),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                appStrings.sendNotification.toUpperCase(),
+                style: _DashText.section,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _title,
+                style: _DashText.body.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
+                decoration: _decoration(
+                  context,
+                  appStrings.notificationTitleLabel,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _message,
+                minLines: 3,
+                maxLines: 5,
+                style: _DashText.body.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
+                decoration: _decoration(
+                  context,
+                  appStrings.notificationMessageLabel,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                appStrings.notificationRecipientsLabel.toUpperCase(),
+                style: _DashText.subtle,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    [
+                      ('all', appStrings.notificationAllMembers),
+                      ('athlete', appStrings.notificationAthletes),
+                      ('coach', appStrings.notificationCoaches),
+                      ('admin', appStrings.notificationAdmins),
+                    ].map((option) {
+                      final selected = _recipients == option.$1;
+                      return ChoiceChip(
+                        label: Text(option.$2),
+                        selected: selected,
+                        onSelected: (_) {
+                          setState(() => _recipients = option.$1);
+                        },
+                        selectedColor: AppColors.accent.withValues(alpha: 0.18),
+                        backgroundColor: AppColors.surfaceAlt(context),
+                        side: BorderSide(
+                          color: selected
+                              ? AppColors.accent
+                              : AppColors.border(context),
+                        ),
+                        labelStyle: _DashText.body.copyWith(
+                          color: selected
+                              ? AppColors.accent
+                              : AppColors.textPrimary(context),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      );
+                    }).toList(),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: AppButton(
+                  label: _sending
+                      ? appStrings.bookingLoadingClasses
+                      : appStrings.sendNotification,
+                  onPressed: _sending ? null : _sendNotification,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

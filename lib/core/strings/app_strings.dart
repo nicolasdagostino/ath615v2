@@ -194,6 +194,7 @@ class AppStrings {
     'Esto eliminará todas las notificaciones de tu lista.',
   );
   String get clear => pick('Clear', 'Vaciar');
+  String get close => pick('Close', 'Cerrar');
   String get allCaughtUp => pick('All caught up', 'Todo al día');
   String unreadCount(int count) => count == 1
       ? pick('1 unread', '1 sin leer')
@@ -369,6 +370,34 @@ class AppStrings {
   String get sendNotification =>
       pick('Send notification', 'Enviar notificación');
   String get comingSoon => pick('Coming soon', 'Próximamente');
+  String get notificationTitleLabel => pick('Title', 'Título');
+  String get notificationMessageLabel => pick('Message', 'Mensaje');
+  String get notificationRecipientsLabel => pick('Recipients', 'Destinatarios');
+  String get notificationAllMembers =>
+      pick('All members', 'Todos los miembros');
+  String get notificationAthletes => pick('Athletes', 'Atletas');
+  String get notificationCoaches => pick('Coaches', 'Coaches');
+  String get notificationAdmins => pick('Admins', 'Admins');
+  String get notificationSendDisabled => pick(
+    'Notification sending coming soon.',
+    'El envío estará disponible pronto.',
+  );
+
+  String get notificationTitleRequired =>
+      pick('Enter a title.', 'Escribe un título.');
+  String get notificationMessageRequired =>
+      pick('Enter a message.', 'Escribe un mensaje.');
+  String notificationSentTo(int count) => count == 1
+      ? pick(
+          'Notification sent to 1 member.',
+          'Notificación enviada a 1 miembro.',
+        )
+      : pick(
+          'Notification sent to $count members.',
+          'Notificación enviada a $count miembros.',
+        );
+  String notificationSendError(Object e) =>
+      pick('Notification send error: $e', 'Error enviando notificación: $e');
 
   String get noRecentActivity =>
       pick('No recent activity yet.', 'Sin actividad reciente.');
