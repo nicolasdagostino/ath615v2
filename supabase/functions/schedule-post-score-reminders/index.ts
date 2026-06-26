@@ -58,7 +58,7 @@ serve(async (req) => {
         .from('class_bookings')
         .select('id, user_id, status')
         .eq('class_id', klass.id)
-        .eq('status', 'attended')
+        .in('status', ['booked', 'attended'])
 
       if (bookingsError) throw bookingsError
 
