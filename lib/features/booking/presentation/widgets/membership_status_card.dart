@@ -1,68 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
-import 'booking_text_styles.dart';
 
 class MembershipStatusCard extends StatelessWidget {
   const MembershipStatusCard({
     super.key,
     required this.hasActiveMembership,
     required this.creditsRemaining,
+    this.planName,
+    this.expiresAt,
   });
 
   final bool hasActiveMembership;
   final int? creditsRemaining;
+  final String? planName;
+  final DateTime? expiresAt;
+
+  bool get _hasFewCredits =>
+      hasActiveMembership && creditsRemaining != null && creditsRemaining! <= 1;
+
+  Color get _statusColor {
+    if (!hasActiveMembership && creditsRemaining == 0) {
+      return const Color(0xFFD99A3D);
+    }
+    if (!hasActiveMembership) return const Color(0xFFE84D4D);
+    if (_hasFewCredits) return const Color(0xFFD99A3D);
+    return const Color(0xFF22C55E);
+  }
+
+  IconData get _icon {
+    if (!hasActiveMembership && creditsRemaining == 0) {
+      return Icons.priority_high_rounded;
+    }
+    if (!hasActiveMembership) return Icons.close_rounded;
+    if (_hasFewCredits) return Icons.priority_high_rounded;
+    return Icons.workspace_premium_outlined;
+  }
+
+  String get _planLabel {
+    final name = planName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return appStrings.membershipTitle;
+  }
+
+  String get _creditLabel {
+    if (creditsRemaining == 0) {
+      return appStrings.noCredits.toUpperCase();
+    }
+    if (!hasActiveMembership) return appStrings.membershipExpired.toUpperCase();
+    if (creditsRemaining == null) return appStrings.unlimited.toUpperCase();
+
+    final credits = creditsRemaining!;
+    return credits == 1
+        ? appStrings.oneCredit.toUpperCase()
+        : appStrings.creditsCount(credits).toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final label = hasActiveMembership
-        ? creditsRemaining == null
-              ? '${appStrings.membershipTitle} ${appStrings.active.toLowerCase()} · ${appStrings.unlimited}'
-              : '${appStrings.membershipTitle} ${appStrings.active.toLowerCase()} · $creditsRemaining ${appStrings.creditsLower}'
-        : appStrings.bookingActiveMembershipRequiredToBook;
+    final color = _statusColor;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-      padding: const EdgeInsets.all(22),
+      margin: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFF191919),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.72), width: 0.9),
       ),
       child: Row(
         children: [
           Container(
-            width: 70,
-            height: 70,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: const Color(0xFFF4EFE6),
-              borderRadius: BorderRadius.circular(24),
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            child: Icon(
-              hasActiveMembership
-                  ? Icons.workspace_premium_outlined
-                  : Icons.lock_outline,
-              color: hasActiveMembership
-                  ? const Color(0xFF149651)
-                  : const Color(0xFFB69B63),
-              size: 34,
-            ),
+            child: Icon(_icon, color: color, size: 16),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              label,
-              style: BookingTextStyles.membership.copyWith(
-                color: hasActiveMembership
-                    ? const Color(0xFF149651)
-                    : const Color(0xFFB45309),
+              _planLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -0.2,
+                height: 1,
               ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _creditLabel,
+            maxLines: 1,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: 0.2,
+              height: 1,
             ),
           ),
         ],

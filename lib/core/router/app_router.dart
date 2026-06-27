@@ -14,6 +14,7 @@ import '../../features/profile/presentation/screens/training_screen.dart';
 import '../../features/profile/presentation/screens/membership_screen.dart';
 import '../../features/profile/presentation/screens/available_memberships_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
+import '../../features/profile/presentation/screens/gym_settings_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
 class AppRouter {
@@ -72,6 +73,10 @@ class AppRouter {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/gym-settings',
+          builder: (context, state) => const GymSettingsScreen(),
         ),
         GoRoute(
           path: '/workout/:id',

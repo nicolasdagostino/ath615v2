@@ -40,6 +40,8 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _hasActiveMembership = false;
   bool _isAccountActive = true;
   int? _creditsRemaining;
+  String? _membershipName;
+  DateTime? _membershipExpiresAt;
 
   DateTime _selectedDay = DateTime.now();
 
@@ -80,11 +82,17 @@ class _BookingScreenState extends State<BookingScreen> {
 
       bool hasActiveMembership = true;
       int? creditsRemaining;
+      String? membershipName;
+      DateTime? membershipExpiresAt;
 
       if (role == 'athlete') {
         final memberships = await _client
             .from('member_memberships')
-            .select('credits_remaining, expires_at')
+            .select('''
+credits_remaining,
+expires_at,
+membership_plans(name)
+''')
             .eq('user_id', user.id)
             .eq('is_active', true)
             .eq('status', 'active')
@@ -104,11 +112,26 @@ class _BookingScreenState extends State<BookingScreen> {
             ? null
             : activeMemberships.first;
 
-        hasActiveMembership = membership != null;
         creditsRemaining = membership?['credits_remaining'] as int?;
 
+        final plan = membership?['membership_plans'];
+        if (plan is Map) {
+          membershipName = plan['name']?.toString();
+        } else if (plan is List && plan.isNotEmpty && plan.first is Map) {
+          membershipName = (plan.first as Map)['name']?.toString();
+        }
+
+        final rawExpires = membership?['expires_at']?.toString();
+        membershipExpiresAt = rawExpires == null
+            ? null
+            : DateTime.tryParse(rawExpires)?.toLocal();
+
+        hasActiveMembership =
+            membership != null &&
+            (creditsRemaining == null || creditsRemaining > 0);
+
         debugPrint(
-          'BOOKING MEMBERSHIP DEBUG => membership=$membership credits=$creditsRemaining has=$hasActiveMembership',
+          'BOOKING MEMBERSHIP DEBUG => name=$membershipName membership=$membership credits=$creditsRemaining has=$hasActiveMembership',
         );
       }
 
@@ -123,6 +146,8 @@ class _BookingScreenState extends State<BookingScreen> {
           _hasActiveMembership = hasActiveMembership;
           _isAccountActive = isAccountActive;
           _creditsRemaining = creditsRemaining;
+          _membershipName = membershipName;
+          _membershipExpiresAt = membershipExpiresAt;
         });
         return;
       }
@@ -181,6 +206,9 @@ class _BookingScreenState extends State<BookingScreen> {
         _myClassStatuses = bookingStatuses;
         _hasActiveMembership = hasActiveMembership;
         _isAccountActive = isAccountActive;
+        _creditsRemaining = creditsRemaining;
+        _membershipName = membershipName;
+        _membershipExpiresAt = membershipExpiresAt;
         _creditsRemaining = creditsRemaining;
       });
     } catch (e) {
@@ -271,6 +299,7 @@ class _BookingScreenState extends State<BookingScreen> {
       klass['booked_count'] = bookedCount > 0 ? bookedCount - 1 : 0;
       if (_role == 'athlete' && _creditsRemaining != null) {
         _creditsRemaining = _creditsRemaining! + 1;
+        _hasActiveMembership = true;
       }
     });
 
@@ -611,6 +640,8 @@ class _BookingScreenState extends State<BookingScreen> {
             MembershipStatusCard(
               hasActiveMembership: _hasActiveMembership,
               creditsRemaining: _creditsRemaining,
+              planName: _membershipName,
+              expiresAt: _membershipExpiresAt,
             ),
           Expanded(
             child: RefreshIndicator(

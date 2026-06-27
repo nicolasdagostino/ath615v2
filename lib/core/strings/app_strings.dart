@@ -501,7 +501,19 @@ class AppStrings {
   String get profileMembership => pick('Membership', 'Membresía');
   String get profileSettings => pick('Settings', 'Configuración');
   String get activePlan => pick('Active plan', 'Plan activo');
+  String get activeMembership => pick('Active membership', 'Membresía activa');
+  String get membershipExpired =>
+      pick('Membership expired', 'Membresía expirada');
+  String get oneCreditRemaining =>
+      pick('1 credit remaining', '1 crédito restante');
+  String get oneCredit => pick('1 credit', '1 crédito');
+  String creditsCount(int count) => pick('$count credits', '$count créditos');
+
+  String creditsRemainingLabel(int count) =>
+      pick('$count credits remaining', '$count créditos restantes');
+
   String get noActivePlan => pick('No active plan', 'Sin plan activo');
+  String get noCredits => pick('No credits', 'Sin créditos');
   String get expires => pick('Expires', 'Vence');
 
   String get assignedCredits => pick('Assigned credits', 'Créditos asignados');
@@ -530,6 +542,9 @@ class AppStrings {
       pick('Update member error: $e', 'Error al actualizar miembro: $e');
   String get fullName => pick('Full name', 'Nombre completo');
   String get phone => pick('Phone', 'Teléfono');
+  String get website => pick('Website', 'Sitio web');
+  String get address => pick('Address', 'Dirección');
+
   String get saveChanges => pick('Save changes', 'Guardar cambios');
 
   String get save => pick('Save', 'Guardar');
@@ -550,12 +565,24 @@ class AppStrings {
   String get photoUpdated => pick('Photo updated', 'Foto actualizada');
   String updatePhotoError(Object e) =>
       pick('Update photo error: $e', 'Error al actualizar foto: $e');
+
+  String get updateLogo => pick('Update logo', 'Actualizar logo');
+  String get logoUpdated => pick('Logo updated.', 'Logo actualizado.');
+  String updateLogoError(Object e) =>
+      pick('Update logo error: $e', 'Error al actualizar logo: $e');
+
   String updateProfileError(Object e) =>
       pick('Update profile error: $e', 'Error al actualizar perfil: $e');
 
   String get profileRole => pick('Role', 'Rol');
   String get profileAccount => pick('Account', 'Cuenta');
   String get profileGymName => pick('Gym name', 'Nombre del gym');
+  String get gymInformation => pick('Gym information', 'Información del gym');
+  String get gymInformationComingSoon => pick(
+    'Business details, payments and legal settings will live here.',
+    'Los datos comerciales, pagos y ajustes legales estarán aquí.',
+  );
+
   String get profileSaveGymName =>
       pick('Save gym name', 'Guardar nombre del gym');
   String get profileNewPassword => pick('New password', 'Nueva contraseña');
@@ -613,6 +640,9 @@ class AppStrings {
       pick('Password updated.', 'Contraseña actualizada.');
   String get gymNameUpdated =>
       pick('Gym name updated.', 'Nombre del gym actualizado.');
+  String get gymInformationUpdated =>
+      pick('Gym information updated.', 'Información del gym actualizada.');
+
   String updateGymError(Object error) =>
       pick('Update gym error: $error', 'Error al actualizar el gym: $error');
   String deleteAccountError(Object error) => pick(
