@@ -624,6 +624,15 @@ class AppStrings {
       pick('Guest name is required', 'El nombre del invitado es obligatorio');
   String get removeBooking => pick('Remove booking?', '¿Quitar reserva?');
   String get remove => pick('Remove', 'Quitar');
+  String get finishAttendance =>
+      pick('Finish attendance', 'Finalizar asistencia');
+  String get finishAttendanceTitle =>
+      pick('Finish attendance?', '¿Finalizar asistencia?');
+  String get finishAttendanceMsg => pick(
+    'All remaining booked athletes and guests will be marked as Attended.',
+    'Todas las reservas pendientes se marcarán como Asistió.',
+  );
+  String get finish => pick('Finish', 'Finalizar');
 
   String workoutDetailError(Object e) =>
       pick('Workout detail error: $e', 'Error detalle WOD: $e');

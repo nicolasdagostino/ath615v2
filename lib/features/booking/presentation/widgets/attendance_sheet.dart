@@ -40,6 +40,11 @@ Future<void> showAttendanceSheet({
         );
 
   final profileById = {for (final p in profiles) p['id'].toString(): p};
+  final startsAt = DateTime.parse(klass['starts_at']).toLocal();
+  final durationMinutes = klass['duration_minutes'] as int? ?? 60;
+  final classFinished = DateTime.now().isAfter(
+    startsAt.add(Duration(minutes: durationMinutes)),
+  );
 
   if (!context.mounted) return;
 
@@ -289,6 +294,118 @@ Future<void> showAttendanceSheet({
             }
           }
 
+          Future<void> finishAttendance() async {
+            final pendingCount = bookingRows
+                .where((b) => b['status'].toString() == 'booked')
+                .length;
+
+            if (pendingCount == 0) return;
+
+            final confirmed = await showModalBottomSheet<bool>(
+              context: sheetContext,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (dialogContext) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
+                  ),
+                  child: SafeArea(
+                    child: Container(
+                      margin: EdgeInsets.all(AppSpacing.sheetMargin),
+                      padding: EdgeInsets.all(AppSpacing.cardPadding),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(dialogContext),
+                        borderRadius: BorderRadius.circular(AppRadii.sheet),
+                        border: Border.all(
+                          color: AppColors.border(dialogContext),
+                          width: 1,
+                        ),
+                        boxShadow: AppShadows.card(dialogContext),
+                      ),
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.fact_check_rounded,
+                                color: AppColors.accent,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  appStrings.finishAttendanceTitle
+                                      .toUpperCase(),
+                                  style: _AttendanceText.title.copyWith(
+                                    color: AppColors.textPrimary(dialogContext),
+                                    fontSize: 22,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            appStrings.finishAttendanceMsg,
+                            style: _AttendanceText.subtle.copyWith(
+                              color: AppColors.textSecondary(dialogContext),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _AttendanceSheetSecondaryButton(
+                                  label: appStrings.cancel,
+                                  onTap: () =>
+                                      Navigator.of(dialogContext).pop(false),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _AttendanceSheetPrimaryButton(
+                                  label: appStrings.finish,
+                                  onTap: () =>
+                                      Navigator.of(dialogContext).pop(true),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+
+            if (confirmed != true) return;
+
+            try {
+              await client
+                  .from('class_bookings')
+                  .update({'status': 'attended'})
+                  .eq('class_id', classId)
+                  .eq('status', 'booked');
+
+              for (final booking in bookingRows) {
+                if (booking['status'].toString() == 'booked') {
+                  booking['status'] = 'attended';
+                }
+              }
+
+              setSheetState(() {});
+              await onChanged();
+            } catch (e) {
+              if (!sheetContext.mounted) return;
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                SnackBar(content: Text(appStrings.attendanceError(e))),
+              );
+            }
+          }
+
           Future<void> updateStatus(
             Map<String, dynamic> booking,
             String status,
@@ -344,27 +461,13 @@ Future<void> showAttendanceSheet({
                             ),
                           ),
                         ),
-                        _AttendanceCountPill(label: '${bookingRows.length}'),
+                        _AttendanceCountPill(
+                          label:
+                              '${bookingRows.length} / ${klass['capacity'] as int? ?? 0}',
+                        ),
+                        const SizedBox(width: 8),
+                        _AttendanceAddGuestButton(onTap: addGuest),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 34,
-                      child: OutlinedButton.icon(
-                        onPressed: addGuest,
-                        icon: const Icon(
-                          Icons.person_add_alt_1_rounded,
-                          size: 16,
-                        ),
-                        label: Text(appStrings.addGuest.toUpperCase()),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary(context),
-                          side: BorderSide(color: AppColors.border(context)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -425,6 +528,13 @@ Future<void> showAttendanceSheet({
                           onRemove: () => removeBooking(booking, name),
                         );
                       }),
+                    if (classFinished &&
+                        bookingRows.any(
+                          (b) => b['status'].toString() == 'booked',
+                        )) ...[
+                      const SizedBox(height: 10),
+                      _AttendanceFinishButton(onTap: finishAttendance),
+                    ],
                   ],
                 ),
               ),
@@ -470,6 +580,32 @@ class _AttendanceText {
     letterSpacing: 0.3,
     height: 1,
   );
+}
+
+class _AttendanceAddGuestButton extends StatelessWidget {
+  const _AttendanceAddGuestButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.background(context),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+      ),
+    );
+  }
 }
 
 class _AttendanceCountPill extends StatelessWidget {
@@ -526,9 +662,14 @@ class _AttendanceMemberCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
+        color: attended
+            ? AppColors.accent.withValues(alpha: 0.08)
+            : AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border(context), width: 1),
+        border: Border.all(
+          color: attended ? AppColors.accent : AppColors.border(context),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -707,6 +848,31 @@ class _AttendanceSheetDangerButton extends StatelessWidget {
         child: Text(
           label.toUpperCase(),
           style: _AttendanceText.rowTitle.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttendanceFinishButton extends StatelessWidget {
+  const _AttendanceFinishButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: FilledButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.fact_check_rounded, size: 18),
+        label: Text(appStrings.finishAttendance.toUpperCase()),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.background(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
