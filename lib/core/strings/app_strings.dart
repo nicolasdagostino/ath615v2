@@ -618,6 +618,12 @@ class AppStrings {
 
   String get attended => pick('Attended', 'Asistió');
   String get noShow => pick('No show', 'No asistió');
+  String get addGuest => pick('Add guest', 'Agregar invitado');
+  String get guestName => pick('Guest name', 'Nombre del invitado');
+  String get guestNameRequired =>
+      pick('Guest name is required', 'El nombre del invitado es obligatorio');
+  String get removeBooking => pick('Remove booking?', '¿Quitar reserva?');
+  String get remove => pick('Remove', 'Quitar');
 
   String workoutDetailError(Object e) =>
       pick('Workout detail error: $e', 'Error detalle WOD: $e');
