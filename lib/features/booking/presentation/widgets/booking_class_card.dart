@@ -12,8 +12,8 @@ class BookingClassCard extends StatelessWidget {
     required this.capacity,
     required this.buttonLabel,
     required this.buttonAction,
-    required this.canManageAttendance,
-    required this.onOpenAttendance,
+    required this.onTap,
+    this.waitlistPosition,
     this.onMorePressed,
     required this.formatDateTime,
     this.isLoading = false,
@@ -24,8 +24,8 @@ class BookingClassCard extends StatelessWidget {
   final int capacity;
   final String buttonLabel;
   final VoidCallback? buttonAction;
-  final bool canManageAttendance;
-  final VoidCallback? onOpenAttendance;
+  final VoidCallback? onTap;
+  final int? waitlistPosition;
   final VoidCallback? onMorePressed;
   final String Function(String raw) formatDateTime;
   final bool isLoading;
@@ -137,7 +137,7 @@ class BookingClassCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadii.card),
-                onTap: canManageAttendance ? onOpenAttendance : null,
+                onTap: onTap,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   child: Column(
@@ -151,6 +151,13 @@ class BookingClassCard extends StatelessWidget {
                             style: BookingTextStyles.displayTime,
                           ),
                           const Spacer(),
+                          if (_hasBooking) ...[
+                            const _BookedBadge(),
+                            const SizedBox(width: 10),
+                          ] else if (waitlistPosition != null) ...[
+                            _WaitlistBadge(position: waitlistPosition!),
+                            const SizedBox(width: 10),
+                          ],
                           _InlineSpots(value: '$bookedCount / $capacity'),
                           if (onMorePressed != null) ...[
                             const SizedBox(width: 6),
@@ -194,6 +201,65 @@ class BookingClassCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookedBadge extends StatelessWidget {
+  const _BookedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF22C55E);
+
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: green.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: green.withValues(alpha: 0.55), width: 1),
+      ),
+      child: Text(
+        'BOOKED',
+        style: BookingTextStyles.metaValue.copyWith(
+          color: green,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _WaitlistBadge extends StatelessWidget {
+  const _WaitlistBadge({required this.position});
+
+  final int position;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFB59B6A).withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFFB59B6A).withValues(alpha: 0.58),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'WAITLIST #$position',
+        style: BookingTextStyles.metaValue.copyWith(
+          color: const Color(0xFFB59B6A),
+          fontSize: 11,
+          letterSpacing: 0.5,
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class MembershipStatusCard extends StatelessWidget {
   const MembershipStatusCard({
@@ -60,14 +61,29 @@ class MembershipStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _statusColor;
+    final isDark = AppColors.isDark(context);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF191919),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.72), width: 0.9),
+        border: Border.all(
+          color: isDark
+              ? color.withValues(alpha: 0.72)
+              : color.withValues(alpha: 0.38),
+          width: 0.9,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -89,7 +105,7 @@ class MembershipStatusCard extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 letterSpacing: -0.2,
                 height: 1,
               ),

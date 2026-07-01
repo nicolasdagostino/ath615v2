@@ -8,6 +8,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_sheet.dart';
+import '../widgets/class_details_sheet.dart';
 import '../widgets/booking_class_card.dart';
 import '../widgets/booking_day_chips.dart';
 import '../widgets/booking_loading_state.dart';
@@ -47,8 +48,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
   List<Map<String, dynamic>> _classes = [];
   Set<String> _myBookedClassIds = {};
+  Map<String, int> _myWaitlistPositions = {};
   Map<String, String> _myClassStatuses = {};
   String? _bookingActionClassId;
+  RealtimeChannel? _bookingRealtimeChannel;
 
   SupabaseClient get _client => Supabase.instance.client;
 
@@ -59,6 +62,40 @@ class _BookingScreenState extends State<BookingScreen> {
   void initState() {
     super.initState();
     _load();
+    _subscribeToBookingRealtime();
+  }
+
+  @override
+  void dispose() {
+    final channel = _bookingRealtimeChannel;
+    if (channel != null) {
+      _client.removeChannel(channel);
+    }
+    super.dispose();
+  }
+
+  void _subscribeToBookingRealtime() {
+    _bookingRealtimeChannel = _client
+        .channel('booking-screen-realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'class_bookings',
+          callback: (_) {
+            if (!mounted) return;
+            _load(showLoading: false);
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'class_waitlist',
+          callback: (_) {
+            if (!mounted) return;
+            _load(showLoading: false);
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _load({bool showLoading = true}) async {
@@ -142,6 +179,7 @@ membership_plans(name)
           _role = role;
           _classes = [];
           _myBookedClassIds = {};
+          _myWaitlistPositions = {};
           _myClassStatuses = {};
           _hasActiveMembership = hasActiveMembership;
           _isAccountActive = isAccountActive;
@@ -175,10 +213,17 @@ membership_plans(name)
           .eq('user_id', user.id)
           .neq('status', 'cancelled');
 
+      final waitlist = await _client
+          .from('class_waitlist')
+          .select('class_id, created_at')
+          .eq('user_id', user.id);
+
       final bookingRows = List<Map<String, dynamic>>.from(bookings);
       final bookedIds = bookingRows
           .map((b) => b['class_id'].toString())
           .toSet();
+      final waitlistRows = List<Map<String, dynamic>>.from(waitlist);
+      final waitlistPositions = <String, int>{};
       final bookingStatuses = {
         for (final b in bookingRows)
           b['class_id'].toString(): b['status'].toString(),
@@ -195,6 +240,26 @@ membership_plans(name)
             .count(CountOption.exact);
 
         c['booked_count'] = bookingCount.count;
+
+        final classId = c['id'].toString();
+        if (waitlistRows.any((w) => w['class_id'].toString() == classId)) {
+          final classWaitlist = await _client
+              .from('class_waitlist')
+              .select('user_id')
+              .eq('class_id', classId)
+              .order('created_at', ascending: true);
+
+          final classWaitlistRows = List<Map<String, dynamic>>.from(
+            classWaitlist,
+          );
+          final index = classWaitlistRows.indexWhere(
+            (w) => w['user_id']?.toString() == user.id,
+          );
+
+          if (index >= 0) {
+            waitlistPositions[classId] = index + 1;
+          }
+        }
       }
 
       if (!mounted) return;
@@ -203,6 +268,7 @@ membership_plans(name)
         _gymId = gymId;
         _classes = classRows;
         _myBookedClassIds = bookedIds;
+        _myWaitlistPositions = waitlistPositions;
         _myClassStatuses = bookingStatuses;
         _hasActiveMembership = hasActiveMembership;
         _isAccountActive = isAccountActive;
@@ -218,6 +284,63 @@ membership_plans(name)
       ).showSnackBar(SnackBar(content: Text(appStrings.bookingLoadError(e))));
     } finally {
       if (mounted && showLoading) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _joinWaitlist(Map<String, dynamic> klass) async {
+    final classId = klass['id'].toString();
+
+    setState(() => _bookingActionClassId = classId);
+
+    try {
+      await _client.rpc('join_class_waitlist', params: {'p_class_id': classId});
+
+      await _load(showLoading: false);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingWaitlistJoined)));
+    } catch (e) {
+      await _load(showLoading: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingWaitlistError)));
+    } finally {
+      if (mounted) {
+        setState(() => _bookingActionClassId = null);
+      }
+    }
+  }
+
+  Future<void> _leaveWaitlist(Map<String, dynamic> klass) async {
+    final classId = klass['id'].toString();
+
+    setState(() => _bookingActionClassId = classId);
+
+    try {
+      await _client.rpc(
+        'leave_class_waitlist',
+        params: {'p_class_id': classId},
+      );
+
+      await _load(showLoading: false);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingWaitlistLeft)));
+    } catch (e) {
+      await _load(showLoading: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.bookingWaitlistError)));
+    } finally {
+      if (mounted) {
+        setState(() => _bookingActionClassId = null);
+      }
     }
   }
 
@@ -305,6 +428,7 @@ membership_plans(name)
 
     try {
       await _client.rpc('cancel_my_booking', params: {'p_class_id': classId});
+      await _sendPendingNotifications();
       await _load(showLoading: false);
 
       if (!mounted) return;
@@ -323,6 +447,14 @@ membership_plans(name)
 
   Future<void> _refresh() async {
     await _load(showLoading: false);
+  }
+
+  Future<void> _sendPendingNotifications() async {
+    try {
+      await _client.functions.invoke('send-notifications');
+    } catch (_) {
+      // Notifications are still queued and will be sent by the scheduler.
+    }
   }
 
   Future<void> _showCreateClassSheet() async {
@@ -533,17 +665,24 @@ membership_plans(name)
     );
   }
 
-  Future<void> _openAttendanceSheet(Map<String, dynamic> klass) async {
-    if (!_canManageAttendance) return;
+  Future<void> _openClassSheet(Map<String, dynamic> klass) async {
+    if (_canManageAttendance) {
+      await showAttendanceSheet(
+        context: context,
+        client: _client,
+        klass: klass,
+        formatDateTime: _formatDateTime,
+        prettyStatus: _prettyStatus,
+        canMarkAttendance: _classState(klass) != 'upcoming',
+        onChanged: _load,
+      );
+      return;
+    }
 
-    await showAttendanceSheet(
+    await showClassDetailsSheet(
       context: context,
       client: _client,
       klass: klass,
-      formatDateTime: _formatDateTime,
-      prettyStatus: _prettyStatus,
-      canMarkAttendance: _classState(klass) != 'upcoming',
-      onChanged: _load,
     );
   }
 
@@ -664,6 +803,8 @@ membership_plans(name)
                         final id = klass['id'].toString();
                         final myStatus = _myClassStatuses[id];
                         final booked = myStatus != null;
+                        final waitlistPosition = _myWaitlistPositions[id];
+                        final waitlisted = waitlistPosition != null;
                         final bookedCount = klass['booked_count'] as int? ?? 0;
                         final capacity = klass['capacity'] as int? ?? 0;
                         final full = bookedCount >= capacity;
@@ -708,9 +849,12 @@ membership_plans(name)
                             _creditsRemaining! <= 0) {
                           buttonLabel = appStrings.bookingNoCreditsButton;
                           buttonAction = null;
+                        } else if (waitlisted) {
+                          buttonLabel = appStrings.bookingLeaveWaitlist;
+                          buttonAction = () => _leaveWaitlist(klass);
                         } else if (full) {
-                          buttonLabel = appStrings.bookingFull;
-                          buttonAction = null;
+                          buttonLabel = appStrings.bookingJoinWaitlist;
+                          buttonAction = () => _joinWaitlist(klass);
                         } else {
                           buttonLabel = appStrings.bookingBook;
                           buttonAction = () => _bookClass(klass);
@@ -747,8 +891,8 @@ membership_plans(name)
                             buttonLabel: buttonLabel,
                             buttonAction: buttonAction,
                             isLoading: isProcessing,
-                            canManageAttendance: _canManageAttendance,
-                            onOpenAttendance: () => _openAttendanceSheet(klass),
+                            waitlistPosition: waitlistPosition,
+                            onTap: () => _openClassSheet(klass),
                             onMorePressed: _canCreateClass
                                 ? () => _deleteClassOptions(klass)
                                 : null,

@@ -35,7 +35,11 @@ class AppStrings {
   String get spots => pick('SPOTS', 'PLAZAS');
   String get roster => pick('ROSTER', 'LISTA');
   String get attendance => pick('ATTENDANCE', 'ASISTENCIA');
+  String get attending => pick('ATTENDING', 'ASISTEN');
+  String get waitlist => pick('WAITLIST', 'LISTA DE ESPERA');
   String get noBookingsYet => pick('No bookings yet.', 'Aún no hay reservas.');
+  String get noWaitlistYet =>
+      pick('No one is waiting yet.', 'Aún no hay nadie en espera.');
   String get member => pick('Member', 'Miembro');
   String get workoutOptions => pick('WORKOUT OPTIONS', 'OPCIONES DEL WOD');
   String get athleteInvitationSent =>
@@ -52,6 +56,16 @@ class AppStrings {
   String get bookingCancel => pick('Cancel', 'Cancelar');
   String get bookingBooked => pick('Booked', 'Reservada');
   String get bookingFull => pick('Full', 'Completa');
+  String get bookingJoinWaitlist => pick('Join waitlist', 'Lista de espera');
+  String get bookingLeaveWaitlist => pick('Leave waitlist', 'Salir de lista');
+  String bookingWaitlistPosition(int position) =>
+      pick('Position #$position', 'Posición #$position');
+  String get bookingWaitlistJoined =>
+      pick('Added to waitlist', 'Agregado a lista de espera');
+  String get bookingWaitlistLeft =>
+      pick('Removed from waitlist', 'Eliminado de lista de espera');
+  String get bookingWaitlistError =>
+      pick('Could not update waitlist.', 'No se pudo actualizar la lista.');
   String get bookingMembershipRequired =>
       pick('Membership required', 'Membresía requerida');
   String get bookingInProgress => pick('In progress', 'Clase en curso');

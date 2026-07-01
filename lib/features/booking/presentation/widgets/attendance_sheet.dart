@@ -283,6 +283,12 @@ Future<void> showAttendanceSheet({
                 params: {'p_booking_id': booking['id']},
               );
 
+              try {
+                await client.functions.invoke('send-notifications');
+              } catch (_) {
+                // Notifications are still queued and will be sent by the scheduler.
+              }
+
               bookingRows.removeWhere((b) => b['id'] == booking['id']);
               setSheetState(() {});
               await onChanged();
