@@ -217,9 +217,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _client
           .from('notifications')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+          .delete()
           .eq('user_id', user.id)
-          .isFilter('read_at', null);
+          .not('sent_at', 'is', null);
     } catch (e) {
       if (!mounted) return;
       setState(() => _notifications = previous);
@@ -282,7 +282,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               unreadCount: _unreadCount,
               onBack: () => Navigator.of(context).pop(),
               onMarkAllRead: _markAllAsRead,
-              onClear: _clearNotifications,
+              onClear: _notifications.isEmpty ? null : _clearNotifications,
             ),
             Expanded(
               child: RefreshIndicator(
@@ -352,7 +352,7 @@ class _NotificationsHeader extends StatelessWidget {
   final int unreadCount;
   final VoidCallback onBack;
   final VoidCallback onMarkAllRead;
-  final VoidCallback onClear;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -434,10 +434,12 @@ class _HeaderIcon extends StatelessWidget {
   const _HeaderIcon({required this.icon, required this.onTap});
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
@@ -447,7 +449,9 @@ class _HeaderIcon extends StatelessWidget {
         child: Icon(
           icon,
           size: icon == Icons.chevron_left_rounded ? 34 : 28,
-          color: AppColors.accent,
+          color: enabled
+              ? AppColors.accent
+              : AppColors.muted(context).withValues(alpha: 0.45),
         ),
       ),
     );
