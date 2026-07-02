@@ -7,7 +7,9 @@ import '../../features/auth/presentation/screens/auth_gate.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
+import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
+import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
@@ -34,6 +36,10 @@ class AppRouter {
           builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
+          path: '/signup',
+          builder: (context, state) => const SignUpScreen(),
+        ),
+        GoRoute(
           path: '/forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
         ),
@@ -46,6 +52,10 @@ class AppRouter {
           builder: (context, state) => const OwnerScreen(),
         ),
         GoRoute(path: '/app', builder: (context, state) => const AppShell()),
+        GoRoute(
+          path: '/join-gym',
+          builder: (context, state) => const JoinGymScreen(),
+        ),
         GoRoute(
           path: '/account',
           builder: (context, state) => const AccountScreen(),

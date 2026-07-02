@@ -7,60 +7,87 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/auth_repository.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+
   bool _loading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
+
+  bool get _canSubmit {
+    final email = _email.text.trim();
+    final password = _password.text;
+    final confirmPassword = _confirmPassword.text;
+
+    return email.contains('@') &&
+        password.length >= 6 &&
+        password == confirmPassword &&
+        !_loading;
+  }
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (!_canSubmit) return;
+
     setState(() => _loading = true);
+
     try {
-      await _repo.signIn(email: _email.text.trim(), password: _password.text);
+      await _repo.signUp(email: _email.text.trim(), password: _password.text);
+
       if (!mounted) return;
-      context.go('/');
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.authAccountCreated)));
+
+      context.go('/login');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.loginError(e))));
+      ).showSnackBar(SnackBar(content: Text(appStrings.signUpError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  void _refreshSubmitState() => setState(() {});
+
   @override
   Widget build(BuildContext context) {
     return _AuthShell(
       title: appStrings.authLoginTitle.toUpperCase(),
-      subtitle: appStrings.authLoginSubtitle,
+      subtitle: appStrings.authSignUpSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            appStrings.authLoginSection.toUpperCase(),
+            appStrings.authSignUpSection.toUpperCase(),
             style: _AuthText.section,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
+            onChanged: (_) => _refreshSubmitState(),
             style: _AuthText.body,
             decoration: _authInput(appStrings.authEmail, Icons.email_outlined),
           ),
@@ -68,6 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
           TextField(
             controller: _password,
             obscureText: _obscurePassword,
+            onChanged: (_) => _refreshSubmitState(),
             style: _AuthText.body,
             decoration:
                 _authInput(
@@ -89,24 +117,44 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
           ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirmPassword,
+            obscureText: _obscureConfirmPassword,
+            onChanged: (_) => _refreshSubmitState(),
+            style: _AuthText.body,
+            decoration:
+                _authInput(
+                  appStrings.authConfirmPassword,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
+          ),
           const SizedBox(height: 18),
           AppButton(
-            label: appStrings.authLoginButton,
+            label: appStrings.authCreateAccount,
             loading: _loading,
-            onPressed: _submit,
+            onPressed: _canSubmit ? _submit : null,
           ),
           const SizedBox(height: 12),
           Center(
             child: TextButton(
-              onPressed: () => context.push('/forgot-password'),
-              child: Text(appStrings.authForgotPassword, style: _AuthText.link),
-            ),
-          ),
-          Center(
-            child: TextButton(
-              onPressed: _loading ? null : () => context.push('/signup'),
+              onPressed: _loading ? null : () => context.go('/login'),
               child: Text(
-                appStrings.authDontHaveAccount,
+                appStrings.authAlreadyHaveAccount,
                 style: _AuthText.link,
               ),
             ),

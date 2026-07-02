@@ -37,14 +37,19 @@ class _AuthGateState extends State<AuthGate> {
 
     final profile = await client
         .from('profiles')
-        .select('role')
+        .select('role, gym_id')
         .eq('id', user.id)
         .single();
 
     if (!mounted) return;
 
-    if (profile['role'] == 'owner') {
+    final role = profile['role']?.toString();
+    final gymId = profile['gym_id']?.toString();
+
+    if (role == 'owner') {
       context.go('/owner');
+    } else if (gymId == null || gymId.isEmpty) {
+      context.go('/join-gym');
     } else {
       context.go('/app');
     }

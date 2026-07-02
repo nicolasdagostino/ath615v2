@@ -285,6 +285,11 @@ class _AccountScreenState extends State<AccountScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final password = _password.text.trim();
+            final confirmPassword = _confirmPassword.text.trim();
+            final canSubmit =
+                password.length >= 6 && password == confirmPassword;
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
@@ -315,6 +320,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       const SizedBox(height: 14),
                       TextField(
                         controller: _password,
+                        onChanged: (_) => setSheetState(() {}),
                         obscureText: obscurePassword,
                         cursorColor: AppColors.accent,
                         style: _AccountText.body.copyWith(
@@ -344,6 +350,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _confirmPassword,
+                        onChanged: (_) => setSheetState(() {}),
                         obscureText: obscureConfirmPassword,
                         cursorColor: AppColors.accent,
                         style: _AccountText.body.copyWith(
@@ -375,15 +382,21 @@ class _AccountScreenState extends State<AccountScreen> {
                       AppButton(
                         label: appStrings.profileChangePassword,
                         loading: loading,
-                        onPressed: loading
+                        onPressed: loading || !canSubmit
                             ? null
                             : () async {
                                 final navigator = Navigator.of(sheetContext);
 
                                 setSheetState(() => loading = true);
-                                final updated = await _changePassword();
-                                if (!context.mounted) return;
-                                setSheetState(() => loading = false);
+
+                                var updated = false;
+                                try {
+                                  updated = await _changePassword();
+                                } finally {
+                                  if (context.mounted) {
+                                    setSheetState(() => loading = false);
+                                  }
+                                }
 
                                 if (mounted && updated) navigator.pop();
                               },

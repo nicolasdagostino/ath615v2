@@ -39,6 +39,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
   List<Map<String, dynamic>> _membershipRequests = [];
+  List<Map<String, dynamic>> _gymJoinRequests = [];
+  String? _processingMembershipRequestId;
+  String? _processingGymJoinRequestId;
   String? _gymId;
   int _todayBookings = 0;
   int _todayClasses = 0;
@@ -63,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadOverviewStats();
     await _loadRecentActivity();
     await _loadMembershipRequests();
+    await _loadGymJoinRequests();
   }
 
   Future<void> _openCommunicationSheet() async {
@@ -233,6 +237,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _loadGymJoinRequests() async {
+    final gymId = _gymId;
+    if (gymId == null) return;
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('gym_join_requests')
+          .select('id, user_id, status, created_at')
+          .eq('gym_id', gymId)
+          .eq('status', 'pending')
+          .order('created_at', ascending: false);
+
+      final requestRows = List<Map<String, dynamic>>.from(rows);
+      final userIds = requestRows
+          .map((row) => row['user_id']?.toString())
+          .whereType<String>()
+          .toList();
+
+      final profiles = userIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await Supabase.instance.client
+                  .from('profiles')
+                  .select('id, full_name')
+                  .inFilter('id', userIds),
+            );
+
+      final profileById = {
+        for (final profile in profiles) profile['id'].toString(): profile,
+      };
+
+      final requests = requestRows.map((row) {
+        final userId = row['user_id']?.toString();
+        final profile = userId == null ? null : profileById[userId];
+
+        return {
+          ...row,
+          'member_name': profile?['full_name']?.toString() ?? appStrings.member,
+        };
+      }).toList();
+
+      if (!mounted) return;
+      setState(() => _gymJoinRequests = requests);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _gymJoinRequests = []);
+    }
+  }
+
   Future<void> _loadRecentActivity() async {
     final gymId = _gymId;
     if (gymId == null) return;
@@ -279,12 +332,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _approveGymJoinRequest(Map<String, dynamic> request) async {
+    final requestId = request['id']?.toString();
+    if (requestId == null) return;
+
+    setState(() => _processingGymJoinRequestId = requestId);
+
+    try {
+      await Supabase.instance.client.rpc(
+        'approve_gym_join_request',
+        params: {'p_request_id': requestId},
+      );
+
+      await Supabase.instance.client.functions.invoke('send-notifications');
+      await _loadDashboardData();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.memberJoinedGym)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.joinRequestActionError(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _processingGymJoinRequestId = null);
+    }
+  }
+
+  Future<void> _rejectGymJoinRequest(Map<String, dynamic> request) async {
+    final requestId = request['id']?.toString();
+    if (requestId == null) return;
+
+    setState(() => _processingGymJoinRequestId = requestId);
+
+    try {
+      await Supabase.instance.client.rpc(
+        'reject_gym_join_request',
+        params: {'p_request_id': requestId},
+      );
+
+      await _loadDashboardData();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.joinRequestRejected)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.joinRequestActionError(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _processingGymJoinRequestId = null);
+    }
+  }
+
   Future<void> _approveMembershipRequest(Map<String, dynamic> request) async {
     final userId = request['user_id']?.toString();
     final planId = request['plan_id']?.toString();
     final requestId = request['id']?.toString();
 
     if (userId == null || planId == null || requestId == null) return;
+
+    setState(() => _processingMembershipRequestId = requestId);
 
     try {
       await Supabase.instance.client.rpc(
@@ -297,12 +409,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .update({'status': 'approved'})
           .eq('id', requestId);
 
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('preferred_locale')
+          .eq('id', userId)
+          .maybeSingle();
+
+      final locale = profile?['preferred_locale']?.toString() ?? 'en';
+      final isSpanish = locale == 'es';
+
+      await Supabase.instance.client.from('notifications').insert({
+        'user_id': userId,
+        'title': isSpanish
+            ? '🎉 Membresía activada'
+            : '🎉 Membership activated',
+        'body': isSpanish
+            ? 'Tu plan ya está activo. Ya puedes reservar clases.'
+            : 'Your plan is now active. You can start booking classes.',
+        'type': 'membership_approved',
+        'data': {'planId': planId},
+        'scheduled_for': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      await Supabase.instance.client.functions.invoke('send-notifications');
+
       await _loadDashboardData();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.planAssigned)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.assignPlanError(e))));
+    } finally {
+      if (mounted) setState(() => _processingMembershipRequestId = null);
     }
   }
 
@@ -310,6 +453,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final requestId = request['id']?.toString();
 
     if (requestId == null) return;
+
+    setState(() => _processingMembershipRequestId = requestId);
 
     try {
       await Supabase.instance.client
@@ -323,6 +468,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.assignPlanError(e))));
+    } finally {
+      if (mounted) setState(() => _processingMembershipRequestId = null);
     }
   }
 
@@ -1612,9 +1759,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
+                    if (_gymJoinRequests.isNotEmpty) ...[
+                      _GymJoinRequestsCard(
+                        requests: _gymJoinRequests,
+                        processingRequestId: _processingGymJoinRequestId,
+                        onApprove: _approveGymJoinRequest,
+                        onReject: _rejectGymJoinRequest,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     if (_membershipRequests.isNotEmpty) ...[
                       _MembershipRequestsCard(
                         requests: _membershipRequests,
+                        processingRequestId: _processingMembershipRequestId,
                         onApprove: _approveMembershipRequest,
                         onReject: _rejectMembershipRequest,
                       ),
@@ -2539,14 +2696,153 @@ class _DashboardCard extends StatelessWidget {
   }
 }
 
-class _MembershipRequestsCard extends StatelessWidget {
-  const _MembershipRequestsCard({
+class _GymJoinRequestsCard extends StatelessWidget {
+  const _GymJoinRequestsCard({
     required this.requests,
+    required this.processingRequestId,
     required this.onApprove,
     required this.onReject,
   });
 
   final List<Map<String, dynamic>> requests;
+  final String? processingRequestId;
+  final Future<void> Function(Map<String, dynamic> request) onApprove;
+  final Future<void> Function(Map<String, dynamic> request) onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(appStrings.joinRequests.toUpperCase(), style: _DashText.section),
+          const SizedBox(height: 6),
+          Text(
+            appStrings.pendingApprovalCount(requests.length),
+            style: _DashText.subtle,
+          ),
+          const SizedBox(height: 16),
+          ...requests.map((request) {
+            final requestId = request['id']?.toString();
+            final isProcessing = processingRequestId == requestId;
+            final isAnyProcessing = processingRequestId != null;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAlt(context),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          color: AppColors.accent,
+                          size: 19,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              request['member_name']?.toString() ??
+                                  appStrings.member,
+                              style: _DashText.body.copyWith(
+                                color: AppColors.textPrimary(context),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(appStrings.joinGym, style: _DashText.subtle),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isAnyProcessing
+                              ? null
+                              : () => onReject(request),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary(context),
+                            side: BorderSide(color: AppColors.border(context)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            appStrings.reject.toUpperCase(),
+                            style: _DashText.body.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: isAnyProcessing
+                              ? null
+                              : () => onApprove(request),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: isProcessing
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  appStrings.approve.toUpperCase(),
+                                  style: _DashText.body.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _MembershipRequestsCard extends StatelessWidget {
+  const _MembershipRequestsCard({
+    required this.requests,
+    required this.processingRequestId,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  final List<Map<String, dynamic>> requests;
+  final String? processingRequestId;
   final Future<void> Function(Map<String, dynamic> request) onApprove;
   final Future<void> Function(Map<String, dynamic> request) onReject;
 
@@ -2576,6 +2872,10 @@ class _MembershipRequestsCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ...requests.map((request) {
+            final requestId = request['id']?.toString();
+            final isProcessing = processingRequestId == requestId;
+            final isAnyProcessing = processingRequestId != null;
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Column(
@@ -2621,7 +2921,9 @@ class _MembershipRequestsCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => onReject(request),
+                          onPressed: isAnyProcessing
+                              ? null
+                              : () => onReject(request),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.textPrimary(context),
                             side: BorderSide(color: AppColors.border(context)),
@@ -2640,7 +2942,9 @@ class _MembershipRequestsCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () => onApprove(request),
+                          onPressed: isAnyProcessing
+                              ? null
+                              : () => onApprove(request),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.accent,
                             foregroundColor: Colors.white,
@@ -2648,13 +2952,22 @@ class _MembershipRequestsCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
-                            appStrings.approve.toUpperCase(),
-                            style: _DashText.body.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          child: isProcessing
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  appStrings.approve.toUpperCase(),
+                                  style: _DashText.body.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

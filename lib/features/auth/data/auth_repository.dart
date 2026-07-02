@@ -12,6 +12,13 @@ class AuthRepository {
     await _client.auth.signInWithPassword(email: email, password: password);
   }
 
+  Future<void> signUp({required String email, required String password}) async {
+    await _client.auth.signUp(
+      email: email.trim().toLowerCase(),
+      password: password,
+    );
+  }
+
   Future<void> resetPassword(String email) async {
     final normalizedEmail = email.trim().toLowerCase();
 

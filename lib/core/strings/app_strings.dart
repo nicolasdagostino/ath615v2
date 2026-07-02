@@ -51,6 +51,31 @@ class AppStrings {
   String get navProfile => pick('Profile', 'Perfil');
   String get navDashboard => pick('Dashboard', 'Panel');
 
+  String get joinGymTitle => pick('Join a Gym', 'Únete a un gym');
+  String get joinGymSubtitle => pick(
+    'Your ATHLETE 615 account works with any affiliated gym.',
+    'Tu cuenta ATHLETE 615 funciona con cualquier gym afiliado.',
+  );
+  String get joinGymMessage => pick(
+    'Enter your gym code to request access. Once approved, you can start booking classes and following workouts.',
+    'Introduce el código de tu gym para solicitar acceso. Cuando te aprueben, podrás reservar clases y ver los WODs.',
+  );
+  String get gymCode => pick('Gym code', 'Código del gym');
+  String get joinGym => pick('Join gym', 'Unirme al gym');
+  String get findGym => pick('Find gym', 'Buscar gym');
+  String get gymCodeNotFound =>
+      pick('Gym code not found.', 'Código de gym no encontrado.');
+  String joinGymError(Object e) =>
+      pick('Join gym error: $e', 'Error al unirse al gym: $e');
+  String get joinRequestSent => pick('Request sent', 'Solicitud enviada');
+  String joinRequestPendingMessage(String gymName) => pick(
+    'We notified $gymName. You will get access once they approve your request.',
+    'Avisamos a $gymName. Tendrás acceso cuando aprueben tu solicitud.',
+  );
+  String get scanQrComingSoon =>
+      pick('Scan QR coming soon', 'Escanear QR próximamente');
+  String get logout => pick('Log out', 'Cerrar sesión');
+
   String get bookingTitle => pick('Booking', 'Reservas');
   String get bookingBook => pick('Book', 'Reservar');
   String get bookingCancel => pick('Cancel', 'Cancelar');
@@ -223,6 +248,22 @@ class AppStrings {
   String get authEmail => pick('Email', 'Email');
   String get authPassword => pick('Password', 'Contraseña');
   String get authLoginButton => pick('Login', 'Entrar');
+  String get authCreateAccount => pick('Create account', 'Crear cuenta');
+  String get authAlreadyHaveAccount =>
+      pick('Already have an account?', '¿Ya tienes cuenta?');
+  String get authDontHaveAccount =>
+      pick("Don't have an account?", '¿No tienes cuenta?');
+  String get authSignUpSection => pick('Create account', 'Crear cuenta');
+  String get authSignUpSubtitle => pick(
+    'Start your ATHLETE 615 journey.',
+    'Empieza tu camino en ATHLETE 615.',
+  );
+  String get authAccountCreated => pick(
+    'Account created. Check your email to confirm your account.',
+    'Cuenta creada. Revisa tu email para confirmar tu cuenta.',
+  );
+  String signUpError(Object e) =>
+      pick('Could not create account: $e', 'No se pudo crear la cuenta: $e');
   String get authForgotPassword =>
       pick('Forgot password?', '¿Olvidaste tu contraseña?');
   String loginError(Object e) =>
@@ -504,6 +545,13 @@ class AppStrings {
       pick('Membership request error: $e', 'Error al solicitar membresía: $e');
 
   String get membershipTitle => pick('Membership', 'Membresía');
+  String get joinRequests => pick('Join requests', 'Solicitudes de acceso');
+  String get memberJoinedGym =>
+      pick('Member added to gym.', 'Miembro agregado al gym.');
+  String get joinRequestRejected =>
+      pick('Join request rejected.', 'Solicitud de acceso rechazada.');
+  String joinRequestActionError(Object e) =>
+      pick('Join request error: $e', 'Error en solicitud de acceso: $e');
   String get membershipRequests =>
       pick('Membership requests', 'Solicitudes de membresía');
   String pendingApprovalCount(int count) => count == 1
