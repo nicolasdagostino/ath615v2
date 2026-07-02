@@ -77,6 +77,8 @@ class DeepLinkService {
         queryParams['refresh_token'] ?? fragmentParams['refresh_token'];
     final code = queryParams['code'] ?? fragmentParams['code'];
 
+    final authType = queryParams['type'] ?? fragmentParams['type'] ?? '';
+
     try {
       final auth = Supabase.instance.client.auth;
 
@@ -95,7 +97,11 @@ class DeepLinkService {
       debugPrint('ATH615 DEEPLINK SESSION ERROR => $e');
     }
 
-    _router.go('/reset-password');
+    if (authType == 'recovery' || authType == 'invite') {
+      _router.go('/reset-password');
+    } else {
+      _router.go('/');
+    }
   }
 
   Future<void> dispose() async {

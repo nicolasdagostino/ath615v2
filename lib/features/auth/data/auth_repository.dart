@@ -12,10 +12,22 @@ class AuthRepository {
     await _client.auth.signInWithPassword(email: email, password: password);
   }
 
-  Future<void> signUp({required String email, required String password}) async {
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phone,
+    required String birthDate,
+  }) async {
     await _client.auth.signUp(
       email: email.trim().toLowerCase(),
       password: password,
+      data: {
+        'full_name': fullName.trim(),
+        'phone': phone.trim(),
+        'birth_date': birthDate,
+        'role': 'athlete',
+      },
     );
   }
 

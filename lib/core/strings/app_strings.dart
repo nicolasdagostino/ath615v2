@@ -254,6 +254,13 @@ class AppStrings {
   String get authDontHaveAccount =>
       pick("Don't have an account?", '¿No tienes cuenta?');
   String get authSignUpSection => pick('Create account', 'Crear cuenta');
+  String authStep(int current, int total) =>
+      pick('Step $current of $total', 'Paso $current de $total');
+  String get authFullName => pick('Full name', 'Nombre completo');
+  String get authPhone => pick('Phone', 'Teléfono');
+  String get authBirthDate => pick('Birth date', 'Fecha de nacimiento');
+  String get authContinue => pick('Continue', 'Continuar');
+  String get authBack => pick('Back', 'Volver');
   String get authSignUpSubtitle => pick(
     'Start your ATHLETE 615 journey.',
     'Empieza tu camino en ATHLETE 615.',
