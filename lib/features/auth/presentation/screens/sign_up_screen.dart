@@ -17,67 +17,30 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _fullName = TextEditingController();
   final _email = TextEditingController();
-  final _phone = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
-  DateTime? _birthDate;
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  int _step = 0;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
-  bool get _canContinue {
+  bool get _canSubmit {
     return _fullName.text.trim().length >= 3 &&
         _email.text.trim().contains('@') &&
         _password.text.length >= 6 &&
-        _password.text == _confirmPassword.text;
-  }
-
-  bool get _canSubmit {
-    return _canContinue &&
-        _birthDate != null &&
-        _phone.text.trim().length >= 6 &&
+        _password.text == _confirmPassword.text &&
         !_loading;
-  }
-
-  String get _birthDateIso {
-    final date = _birthDate;
-    if (date == null) return '';
-
-    return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  String get _birthDateLabel {
-    final date = _birthDate;
-    if (date == null) return appStrings.authBirthDate;
-
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   @override
   void dispose() {
     _fullName.dispose();
     _email.dispose();
-    _phone.dispose();
     _password.dispose();
     _confirmPassword.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _birthDate ?? DateTime(now.year - 25, now.month, now.day),
-      firstDate: DateTime(now.year - 100),
-      lastDate: DateTime(now.year - 8, now.month, now.day),
-    );
-
-    if (picked == null) return;
-    setState(() => _birthDate = picked);
   }
 
   Future<void> _submit() async {
@@ -90,8 +53,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _email.text.trim(),
         password: _password.text,
         fullName: _fullName.text.trim(),
-        phone: _phone.text.trim(),
-        birthDate: _birthDateIso,
       );
 
       if (!mounted) return;
@@ -113,155 +74,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _refreshSubmitState() => setState(() {});
 
-  void _continue() {
-    if (!_canContinue) return;
-    setState(() => _step = 1);
-  }
-
-  Widget _buildStepOne() {
-    return Column(
-      key: const ValueKey('signup-step-1'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(appStrings.authStep(1, 2).toUpperCase(), style: _AuthText.subtle),
-        const SizedBox(height: 8),
-        Text(
-          appStrings.authSignUpSection.toUpperCase(),
-          style: _AuthText.section,
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _fullName,
-          textCapitalization: TextCapitalization.words,
-          onChanged: (_) => _refreshSubmitState(),
-          style: _AuthText.body,
-          decoration: _authInput(
-            appStrings.authFullName,
-            Icons.person_outline_rounded,
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          onChanged: (_) => _refreshSubmitState(),
-          style: _AuthText.body,
-          decoration: _authInput(appStrings.authEmail, Icons.email_outlined),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _password,
-          obscureText: _obscurePassword,
-          onChanged: (_) => _refreshSubmitState(),
-          style: _AuthText.body,
-          decoration:
-              _authInput(
-                appStrings.authPassword,
-                Icons.lock_outline_rounded,
-              ).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  color: const Color(0xFF8F96A3),
-                  onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                ),
-              ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _confirmPassword,
-          obscureText: _obscureConfirmPassword,
-          onChanged: (_) => _refreshSubmitState(),
-          style: _AuthText.body,
-          decoration:
-              _authInput(
-                appStrings.authConfirmPassword,
-                Icons.lock_outline_rounded,
-              ).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  color: const Color(0xFF8F96A3),
-                  onPressed: () {
-                    setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                    );
-                  },
-                ),
-              ),
-        ),
-        const SizedBox(height: 18),
-        AppButton(
-          label: appStrings.authContinue,
-          onPressed: _canContinue ? _continue : null,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepTwo() {
-    return Column(
-      key: const ValueKey('signup-step-2'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(appStrings.authStep(2, 2).toUpperCase(), style: _AuthText.subtle),
-        const SizedBox(height: 8),
-        Text(
-          appStrings.profileHeaderTitle.toUpperCase(),
-          style: _AuthText.section,
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _phone,
-          keyboardType: TextInputType.phone,
-          onChanged: (_) => _refreshSubmitState(),
-          style: _AuthText.body,
-          decoration: _authInput(appStrings.authPhone, Icons.phone_outlined),
-        ),
-        const SizedBox(height: 12),
-        InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: _pickBirthDate,
-          child: InputDecorator(
-            decoration: _authInput(
-              appStrings.authBirthDate,
-              Icons.calendar_month_rounded,
-            ),
-            child: Text(
-              _birthDateLabel,
-              style: _AuthText.body.copyWith(
-                color: _birthDate == null
-                    ? const Color(0xFF8F96A3)
-                    : const Color(0xFF384152),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        AppButton(
-          label: appStrings.authCreateAccount,
-          loading: _loading,
-          onPressed: _canSubmit ? _submit : null,
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: TextButton(
-            onPressed: _loading ? null : () => setState(() => _step = 0),
-            child: Text(appStrings.authBack, style: _AuthText.link),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return _AuthShell(
@@ -270,9 +82,100 @@ class _SignUpScreenState extends State<SignUpScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: _step == 0 ? _buildStepOne() : _buildStepTwo(),
+          Text(
+            appStrings.authSignUpSection.toUpperCase(),
+            style: _AuthText.section.copyWith(fontSize: 22),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            appStrings.authStep(1, 3).toUpperCase(),
+            style: _AuthText.subtle.copyWith(letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: const LinearProgressIndicator(
+              value: 0.33,
+              minHeight: 6,
+              backgroundColor: Color(0xFFE7E9ED),
+              valueColor: AlwaysStoppedAnimation(Color(0xFFB59B6A)),
+            ),
+          ),
+          const SizedBox(height: 18),
+          TextField(
+            controller: _fullName,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) => _refreshSubmitState(),
+            style: _AuthText.body,
+            decoration: _authInput(
+              appStrings.authFullName,
+              Icons.person_outline_rounded,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            onChanged: (_) => _refreshSubmitState(),
+            style: _AuthText.body,
+            decoration: _authInput(appStrings.authEmail, Icons.email_outlined),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _password,
+            obscureText: _obscurePassword,
+            onChanged: (_) => _refreshSubmitState(),
+            style: _AuthText.body,
+            decoration:
+                _authInput(
+                  appStrings.authPassword,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
+                ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirmPassword,
+            obscureText: _obscureConfirmPassword,
+            onChanged: (_) => _refreshSubmitState(),
+            style: _AuthText.body,
+            decoration:
+                _authInput(
+                  appStrings.authConfirmPassword,
+                  Icons.lock_outline_rounded,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    color: const Color(0xFF8F96A3),
+                    onPressed: () {
+                      setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      );
+                    },
+                  ),
+                ),
+          ),
+          const SizedBox(height: 18),
+          AppButton(
+            label: appStrings.authCreateAccount,
+            loading: _loading,
+            onPressed: _canSubmit ? _submit : null,
           ),
           const SizedBox(height: 12),
           Center(

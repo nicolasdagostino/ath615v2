@@ -42,6 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> _gymJoinRequests = [];
   String? _processingMembershipRequestId;
   String? _processingGymJoinRequestId;
+  String? _processingGymJoinRequestAction;
   String? _gymId;
   int _todayBookings = 0;
   int _todayClasses = 0;
@@ -260,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           : List<Map<String, dynamic>>.from(
               await Supabase.instance.client
                   .from('profiles')
-                  .select('id, full_name')
+                  .select('id, full_name, email, phone, birth_date, avatar_url')
                   .inFilter('id', userIds),
             );
 
@@ -275,6 +276,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return {
           ...row,
           'member_name': profile?['full_name']?.toString() ?? appStrings.member,
+          'member_email': profile?['email']?.toString(),
+          'member_phone': profile?['phone']?.toString(),
+          'member_birth_date': profile?['birth_date']?.toString(),
+          'member_avatar_url': profile?['avatar_url']?.toString(),
         };
       }).toList();
 
@@ -336,7 +341,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final requestId = request['id']?.toString();
     if (requestId == null) return;
 
-    setState(() => _processingGymJoinRequestId = requestId);
+    setState(() {
+      _processingGymJoinRequestId = requestId;
+      _processingGymJoinRequestAction = 'approve';
+    });
 
     try {
       await Supabase.instance.client.rpc(
@@ -357,7 +365,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SnackBar(content: Text(appStrings.joinRequestActionError(e))),
       );
     } finally {
-      if (mounted) setState(() => _processingGymJoinRequestId = null);
+      if (mounted) {
+        setState(() {
+          _processingGymJoinRequestId = null;
+          _processingGymJoinRequestAction = null;
+        });
+      }
     }
   }
 
@@ -365,7 +378,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final requestId = request['id']?.toString();
     if (requestId == null) return;
 
-    setState(() => _processingGymJoinRequestId = requestId);
+    setState(() {
+      _processingGymJoinRequestId = requestId;
+      _processingGymJoinRequestAction = 'reject';
+    });
 
     try {
       await Supabase.instance.client.rpc(
@@ -373,6 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         params: {'p_request_id': requestId},
       );
 
+      await Supabase.instance.client.functions.invoke('send-notifications');
       await _loadDashboardData();
 
       if (!mounted) return;
@@ -385,7 +402,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SnackBar(content: Text(appStrings.joinRequestActionError(e))),
       );
     } finally {
-      if (mounted) setState(() => _processingGymJoinRequestId = null);
+      if (mounted) {
+        setState(() {
+          _processingGymJoinRequestId = null;
+          _processingGymJoinRequestAction = null;
+        });
+      }
     }
   }
 
@@ -1763,6 +1785,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _GymJoinRequestsCard(
                         requests: _gymJoinRequests,
                         processingRequestId: _processingGymJoinRequestId,
+                        processingAction: _processingGymJoinRequestAction,
                         onApprove: _approveGymJoinRequest,
                         onReject: _rejectGymJoinRequest,
                       ),
@@ -2700,12 +2723,14 @@ class _GymJoinRequestsCard extends StatelessWidget {
   const _GymJoinRequestsCard({
     required this.requests,
     required this.processingRequestId,
+    required this.processingAction,
     required this.onApprove,
     required this.onReject,
   });
 
   final List<Map<String, dynamic>> requests;
   final String? processingRequestId;
+  final String? processingAction;
   final Future<void> Function(Map<String, dynamic> request) onApprove;
   final Future<void> Function(Map<String, dynamic> request) onReject;
 
@@ -2725,6 +2750,10 @@ class _GymJoinRequestsCard extends StatelessWidget {
           ...requests.map((request) {
             final requestId = request['id']?.toString();
             final isProcessing = processingRequestId == requestId;
+            final isRejectProcessing =
+                isProcessing && processingAction == 'reject';
+            final isApproveProcessing =
+                isProcessing && processingAction == 'approve';
             final isAnyProcessing = processingRequestId != null;
 
             return Padding(
@@ -2733,19 +2762,11 @@ class _GymJoinRequestsCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceAlt(context),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Icon(
-                          Icons.person_add_alt_1_rounded,
-                          color: AppColors.accent,
-                          size: 19,
-                        ),
+                      _MemberAvatar(
+                        name:
+                            request['member_name']?.toString() ??
+                            appStrings.member,
+                        avatarUrl: request['member_avatar_url']?.toString(),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -2761,7 +2782,28 @@ class _GymJoinRequestsCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 3),
-                            Text(appStrings.joinGym, style: _DashText.subtle),
+                            if ((request['member_email']?.toString() ?? '')
+                                .isNotEmpty)
+                              Text(
+                                request['member_email'].toString(),
+                                style: _DashText.subtle,
+                              ),
+                            if ((request['member_phone']?.toString() ?? '')
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                '📱 ${request['member_phone']}',
+                                style: _DashText.subtle,
+                              ),
+                            ],
+                            if ((request['member_birth_date']?.toString() ?? '')
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                '🎂 ${request['member_birth_date']}',
+                                style: _DashText.subtle,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -2782,12 +2824,21 @@ class _GymJoinRequestsCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
-                            appStrings.reject.toUpperCase(),
-                            style: _DashText.body.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          child: isRejectProcessing
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.textSecondary(context),
+                                  ),
+                                )
+                              : Text(
+                                  appStrings.reject.toUpperCase(),
+                                  style: _DashText.body.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -2803,7 +2854,7 @@ class _GymJoinRequestsCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: isProcessing
+                          child: isApproveProcessing
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,

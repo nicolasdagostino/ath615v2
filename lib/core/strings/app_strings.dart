@@ -62,6 +62,10 @@ class AppStrings {
   );
   String get gymCode => pick('Gym code', 'Código del gym');
   String get joinGym => pick('Join gym', 'Unirme al gym');
+  String get completeProfile => pick('Complete profile', 'Completa tu perfil');
+  String get addProfilePhoto =>
+      pick('Add profile photo', 'Añadir foto de perfil');
+  String get sendRequest => pick('Send request', 'Enviar solicitud');
   String get findGym => pick('Find gym', 'Buscar gym');
   String get gymCodeNotFound =>
       pick('Gym code not found.', 'Código de gym no encontrado.');

@@ -16,18 +16,11 @@ class AuthRepository {
     required String email,
     required String password,
     required String fullName,
-    required String phone,
-    required String birthDate,
   }) async {
     await _client.auth.signUp(
       email: email.trim().toLowerCase(),
       password: password,
-      data: {
-        'full_name': fullName.trim(),
-        'phone': phone.trim(),
-        'birth_date': birthDate,
-        'role': 'athlete',
-      },
+      data: {'full_name': fullName.trim(), 'role': 'athlete'},
     );
   }
 
