@@ -31,7 +31,9 @@
 			<array>
 				<string>athletelab</string>
 			</array>
-		</dict>
+			<key>NSCameraUsageDescription</key>
+	<string>We need camera access to scan gym QR codes.</string>
+</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
