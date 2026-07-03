@@ -24,6 +24,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, dynamic>? _profile;
+  bool _leavingGym = false;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
 
@@ -41,10 +42,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<void> _leaveGym() async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: AppShadows.card(context),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text(
+                appStrings.leaveGym.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: _SettingsText.header.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                appStrings.leaveGymConfirm,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary(context),
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary(context),
+                        side: BorderSide(color: AppColors.border(context)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(appStrings.cancel.toUpperCase()),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(appStrings.leaveGym.toUpperCase()),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _leavingGym = true);
+
+    try {
+      await Supabase.instance.client.rpc('leave_current_gym');
+
+      if (!mounted) return;
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.leaveGymError(e))));
+    } finally {
+      if (mounted) setState(() => _leavingGym = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final role = _profile?['role']?.toString();
+    final gymId = _profile?['gym_id']?.toString();
     final canEditGym = role == 'admin' || role == 'owner';
+    final canLeaveGym = role == 'athlete' && gymId != null && gymId.isNotEmpty;
 
     return Scaffold(
       backgroundColor: _profileHubBackground(context),
@@ -116,6 +212,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ],
+                if (canLeaveGym) ...[
+                  const SizedBox(height: 34),
+                  _SettingsListCard(
+                    children: [
+                      _SettingsMenuRow(
+                        title: appStrings.leaveGym,
+                        danger: true,
+                        onTap: _leavingGym ? null : _leaveGym,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ],
@@ -176,14 +284,19 @@ class _SettingsListCard extends StatelessWidget {
 }
 
 class _SettingsMenuRow extends StatelessWidget {
-  const _SettingsMenuRow({required this.title, required this.onTap});
+  const _SettingsMenuRow({
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
 
   final String title;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.textPrimary(context);
+    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
