@@ -651,10 +651,10 @@ class AppStrings {
   String get profileAccount => pick('Account', 'Cuenta');
   String get profileGymName => pick('Gym name', 'Nombre del gym');
   String get gymInformation => pick('Gym information', 'Información del gym');
-  String get leaveGym => pick('Leave gym', 'Salir del gym');
+  String get leaveGym => pick('Change / leave gym', 'Cambiar / salir del gym');
   String get leaveGymConfirm => pick(
-    'You will lose access to this gym. Future bookings and waitlist spots will be cancelled, and your active membership will be deactivated.',
-    'Perderás el acceso a este gym. Se cancelarán tus reservas futuras y puestos en lista de espera, y tu membresía activa será desactivada.',
+    'You will leave your current gym. Future bookings and waitlist spots will be cancelled, your active membership will be deactivated, and you can request access to another gym afterwards.',
+    'Saldrás de tu gym actual. Se cancelarán tus reservas futuras y puestos en lista de espera, tu membresía activa será desactivada y luego podrás solicitar acceso a otro gym.',
   );
   String leaveGymError(Object e) =>
       pick('Leave gym error: $e', 'Error al salir del gym: $e');
