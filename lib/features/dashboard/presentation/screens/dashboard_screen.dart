@@ -1370,10 +1370,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
                       padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF252525),
+                        color: AppColors.surface(context),
                         borderRadius: BorderRadius.circular(AppRadii.sheet),
                         border: Border.all(
-                          color: const Color(0xFF323232),
+                          color: AppColors.border(context),
                           width: 1,
                         ),
                       ),
@@ -1385,7 +1385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               width: 48,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF3A3A3A),
+                                color: AppColors.border(context),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
@@ -1407,7 +1407,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: _DashText.title.copyWith(
-                                        color: Colors.white,
+                                        color: AppColors.textPrimary(context),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -1433,24 +1433,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
                                 initialValue: selectedRole,
-                                dropdownColor: const Color(0xFF171717),
-                                iconEnabledColor: const Color(0xFFABABAB),
+                                dropdownColor: AppColors.surface(context),
+                                iconEnabledColor: AppColors.textSecondary(
+                                  context,
+                                ),
                                 style: _DashText.body.copyWith(
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary(context),
                                   fontWeight: FontWeight.w700,
                                 ),
-                                decoration: _dashInput(
-                                  appStrings.role,
-                                  Icons.admin_panel_settings_outlined,
+                                decoration: InputDecoration(
+                                  hintText: appStrings.role,
+                                  hintStyle: GoogleFonts.barlowCondensed(
+                                    color: AppColors.textSecondary(context),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.admin_panel_settings_outlined,
+                                    color: AppColors.accent,
+                                    size: 20,
+                                  ),
+                                  filled: true,
+                                  fillColor: AppColors.surfaceAlt(context),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 15,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.input,
+                                    ),
+                                    borderSide: BorderSide(
+                                      color: AppColors.border(context),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.input,
+                                    ),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.accent,
+                                      width: 1.2,
+                                    ),
+                                  ),
                                 ),
                                 items: [
                                   DropdownMenuItem(
                                     value: 'athlete',
-                                    child: Text(appStrings.member),
+                                    child: Text(
+                                      appStrings.member,
+                                      style: _DashText.body.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                   DropdownMenuItem(
                                     value: 'admin',
-                                    child: Text('Admin'),
+                                    child: Text(
+                                      'Admin',
+                                      style: _DashText.body.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                 ],
                                 onChanged: (value) async {
@@ -1572,7 +1620,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   appStrings.membershipTitle.toUpperCase(),
-                                  style: _DashText.section,
+                                  style: _DashText.section.copyWith(
+                                    color: AppColors.textPrimary(context),
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 if (membership == null)
@@ -1601,7 +1651,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 const SizedBox(height: 14),
                                 Text(
                                   appStrings.creditHistory.toUpperCase(),
-                                  style: _DashText.section,
+                                  style: _DashText.section.copyWith(
+                                    color: AppColors.textPrimary(context),
+                                  ),
                                 ),
                                 const SizedBox(height: 10),
                                 if (creditLogs.isEmpty)
@@ -1635,7 +1687,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 22),
                           Text(
                             appStrings.recentClasses.toUpperCase(),
-                            style: _DashText.section,
+                            style: _DashText.section.copyWith(
+                              color: AppColors.textPrimary(context),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -3518,14 +3572,21 @@ class _MemberMilestoneCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(appStrings.milestone.toUpperCase(), style: _DashText.section),
+          Text(
+            appStrings.milestone.toUpperCase(),
+            style: _DashText.section.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
                   '$attendedCount / $target ${appStrings.classesAttended}',
-                  style: _DashText.title,
+                  style: _DashText.title.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
               ),
               Text(
@@ -3612,7 +3673,7 @@ class _MemberFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF0E0E11) : const Color(0xFFF4F5F7),
+      color: selected ? const Color(0xFF0E0E11) : AppColors.surfaceAlt(context),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -3625,7 +3686,9 @@ class _MemberFilterChip extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color: selected ? Colors.white : const Color(0xFF384152),
+                color: selected
+                    ? Colors.white
+                    : AppColors.textSecondary(context),
                 letterSpacing: 0.5,
                 height: 1,
               ),
@@ -3694,7 +3757,7 @@ class _MemberHistoryRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF171717),
+          color: AppColors.surfaceAlt(context),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -3703,13 +3766,24 @@ class _MemberHistoryRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: _DashText.title),
+                  Text(
+                    title,
+                    style: _DashText.title.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(_formattedSubtitle, style: _DashText.subtle),
                 ],
               ),
             ),
-            if (marker.isNotEmpty) Text(marker, style: _DashText.title),
+            if (marker.isNotEmpty)
+              Text(
+                marker,
+                style: _DashText.title.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
+              ),
           ],
         ),
       ),
