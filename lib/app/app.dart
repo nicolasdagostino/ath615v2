@@ -42,6 +42,12 @@ Future<void> setupPush() async {
     await Supabase.instance.client
         .from('device_tokens')
         .delete()
+        .eq('platform', 'ios')
+        .eq('user_id', user.id);
+
+    await Supabase.instance.client
+        .from('device_tokens')
+        .delete()
         .eq('token', token)
         .neq('user_id', user.id);
 

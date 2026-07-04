@@ -122,6 +122,7 @@ serve(async (req) => {
     }
 
     let sentCount = 0
+    const sentTokens = new Set<string>()
 
     for (const n of notifications) {
       const { data: tokens, error: tokenError } = await admin
@@ -131,7 +132,12 @@ serve(async (req) => {
 
       if (tokenError) throw tokenError
 
-      for (const t of tokens ?? []) {
+      const uniqueTokens = [...new Set((tokens ?? []).map((t) => t.token).filter(Boolean))]
+
+      for (const token of uniqueTokens) {
+        if (sentTokens.has(token)) continue
+        sentTokens.add(token)
+
         const fcmResponse = await fetch(
           `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
           {
@@ -142,7 +148,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               message: {
-                token: t.token,
+                token,
                 notification: {
                   title: n.title,
                   body: n.body,
@@ -167,7 +173,7 @@ serve(async (req) => {
         if (!fcmResponse.ok) {
           const errorText = await fcmResponse.text()
           console.error(
-            `FCM send failed notification=${n.id} user=${n.user_id} token=${String(t.token).slice(0, 18)}... error=${errorText}`,
+            `FCM send failed notification=${n.id} user=${n.user_id} token=${String(token).slice(0, 18)}... error=${errorText}`,
           )
           continue
         }
