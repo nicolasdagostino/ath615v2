@@ -76,6 +76,11 @@ class AppStrings {
     'We notified $gymName. You will get access once they approve your request.',
     'Avisamos a $gymName. Tendrás acceso cuando aprueben tu solicitud.',
   );
+  String get scanGymQr => pick('Scan gym QR', 'Escanear QR del gym');
+  String get scanGymQrMessage => pick(
+    'Point your camera at the gym QR code.',
+    'Apunta la cámara al código QR del gym.',
+  );
   String get scanQrComingSoon =>
       pick('Scan QR coming soon', 'Escanear QR próximamente');
   String get logout => pick('Log out', 'Cerrar sesión');
@@ -471,6 +476,15 @@ class AppStrings {
   String get milestone => pick('Milestone', 'Objetivo');
   String get classesAttended => pick('Classes attended', 'Clases asistidas');
   String get classesToGo => pick('to go', 'para llegar');
+  String get memberOverview => pick('Overview', 'Resumen');
+  String get attendedThisMonth =>
+      pick('Attended this month', 'Asistencias este mes');
+  String get noShowsThisMonth =>
+      pick('No-shows this month', 'No-shows este mes');
+  String get lastAttendance => pick('Last attendance', 'Última asistencia');
+  String get noAttendancesYet => pick('No attendance yet', 'Sin asistencias');
+  String get administration => pick('Administration', 'Administración');
+  String get totalAttended => pick('Total attended', 'Total asistencias');
   String get personalRecords => pick('Personal records', 'Records personales');
   String get addRecord => pick('Add record', 'Añadir record');
   String get viewRecords => pick('View records', 'Ver records');
@@ -651,6 +665,11 @@ class AppStrings {
   String get profileAccount => pick('Account', 'Cuenta');
   String get profileGymName => pick('Gym name', 'Nombre del gym');
   String get gymInformation => pick('Gym information', 'Información del gym');
+  String get gymQrCode => pick('Gym QR code', 'Código QR del gym');
+  String get gymQrCodeMessage => pick(
+    'Athletes can scan this QR to request access to your gym.',
+    'Los atletas pueden escanear este QR para solicitar acceso a tu gym.',
+  );
   String get leaveGym => pick('Change / leave gym', 'Cambiar / salir del gym');
   String get leaveGymConfirm => pick(
     'You will leave your current gym. Future bookings and waitlist spots will be cancelled, your active membership will be deactivated, and you can request access to another gym afterwards.',

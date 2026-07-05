@@ -896,23 +896,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: const Color(0xFF252525),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(AppRadii.sheet),
-                border: Border.all(color: const Color(0xFF323232), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
                 children: [
                   Text(
                     appStrings.editMember.toUpperCase(),
-                    style: _DashText.section.copyWith(color: Colors.white),
+                    style: _DashText.section.copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   TextField(
                     controller: fullName,
                     textCapitalization: TextCapitalization.words,
                     style: _DashText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: _dashboardInviteInput(
@@ -926,7 +928,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     controller: phone,
                     keyboardType: TextInputType.phone,
                     style: _DashText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: _dashboardInviteInput(
@@ -940,7 +942,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     controller: birthDate,
                     readOnly: true,
                     style: _DashText.body.copyWith(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: _dashboardInviteInput(
@@ -1046,13 +1048,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<Map<String, dynamic>> _loadMemberStats(String memberId) async {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final nextMonthStart = DateTime(now.year, now.month + 1);
+
     final attended = await Supabase.instance.client
         .from('class_bookings')
         .select('id')
         .eq('user_id', memberId)
         .eq('status', 'attended');
 
-    return {'attended_count': List<Map<String, dynamic>>.from(attended).length};
+    final monthRows = await Supabase.instance.client
+        .from('class_bookings')
+        .select('status, classes!inner(starts_at)')
+        .eq('user_id', memberId)
+        .inFilter('status', ['attended', 'no_show'])
+        .gte('classes.starts_at', monthStart.toUtc().toIso8601String())
+        .lt('classes.starts_at', nextMonthStart.toUtc().toIso8601String());
+
+    final lastAttendanceRows = await Supabase.instance.client
+        .from('class_bookings')
+        .select('classes!inner(starts_at)')
+        .eq('user_id', memberId)
+        .eq('status', 'attended')
+        .order('starts_at', referencedTable: 'classes', ascending: false)
+        .limit(1);
+
+    final monthBookings = List<Map<String, dynamic>>.from(monthRows);
+    final lastAttendance = List<Map<String, dynamic>>.from(lastAttendanceRows);
+
+    return {
+      'attended_count': List<Map<String, dynamic>>.from(attended).length,
+      'attended_this_month': monthBookings
+          .where((row) => row['status']?.toString() == 'attended')
+          .length,
+      'no_show_this_month': monthBookings
+          .where((row) => row['status']?.toString() == 'no_show')
+          .length,
+      'last_attendance': lastAttendance.isEmpty
+          ? null
+          : (lastAttendance.first['classes'] as Map?)?['starts_at']?.toString(),
+    };
   }
 
   Future<List<Map<String, dynamic>>> _loadMemberHistory(String memberId) async {
@@ -1357,6 +1393,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ? snapshot.data![2] as Map<String, dynamic>
                     : <String, dynamic>{};
                 final attendedCount = stats['attended_count'] as int? ?? 0;
+                final attendedThisMonth =
+                    stats['attended_this_month'] as int? ?? 0;
+                final noShowsThisMonth =
+                    stats['no_show_this_month'] as int? ?? 0;
+                final lastAttendance = stats['last_attendance']?.toString();
 
                 return Padding(
                   padding: EdgeInsets.only(
@@ -1402,13 +1443,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: _DashText.title.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                      ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: _DashText.title.copyWith(
+                                              color: AppColors.textPrimary(
+                                                context,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: active
+                                                ? AppColors.accent.withValues(
+                                                    alpha: 0.14,
+                                                  )
+                                                : AppColors.surfaceAlt(context),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                            border: Border.all(
+                                              color: active
+                                                  ? AppColors.accent.withValues(
+                                                      alpha: 0.45,
+                                                    )
+                                                  : AppColors.border(context),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            (active
+                                                    ? appStrings.active
+                                                    : appStrings.inactive)
+                                                .toUpperCase(),
+                                            style: _DashText.subtle.copyWith(
+                                              color: active
+                                                  ? AppColors.accent
+                                                  : AppColors.textSecondary(
+                                                      context,
+                                                    ),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -1587,12 +1674,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           _MemberDetailInfoRow(
-                            label: appStrings.status,
-                            value: active
-                                ? appStrings.active
-                                : appStrings.inactive,
-                          ),
-                          _MemberDetailInfoRow(
                             label: appStrings.birthDate,
                             value: birthDate,
                           ),
@@ -1602,17 +1683,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? appStrings.notSet
                                 : phone,
                           ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            label: appStrings.editMember,
-                            onPressed: () async {
-                              await _openEditMemberSheet(member);
-                              if (!context.mounted) return;
-                              setSheetState(() {});
-                            },
+                          const SizedBox(height: 18),
+                          _MemberOverviewCard(
+                            attendedThisMonth: attendedThisMonth,
+                            noShowsThisMonth: noShowsThisMonth,
+                            lastAttendance: lastAttendance == null
+                                ? appStrings.noAttendancesYet
+                                : _formatDate(lastAttendance),
+                            totalAttended: attendedCount,
                           ),
                           const SizedBox(height: 18),
                           _MemberMilestoneCard(attendedCount: attendedCount),
+                          const SizedBox(height: 18),
+                          _MemberDetailCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  appStrings.administration.toUpperCase(),
+                                  style: _DashText.section.copyWith(
+                                    color: AppColors.textPrimary(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                AppButton(
+                                  label: appStrings.editMember,
+                                  onPressed: () async {
+                                    await _openEditMemberSheet(member);
+                                    if (!context.mounted) return;
+                                    setSheetState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 18),
                           _MemberDetailCard(
                             child: Column(
@@ -1676,13 +1780,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     );
                                   }),
+                                const SizedBox(height: 16),
+                                AppButton(
+                                  label: appStrings.assignPlan,
+                                  onPressed: () =>
+                                      _openAssignPlan(member['id']),
+                                ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          AppButton(
-                            label: appStrings.assignPlan,
-                            onPressed: () => _openAssignPlan(member['id']),
                           ),
                           const SizedBox(height: 22),
                           Text(
@@ -3542,6 +3647,108 @@ class _RecentActivityCard extends StatelessWidget {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberOverviewCard extends StatelessWidget {
+  const _MemberOverviewCard({
+    required this.attendedThisMonth,
+    required this.noShowsThisMonth,
+    required this.lastAttendance,
+    required this.totalAttended,
+  });
+
+  final int attendedThisMonth;
+  final int noShowsThisMonth;
+  final String lastAttendance;
+  final int totalAttended;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MemberDetailCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.memberOverview.toUpperCase(),
+            style: _DashText.section.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _MemberStatTile(
+                  label: appStrings.attendedThisMonth,
+                  value: '$attendedThisMonth',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _MemberStatTile(
+                  label: appStrings.noShowsThisMonth,
+                  value: '$noShowsThisMonth',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _MemberStatTile(
+                  label: appStrings.lastAttendance,
+                  value: lastAttendance,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _MemberStatTile(
+                  label: appStrings.totalAttended,
+                  value: '$totalAttended',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberStatTile extends StatelessWidget {
+  const _MemberStatTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 78),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label.toUpperCase(), style: _DashText.subtle),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _DashText.title.copyWith(
+              color: AppColors.textPrimary(context),
+            ),
+          ),
         ],
       ),
     );
