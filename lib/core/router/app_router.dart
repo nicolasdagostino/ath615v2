@@ -10,6 +10,7 @@ import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
+import '../../features/onboarding/presentation/screens/scan_gym_qr_screen.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
@@ -55,6 +56,10 @@ class AppRouter {
         GoRoute(
           path: '/join-gym',
           builder: (context, state) => const JoinGymScreen(),
+        ),
+        GoRoute(
+          path: '/scan-gym-qr',
+          builder: (context, state) => const ScanGymQrScreen(),
         ),
         GoRoute(
           path: '/account',

@@ -447,9 +447,22 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                         const SizedBox(height: 12),
                         Center(
                           child: TextButton.icon(
-                            onPressed: null,
+                            onPressed: _loading
+                                ? null
+                                : () async {
+                                    final code = await context.push<String>(
+                                      '/scan-gym-qr',
+                                    );
+
+                                    if (code == null || code.trim().isEmpty) {
+                                      return;
+                                    }
+
+                                    _code.text = code.trim().toUpperCase();
+                                    await _findGym();
+                                  },
                             icon: const Icon(Icons.qr_code_scanner_rounded),
-                            label: Text(appStrings.scanQrComingSoon),
+                            label: Text(appStrings.scanGymQr),
                           ),
                         ),
                       ],

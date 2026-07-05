@@ -31,14 +31,14 @@
 			<array>
 				<string>athletelab</string>
 			</array>
-			<key>NSCameraUsageDescription</key>
-	<string>We need camera access to scan gym QR codes.</string>
-</dict>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ATHLETE615 needs camera access to scan gym QR codes.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

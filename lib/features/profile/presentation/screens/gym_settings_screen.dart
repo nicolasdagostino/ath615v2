@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -29,6 +30,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
   final _address = TextEditingController();
 
   String? _gymId;
+  String? _gymCode;
   bool _loading = true;
   bool _saving = false;
   bool _uploadingLogo = false;
@@ -55,7 +57,9 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
     if (_gymId != null) {
       final gym = await Supabase.instance.client
           .from('gyms')
-          .select('business_name,phone,email,website,address,name,logo_url')
+          .select(
+            'business_name,phone,email,website,address,name,logo_url,gym_code',
+          )
           .eq('id', _gymId!)
           .single();
 
@@ -65,6 +69,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
       _website.text = (gym['website'] ?? '').toString();
       _address.text = (gym['address'] ?? '').toString();
       _logoUrl = gym['logo_url']?.toString();
+      _gymCode = gym['gym_code']?.toString();
     }
 
     if (!mounted) return;
@@ -259,6 +264,10 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
                         onTap: _uploadLogo,
                       ),
                     ),
+                    if (_gymCode != null && _gymCode!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      _GymQrCard(gymCode: _gymCode!),
+                    ],
                     const SizedBox(height: 18),
                     _GymInfoField(
                       label: appStrings.profileGymName,
@@ -342,6 +351,74 @@ class _GymInfoField extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.accent),
         ),
+      ),
+    );
+  }
+}
+
+class _GymQrCard extends StatelessWidget {
+  const _GymQrCard({required this.gymCode});
+
+  final String gymCode;
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = 'athlete615://join-gym?gym_code=$gymCode';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            appStrings.gymQrCode.toUpperCase(),
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary(context),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: QrImageView(
+              data: payload,
+              version: QrVersions.auto,
+              size: 180,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            gymCode,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: AppColors.accent,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            appStrings.gymQrCodeMessage,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary(context),
+              height: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }
