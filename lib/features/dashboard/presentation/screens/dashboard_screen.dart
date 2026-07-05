@@ -3303,6 +3303,7 @@ class _WeeklyBookingsCard extends StatelessWidget {
         : bookings.reduce(
             (value, element) => value > element ? value : element,
           );
+    final hasBookings = maxValue > 0;
 
     return _DashboardCard(
       child: Column(
@@ -3312,59 +3313,90 @@ class _WeeklyBookingsCard extends StatelessWidget {
             appStrings.weeklyBookings.toUpperCase(),
             style: _DashText.section,
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 92,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (index) {
-                final value = index < bookings.length ? bookings[index] : 0;
-                final height = maxValue == 0
-                    ? 10.0
-                    : 18.0 + (value / maxValue) * 64.0;
+          const SizedBox(height: 14),
+          if (!hasBookings)
+            _DashboardEmptyState(
+              icon: Icons.bar_chart_rounded,
+              message: appStrings.noBookingsYet,
+            )
+          else
+            SizedBox(
+              height: 82,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(7, (index) {
+                  final value = index < bookings.length ? bookings[index] : 0;
+                  final height = 18.0 + (value / maxValue) * 54.0;
 
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              width: double.infinity,
-                              height: height,
-                              decoration: BoxDecoration(
-                                color: value == maxValue && maxValue > 0
-                                    ? AppColors.accent
-                                    : AppColors.surfaceAlt(context),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 220),
+                                width: double.infinity,
+                                height: height,
+                                decoration: BoxDecoration(
                                   color: value == maxValue && maxValue > 0
                                       ? AppColors.accent
-                                      : AppColors.border(context),
-                                  width: 1,
+                                      : AppColors.surfaceAlt(context),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: value == maxValue && maxValue > 0
+                                        ? AppColors.accent
+                                        : AppColors.border(context),
+                                    width: 1,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$value',
-                          style: _DashText.subtle.copyWith(
-                            color: AppColors.textSecondary(context),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$value',
+                            style: _DashText.subtle.copyWith(
+                              color: AppColors.textSecondary(context),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
-          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardEmptyState extends StatelessWidget {
+  const _DashboardEmptyState({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.textSecondary(context), size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message, style: _DashText.subtle)),
         ],
       ),
     );
@@ -3650,6 +3682,14 @@ class _RecentActivityCard extends StatelessWidget {
     return '${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  String _classTimeLabel(Map<String, dynamic> row) {
+    final klass = row['classes'];
+    final startsAt = klass is Map ? klass['starts_at']?.toString() : null;
+    final label = _timeLabel(startsAt);
+    if (label.isEmpty) return '';
+    return 'Clase $label';
+  }
+
   @override
   Widget build(BuildContext context) {
     return _DashboardCard(
@@ -3662,7 +3702,10 @@ class _RecentActivityCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (activity.isEmpty)
-            Text(appStrings.noRecentActivity, style: _DashText.subtle)
+            _DashboardEmptyState(
+              icon: Icons.history_rounded,
+              message: appStrings.noRecentActivity,
+            )
           else
             ...activity.map((row) {
               return Padding(
@@ -3690,7 +3733,8 @@ class _RecentActivityCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      _timeLabel(row['created_at']?.toString()),
+                      _classTimeLabel(row),
+                      textAlign: TextAlign.right,
                       style: _DashText.subtle,
                     ),
                   ],
