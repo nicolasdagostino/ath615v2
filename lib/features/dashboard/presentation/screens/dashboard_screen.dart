@@ -3260,30 +3260,36 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(label.toUpperCase(), style: _DashText.subtle),
+                child: Text(
+                  value,
+                  style: GoogleFonts.barlowCondensed(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary(context),
+                    height: 1,
+                  ),
+                ),
               ),
               Container(
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceAlt(context),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Icon(icon, size: 18, color: AppColors.accent),
+                child: Icon(icon, size: 17, color: AppColors.accent),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           Text(
-            value,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary(context),
-              height: 1,
-            ),
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _DashText.subtle,
           ),
         ],
       ),
