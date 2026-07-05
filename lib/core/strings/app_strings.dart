@@ -484,6 +484,7 @@ class AppStrings {
   String get lastAttendance => pick('Last attendance', 'Última asistencia');
   String get noAttendancesYet => pick('No attendance yet', 'Sin asistencias');
   String get administration => pick('Administration', 'Administración');
+  String get actionRequired => pick('Action required', 'Requiere atención');
   String get profile => pick('Profile', 'Perfil');
   String get memberDetails => pick('Member details', 'Datos del miembro');
   String get totalAttended => pick('Total attended', 'Total asistencias');

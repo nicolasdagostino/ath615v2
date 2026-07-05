@@ -64,10 +64,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadDashboardData() async {
     await _loadMembers();
-    await _loadOverviewStats();
-    await _loadRecentActivity();
-    await _loadMembershipRequests();
-    await _loadGymJoinRequests();
+
+    await Future.wait([
+      _loadGymJoinRequests(),
+      _loadMembershipRequests(),
+      _loadOverviewStats(),
+      _loadRecentActivity(),
+    ]);
   }
 
   Future<void> _openCommunicationSheet() async {
@@ -1891,22 +1894,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
-                    if (_gymJoinRequests.isNotEmpty) ...[
-                      _GymJoinRequestsCard(
-                        requests: _gymJoinRequests,
-                        processingRequestId: _processingGymJoinRequestId,
-                        processingAction: _processingGymJoinRequestAction,
-                        onApprove: _approveGymJoinRequest,
-                        onReject: _rejectGymJoinRequest,
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-                    if (_membershipRequests.isNotEmpty) ...[
-                      _MembershipRequestsCard(
-                        requests: _membershipRequests,
-                        processingRequestId: _processingMembershipRequestId,
-                        onApprove: _approveMembershipRequest,
-                        onReject: _rejectMembershipRequest,
+                    if (_gymJoinRequests.isNotEmpty ||
+                        _membershipRequests.isNotEmpty) ...[
+                      _ActionRequiredCard(
+                        joinRequests: _gymJoinRequests,
+                        membershipRequests: _membershipRequests,
+                        processingJoinRequestId: _processingGymJoinRequestId,
+                        processingJoinAction: _processingGymJoinRequestAction,
+                        processingMembershipRequestId:
+                            _processingMembershipRequestId,
+                        onApproveJoin: _approveGymJoinRequest,
+                        onRejectJoin: _rejectGymJoinRequest,
+                        onApproveMembership: _approveMembershipRequest,
+                        onRejectMembership: _rejectMembershipRequest,
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -2829,314 +2829,413 @@ class _DashboardCard extends StatelessWidget {
   }
 }
 
-class _GymJoinRequestsCard extends StatelessWidget {
-  const _GymJoinRequestsCard({
-    required this.requests,
-    required this.processingRequestId,
-    required this.processingAction,
-    required this.onApprove,
-    required this.onReject,
+class _ActionRequiredCard extends StatelessWidget {
+  const _ActionRequiredCard({
+    required this.joinRequests,
+    required this.membershipRequests,
+    required this.processingJoinRequestId,
+    required this.processingJoinAction,
+    required this.processingMembershipRequestId,
+    required this.onApproveJoin,
+    required this.onRejectJoin,
+    required this.onApproveMembership,
+    required this.onRejectMembership,
   });
 
-  final List<Map<String, dynamic>> requests;
-  final String? processingRequestId;
-  final String? processingAction;
-  final Future<void> Function(Map<String, dynamic> request) onApprove;
-  final Future<void> Function(Map<String, dynamic> request) onReject;
+  final List<Map<String, dynamic>> joinRequests;
+  final List<Map<String, dynamic>> membershipRequests;
+  final String? processingJoinRequestId;
+  final String? processingJoinAction;
+  final String? processingMembershipRequestId;
+  final Future<void> Function(Map<String, dynamic> request) onApproveJoin;
+  final Future<void> Function(Map<String, dynamic> request) onRejectJoin;
+  final Future<void> Function(Map<String, dynamic> request) onApproveMembership;
+  final Future<void> Function(Map<String, dynamic> request) onRejectMembership;
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(appStrings.joinRequests.toUpperCase(), style: _DashText.section),
-          const SizedBox(height: 6),
-          Text(
-            appStrings.pendingApprovalCount(requests.length),
-            style: _DashText.subtle,
-          ),
-          const SizedBox(height: 16),
-          ...requests.map((request) {
-            final requestId = request['id']?.toString();
-            final isProcessing = processingRequestId == requestId;
-            final isRejectProcessing =
-                isProcessing && processingAction == 'reject';
-            final isApproveProcessing =
-                isProcessing && processingAction == 'approve';
-            final isAnyProcessing = processingRequestId != null;
+    final total = joinRequests.length + membershipRequests.length;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      _MemberAvatar(
-                        name:
-                            request['member_name']?.toString() ??
-                            appStrings.member,
-                        avatarUrl: request['member_avatar_url']?.toString(),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              request['member_name']?.toString() ??
-                                  appStrings.member,
-                              style: _DashText.body.copyWith(
-                                color: AppColors.textPrimary(context),
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            if ((request['member_email']?.toString() ?? '')
-                                .isNotEmpty)
-                              Text(
-                                request['member_email'].toString(),
-                                style: _DashText.subtle,
-                              ),
-                            if ((request['member_phone']?.toString() ?? '')
-                                .isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                '📱 ${request['member_phone']}',
-                                style: _DashText.subtle,
-                              ),
-                            ],
-                            if ((request['member_birth_date']?.toString() ?? '')
-                                .isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                '🎂 ${request['member_birth_date']}',
-                                style: _DashText.subtle,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isAnyProcessing
-                              ? null
-                              : () => onReject(request),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary(context),
-                            side: BorderSide(color: AppColors.border(context)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: isRejectProcessing
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.textSecondary(context),
-                                  ),
-                                )
-                              : Text(
-                                  appStrings.reject.toUpperCase(),
-                                  style: _DashText.body.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: isAnyProcessing
-                              ? null
-                              : () => onApprove(request),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: isApproveProcessing
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  appStrings.approve.toUpperCase(),
-                                  style: _DashText.body.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) {
+              return _ActionRequiredSheet(
+                joinRequests: joinRequests,
+                membershipRequests: membershipRequests,
+                onApproveJoin: onApproveJoin,
+                onRejectJoin: onRejectJoin,
+                onApproveMembership: onApproveMembership,
+                onRejectMembership: onRejectMembership,
+              );
+            },
+          );
+        },
+        child: _DashboardCard(
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.priority_high_rounded,
+                  color: AppColors.accent,
+                  size: 22,
+                ),
               ),
-            );
-          }),
-        ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appStrings.actionRequired.toUpperCase(),
+                      style: _DashText.section,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      appStrings.pendingApprovalCount(total),
+                      style: _DashText.subtle,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                constraints: const BoxConstraints(minWidth: 34),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$total',
+                  style: _DashText.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _MembershipRequestsCard extends StatelessWidget {
-  const _MembershipRequestsCard({
-    required this.requests,
-    required this.processingRequestId,
-    required this.onApprove,
-    required this.onReject,
+class _ActionRequiredSheet extends StatelessWidget {
+  const _ActionRequiredSheet({
+    required this.joinRequests,
+    required this.membershipRequests,
+    required this.onApproveJoin,
+    required this.onRejectJoin,
+    required this.onApproveMembership,
+    required this.onRejectMembership,
   });
 
-  final List<Map<String, dynamic>> requests;
-  final String? processingRequestId;
-  final Future<void> Function(Map<String, dynamic> request) onApprove;
-  final Future<void> Function(Map<String, dynamic> request) onReject;
+  final List<Map<String, dynamic>> joinRequests;
+  final List<Map<String, dynamic>> membershipRequests;
+  final Future<void> Function(Map<String, dynamic> request) onApproveJoin;
+  final Future<void> Function(Map<String, dynamic> request) onRejectJoin;
+  final Future<void> Function(Map<String, dynamic> request) onApproveMembership;
+  final Future<void> Function(Map<String, dynamic> request) onRejectMembership;
 
   String _planLabel(Map<String, dynamic> request) {
     final name = request['plan_name']?.toString() ?? appStrings.plan;
     final credits = request['credits'];
 
     if (credits == null) return '$name · ${appStrings.unlimited}';
-
     return '$name · $credits ${appStrings.creditsLower}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appStrings.membershipRequests.toUpperCase(),
-            style: _DashText.section,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            appStrings.pendingApprovalCount(requests.length),
-            style: _DashText.subtle,
-          ),
-          const SizedBox(height: 16),
-          ...requests.map((request) {
-            final requestId = request['id']?.toString();
-            final isProcessing = processingRequestId == requestId;
-            final isAnyProcessing = processingRequestId != null;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceAlt(context),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Icon(
-                          Icons.card_membership_outlined,
-                          color: AppColors.accent,
-                          size: 19,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              request['member_name']?.toString() ??
-                                  appStrings.member,
-                              style: _DashText.body.copyWith(
-                                color: AppColors.textPrimary(context),
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(_planLabel(request), style: _DashText.subtle),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isAnyProcessing
-                              ? null
-                              : () => onReject(request),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary(context),
-                            side: BorderSide(color: AppColors.border(context)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: Text(
-                            appStrings.reject.toUpperCase(),
-                            style: _DashText.body.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: isAnyProcessing
-                              ? null
-                              : () => onApprove(request),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: isProcessing
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  appStrings.approve.toUpperCase(),
-                                  style: _DashText.body.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.82,
+        ),
+        margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(AppRadii.sheet),
+          border: Border.all(color: AppColors.border(context), width: 1),
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Center(
+              child: Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.border(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-            );
-          }),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              appStrings.actionRequired.toUpperCase(),
+              style: _DashText.section.copyWith(
+                color: AppColors.textPrimary(context),
+              ),
+            ),
+            if (joinRequests.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _ActionSectionLabel(
+                label: appStrings.joinRequests,
+                count: joinRequests.length,
+              ),
+              const SizedBox(height: 10),
+              ...joinRequests.map((request) {
+                return _ActionRequestRow(
+                  name: request['member_name']?.toString() ?? appStrings.member,
+                  subtitle: (request['member_email']?.toString() ?? '').isEmpty
+                      ? appStrings.joinRequests
+                      : request['member_email'].toString(),
+                  avatarUrl: request['member_avatar_url']?.toString(),
+                  isProcessing: false,
+                  isApproveProcessing: false,
+                  isRejectProcessing: false,
+                  disabled: false,
+                  onApprove: () {
+                    Navigator.pop(context);
+                    onApproveJoin(request);
+                  },
+                  onReject: () {
+                    Navigator.pop(context);
+                    onRejectJoin(request);
+                  },
+                );
+              }),
+            ],
+            if (membershipRequests.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _ActionSectionLabel(
+                label: appStrings.membershipRequests,
+                count: membershipRequests.length,
+              ),
+              const SizedBox(height: 10),
+              ...membershipRequests.map((request) {
+                return _ActionRequestRow(
+                  name: request['member_name']?.toString() ?? appStrings.member,
+                  subtitle: _planLabel(request),
+                  icon: Icons.card_membership_outlined,
+                  isProcessing: false,
+                  isApproveProcessing: false,
+                  isRejectProcessing: false,
+                  disabled: false,
+                  onApprove: () {
+                    Navigator.pop(context);
+                    onApproveMembership(request);
+                  },
+                  onReject: () {
+                    Navigator.pop(context);
+                    onRejectMembership(request);
+                  },
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionSectionLabel extends StatelessWidget {
+  const _ActionSectionLabel({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label.toUpperCase(),
+            style: _DashText.subtle.copyWith(
+              color: AppColors.textPrimary(context),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        Text(
+          '$count',
+          style: _DashText.subtle.copyWith(
+            color: AppColors.accent,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionRequestRow extends StatelessWidget {
+  const _ActionRequestRow({
+    required this.name,
+    required this.subtitle,
+    required this.isProcessing,
+    required this.isApproveProcessing,
+    required this.isRejectProcessing,
+    required this.disabled,
+    required this.onApprove,
+    required this.onReject,
+    this.avatarUrl,
+    this.icon,
+  });
+
+  final String name;
+  final String subtitle;
+  final String? avatarUrl;
+  final IconData? icon;
+  final bool isProcessing;
+  final bool isApproveProcessing;
+  final bool isRejectProcessing;
+  final bool disabled;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (icon == null)
+                _MemberAvatar(name: name, avatarUrl: avatarUrl)
+              else
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface(context),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Icon(icon, color: AppColors.accent, size: 19),
+                ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _DashText.subtle,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: disabled ? null : onReject,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary(context),
+                    side: BorderSide(color: AppColors.border(context)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: isRejectProcessing
+                      ? SizedBox(
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textSecondary(context),
+                          ),
+                        )
+                      : Text(
+                          appStrings.reject.toUpperCase(),
+                          style: _DashText.body.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: disabled ? null : onApprove,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: isApproveProcessing
+                      ? const SizedBox(
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          appStrings.approve.toUpperCase(),
+                          style: _DashText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
