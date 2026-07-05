@@ -1152,6 +1152,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _updateMemberRole({
+    required Map<String, dynamic> member,
+    required String role,
+    required String currentSelectedRole,
+    required void Function(void Function()) setSheetState,
+  }) async {
+    if (role == currentSelectedRole) return;
+
+    try {
+      await Supabase.instance.client.rpc(
+        'update_member_role',
+        params: {'p_member_id': member['id'], 'p_role': role},
+      );
+
+      member['role'] = role;
+
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      final currentUserId = currentUser?.id;
+      final currentUserEmail = currentUser?.email?.trim().toLowerCase();
+      final memberId = member['id']?.toString();
+      final memberEmail = member['email']?.toString().trim().toLowerCase();
+
+      final changedOwnRole =
+          (currentUserId != null && memberId == currentUserId) ||
+          (currentUserEmail != null && memberEmail == currentUserEmail);
+
+      if (changedOwnRole && role != 'admin') {
+        await Supabase.instance.client.auth.signOut();
+
+        if (!mounted) return;
+        context.go('/login');
+        return;
+      }
+
+      if (!mounted) return;
+
+      setSheetState(() {});
+
+      setState(() {
+        final index = _members.indexWhere((m) => m['id'] == member['id']);
+
+        if (index != -1) {
+          _members[index] = {..._members[index], 'role': role};
+        }
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Role updated')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating role: $e')));
+    }
+  }
+
   Future<void> _openAssignPlan(String userId) async {
     final rootContext = context;
     final gymId = _gymId;
@@ -1499,189 +1557,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      email,
+                                      selectedRole == 'admin'
+                                          ? 'Admin'
+                                          : selectedRole == 'coach'
+                                          ? 'Coach'
+                                          : appStrings.member,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: _DashText.subtle,
+                                      style: _DashText.subtle.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 22),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                appStrings.role.toUpperCase(),
-                                style: _DashText.subtle,
-                              ),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<String>(
-                                initialValue: selectedRole,
-                                dropdownColor: AppColors.surface(context),
-                                iconEnabledColor: AppColors.textSecondary(
-                                  context,
-                                ),
-                                style: _DashText.body.copyWith(
-                                  color: AppColors.textPrimary(context),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: appStrings.role,
-                                  hintStyle: GoogleFonts.barlowCondensed(
-                                    color: AppColors.textSecondary(context),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.admin_panel_settings_outlined,
-                                    color: AppColors.accent,
-                                    size: 20,
-                                  ),
-                                  filled: true,
-                                  fillColor: AppColors.surfaceAlt(context),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 15,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadii.input,
-                                    ),
-                                    borderSide: BorderSide(
-                                      color: AppColors.border(context),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadii.input,
-                                    ),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.accent,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                ),
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'athlete',
-                                    child: Text(
-                                      appStrings.member,
-                                      style: _DashText.body.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'admin',
-                                    child: Text(
-                                      'Admin',
-                                      style: _DashText.body.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                onChanged: (value) async {
-                                  if (value == null || value == selectedRole) {
-                                    return;
-                                  }
-
-                                  try {
-                                    await Supabase.instance.client.rpc(
-                                      'update_member_role',
-                                      params: {
-                                        'p_member_id': member['id'],
-                                        'p_role': value,
-                                      },
-                                    );
-
-                                    member['role'] = value;
-
-                                    final currentUser = Supabase
-                                        .instance
-                                        .client
-                                        .auth
-                                        .currentUser;
-                                    final currentUserId = currentUser?.id;
-                                    final currentUserEmail = currentUser?.email
-                                        ?.trim()
-                                        .toLowerCase();
-                                    final memberId = member['id']?.toString();
-                                    final memberEmail = member['email']
-                                        ?.toString()
-                                        .trim()
-                                        .toLowerCase();
-
-                                    final changedOwnRole =
-                                        (currentUserId != null &&
-                                            memberId == currentUserId) ||
-                                        (currentUserEmail != null &&
-                                            memberEmail == currentUserEmail);
-
-                                    if (changedOwnRole && value != 'admin') {
-                                      await Supabase.instance.client.auth
-                                          .signOut();
-
-                                      if (!context.mounted) return;
-                                      context.go('/login');
-                                      return;
-                                    }
-
-                                    if (!context.mounted) return;
-
-                                    setSheetState(() {
-                                      selectedRole = value;
-                                    });
-
-                                    setState(() {
-                                      final index = _members.indexWhere(
-                                        (m) => m['id'] == member['id'],
-                                      );
-
-                                      if (index != -1) {
-                                        _members[index] = {
-                                          ..._members[index],
-                                          'role': value,
-                                        };
-                                      }
-                                    });
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Role updated'),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Error updating role: $e',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          _MemberDetailInfoRow(
-                            label: appStrings.birthDate,
-                            value: birthDate,
-                          ),
-                          _MemberDetailInfoRow(
-                            label: appStrings.phone,
-                            value: (phone == null || phone.trim().isEmpty)
-                                ? appStrings.notSet
-                                : phone,
                           ),
                           const SizedBox(height: 18),
                           _MemberOverviewCard(
@@ -1700,12 +1590,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  appStrings.administration.toUpperCase(),
+                                  appStrings.memberDetails.toUpperCase(),
                                   style: _DashText.section.copyWith(
                                     color: AppColors.textPrimary(context),
                                   ),
                                 ),
                                 const SizedBox(height: 14),
+                                _MemberDetailInfoRow(
+                                  label: 'Email',
+                                  value: email,
+                                ),
+                                _MemberDetailInfoRow(
+                                  label: appStrings.phone,
+                                  value: (phone == null || phone.trim().isEmpty)
+                                      ? appStrings.notSet
+                                      : phone,
+                                ),
+                                _MemberDetailInfoRow(
+                                  label: appStrings.birthDate,
+                                  value: birthDate,
+                                ),
+                                const SizedBox(height: 4),
+                                Divider(
+                                  color: AppColors.border(context),
+                                  height: 24,
+                                ),
+                                Text(
+                                  appStrings.role.toUpperCase(),
+                                  style: _DashText.subtle,
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _RoleFilterChip(
+                                      label: appStrings.member,
+                                      selected: selectedRole == 'athlete',
+                                      onTap: () => _updateMemberRole(
+                                        member: member,
+                                        role: 'athlete',
+                                        currentSelectedRole: selectedRole,
+                                        setSheetState: setSheetState,
+                                      ),
+                                    ),
+                                    _RoleFilterChip(
+                                      label: 'Coach',
+                                      selected: selectedRole == 'coach',
+                                      onTap: () => _updateMemberRole(
+                                        member: member,
+                                        role: 'coach',
+                                        currentSelectedRole: selectedRole,
+                                        setSheetState: setSheetState,
+                                      ),
+                                    ),
+                                    _RoleFilterChip(
+                                      label: 'Admin',
+                                      selected: selectedRole == 'admin',
+                                      onTap: () => _updateMemberRole(
+                                        member: member,
+                                        role: 'admin',
+                                        currentSelectedRole: selectedRole,
+                                        setSheetState: setSheetState,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
                                 AppButton(
                                   label: appStrings.editMember,
                                   onPressed: () async {
