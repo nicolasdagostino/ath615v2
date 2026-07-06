@@ -29,7 +29,7 @@ class DashboardScreen extends StatefulWidget {
 
 enum _DashboardTab { overview, members, plans }
 
-enum _MemberRoleFilter { all, athlete, coach, admin }
+enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
@@ -55,6 +55,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _coachesCount => _members.where((m) => m['role'] == 'coach').length;
 
   int get _adminsCount => _members.where((m) => m['role'] == 'admin').length;
+
+  List<Map<String, dynamic>> get _membersWithoutPlan => _members.where((m) {
+    final membershipName = m['membership_name']?.toString().trim() ?? '';
+    return m['role'] == 'athlete' &&
+        m['is_active'] == true &&
+        membershipName.isEmpty;
+  }).toList();
 
   @override
   void initState() {
@@ -832,6 +839,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         case _MemberRoleFilter.admin:
           return role == 'admin';
+
+        case _MemberRoleFilter.withoutPlan:
+          final membershipName = m['membership_name']?.toString().trim() ?? '';
+          return role == 'athlete' &&
+              m['is_active'] == true &&
+              membershipName.isEmpty;
 
         case _MemberRoleFilter.all:
           return true;
@@ -1895,10 +1908,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
                     if (_gymJoinRequests.isNotEmpty ||
-                        _membershipRequests.isNotEmpty) ...[
+                        _membershipRequests.isNotEmpty ||
+                        _membersWithoutPlan.isNotEmpty) ...[
                       _ActionRequiredCard(
                         joinRequests: _gymJoinRequests,
                         membershipRequests: _membershipRequests,
+                        membersWithoutPlan: _membersWithoutPlan,
                         processingJoinRequestId: _processingGymJoinRequestId,
                         processingJoinAction: _processingGymJoinRequestAction,
                         processingMembershipRequestId:
@@ -1907,6 +1922,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onRejectJoin: _rejectGymJoinRequest,
                         onApproveMembership: _approveMembershipRequest,
                         onRejectMembership: _rejectMembershipRequest,
+                        onOpenWithoutPlan: () {
+                          setState(() {
+                            _selectedTab = _DashboardTab.members;
+                            _roleFilter = _MemberRoleFilter.withoutPlan;
+                            _search.clear();
+                          });
+                        },
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -1951,13 +1973,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _WeeklyBookingsCard(bookings: _weeklyBookings),
-                    const SizedBox(height: 14),
                     _RecentActivityCard(activity: _recentActivity),
                     const SizedBox(height: 14),
                     _CommunicationCard(
                       onSendNotification: _openCommunicationSheet,
                     ),
+                    const SizedBox(height: 14),
+                    _WeeklyBookingsCard(bookings: _weeklyBookings),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -2840,6 +2862,7 @@ class _ActionRequiredCard extends StatelessWidget {
   const _ActionRequiredCard({
     required this.joinRequests,
     required this.membershipRequests,
+    required this.membersWithoutPlan,
     required this.processingJoinRequestId,
     required this.processingJoinAction,
     required this.processingMembershipRequestId,
@@ -2847,10 +2870,12 @@ class _ActionRequiredCard extends StatelessWidget {
     required this.onRejectJoin,
     required this.onApproveMembership,
     required this.onRejectMembership,
+    required this.onOpenWithoutPlan,
   });
 
   final List<Map<String, dynamic>> joinRequests;
   final List<Map<String, dynamic>> membershipRequests;
+  final List<Map<String, dynamic>> membersWithoutPlan;
   final String? processingJoinRequestId;
   final String? processingJoinAction;
   final String? processingMembershipRequestId;
@@ -2858,16 +2883,23 @@ class _ActionRequiredCard extends StatelessWidget {
   final Future<void> Function(Map<String, dynamic> request) onRejectJoin;
   final Future<void> Function(Map<String, dynamic> request) onApproveMembership;
   final Future<void> Function(Map<String, dynamic> request) onRejectMembership;
+  final VoidCallback onOpenWithoutPlan;
 
   @override
   Widget build(BuildContext context) {
-    final total = joinRequests.length + membershipRequests.length;
+    final pendingRequests = joinRequests.length + membershipRequests.length;
+    final total = pendingRequests + membersWithoutPlan.length;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {
+          if (pendingRequests == 0 && membersWithoutPlan.isNotEmpty) {
+            onOpenWithoutPlan();
+            return;
+          }
+
           showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
@@ -2876,10 +2908,12 @@ class _ActionRequiredCard extends StatelessWidget {
               return _ActionRequiredSheet(
                 joinRequests: joinRequests,
                 membershipRequests: membershipRequests,
+                membersWithoutPlan: membersWithoutPlan,
                 onApproveJoin: onApproveJoin,
                 onRejectJoin: onRejectJoin,
                 onApproveMembership: onApproveMembership,
                 onRejectMembership: onRejectMembership,
+                onOpenWithoutPlan: onOpenWithoutPlan,
               );
             },
           );
@@ -2912,7 +2946,11 @@ class _ActionRequiredCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      appStrings.pendingApprovalCount(total),
+                      pendingRequests > 0
+                          ? appStrings.pendingApprovalCount(pendingRequests)
+                          : appStrings.membersWithoutPlanCount(
+                              membersWithoutPlan.length,
+                            ),
                       style: _DashText.subtle,
                     ),
                   ],
@@ -2954,18 +2992,22 @@ class _ActionRequiredSheet extends StatelessWidget {
   const _ActionRequiredSheet({
     required this.joinRequests,
     required this.membershipRequests,
+    required this.membersWithoutPlan,
     required this.onApproveJoin,
     required this.onRejectJoin,
     required this.onApproveMembership,
     required this.onRejectMembership,
+    required this.onOpenWithoutPlan,
   });
 
   final List<Map<String, dynamic>> joinRequests;
   final List<Map<String, dynamic>> membershipRequests;
+  final List<Map<String, dynamic>> membersWithoutPlan;
   final Future<void> Function(Map<String, dynamic> request) onApproveJoin;
   final Future<void> Function(Map<String, dynamic> request) onRejectJoin;
   final Future<void> Function(Map<String, dynamic> request) onApproveMembership;
   final Future<void> Function(Map<String, dynamic> request) onRejectMembership;
+  final VoidCallback onOpenWithoutPlan;
 
   String _planLabel(Map<String, dynamic> request) {
     final name = request['plan_name']?.toString() ?? appStrings.plan;
@@ -3065,7 +3107,90 @@ class _ActionRequiredSheet extends StatelessWidget {
                 );
               }),
             ],
+            if (membersWithoutPlan.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _ActionSectionLabel(
+                label: appStrings.membersWithoutPlan,
+                count: membersWithoutPlan.length,
+              ),
+              const SizedBox(height: 10),
+              _ActionInfoRow(
+                icon: Icons.person_off_outlined,
+                title: appStrings.membersWithoutPlanCount(
+                  membersWithoutPlan.length,
+                ),
+                subtitle: appStrings.membersWithoutPlanDescription,
+                onTap: () {
+                  Navigator.pop(context);
+                  onOpenWithoutPlan();
+                },
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionInfoRow extends StatelessWidget {
+  const _ActionInfoRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceAlt(context),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.surface(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Icon(icon, color: AppColors.accent, size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: _DashText.body.copyWith(
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: _DashText.subtle),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
+            ],
+          ),
         ),
       ),
     );
