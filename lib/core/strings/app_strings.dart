@@ -445,6 +445,7 @@ class AppStrings {
       pick('Keep your members informed.', 'Mantén informados a tus miembros.');
   String get sendNotification =>
       pick('Send notification', 'Enviar notificación');
+  String get sendingNotification => pick('Sending...', 'Enviando...');
   String get comingSoon => pick('Coming soon', 'Próximamente');
   String get notificationTitleLabel => pick('Title', 'Título');
   String get notificationMessageLabel => pick('Message', 'Mensaje');

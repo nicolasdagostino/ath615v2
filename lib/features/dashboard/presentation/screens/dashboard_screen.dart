@@ -3912,7 +3912,7 @@ class _CommunicationSheetState extends State<_CommunicationSheet> {
                 width: double.infinity,
                 child: AppButton(
                   label: _sending
-                      ? appStrings.bookingLoadingClasses
+                      ? appStrings.sendingNotification
                       : appStrings.sendNotification,
                   onPressed: _sending ? null : _sendNotification,
                 ),
