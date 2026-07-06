@@ -46,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _gymId;
   int _todayBookings = 0;
   int _todayClasses = 0;
+  int _todayCapacity = 0;
   List<int> _weeklyBookings = List<int>.filled(7, 0);
   List<Map<String, dynamic>> _recentActivity = [];
 
@@ -173,12 +174,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final classes = await Supabase.instance.client
           .from('classes')
-          .select('id')
+          .select('id, capacity')
           .eq('gym_id', gymId)
           .gte('starts_at', dayStart.toUtc().toIso8601String())
           .lt('starts_at', dayEnd.toUtc().toIso8601String());
 
       final classRows = List<Map<String, dynamic>>.from(classes);
+      final capacityCount = classRows.fold<int>(
+        0,
+        (sum, klass) => sum + ((klass['capacity'] as int?) ?? 0),
+      );
       var bookingsCount = 0;
 
       for (final klass in classRows) {
@@ -227,6 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _todayClasses = classRows.length;
         _todayBookings = bookingsCount;
+        _todayCapacity = capacityCount;
         _weeklyBookings = weeklyCounts;
       });
     } catch (_) {
@@ -234,6 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _todayClasses = 0;
         _todayBookings = 0;
+        _todayCapacity = 0;
         _weeklyBookings = List<int>.filled(7, 0);
       });
     }
@@ -2002,9 +2009,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: _MetricCard(
-                            label: appStrings.bookingsToday,
-                            value: '$_todayBookings',
-                            icon: Icons.event_available_rounded,
+                            label: appStrings.occupancyToday,
+                            value: _todayCapacity == 0
+                                ? '0%'
+                                : '${((_todayBookings / _todayCapacity) * 100).round()}%',
+                            icon: Icons.pie_chart_rounded,
                           ),
                         ),
                         const SizedBox(width: 14),
