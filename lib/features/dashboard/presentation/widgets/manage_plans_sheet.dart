@@ -30,6 +30,7 @@ class _ManagePlansSheet extends StatefulWidget {
 class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   final _name = TextEditingController();
   final _credits = TextEditingController();
+  final _price = TextEditingController();
 
   bool _loading = true;
   bool _saving = false;
@@ -44,13 +45,23 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _name.dispose();
+    _credits.dispose();
+    _price.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
 
     try {
       final rows = await _client
           .from('membership_plans')
-          .select('id, name, plan_type, credits, is_active, created_at')
+          .select(
+            'id, name, plan_type, credits, price, currency, is_active, created_at',
+          )
           .eq('gym_id', widget.gymId)
           .order('created_at', ascending: false);
 
@@ -64,9 +75,12 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   Future<void> _create() async {
     final name = _name.text.trim();
     final credits = int.tryParse(_credits.text.trim());
+    final rawPrice = _price.text.trim().replaceAll(',', '.');
+    final price = rawPrice.isEmpty ? null : double.tryParse(rawPrice);
 
     if (name.isEmpty) return;
     if (_planType == 'class_pack' && (credits == null || credits <= 0)) return;
+    if (rawPrice.isNotEmpty && (price == null || price < 0)) return;
 
     setState(() => _saving = true);
 
@@ -76,11 +90,14 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
         'name': name,
         'plan_type': _planType,
         'credits': _planType == 'unlimited' ? null : credits,
+        'price': price,
+        'currency': 'EUR',
         'is_active': true,
       });
 
       _name.clear();
       _credits.clear();
+      _price.clear();
       await _load();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -199,6 +216,21 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   ),
                 ),
               ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _price,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: _PlansText.body.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: _plansInput(
+                  appStrings.planPrice,
+                  Icons.euro_rounded,
+                ),
+              ),
               const SizedBox(height: 14),
               AppButton(
                 label: appStrings.createPlan,
@@ -222,9 +254,21 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                       ? appStrings.unlimited
                       : appStrings.classPack;
                   final credits = plan['credits'];
-                  final subtitle = credits == null
-                      ? '$type · ${active ? appStrings.active : appStrings.inactive}'
-                      : '$type · $credits ${appStrings.creditsLower} · ${active ? appStrings.active : appStrings.inactive}';
+                  final price = plan['price'];
+                  final currency =
+                      plan['currency']?.toString().toUpperCase() ?? 'EUR';
+                  final priceLabel = price == null
+                      ? appStrings.priceNotSet
+                      : currency == 'EUR'
+                      ? '€$price'
+                      : '$price $currency';
+                  final details = <String>[
+                    type,
+                    if (credits != null) '$credits ${appStrings.creditsLower}',
+                    priceLabel,
+                    active ? appStrings.active : appStrings.inactive,
+                  ];
+                  final subtitle = details.join(' · ');
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
