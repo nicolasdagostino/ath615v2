@@ -380,6 +380,17 @@ class AppStrings {
   String get creditsLower => pick('credits', 'créditos');
   String get createPlan => pick('Create plan', 'Crear plan');
   String get editPlan => pick('Edit plan', 'Editar plan');
+  String get deletePlan => pick('Delete plan', 'Eliminar plan');
+  String deletePlanMessage(String name) => pick(
+    'Permanently delete "$name"? This action cannot be undone.',
+    '¿Eliminar "$name" permanentemente? Esta acción no se puede deshacer.',
+  );
+  String get planHasHistory =>
+      pick('Plan has history', 'El plan tiene historial');
+  String get planHasHistoryMessage => pick(
+    'This plan has memberships or requests linked to it, so it cannot be permanently deleted. Deactivate it instead to preserve historical data.',
+    'Este plan tiene membresías o solicitudes vinculadas, por lo que no se puede eliminar permanentemente. Desactívalo para conservar el historial.',
+  );
   String get noPlansYet => pick('No plans yet.', 'Aún no hay planes.');
 
   String get manageProgramsTitle =>

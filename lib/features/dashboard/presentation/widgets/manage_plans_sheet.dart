@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -289,6 +290,28 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                           loading: saving,
                           onPressed: saving ? null : save,
                         ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: saving
+                                ? null
+                                : () async {
+                                    Navigator.of(sheetContext).pop();
+                                    await _deletePlan(plan);
+                                  },
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            label: Text(appStrings.deletePlan),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.danger,
+                              side: const BorderSide(color: AppColors.danger),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -303,6 +326,196 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
       credits.dispose();
       price.dispose();
     }
+  }
+
+  Future<void> _deletePlan(Map<String, dynamic> plan) async {
+    final planId = plan['id'];
+    if (planId == null) return;
+
+    final memberships = await _client
+        .from('member_memberships')
+        .select('id')
+        .eq('plan_id', planId)
+        .limit(1);
+
+    final requests = await _client
+        .from('membership_requests')
+        .select('id')
+        .eq('plan_id', planId)
+        .limit(1);
+
+    final hasMembershipHistory = List<Map<String, dynamic>>.from(
+      memberships,
+    ).isNotEmpty;
+    final hasRequestHistory = List<Map<String, dynamic>>.from(
+      requests,
+    ).isNotEmpty;
+
+    if (hasMembershipHistory || hasRequestHistory) {
+      if (!mounted) return;
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Container(
+              margin: EdgeInsets.all(AppSpacing.sheetMargin),
+              padding: EdgeInsets.all(AppSpacing.cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.surface(sheetContext),
+                borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(
+                  color: AppColors.border(sheetContext),
+                  width: 1,
+                ),
+                boxShadow: AppShadows.card(sheetContext),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.history_rounded,
+                        color: AppColors.accent,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          appStrings.planHasHistory.toUpperCase(),
+                          style: _PlansText.title.copyWith(
+                            color: AppColors.textPrimary(sheetContext),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    appStrings.planHasHistoryMessage,
+                    style: _PlansText.body.copyWith(
+                      color: AppColors.textSecondary(sheetContext),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  AppButton(
+                    label: appStrings.close,
+                    onPressed: () => Navigator.pop(sheetContext),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            margin: EdgeInsets.all(AppSpacing.sheetMargin),
+            padding: EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: AppColors.surface(sheetContext),
+              borderRadius: BorderRadius.circular(AppRadii.sheet),
+              border: Border.all(
+                color: AppColors.border(sheetContext),
+                width: 1,
+              ),
+              boxShadow: AppShadows.card(sheetContext),
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.danger,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        appStrings.deletePlan.toUpperCase(),
+                        style: _PlansText.title.copyWith(
+                          color: AppColors.textPrimary(sheetContext),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  appStrings.deletePlanMessage(
+                    plan['name']?.toString() ?? appStrings.plan,
+                  ),
+                  style: _PlansText.body.copyWith(
+                    color: AppColors.textSecondary(sheetContext),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary(sheetContext),
+                          side: BorderSide(
+                            color: AppColors.border(sheetContext),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(appStrings.cancel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(appStrings.delete),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await _client
+        .from('membership_plans')
+        .delete()
+        .eq('id', planId)
+        .eq('gym_id', widget.gymId);
+
+    await _load();
   }
 
   Future<void> _toggle(Map<String, dynamic> plan) async {
