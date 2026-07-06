@@ -379,6 +379,7 @@ class AppStrings {
   String get credits => pick('Credits', 'Créditos');
   String get creditsLower => pick('credits', 'créditos');
   String get createPlan => pick('Create plan', 'Crear plan');
+  String get editPlan => pick('Edit plan', 'Editar plan');
   String get noPlansYet => pick('No plans yet.', 'Aún no hay planes.');
 
   String get manageProgramsTitle =>

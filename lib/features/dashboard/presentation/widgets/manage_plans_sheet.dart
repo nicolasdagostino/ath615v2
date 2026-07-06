@@ -105,6 +105,206 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
     }
   }
 
+  Future<void> _edit(Map<String, dynamic> plan) async {
+    final name = TextEditingController(text: plan['name']?.toString() ?? '');
+    final credits = TextEditingController(
+      text: plan['credits']?.toString() ?? '',
+    );
+
+    final rawPrice = plan['price'];
+    final numericPrice = rawPrice is num
+        ? rawPrice.toDouble()
+        : double.tryParse(rawPrice?.toString() ?? '');
+    final price = TextEditingController(
+      text: numericPrice == null
+          ? ''
+          : numericPrice.toStringAsFixed(2).replaceAll('.', ','),
+    );
+
+    var planType = plan['plan_type']?.toString() == 'unlimited'
+        ? 'unlimited'
+        : 'class_pack';
+    var saving = false;
+
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> save() async {
+                final planName = name.text.trim();
+                final parsedCredits = int.tryParse(credits.text.trim());
+                final normalizedPrice = price.text.trim().replaceAll(',', '.');
+                final parsedPrice = normalizedPrice.isEmpty
+                    ? null
+                    : double.tryParse(normalizedPrice);
+
+                if (planName.isEmpty) return;
+                if (planType == 'class_pack' &&
+                    (parsedCredits == null || parsedCredits <= 0)) {
+                  return;
+                }
+                if (normalizedPrice.isNotEmpty &&
+                    (parsedPrice == null || parsedPrice < 0)) {
+                  return;
+                }
+
+                setSheetState(() => saving = true);
+
+                try {
+                  await _client
+                      .from('membership_plans')
+                      .update({
+                        'name': planName,
+                        'plan_type': planType,
+                        'credits': planType == 'unlimited'
+                            ? null
+                            : parsedCredits,
+                        'price': parsedPrice,
+                        'currency': 'EUR',
+                      })
+                      .eq('id', plan['id'])
+                      .eq('gym_id', widget.gymId);
+
+                  await _load();
+
+                  if (sheetContext.mounted) {
+                    Navigator.of(sheetContext).pop();
+                  }
+                } finally {
+                  if (sheetContext.mounted) {
+                    setSheetState(() => saving = false);
+                  }
+                }
+              }
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: SafeArea(
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF252525),
+                      borderRadius: BorderRadius.circular(AppRadii.sheet),
+                      border: Border.all(
+                        color: const Color(0xFF323232),
+                        width: 1,
+                      ),
+                    ),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        Text(
+                          appStrings.editPlan.toUpperCase(),
+                          style: _PlansText.title,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: name,
+                          textCapitalization: TextCapitalization.words,
+                          style: _PlansText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: _plansInput(
+                            appStrings.planName,
+                            Icons.badge_outlined,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          initialValue: planType,
+                          dropdownColor: const Color(0xFF171717),
+                          iconEnabledColor: const Color(0xFFABABAB),
+                          style: _PlansText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: _plansInput(
+                            appStrings.planType,
+                            Icons.tune_rounded,
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'class_pack',
+                              child: Text(appStrings.classPack),
+                            ),
+                            DropdownMenuItem(
+                              value: 'unlimited',
+                              child: Text(appStrings.unlimited),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setSheetState(() => planType = value);
+                          },
+                        ),
+                        if (planType == 'class_pack') ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: credits,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            style: _PlansText.body.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            decoration: _plansInput(
+                              appStrings.credits,
+                              Icons.confirmation_number_outlined,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: price,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9,.]'),
+                            ),
+                          ],
+                          style: _PlansText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: _plansInput(
+                            appStrings.planPrice,
+                            Icons.euro_rounded,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        AppButton(
+                          label: appStrings.saveChanges,
+                          loading: saving,
+                          onPressed: saving ? null : save,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      name.dispose();
+      credits.dispose();
+      price.dispose();
+    }
+  }
+
   Future<void> _toggle(Map<String, dynamic> plan) async {
     final id = plan['id'];
     final nextActive = plan['is_active'] != true;
@@ -287,46 +487,51 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                     child: Material(
                       color: const Color(0xFF171717),
                       borderRadius: BorderRadius.circular(18),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      child: InkWell(
+                        onTap: () => _edit(plan),
+                        borderRadius: BorderRadius.circular(18),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      plan['name']?.toString() ??
+                                          appStrings.plan,
+                                      style: _PlansText.rowTitle,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(subtitle, style: _PlansText.subtle),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(
-                                    plan['name']?.toString() ?? appStrings.plan,
-                                    style: _PlansText.rowTitle,
+                                  if (priceLabel != null) ...[
+                                    Text(
+                                      priceLabel,
+                                      style: GoogleFonts.barlowCondensed(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFFB59B6A),
+                                        height: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 7),
+                                  ],
+                                  _PlanStatusBadge(
+                                    active: active,
+                                    onTap: () => _toggle(plan),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(subtitle, style: _PlansText.subtle),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                if (priceLabel != null) ...[
-                                  Text(
-                                    priceLabel,
-                                    style: GoogleFonts.barlowCondensed(
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFFB59B6A),
-                                      height: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 7),
-                                ],
-                                _PlanStatusBadge(
-                                  active: active,
-                                  onTap: () => _toggle(plan),
-                                ),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
