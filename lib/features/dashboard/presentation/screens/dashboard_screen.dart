@@ -3898,34 +3898,40 @@ class _RecentActivityCard extends StatelessWidget {
         : appStrings.member;
   }
 
-  String _activityText(Map<String, dynamic> row) {
-    final status = row['status']?.toString() ?? '';
+  String _classTitle(Map<String, dynamic> row) {
     final klass = row['classes'];
-    final classTitle = klass is Map
+    return klass is Map
         ? klass['title']?.toString() ?? appStrings.classFallback
         : appStrings.classFallback;
-
-    final action = status == 'attended'
-        ? appStrings.attended.toLowerCase()
-        : status == 'no_show'
-        ? appStrings.missed.toLowerCase()
-        : appStrings.booked.toLowerCase();
-
-    return '${_memberName(row)} $action $classTitle';
   }
 
-  String _timeLabel(String? raw) {
-    final date = DateTime.tryParse(raw ?? '')?.toLocal();
-    if (date == null) return '';
-    return '${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  String _actionLabel(Map<String, dynamic> row) {
+    final status = row['status']?.toString() ?? '';
+
+    if (status == 'attended') return appStrings.attended;
+    if (status == 'no_show') return appStrings.missed;
+    return appStrings.booked;
+  }
+
+  IconData _statusIcon(Map<String, dynamic> row) {
+    final status = row['status']?.toString() ?? '';
+
+    if (status == 'attended') return Icons.check_rounded;
+    if (status == 'no_show') return Icons.close_rounded;
+    return Icons.event_available_rounded;
   }
 
   String _classTimeLabel(Map<String, dynamic> row) {
     final klass = row['classes'];
     final startsAt = klass is Map ? klass['starts_at']?.toString() : null;
-    final label = _timeLabel(startsAt);
-    if (label.isEmpty) return '';
-    return 'Clase $label';
+    final date = DateTime.tryParse(startsAt ?? '')?.toLocal();
+
+    if (date == null) return '';
+
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return '${date.day}/${date.month}\n$hour:$minute';
   }
 
   @override
@@ -3945,35 +3951,61 @@ class _RecentActivityCard extends StatelessWidget {
               message: appStrings.noRecentActivity,
             )
           else
-            ...activity.map((row) {
+            ...activity.asMap().entries.map((entry) {
+              final index = entry.key;
+              final row = entry.value;
+              final isLast = index == activity.length - 1;
+
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
-                      margin: const EdgeInsets.only(top: 7),
-                      decoration: const BoxDecoration(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceAlt(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border(context)),
+                      ),
+                      child: Icon(
+                        _statusIcon(row),
+                        size: 18,
                         color: AppColors.accent,
-                        shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        _activityText(row),
-                        style: _DashText.body.copyWith(
-                          color: AppColors.textPrimary(context),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _memberName(row),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textPrimary(context),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${_actionLabel(row)} · ${_classTitle(row)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _DashText.subtle.copyWith(
+                              color: AppColors.textSecondary(context),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Text(
                       _classTimeLabel(row),
                       textAlign: TextAlign.right,
-                      style: _DashText.subtle,
+                      style: _DashText.subtle.copyWith(height: 1.25),
                     ),
                   ],
                 ),
