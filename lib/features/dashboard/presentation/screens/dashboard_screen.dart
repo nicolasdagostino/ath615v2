@@ -63,6 +63,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
         membershipName.isEmpty;
   }).toList();
 
+  List<Map<String, dynamic>> get _membershipsExpiringSoon {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final limit = today.add(const Duration(days: 8));
+
+    final members = _members.where((m) {
+      if (m['role'] != 'athlete' || m['is_active'] != true) return false;
+
+      final membershipName = m['membership_name']?.toString().trim() ?? '';
+      if (membershipName.isEmpty) return false;
+
+      final rawExpiresAt = m['membership_expires_at']?.toString();
+      if (rawExpiresAt == null || rawExpiresAt.isEmpty) return false;
+
+      final expiresAt = DateTime.tryParse(rawExpiresAt)?.toLocal();
+      if (expiresAt == null) return false;
+
+      final expiryDay = DateTime(
+        expiresAt.year,
+        expiresAt.month,
+        expiresAt.day,
+      );
+
+      return !expiryDay.isBefore(today) && expiryDay.isBefore(limit);
+    }).toList();
+
+    members.sort((a, b) {
+      final aDate = DateTime.tryParse(
+        a['membership_expires_at']?.toString() ?? '',
+      );
+      final bDate = DateTime.tryParse(
+        b['membership_expires_at']?.toString() ?? '',
+      );
+
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
+    });
+
+    return members;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1909,11 +1952,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (_selectedTab == _DashboardTab.overview) ...[
                     if (_gymJoinRequests.isNotEmpty ||
                         _membershipRequests.isNotEmpty ||
-                        _membersWithoutPlan.isNotEmpty) ...[
+                        _membersWithoutPlan.isNotEmpty ||
+                        _membershipsExpiringSoon.isNotEmpty) ...[
                       _ActionRequiredCard(
                         joinRequests: _gymJoinRequests,
                         membershipRequests: _membershipRequests,
                         membersWithoutPlan: _membersWithoutPlan,
+                        membershipsExpiringSoon: _membershipsExpiringSoon,
                         processingJoinRequestId: _processingGymJoinRequestId,
                         processingJoinAction: _processingGymJoinRequestAction,
                         processingMembershipRequestId:
@@ -2863,6 +2908,7 @@ class _ActionRequiredCard extends StatelessWidget {
     required this.joinRequests,
     required this.membershipRequests,
     required this.membersWithoutPlan,
+    required this.membershipsExpiringSoon,
     required this.processingJoinRequestId,
     required this.processingJoinAction,
     required this.processingMembershipRequestId,
@@ -2876,6 +2922,7 @@ class _ActionRequiredCard extends StatelessWidget {
   final List<Map<String, dynamic>> joinRequests;
   final List<Map<String, dynamic>> membershipRequests;
   final List<Map<String, dynamic>> membersWithoutPlan;
+  final List<Map<String, dynamic>> membershipsExpiringSoon;
   final String? processingJoinRequestId;
   final String? processingJoinAction;
   final String? processingMembershipRequestId;
@@ -2888,14 +2935,19 @@ class _ActionRequiredCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pendingRequests = joinRequests.length + membershipRequests.length;
-    final total = pendingRequests + membersWithoutPlan.length;
+    final total =
+        pendingRequests +
+        membersWithoutPlan.length +
+        membershipsExpiringSoon.length;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {
-          if (pendingRequests == 0 && membersWithoutPlan.isNotEmpty) {
+          if (pendingRequests == 0 &&
+              membersWithoutPlan.isNotEmpty &&
+              membershipsExpiringSoon.isEmpty) {
             onOpenWithoutPlan();
             return;
           }
@@ -2909,6 +2961,7 @@ class _ActionRequiredCard extends StatelessWidget {
                 joinRequests: joinRequests,
                 membershipRequests: membershipRequests,
                 membersWithoutPlan: membersWithoutPlan,
+                membershipsExpiringSoon: membershipsExpiringSoon,
                 onApproveJoin: onApproveJoin,
                 onRejectJoin: onRejectJoin,
                 onApproveMembership: onApproveMembership,
@@ -2948,6 +3001,10 @@ class _ActionRequiredCard extends StatelessWidget {
                     Text(
                       pendingRequests > 0
                           ? appStrings.pendingApprovalCount(pendingRequests)
+                          : membershipsExpiringSoon.isNotEmpty
+                          ? appStrings.membershipsExpiringSoonCount(
+                              membershipsExpiringSoon.length,
+                            )
                           : appStrings.membersWithoutPlanCount(
                               membersWithoutPlan.length,
                             ),
@@ -2993,6 +3050,7 @@ class _ActionRequiredSheet extends StatelessWidget {
     required this.joinRequests,
     required this.membershipRequests,
     required this.membersWithoutPlan,
+    required this.membershipsExpiringSoon,
     required this.onApproveJoin,
     required this.onRejectJoin,
     required this.onApproveMembership,
@@ -3003,6 +3061,7 @@ class _ActionRequiredSheet extends StatelessWidget {
   final List<Map<String, dynamic>> joinRequests;
   final List<Map<String, dynamic>> membershipRequests;
   final List<Map<String, dynamic>> membersWithoutPlan;
+  final List<Map<String, dynamic>> membershipsExpiringSoon;
   final Future<void> Function(Map<String, dynamic> request) onApproveJoin;
   final Future<void> Function(Map<String, dynamic> request) onRejectJoin;
   final Future<void> Function(Map<String, dynamic> request) onApproveMembership;
@@ -3015,6 +3074,12 @@ class _ActionRequiredSheet extends StatelessWidget {
 
     if (credits == null) return '$name · ${appStrings.unlimited}';
     return '$name · $credits ${appStrings.creditsLower}';
+  }
+
+  String _expiryDateLabel(String? raw) {
+    final date = DateTime.tryParse(raw ?? '')?.toLocal();
+    if (date == null) return '-';
+    return '${date.day}/${date.month}';
   }
 
   @override
@@ -3104,6 +3169,32 @@ class _ActionRequiredSheet extends StatelessWidget {
                     Navigator.pop(context);
                     onRejectMembership(request);
                   },
+                );
+              }),
+            ],
+            if (membershipsExpiringSoon.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _ActionSectionLabel(
+                label: appStrings.membershipsExpiringSoon,
+                count: membershipsExpiringSoon.length,
+              ),
+              const SizedBox(height: 10),
+              ...membershipsExpiringSoon.take(3).map((member) {
+                final name =
+                    member['full_name']?.toString() ??
+                    member['email']?.toString() ??
+                    appStrings.member;
+                final membershipName =
+                    member['membership_name']?.toString() ??
+                    appStrings.membershipTitle;
+                final expiresAt = member['membership_expires_at']?.toString();
+
+                return _ActionInfoRow(
+                  icon: Icons.event_busy_outlined,
+                  title: name,
+                  subtitle:
+                      '$membershipName · ${appStrings.expires} ${_expiryDateLabel(expiresAt)}',
+                  onTap: () {},
                 );
               }),
             ],

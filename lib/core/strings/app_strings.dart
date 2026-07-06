@@ -489,6 +489,26 @@ class AppStrings {
   String get noAttendancesYet => pick('No attendance yet', 'Sin asistencias');
   String get administration => pick('Administration', 'Administración');
   String get actionRequired => pick('Action required', 'Requiere atención');
+  String get membersWithoutPlan =>
+      pick('Members without plan', 'Miembros sin plan');
+  String membersWithoutPlanCount(int count) => count == 1
+      ? pick('1 member without active plan', '1 miembro sin plan activo')
+      : pick(
+          '$count members without active plan',
+          '$count miembros sin plan activo',
+        );
+  String get membersWithoutPlanDescription => pick(
+    'Review athletes who need an active membership.',
+    'Revisa atletas que necesitan una membresía activa.',
+  );
+  String get membershipsExpiringSoon =>
+      pick('Expiring memberships', 'Membresías por vencer');
+  String membershipsExpiringSoonCount(int count) => count == 1
+      ? pick('1 membership expiring soon', '1 membresía por vencer')
+      : pick(
+          '$count memberships expiring soon',
+          '$count membresías por vencer',
+        );
   String get profile => pick('Profile', 'Perfil');
   String get memberDetails => pick('Member details', 'Datos del miembro');
   String get totalAttended => pick('Total attended', 'Total asistencias');
