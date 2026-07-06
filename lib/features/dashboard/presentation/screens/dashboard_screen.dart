@@ -3534,6 +3534,14 @@ class _WeeklyBookingsCard extends StatelessWidget {
 
   final List<int> bookings;
 
+  List<String> _dayLabels() {
+    final today = DateTime.now();
+    return List.generate(7, (index) {
+      final date = today.subtract(Duration(days: 6 - index));
+      return appStrings.weekdayInitials[date.weekday - 1];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final maxValue = bookings.isEmpty
@@ -3541,15 +3549,31 @@ class _WeeklyBookingsCard extends StatelessWidget {
         : bookings.reduce(
             (value, element) => value > element ? value : element,
           );
+    final total = bookings.fold<int>(0, (sum, value) => sum + value);
     final hasBookings = maxValue > 0;
+    final labels = _dayLabels();
 
     return _DashboardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appStrings.weeklyBookings.toUpperCase(),
-            style: _DashText.section,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  appStrings.weeklyBookings.toUpperCase(),
+                  style: _DashText.section,
+                ),
+              ),
+              if (hasBookings)
+                Text(
+                  appStrings.weeklyBookingsTotal(total),
+                  style: _DashText.subtle.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 14),
           if (!hasBookings)
@@ -3559,12 +3583,13 @@ class _WeeklyBookingsCard extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 82,
+              height: 106,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: List.generate(7, (index) {
                   final value = index < bookings.length ? bookings[index] : 0;
                   final height = 18.0 + (value / maxValue) * 54.0;
+                  final highlighted = value == maxValue && maxValue > 0;
 
                   return Expanded(
                     child: Padding(
@@ -3572,6 +3597,18 @@ class _WeeklyBookingsCard extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          Text(
+                            '$value',
+                            style: _DashText.subtle.copyWith(
+                              color: highlighted
+                                  ? AppColors.accent
+                                  : AppColors.textSecondary(context),
+                              fontWeight: highlighted
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Expanded(
                             child: Align(
                               alignment: Alignment.bottomCenter,
@@ -3580,12 +3617,12 @@ class _WeeklyBookingsCard extends StatelessWidget {
                                 width: double.infinity,
                                 height: height,
                                 decoration: BoxDecoration(
-                                  color: value == maxValue && maxValue > 0
+                                  color: highlighted
                                       ? AppColors.accent
                                       : AppColors.surfaceAlt(context),
                                   borderRadius: BorderRadius.circular(999),
                                   border: Border.all(
-                                    color: value == maxValue && maxValue > 0
+                                    color: highlighted
                                         ? AppColors.accent
                                         : AppColors.border(context),
                                     width: 1,
@@ -3596,9 +3633,10 @@ class _WeeklyBookingsCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '$value',
+                            labels[index],
                             style: _DashText.subtle.copyWith(
                               color: AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],

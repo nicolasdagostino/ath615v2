@@ -438,6 +438,7 @@ class AppStrings {
   String get notSet => pick('Not set', 'Sin completar');
   String get recentClasses => pick('Recent classes', 'Clases recientes');
   String get weeklyBookings => pick('Weekly bookings', 'Reservas semanales');
+  String weeklyBookingsTotal(int count) => pick('$count total', '$count total');
   String get recentActivity => pick('Recent activity', 'Actividad reciente');
   String get communicationTitle => pick('Communication', 'Comunicación');
   String get communicationSubtitle =>
