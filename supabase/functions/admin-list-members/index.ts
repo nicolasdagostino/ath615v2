@@ -61,10 +61,22 @@ serve(async (req) => {
 
     if (membershipsError) throw membershipsError
 
+    const now = Date.now()
     const membershipByUserId = new Map()
 
     for (const membership of memberships ?? []) {
       const userId = membership.user_id
+      const expiresAt = membership.expires_at
+        ? Date.parse(membership.expires_at)
+        : null
+      const creditsRemaining = membership.credits_remaining
+
+      const isValid =
+        (expiresAt === null || expiresAt > now) &&
+        (creditsRemaining === null || creditsRemaining > 0)
+
+      if (!isValid) continue
+
       if (!membershipByUserId.has(userId)) {
         membershipByUserId.set(userId, membership)
       }

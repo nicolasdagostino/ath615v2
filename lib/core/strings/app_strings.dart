@@ -388,6 +388,10 @@ class AppStrings {
   String get noProgramsYet => pick('No programs yet.', 'Aún no hay programas.');
   String get active => pick('Active', 'Activo');
   String get inactive => pick('Inactive', 'Inactivo');
+  String get pending => pick('Pending', 'Pendiente');
+  String get disabled => pick('Disabled', 'Desactivado');
+  String get athleteRole => pick('Athlete', 'Miembro');
+  String get adminRole => pick('Admin', 'Admin');
   String get activateMember => pick('Activate member', 'Activar miembro');
   String get deactivateMember =>
       pick('Deactivate member', 'Desactivar miembro');

@@ -2224,10 +2224,17 @@ class _MemberTile extends StatelessWidget {
     final isPending = status == 'pending';
     final isDisabled = status == 'disabled';
     final statusLabel = isPending
-        ? 'Pending'
+        ? appStrings.pending
         : isDisabled
-        ? 'Disabled'
-        : 'Active';
+        ? appStrings.disabled
+        : appStrings.active;
+    final roleLabel = role == 'athlete'
+        ? appStrings.athleteRole
+        : role == 'coach'
+        ? appStrings.coach
+        : role == 'admin'
+        ? appStrings.adminRole
+        : role;
     final membershipName = member['membership_name']?.toString();
     final creditsRemaining = member['credits_remaining'];
     final membershipLabel = membershipName == null || membershipName.isEmpty
@@ -2277,7 +2284,7 @@ class _MemberTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           membershipLabel == null
-                              ? '$statusLabel · $role'
+                              ? '$statusLabel · $roleLabel'
                               : '$membershipLabel · $statusLabel',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
