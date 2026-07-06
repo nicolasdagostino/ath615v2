@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -206,6 +207,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                 TextField(
                   controller: _credits,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   style: _PlansText.body.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -222,6 +224,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                ],
                 style: _PlansText.body.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -257,16 +262,23 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   final price = plan['price'];
                   final currency =
                       plan['currency']?.toString().toUpperCase() ?? 'EUR';
-                  final priceLabel = price == null
-                      ? appStrings.priceNotSet
+                  final numericPrice = price is num
+                      ? price.toDouble()
+                      : double.tryParse(price?.toString() ?? '');
+                  final formattedAmount = numericPrice?.toStringAsFixed(2);
+                  final useEuroSuffix = Localizations.localeOf(
+                    context,
+                  ).languageCode.startsWith('es');
+                  final priceLabel = formattedAmount == null
+                      ? null
                       : currency == 'EUR'
-                      ? '€$price'
-                      : '$price $currency';
+                      ? useEuroSuffix
+                            ? '${formattedAmount.replaceAll('.', ',')} €'
+                            : '€$formattedAmount'
+                      : '$formattedAmount $currency';
                   final details = <String>[
                     type,
                     if (credits != null) '$credits ${appStrings.creditsLower}',
-                    priceLabel,
-                    active ? appStrings.active : appStrings.inactive,
                   ];
                   final subtitle = details.join(' · ');
 
@@ -292,9 +304,27 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                                 ],
                               ),
                             ),
-                            _PlanStatusBadge(
-                              active: active,
-                              onTap: () => _toggle(plan),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (priceLabel != null) ...[
+                                  Text(
+                                    priceLabel,
+                                    style: GoogleFonts.barlowCondensed(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFFB59B6A),
+                                      height: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 7),
+                                ],
+                                _PlanStatusBadge(
+                                  active: active,
+                                  onTap: () => _toggle(plan),
+                                ),
+                              ],
                             ),
                           ],
                         ),

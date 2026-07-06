@@ -582,6 +582,8 @@ class AppStrings {
   String get requestSubscription =>
       pick('Request subscription', 'Solicitar suscripción');
   String get requestDropIn => pick('Request drop-in', 'Solicitar Drop-in');
+  String get planPrice => pick('Price', 'Precio');
+  String get priceNotSet => pick('No price', 'Sin precio');
   String get priceComingSoon =>
       pick('Price coming soon', 'Precio próximamente');
 
