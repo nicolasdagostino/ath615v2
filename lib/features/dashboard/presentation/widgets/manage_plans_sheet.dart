@@ -37,6 +37,22 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   bool _loading = true;
   bool _saving = false;
   String _planType = 'class_pack';
+
+  bool get _canCreate {
+    final name = _name.text.trim();
+    final credits = int.tryParse(_credits.text.trim());
+    final rawPrice = _price.text.trim().replaceAll(',', '.');
+    final price = rawPrice.isEmpty ? null : double.tryParse(rawPrice);
+
+    if (name.isEmpty) return false;
+    if (_planType == 'class_pack' && (credits == null || credits <= 0)) {
+      return false;
+    }
+    if (rawPrice.isNotEmpty && (price == null || price < 0)) return false;
+
+    return true;
+  }
+
   List<Map<String, dynamic>> _plans = [];
 
   SupabaseClient get _client => Supabase.instance.client;
@@ -571,6 +587,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _name,
+                onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.words,
                 style: _PlansText.body.copyWith(
                   color: Colors.white,
@@ -619,6 +636,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _credits,
+                  onChanged: (_) => setState(() {}),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   style: _PlansText.body.copyWith(
@@ -634,6 +652,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _price,
+                onChanged: (_) => setState(() {}),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -653,7 +672,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
               AppButton(
                 label: appStrings.createPlan,
                 loading: _saving,
-                onPressed: _create,
+                onPressed: _canCreate ? _create : null,
               ),
               const SizedBox(height: 20),
               if (_loading)

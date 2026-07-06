@@ -632,6 +632,11 @@ class AppStrings {
   String get profileMembership => pick('Membership', 'Membresía');
   String get profileSettings => pick('Settings', 'Configuración');
   String get activePlan => pick('Active plan', 'Plan activo');
+  String get activeMemberships =>
+      pick('Active memberships', 'Membresías activas');
+  String get expiringSoon => pick('Expiring soon', 'Por vencer');
+  String get activeValue => pick('Active value', 'Valor activo');
+  String get mostUsedPlan => pick('Most used plan', 'Plan más usado');
   String get activeMembership => pick('Active membership', 'Membresía activa');
   String get membershipExpired =>
       pick('Membership expired', 'Membresía expirada');

@@ -107,6 +107,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return members;
   }
 
+  List<Map<String, dynamic>> get _activeMembershipMembers {
+    return _members.where((m) {
+      final membershipName = m['membership_name']?.toString().trim() ?? '';
+      return m['role'] == 'athlete' &&
+          m['is_active'] == true &&
+          membershipName.isNotEmpty;
+    }).toList();
+  }
+
+  String get _mostUsedPlanName {
+    final counts = <String, int>{};
+
+    for (final member in _activeMembershipMembers) {
+      final name = member['membership_name']?.toString().trim();
+      if (name == null || name.isEmpty) continue;
+      counts[name] = (counts[name] ?? 0) + 1;
+    }
+
+    if (counts.isEmpty) return '-';
+
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return entries.first.key;
+  }
+
+  String get _activeMembershipValueLabel {
+    var total = 0.0;
+    var hasValue = false;
+
+    for (final member in _activeMembershipMembers) {
+      final rawPrice = member['membership_price'];
+      final price = rawPrice is num
+          ? rawPrice.toDouble()
+          : double.tryParse(rawPrice?.toString() ?? '');
+
+      if (price == null) continue;
+
+      total += price;
+      hasValue = true;
+    }
+
+    if (!hasValue) return '-';
+
+    final amount = total.toStringAsFixed(2);
+    final useEuroSuffix = Localizations.localeOf(
+      context,
+    ).languageCode.startsWith('es');
+
+    return useEuroSuffix ? amount.replaceAll('.', ',') : amount;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2239,12 +2291,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
 
                   if (_selectedTab == _DashboardTab.plans) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.activeMemberships,
+                            value: '${_activeMembershipMembers.length}',
+                            icon: Icons.card_membership_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.membersWithoutPlan,
+                            value: '${_membersWithoutPlan.length}',
+                            icon: Icons.person_off_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.expiringSoon,
+                            value: '${_membershipsExpiringSoon.length}',
+                            icon: Icons.event_busy_outlined,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _MetricCard(
+                            label: appStrings.activeValue,
+                            value: _activeMembershipValueLabel,
+                            icon: Icons.euro_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     _DashboardCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            appStrings.managePlans.toUpperCase(),
+                            appStrings.membershipTitle.toUpperCase(),
                             style: _DashText.section,
                           ),
                           const SizedBox(height: 6),
@@ -2252,7 +2344,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             appStrings.manageMembershipsDescription,
                             style: _DashText.subtle,
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 16),
+                          _MembershipInsightRow(
+                            icon: Icons.emoji_events_outlined,
+                            label: appStrings.mostUsedPlan,
+                            value: _mostUsedPlanName,
+                          ),
+                          const SizedBox(height: 16),
                           AppButton(
                             label: appStrings.managePlans,
                             onPressed: _openPlans,
@@ -2262,6 +2360,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MembershipInsightRow extends StatelessWidget {
+  const _MembershipInsightRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.accent, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label.toUpperCase(),
+              style: _DashText.subtle.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _DashText.body.copyWith(
+                color: AppColors.textPrimary(context),
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
