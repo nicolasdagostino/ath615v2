@@ -51,7 +51,7 @@ serve(async (req) => {
       ? await adminClient
           .from('member_memberships')
           .select(
-            'user_id, credits_remaining, expires_at, membership_plans(name, plan_type, price, currency)',
+            'user_id, credits_remaining, expires_at, membership_plans(name, plan_type, price, currency, duration_days)',
           )
           .in('user_id', userIds)
           .eq('is_active', true)
@@ -110,6 +110,7 @@ serve(async (req) => {
         membership_type: membershipPlan?.plan_type ?? null,
         membership_price: membershipPlan?.price ?? null,
         membership_currency: membershipPlan?.currency ?? null,
+        membership_duration_days: membershipPlan?.duration_days ?? null,
         credits_remaining: membership?.credits_remaining ?? null,
         membership_expires_at: membership?.expires_at ?? null,
       })

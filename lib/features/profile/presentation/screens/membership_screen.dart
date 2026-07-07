@@ -37,7 +37,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
       return;
     }
 
-    final membership = await Supabase.instance.client
+    final memberships = await Supabase.instance.client
         .from('member_memberships')
         .select(
           'id, credits_remaining, expires_at, membership_plans(name, plan_type)',
@@ -45,8 +45,25 @@ class _MembershipScreenState extends State<MembershipScreen> {
         .eq('user_id', userId)
         .eq('is_active', true)
         .eq('status', 'active')
-        .order('created_at', ascending: false)
-        .maybeSingle();
+        .order('created_at', ascending: false);
+
+    final now = DateTime.now();
+    final usableMemberships = List<Map<String, dynamic>>.from(memberships)
+        .where((membership) {
+          final creditsRemaining = membership['credits_remaining'] as int?;
+          if (creditsRemaining != null && creditsRemaining <= 0) return false;
+
+          final rawExpiresAt = membership['expires_at']?.toString();
+          if (rawExpiresAt == null || rawExpiresAt.isEmpty) return true;
+
+          final expiresAt = DateTime.tryParse(rawExpiresAt)?.toLocal();
+          return expiresAt != null && expiresAt.isAfter(now);
+        })
+        .toList();
+
+    final membership = usableMemberships.isEmpty
+        ? null
+        : usableMemberships.first;
 
     final logs = await Supabase.instance.client
         .from('membership_credit_logs')
