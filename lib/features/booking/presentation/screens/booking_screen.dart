@@ -138,8 +138,12 @@ membership_plans(name)
         final now = DateTime.now();
         final activeMemberships = List<Map<String, dynamic>>.from(memberships)
             .where((membership) {
+              final credits = membership['credits_remaining'] as int?;
+              if (credits != null && credits <= 0) return false;
+
               final rawExpiresAt = membership['expires_at']?.toString();
               if (rawExpiresAt == null || rawExpiresAt.isEmpty) return true;
+
               final expiresAt = DateTime.tryParse(rawExpiresAt)?.toLocal();
               return expiresAt != null && expiresAt.isAfter(now);
             })
