@@ -137,6 +137,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
           ? ''
           : numericPrice.toStringAsFixed(2).replaceAll('.', ','),
     );
+    final durationDays = TextEditingController(
+      text: (plan['duration_days'] ?? 30).toString(),
+    );
 
     var planType = plan['plan_type']?.toString() == 'unlimited'
         ? 'unlimited'
@@ -158,8 +161,14 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                 final parsedPrice = normalizedPrice.isEmpty
                     ? null
                     : double.tryParse(normalizedPrice);
+                final parsedDurationDays = int.tryParse(
+                  durationDays.text.trim(),
+                );
 
                 if (planName.isEmpty) return;
+                if (parsedDurationDays == null || parsedDurationDays < 1) {
+                  return;
+                }
                 if (planType == 'class_pack' &&
                     (parsedCredits == null || parsedCredits <= 0)) {
                   return;
@@ -182,6 +191,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                             : parsedCredits,
                         'price': parsedPrice,
                         'currency': 'EUR',
+                        'duration_days': parsedDurationDays,
                       })
                       .eq('id', plan['id'])
                       .eq('gym_id', widget.gymId);
@@ -298,6 +308,22 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                           decoration: _plansInput(
                             appStrings.planPrice,
                             Icons.euro_rounded,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: durationDays,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          style: _PlansText.body.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: _plansInput(
+                            appStrings.planDurationDays,
+                            Icons.calendar_month_outlined,
                           ),
                         ),
                         const SizedBox(height: 14),
