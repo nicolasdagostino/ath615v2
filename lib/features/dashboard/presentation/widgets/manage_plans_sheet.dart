@@ -78,7 +78,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
       final rows = await _client
           .from('membership_plans')
           .select(
-            'id, name, plan_type, credits, price, currency, is_active, created_at',
+            'id, name, plan_type, credits, price, currency, duration_days, is_active, created_at',
           )
           .eq('gym_id', widget.gymId)
           .order('created_at', ascending: false);
@@ -337,10 +337,8 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
           );
         },
       );
-    } finally {
-      name.dispose();
-      credits.dispose();
-      price.dispose();
+    } catch (_) {
+      // Keep the sheet stable if editing is dismissed or interrupted.
     }
   }
 
@@ -711,6 +709,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   final details = <String>[
                     type,
                     if (credits != null) '$credits ${appStrings.creditsLower}',
+                    appStrings.planDays(plan['duration_days'] as int? ?? 30),
                   ];
                   final subtitle = details.join(' · ');
 
