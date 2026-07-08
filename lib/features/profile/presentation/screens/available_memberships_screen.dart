@@ -206,6 +206,8 @@ class _AvailableMembershipsScreenState
         'gym_id': profile['gym_id'],
         'plan_id': plan['id'],
         'status': 'pending',
+        'payment_method': 'cash',
+        'payment_status': 'pending',
       });
 
       if (!mounted) return;
