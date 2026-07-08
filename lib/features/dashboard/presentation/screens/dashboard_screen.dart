@@ -524,46 +524,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _approveMembershipRequest(Map<String, dynamic> request) async {
-    final userId = request['user_id']?.toString();
-    final planId = request['plan_id']?.toString();
     final requestId = request['id']?.toString();
 
-    if (userId == null || planId == null || requestId == null) return;
+    if (requestId == null) return;
 
     setState(() => _processingMembershipRequestId = requestId);
 
     try {
       await Supabase.instance.client.rpc(
-        'assign_membership_plan',
-        params: {'p_user_id': userId, 'p_plan_id': planId},
+        'approve_cash_membership_request',
+        params: {'p_request_id': requestId},
       );
-
-      await Supabase.instance.client
-          .from('membership_requests')
-          .update({'status': 'approved'})
-          .eq('id', requestId);
-
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('preferred_locale')
-          .eq('id', userId)
-          .maybeSingle();
-
-      final locale = profile?['preferred_locale']?.toString() ?? 'en';
-      final isSpanish = locale == 'es';
-
-      await Supabase.instance.client.from('notifications').insert({
-        'user_id': userId,
-        'title': isSpanish
-            ? '🎉 Membresía activada'
-            : '🎉 Membership activated',
-        'body': isSpanish
-            ? 'Tu plan ya está activo. Ya puedes reservar clases.'
-            : 'Your plan is now active. You can start booking classes.',
-        'type': 'membership_approved',
-        'data': {'planId': planId},
-        'scheduled_for': DateTime.now().toUtc().toIso8601String(),
-      });
 
       await Supabase.instance.client.functions.invoke('send-notifications');
 
