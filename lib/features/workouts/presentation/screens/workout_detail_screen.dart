@@ -194,8 +194,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
-                color: AppColors.textPrimary(context),
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(AppRadii.sheet),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
               child: ListView(
                 shrinkWrap: true,
@@ -214,7 +215,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   Text(
                     'Are you sure you want to delete this comment? This action cannot be undone.',
                     style: GoogleFonts.barlowCondensed(
-                      color: const Color(0xFF384152),
+                      color: AppColors.textSecondary(context),
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       height: 1.25,
@@ -229,8 +230,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context, false),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF384152),
-                              side: const BorderSide(color: Color(0xFF323232)),
+                              foregroundColor: AppColors.textPrimary(context),
+                              side: BorderSide(
+                                color: AppColors.border(context),
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   AppRadii.card,
@@ -270,7 +273,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               style: GoogleFonts.barlowCondensed(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary(context),
+                                color: Colors.white,
                                 letterSpacing: -0.2,
                                 height: 1,
                               ),
