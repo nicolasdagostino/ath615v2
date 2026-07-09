@@ -20,3 +20,21 @@ entrypoint = "./functions/send-notifications/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/send-notifications/*.html" ]
+
+[functions.create-membership-checkout]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-membership-checkout/deno.json"
+entrypoint = "./functions/create-membership-checkout/index.ts"
+
+[functions.create-stripe-connect-account]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-stripe-connect-account/deno.json"
+entrypoint = "./functions/create-stripe-connect-account/index.ts"
+
+[functions.refresh-stripe-connect-account]
+enabled = true
+verify_jwt = true
+import_map = "./functions/refresh-stripe-connect-account/deno.json"
+entrypoint = "./functions/refresh-stripe-connect-account/index.ts"

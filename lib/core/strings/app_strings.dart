@@ -728,6 +728,11 @@ class AppStrings {
   );
   String leaveGymError(Object e) =>
       pick('Leave gym error: $e', 'Error al salir del gym: $e');
+  String get connectStripe => pick('Connect Stripe', 'Conectar Stripe');
+  String get stripeConnected => pick('Stripe connected', 'Stripe conectado');
+  String connectStripeError(Object e) =>
+      pick('Could not connect Stripe: $e', 'No se pudo conectar Stripe: $e');
+
   String get gymInformationComingSoon => pick(
     'Business details, payments and legal settings will live here.',
     'Los datos comerciales, pagos y ajustes legales estarán aquí.',

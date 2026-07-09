@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -22,7 +23,8 @@ class GymSettingsScreen extends StatefulWidget {
   State<GymSettingsScreen> createState() => _GymSettingsScreenState();
 }
 
-class _GymSettingsScreenState extends State<GymSettingsScreen> {
+class _GymSettingsScreenState extends State<GymSettingsScreen>
+    with WidgetsBindingObserver {
   final _business = TextEditingController();
   final _phone = TextEditingController();
   final _email = TextEditingController();
@@ -34,12 +36,22 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _uploadingLogo = false;
+  bool _connectingStripe = false;
+  bool _stripeChargesEnabled = false;
   String? _logoUrl;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadGym();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshStripeStatus();
+    }
   }
 
   Future<void> _loadGym() async {
@@ -58,7 +70,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
       final gym = await Supabase.instance.client
           .from('gyms')
           .select(
-            'business_name,phone,email,website,address,name,logo_url,gym_code',
+            'business_name,phone,email,website,address,name,logo_url,gym_code,stripe_charges_enabled',
           )
           .eq('id', _gymId!)
           .single();
@@ -70,6 +82,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
       _address.text = (gym['address'] ?? '').toString();
       _logoUrl = gym['logo_url']?.toString();
       _gymCode = gym['gym_code']?.toString();
+      _stripeChargesEnabled = gym['stripe_charges_enabled'] == true;
     }
 
     if (!mounted) return;
@@ -154,6 +167,56 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
     }
   }
 
+  Future<void> _refreshStripeStatus() async {
+    if (_gymId == null) return;
+
+    try {
+      await Supabase.instance.client.functions.invoke(
+        'refresh-stripe-connect-account',
+      );
+      await _loadGym();
+    } catch (_) {
+      // Keep settings screen stable if Stripe status cannot be refreshed.
+    }
+  }
+
+  Future<void> _connectStripe() async {
+    if (_connectingStripe) return;
+
+    setState(() => _connectingStripe = true);
+
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'create-stripe-connect-account',
+      );
+
+      final data = response.data;
+      final url = data is Map ? data['url']?.toString() : null;
+
+      if (url == null || url.isEmpty) {
+        throw Exception('Missing Stripe onboarding URL');
+      }
+
+      final opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!opened) {
+        throw Exception('Could not open Stripe onboarding');
+      }
+
+      await _refreshStripeStatus();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.connectStripeError(e))));
+    } finally {
+      if (mounted) setState(() => _connectingStripe = false);
+    }
+  }
+
   Future<void> _saveGym() async {
     final gymId = _gymId;
     if (gymId == null || _saving) return;
@@ -188,6 +251,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _business.dispose();
     _phone.dispose();
     _email.dispose();
@@ -296,6 +360,14 @@ class _GymSettingsScreenState extends State<GymSettingsScreen> {
                       label: appStrings.saveChanges,
                       loading: _saving,
                       onPressed: _saveGym,
+                    ),
+                    const SizedBox(height: 12),
+                    AppButton(
+                      label: _stripeChargesEnabled
+                          ? appStrings.stripeConnected
+                          : appStrings.connectStripe,
+                      loading: _connectingStripe,
+                      onPressed: _stripeChargesEnabled ? null : _connectStripe,
                     ),
                   ],
                 ],
