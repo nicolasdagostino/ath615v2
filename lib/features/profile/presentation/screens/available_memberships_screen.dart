@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -167,6 +168,37 @@ class _AvailableMembershipsScreenState
     return result == true;
   }
 
+  Future<void> _payByCard(Map<String, dynamic> plan) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'create-membership-checkout',
+        body: {'planId': plan['id']},
+      );
+
+      final data = response.data;
+      final url = data is Map ? data['url']?.toString() : null;
+
+      if (url == null || url.isEmpty) {
+        throw Exception('Missing Stripe Checkout URL');
+      }
+
+      final opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!opened) {
+        throw Exception('Could not open Stripe Checkout');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.payByCardError(e))));
+    }
+  }
+
   Future<void> _requestPlan(Map<String, dynamic> plan) async {
     final confirmed = await _confirmRequest();
 
@@ -295,10 +327,6 @@ class _AvailableMembershipsScreenState
                             ? appStrings.classCredit(credits)
                             : appStrings.classCredits(credits);
 
-                        final action = _isSubscription
-                            ? appStrings.requestSubscription.toUpperCase()
-                            : appStrings.requestDropIn.toUpperCase();
-
                         return Container(
                           padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
                           decoration: BoxDecoration(
@@ -354,7 +382,7 @@ class _AvailableMembershipsScreenState
                                 width: double.infinity,
                                 height: 52,
                                 child: FilledButton(
-                                  onPressed: () => _requestPlan(plan),
+                                  onPressed: () => _payByCard(plan),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.accent,
                                     foregroundColor: AppColors.background(
@@ -364,7 +392,31 @@ class _AvailableMembershipsScreenState
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: Text(action),
+                                  child: Text(
+                                    appStrings.payByCard.toUpperCase(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: OutlinedButton(
+                                  onPressed: () => _requestPlan(plan),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.textPrimary(
+                                      context,
+                                    ),
+                                    side: BorderSide(
+                                      color: AppColors.border(context),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    appStrings.payAtGym.toUpperCase(),
+                                  ),
                                 ),
                               ),
                             ],

@@ -601,6 +601,11 @@ class AppStrings {
   String get priceComingSoon =>
       pick('Price coming soon', 'Precio próximamente');
 
+  String get payByCard => pick('Pay by card', 'Pagar con tarjeta');
+  String get payAtGym => pick('Pay at gym', 'Pagar en el gym');
+  String payByCardError(Object e) =>
+      pick('Card payment error: $e', 'Error al pagar con tarjeta: $e');
+
   String get requestMembershipTitle =>
       pick('Request membership?', '¿Solicitar membresía?');
   String get requestMembershipConfirm => pick(
