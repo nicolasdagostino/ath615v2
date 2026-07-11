@@ -1112,16 +1112,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<Map<String, dynamic>> _loadMemberMembershipData(
     String memberId,
   ) async {
-    final membership = await Supabase.instance.client
+    final membershipRows = await Supabase.instance.client
         .from('member_memberships')
         .select(
-          'id, credits_remaining, expires_at, membership_plans(name, plan_type)',
+          'id, credits_remaining, starts_at, expires_at, status, is_active, '
+          'created_at, membership_plans(name, plan_type)',
         )
         .eq('user_id', memberId)
         .eq('is_active', true)
-        .eq('status', 'active')
-        .order('created_at', ascending: false)
-        .maybeSingle();
+        .inFilter('status', ['active', 'scheduled'])
+        .order('created_at', ascending: false);
+
+    final memberships = List<Map<String, dynamic>>.from(membershipRows);
+
+    Map<String, dynamic>? membership;
+
+    for (final row in memberships) {
+      final plan = row['membership_plans'] as Map?;
+      final isActiveUnlimited =
+          row['status'] == 'active' && plan?['plan_type'] == 'unlimited';
+
+      if (isActiveUnlimited) {
+        membership = row;
+        break;
+      }
+    }
+
+    membership ??= memberships
+        .where((row) => row['status'] == 'active')
+        .cast<Map<String, dynamic>>()
+        .firstOrNull;
+
+    membership ??= memberships.firstOrNull;
 
     final logs = await Supabase.instance.client
         .from('membership_credit_logs')
@@ -1132,6 +1154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return {
       'membership': membership,
+      'memberships': memberships,
       'logs': List<Map<String, dynamic>>.from(logs),
     };
   }
@@ -1299,10 +1322,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _openAssignPlan(String userId) async {
+  Future<bool> _openAssignPlan(String userId) async {
     final rootContext = context;
     final gymId = _gymId;
-    if (gymId == null) return;
+    if (gymId == null) return false;
 
     final client = Supabase.instance.client;
 
@@ -1315,9 +1338,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String? selectedPlanId;
     var saving = false;
 
-    if (!mounted) return;
+    if (!mounted) return false;
 
-    await showModalBottomSheet<void>(
+    final assigned = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1454,7 +1477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                                   if (!context.mounted) return;
 
-                                  Navigator.pop(context);
+                                  Navigator.pop(context, true);
 
                                   if (!rootContext.mounted) return;
                                 } catch (e) {
@@ -1487,10 +1510,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
+
+    return assigned ?? false;
   }
 
   void _openMember(Map<String, dynamic> member) {
     String historyFilter = 'all';
+
+    Future<List<dynamic>> loadMemberData() {
+      return Future.wait([
+        _loadMemberHistory(member['id'].toString()),
+        _loadMemberMembershipData(member['id'].toString()),
+        _loadMemberStats(member['id'].toString()),
+      ]);
+    }
+
+    var memberDataFuture = loadMemberData();
 
     showModalBottomSheet(
       context: context,
@@ -1507,11 +1542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final birthDate =
                 member['birth_date']?.toString() ?? appStrings.notSet;
             return FutureBuilder<List<dynamic>>(
-              future: Future.wait([
-                _loadMemberHistory(member['id']),
-                _loadMemberMembershipData(member['id']),
-                _loadMemberStats(member['id']),
-              ]),
+              future: memberDataFuture,
               builder: (context, snapshot) {
                 final history = snapshot.hasData
                     ? List<Map<String, dynamic>>.from(snapshot.data![0] as List)
@@ -1823,8 +1854,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 const SizedBox(height: 16),
                                 AppButton(
                                   label: appStrings.assignPlan,
-                                  onPressed: () =>
-                                      _openAssignPlan(member['id']),
+                                  onPressed: () async {
+                                    final assigned = await _openAssignPlan(
+                                      member['id'].toString(),
+                                    );
+
+                                    if (!assigned || !context.mounted) return;
+
+                                    setSheetState(() {
+                                      memberDataFuture = loadMemberData();
+                                    });
+                                  },
                                 ),
                               ],
                             ),
