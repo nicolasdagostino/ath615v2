@@ -123,56 +123,30 @@ class _BookingScreenState extends State<BookingScreen> {
       DateTime? membershipExpiresAt;
 
       if (role == 'athlete') {
-        final memberships = await _client
-            .from('member_memberships')
-            .select('''
-credits_remaining,
-expires_at,
-membership_plans(name)
-''')
-            .eq('user_id', user.id)
-            .eq('is_active', true)
-            .eq('status', 'active')
-            .order('created_at', ascending: false);
+        final result = await _client.rpc('get_current_usable_membership');
 
-        final now = DateTime.now();
-        final activeMemberships = List<Map<String, dynamic>>.from(memberships)
-            .where((membership) {
-              final credits = membership['credits_remaining'] as int?;
-              if (credits != null && credits <= 0) return false;
+        final membershipRows = result is List
+            ? List<Map<String, dynamic>>.from(result)
+            : <Map<String, dynamic>>[];
 
-              final rawExpiresAt = membership['expires_at']?.toString();
-              if (rawExpiresAt == null || rawExpiresAt.isEmpty) return true;
-
-              final expiresAt = DateTime.tryParse(rawExpiresAt)?.toLocal();
-              return expiresAt != null && expiresAt.isAfter(now);
-            })
-            .toList();
-
-        final membership = activeMemberships.isEmpty
-            ? null
-            : activeMemberships.first;
+        final membership = membershipRows.isEmpty ? null : membershipRows.first;
 
         creditsRemaining = membership?['credits_remaining'] as int?;
-
-        final plan = membership?['membership_plans'];
-        if (plan is Map) {
-          membershipName = plan['name']?.toString();
-        } else if (plan is List && plan.isNotEmpty && plan.first is Map) {
-          membershipName = (plan.first as Map)['name']?.toString();
-        }
+        membershipName = membership?['plan_name']?.toString();
 
         final rawExpires = membership?['expires_at']?.toString();
         membershipExpiresAt = rawExpires == null
             ? null
             : DateTime.tryParse(rawExpires)?.toLocal();
 
-        hasActiveMembership =
-            membership != null &&
-            (creditsRemaining == null || creditsRemaining > 0);
+        hasActiveMembership = membership != null;
 
         debugPrint(
-          'BOOKING MEMBERSHIP DEBUG => name=$membershipName membership=$membership credits=$creditsRemaining has=$hasActiveMembership',
+          'BOOKING MEMBERSHIP DEBUG => '
+          'name=$membershipName '
+          'membership=$membership '
+          'credits=$creditsRemaining '
+          'has=$hasActiveMembership',
         );
       }
 
