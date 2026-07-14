@@ -16,6 +16,8 @@ Color _gymSettingsBackground(BuildContext context) {
   return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
 }
 
+bool _stripePaymentsEnabled = false;
+
 class GymSettingsScreen extends StatefulWidget {
   const GymSettingsScreen({super.key});
 
@@ -49,7 +51,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (_stripePaymentsEnabled && state == AppLifecycleState.resumed) {
       _refreshStripeStatus();
     }
   }
@@ -363,11 +365,16 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                     ),
                     const SizedBox(height: 12),
                     AppButton(
-                      label: _stripeChargesEnabled
-                          ? appStrings.stripeConnected
-                          : appStrings.connectStripe,
-                      loading: _connectingStripe,
-                      onPressed: _stripeChargesEnabled ? null : _connectStripe,
+                      label: _stripePaymentsEnabled
+                          ? _stripeChargesEnabled
+                                ? appStrings.stripeConnected
+                                : appStrings.connectStripe
+                          : appStrings.comingSoon,
+                      loading: _stripePaymentsEnabled && _connectingStripe,
+                      onPressed:
+                          _stripePaymentsEnabled && !_stripeChargesEnabled
+                          ? _connectStripe
+                          : null,
                     ),
                   ],
                 ],

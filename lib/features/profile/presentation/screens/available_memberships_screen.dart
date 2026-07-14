@@ -12,6 +12,8 @@ Color _profileHubBackground(BuildContext context) {
   return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
 }
 
+bool _stripePaymentsEnabled = false;
+
 class AvailableMembershipsScreen extends StatefulWidget {
   const AvailableMembershipsScreen({super.key, required this.type});
 
@@ -382,7 +384,9 @@ class _AvailableMembershipsScreenState
                                 width: double.infinity,
                                 height: 52,
                                 child: FilledButton(
-                                  onPressed: () => _payByCard(plan),
+                                  onPressed: _stripePaymentsEnabled
+                                      ? () => _payByCard(plan)
+                                      : null,
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.accent,
                                     foregroundColor: AppColors.background(
@@ -393,7 +397,10 @@ class _AvailableMembershipsScreenState
                                     ),
                                   ),
                                   child: Text(
-                                    appStrings.payByCard.toUpperCase(),
+                                    (_stripePaymentsEnabled
+                                            ? appStrings.payByCard
+                                            : appStrings.comingSoon)
+                                        .toUpperCase(),
                                   ),
                                 ),
                               ),
