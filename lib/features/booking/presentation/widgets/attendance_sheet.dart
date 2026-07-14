@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -182,6 +184,104 @@ Future<void> showAttendanceSheet({
               ScaffoldMessenger.of(sheetContext).showSnackBar(
                 SnackBar(content: Text(appStrings.attendanceError(e))),
               );
+            }
+          }
+
+          Future<void> addMember() async {
+            final capacity = klass['capacity'] as int? ?? 0;
+            if (bookingRows.length >= capacity) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                SnackBar(content: Text(appStrings.bookingClassFull)),
+              );
+              return;
+            }
+
+            final result = await showModalBottomSheet<Map<String, dynamic>>(
+              context: sheetContext,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (dialogContext) {
+                return _AttendanceAddMemberSheet(
+                  client: client,
+                  classId: classId,
+                );
+              },
+            );
+
+            if (result == null) return;
+
+            final booking = Map<String, dynamic>.from(result['booking'] as Map);
+            final member = Map<String, dynamic>.from(result['member'] as Map);
+            final userId = member['user_id']?.toString();
+
+            bookingRows.add(booking);
+
+            if (userId != null) {
+              profileById[userId] = {
+                'id': userId,
+                'full_name': member['full_name'],
+                'email': member['email'],
+                'avatar_url': member['avatar_url'],
+              };
+            }
+
+            setSheetState(() {});
+            await onChanged();
+          }
+
+          Future<void> openAddBooking() async {
+            final action = await showModalBottomSheet<String>(
+              context: sheetContext,
+              backgroundColor: Colors.transparent,
+              builder: (dialogContext) {
+                return SafeArea(
+                  child: Container(
+                    margin: EdgeInsets.all(AppSpacing.sheetMargin),
+                    padding: EdgeInsets.all(AppSpacing.cardPadding),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface(dialogContext),
+                      borderRadius: BorderRadius.circular(AppRadii.sheet),
+                      border: Border.all(
+                        color: AppColors.border(dialogContext),
+                        width: 1,
+                      ),
+                      boxShadow: AppShadows.card(dialogContext),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appStrings.addBooking.toUpperCase(),
+                          style: _AttendanceText.title.copyWith(
+                            color: AppColors.textPrimary(dialogContext),
+                            fontSize: 22,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _AttendanceBookingAction(
+                          icon: Icons.person_add_alt_1_rounded,
+                          title: appStrings.addMember,
+                          onTap: () =>
+                              Navigator.of(dialogContext).pop('member'),
+                        ),
+                        const SizedBox(height: 10),
+                        _AttendanceBookingAction(
+                          icon: Icons.group_add_rounded,
+                          title: appStrings.addGuest,
+                          onTap: () => Navigator.of(dialogContext).pop('guest'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+
+            if (action == 'member') {
+              await addMember();
+            } else if (action == 'guest') {
+              await addGuest();
             }
           }
 
@@ -472,7 +572,7 @@ Future<void> showAttendanceSheet({
                               '${bookingRows.length} / ${klass['capacity'] as int? ?? 0}',
                         ),
                         const SizedBox(width: 8),
-                        _AttendanceAddGuestButton(onTap: addGuest),
+                        _AttendanceAddBookingButton(onTap: openAddBooking),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -588,8 +688,359 @@ class _AttendanceText {
   );
 }
 
-class _AttendanceAddGuestButton extends StatelessWidget {
-  const _AttendanceAddGuestButton({required this.onTap});
+class _AttendanceAddMemberSheet extends StatefulWidget {
+  const _AttendanceAddMemberSheet({
+    required this.client,
+    required this.classId,
+  });
+
+  final SupabaseClient client;
+  final String classId;
+
+  @override
+  State<_AttendanceAddMemberSheet> createState() =>
+      _AttendanceAddMemberSheetState();
+}
+
+class _AttendanceAddMemberSheetState extends State<_AttendanceAddMemberSheet> {
+  final TextEditingController _searchController = TextEditingController();
+
+  Timer? _debounce;
+  List<Map<String, dynamic>> _members = [];
+  bool _loading = true;
+  String? _addingUserId;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers('');
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => _loadMembers(value),
+    );
+  }
+
+  Future<void> _loadMembers(String query) async {
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final result = await widget.client.rpc(
+        'search_members_available_for_class',
+        params: {'p_class_id': widget.classId, 'p_query': query.trim()},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _members = List<Map<String, dynamic>>.from(result as List);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _addMember(Map<String, dynamic> member) async {
+    final userId = member['user_id']?.toString();
+    if (userId == null || _addingUserId != null) return;
+
+    setState(() {
+      _addingUserId = userId;
+      _error = null;
+    });
+
+    try {
+      final result = await widget.client.rpc(
+        'admin_add_member_to_class',
+        params: {'p_class_id': widget.classId, 'p_user_id': userId},
+      );
+
+      final rows = List<Map<String, dynamic>>.from(result as List);
+      if (rows.isEmpty) {
+        throw StateError('Booking was not returned');
+      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop({'booking': rows.first, 'member': member});
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _addingUserId = null;
+        _error = e;
+      });
+    }
+  }
+
+  String _membershipLabel(Map<String, dynamic> member) {
+    final planName =
+        member['plan_name']?.toString() ?? appStrings.membershipTitle;
+    final credits = member['credits_remaining'] as int?;
+
+    if (credits == null) return planName;
+    return '$planName · ${appStrings.creditsLeft(credits)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
+          ),
+          margin: EdgeInsets.all(AppSpacing.sheetMargin),
+          padding: EdgeInsets.all(AppSpacing.cardPadding),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(AppRadii.sheet),
+            border: Border.all(color: AppColors.border(context), width: 1),
+            boxShadow: AppShadows.card(context),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appStrings.addMember.toUpperCase(),
+                style: _AttendanceText.title.copyWith(
+                  color: AppColors.textPrimary(context),
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: _onSearchChanged,
+                cursorColor: AppColors.accent,
+                style: _AttendanceText.rowTitle.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
+                decoration: InputDecoration(
+                  hintText: appStrings.searchMembers,
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  prefixIconColor: AppColors.textSecondary(context),
+                  hintStyle: _AttendanceText.subtle.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: AppColors.border(context)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    appStrings.attendanceError(_error!),
+                    style: _AttendanceText.subtle.copyWith(
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: _loading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accent,
+                        ),
+                      )
+                    : _members.isEmpty
+                    ? Center(
+                        child: Text(
+                          appStrings.noAvailableMembers,
+                          textAlign: TextAlign.center,
+                          style: _AttendanceText.subtle.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: _members.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final member = _members[index];
+                          final userId = member['user_id']?.toString();
+                          final name = member['full_name']?.toString().trim();
+                          final email = member['email']?.toString().trim();
+                          final displayName = name != null && name.isNotEmpty
+                              ? name
+                              : email != null && email.isNotEmpty
+                              ? email
+                              : appStrings.member;
+                          final avatarUrl = member['avatar_url']?.toString();
+                          final adding = _addingUserId == userId;
+
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: adding ? null : () => _addMember(member),
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceAlt(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColors.border(context),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _AttendanceAvatar(
+                                      name: displayName,
+                                      avatarUrl: avatarUrl,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: _AttendanceText.rowTitle
+                                                .copyWith(
+                                                  color: AppColors.textPrimary(
+                                                    context,
+                                                  ),
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _membershipLabel(member),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: _AttendanceText.subtle
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.textSecondary(
+                                                        context,
+                                                      ),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    if (adding)
+                                      const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.accent,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.add_circle_rounded,
+                                        color: AppColors.accent,
+                                        size: 24,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttendanceBookingAction extends StatelessWidget {
+  const _AttendanceBookingAction({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt(context),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border(context), width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.accent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: _AttendanceText.rowTitle.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttendanceAddBookingButton extends StatelessWidget {
+  const _AttendanceAddBookingButton({required this.onTap});
 
   final VoidCallback onTap;
 

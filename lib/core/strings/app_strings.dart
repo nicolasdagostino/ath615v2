@@ -778,7 +778,18 @@ class AppStrings {
 
   String get attended => pick('Attended', 'Asistió');
   String get noShow => pick('No show', 'No asistió');
+  String get addBooking => pick('Add booking', 'Agregar reserva');
+  String get addMember => pick('Add member', 'Agregar miembro');
   String get addGuest => pick('Add guest', 'Agregar invitado');
+  String get searchMembers =>
+      pick('Search by name or email', 'Buscar por nombre o email');
+  String get noAvailableMembers => pick(
+    'No available members found.',
+    'No se encontraron miembros disponibles.',
+  );
+  String creditsLeft(int count) => count == 1
+      ? pick('1 credit left', '1 crédito disponible')
+      : pick('$count credits left', '$count créditos disponibles');
   String get guestName => pick('Guest name', 'Nombre del invitado');
   String get guestNameRequired =>
       pick('Guest name is required', 'El nombre del invitado es obligatorio');
