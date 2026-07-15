@@ -1356,12 +1356,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF252525),
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(AppRadii.sheet),
                     border: Border.all(
-                      color: const Color(0xFF323232),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
+                    boxShadow: AppShadows.card(context),
                   ),
                   child: ListView(
                     shrinkWrap: true,
@@ -1378,27 +1379,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         appStrings.selectPlan.toUpperCase(),
                         style: _DashText.subtle.copyWith(
-                          color: const Color(0xFFABABAB),
+                          color: AppColors.textSecondary(context),
                           letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
                         initialValue: selectedPlanId,
-                        dropdownColor: const Color(0xFF171717),
-                        iconEnabledColor: const Color(0xFFABABAB),
+                        dropdownColor: AppColors.surface(context),
+                        iconEnabledColor: AppColors.textSecondary(context),
                         style: _DashText.body.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                         hint: Text(
                           appStrings.selectPlan,
                           style: _DashText.body.copyWith(
-                            color: const Color(0xFF8F96A3),
+                            color: AppColors.textSecondary(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         decoration: _dashInput(
+                          context,
                           appStrings.selectPlan,
                           Icons.card_membership_outlined,
                         ),
@@ -1419,7 +1421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: Text(
                                 label,
                                 style: _DashText.body.copyWith(
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary(context),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -1442,7 +1444,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Text(
                               label,
                               style: _DashText.body.copyWith(
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                           );
@@ -2766,42 +2768,42 @@ InputDecoration _dashboardInviteInput(
   );
 }
 
-InputDecoration _dashInput(String hint, IconData icon) {
+InputDecoration _dashInput(BuildContext context, String hint, IconData icon) {
   return InputDecoration(
     hintText: hint,
     hintStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFF8F96A3),
+      color: AppColors.textSecondary(context),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
     labelStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFF8F96A3),
+      color: AppColors.textSecondary(context),
       fontSize: 15,
       fontWeight: FontWeight.w500,
       letterSpacing: 0.2,
     ),
     floatingLabelStyle: GoogleFonts.barlowCondensed(
-      color: const Color(0xFFB59B6A),
+      color: AppColors.accent,
       fontSize: 14,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
     ),
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surfaceAlt(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }

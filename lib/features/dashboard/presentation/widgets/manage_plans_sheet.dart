@@ -217,29 +217,33 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                     margin: const EdgeInsets.all(16),
                     padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF252525),
+                      color: AppColors.surface(context),
                       borderRadius: BorderRadius.circular(AppRadii.sheet),
                       border: Border.all(
-                        color: const Color(0xFF323232),
+                        color: AppColors.border(context),
                         width: 1,
                       ),
+                      boxShadow: AppShadows.card(context),
                     ),
                     child: ListView(
                       shrinkWrap: true,
                       children: [
                         Text(
                           appStrings.editPlan.toUpperCase(),
-                          style: _PlansText.title,
+                          style: _PlansText.title.copyWith(
+                            color: AppColors.textPrimary(context),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: name,
                           textCapitalization: TextCapitalization.words,
                           style: _PlansText.body.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w600,
                           ),
                           decoration: _plansInput(
+                            context,
                             appStrings.planName,
                             Icons.badge_outlined,
                           ),
@@ -247,13 +251,14 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           initialValue: planType,
-                          dropdownColor: const Color(0xFF171717),
-                          iconEnabledColor: const Color(0xFFABABAB),
+                          dropdownColor: AppColors.surface(context),
+                          iconEnabledColor: AppColors.textSecondary(context),
                           style: _PlansText.body.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w700,
                           ),
                           decoration: _plansInput(
+                            context,
                             appStrings.planType,
                             Icons.tune_rounded,
                           ),
@@ -281,10 +286,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             style: _PlansText.body.copyWith(
-                              color: Colors.white,
+                              color: AppColors.textPrimary(context),
                               fontWeight: FontWeight.w600,
                             ),
                             decoration: _plansInput(
+                              context,
                               appStrings.credits,
                               Icons.confirmation_number_outlined,
                             ),
@@ -302,10 +308,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                             ),
                           ],
                           style: _PlansText.body.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w600,
                           ),
                           decoration: _plansInput(
+                            context,
                             appStrings.planPrice,
                             Icons.euro_rounded,
                           ),
@@ -318,10 +325,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           style: _PlansText.body.copyWith(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w600,
                           ),
                           decoration: _plansInput(
+                            context,
                             appStrings.planDurationDays,
                             Icons.calendar_month_outlined,
                           ),
@@ -597,16 +605,19 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
           decoration: BoxDecoration(
-            color: const Color(0xFF252525),
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(AppRadii.sheet),
-            border: Border.all(color: const Color(0xFF323232), width: 1),
+            border: Border.all(color: AppColors.border(context), width: 1),
+            boxShadow: AppShadows.card(context),
           ),
           child: ListView(
             shrinkWrap: true,
             children: [
               Text(
                 appStrings.managePlans.toUpperCase(),
-                style: _PlansText.title,
+                style: _PlansText.title.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -614,10 +625,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                 onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.words,
                 style: _PlansText.body.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w600,
                 ),
                 decoration: _plansInput(
+                  context,
                   appStrings.planName,
                   Icons.badge_outlined,
                 ),
@@ -625,13 +637,14 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _planType,
-                dropdownColor: const Color(0xFF171717),
-                iconEnabledColor: const Color(0xFFABABAB),
+                dropdownColor: AppColors.surface(context),
+                iconEnabledColor: AppColors.textSecondary(context),
                 style: _PlansText.body.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                 ),
                 decoration: _plansInput(
+                  context,
                   appStrings.planType,
                   Icons.tune_rounded,
                 ),
@@ -664,10 +677,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   style: _PlansText.body.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: _plansInput(
+                    context,
                     appStrings.credits,
                     Icons.confirmation_number_outlined,
                   ),
@@ -684,10 +698,11 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
                 ],
                 style: _PlansText.body.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w600,
                 ),
                 decoration: _plansInput(
+                  context,
                   appStrings.planPrice,
                   Icons.euro_rounded,
                 ),
@@ -707,7 +722,12 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   ),
                 )
               else if (_plans.isEmpty)
-                Text(appStrings.noPlansYet, style: _PlansText.subtle)
+                Text(
+                  appStrings.noPlansYet,
+                  style: _PlansText.subtle.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                )
               else
                 ..._plans.map((plan) {
                   final active = plan['is_active'] == true;
@@ -742,7 +762,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Material(
-                      color: const Color(0xFF171717),
+                      color: AppColors.surfaceAlt(context),
                       borderRadius: BorderRadius.circular(18),
                       child: InkWell(
                         onTap: () => _edit(plan),
@@ -758,10 +778,17 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
                                     Text(
                                       plan['name']?.toString() ??
                                           appStrings.plan,
-                                      style: _PlansText.rowTitle,
+                                      style: _PlansText.rowTitle.copyWith(
+                                        color: AppColors.textPrimary(context),
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(subtitle, style: _PlansText.subtle),
+                                    Text(
+                                      subtitle,
+                                      style: _PlansText.subtle.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -810,10 +837,10 @@ class _PlanStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? const Color(0xFFB59B6A) : const Color(0xFF8F96A3);
+    final color = active ? AppColors.accent : AppColors.textSecondary(context);
     final background = active
-        ? const Color(0xFF2A2419)
-        : const Color(0xFF252525);
+        ? AppColors.accent.withValues(alpha: 0.14)
+        : AppColors.surfaceAlt(context);
     final label = active ? appStrings.active : appStrings.inactive;
 
     return InkWell(
@@ -841,27 +868,35 @@ class _PlanStatusBadge extends StatelessWidget {
   }
 }
 
-InputDecoration _plansInput(String hint, IconData icon) {
+InputDecoration _plansInput(BuildContext context, String hint, IconData icon) {
   return InputDecoration(
     hintText: hint,
     labelText: hint,
-    hintStyle: _PlansText.subtle,
-    labelStyle: _PlansText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
+    hintStyle: _PlansText.subtle.copyWith(
+      color: AppColors.textSecondary(context),
+    ),
+    labelStyle: _PlansText.subtle.copyWith(
+      color: AppColors.textSecondary(context),
+    ),
+    floatingLabelStyle: _PlansText.subtle.copyWith(
+      color: AppColors.accent,
+      fontWeight: FontWeight.w700,
+    ),
+    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
-    fillColor: const Color(0xFF171717),
+    fillColor: AppColors.surfaceAlt(context),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFB59B6A), width: 1.2),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF323232), width: 1),
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      borderSide: BorderSide(color: AppColors.border(context), width: 1),
     ),
   );
 }
@@ -872,7 +907,6 @@ class _PlansText {
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,
     fontWeight: FontWeight.w800,
-    color: Colors.white,
     letterSpacing: -0.3,
     height: 1,
   );
@@ -880,7 +914,6 @@ class _PlansText {
   static TextStyle rowTitle = GoogleFonts.barlowCondensed(
     fontSize: 17,
     fontWeight: FontWeight.w800,
-    color: Colors.white,
     letterSpacing: -0.2,
     height: 1,
   );
