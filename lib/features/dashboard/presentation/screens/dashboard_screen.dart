@@ -1611,7 +1611,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final date = DateTime.tryParse(raw)?.toLocal();
     if (date == null) return '—';
 
-    return DateFormat('d MMM yyyy · HH:mm').format(date);
+    final locale = appStrings.isEs ? 'es' : 'en';
+    return DateFormat('d MMM yyyy · HH:mm', locale).format(date);
   }
 
   Future<void> _openMemberMembershipDetails(

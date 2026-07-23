@@ -1,27 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:intl/intl.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class BookingHeader extends StatelessWidget {
-  static List<String> get _months => [
-    '',
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    appStrings.isEs ? 'Junio' : 'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  String _monthLabel() {
+    final locale = appStrings.isEs ? 'es' : 'en';
+    return DateFormat('MMMM', locale).format(selectedDay).toUpperCase();
+  }
 
-  String _monthName(int month) => _months[month];
   const BookingHeader({
     super.key,
     required this.gymName,
@@ -84,7 +73,7 @@ class BookingHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${_monthName(selectedDay.month).toUpperCase()} ${selectedDay.year}',
+                      '${_monthLabel()} ${selectedDay.year}',
                       style: _font(
                         22,
                         weight: FontWeight.w800,

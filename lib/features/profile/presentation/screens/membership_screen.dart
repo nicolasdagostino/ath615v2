@@ -135,7 +135,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     final dt = DateTime.tryParse(value);
     if (dt == null) return '—';
 
-    return DateFormat('d MMM yyyy · HH:mm').format(dt.toLocal());
+    final locale = appStrings.isEs ? 'es' : 'en';
+    return DateFormat('d MMM yyyy · HH:mm', locale).format(dt.toLocal());
   }
 
   String _creditsLabel(Map<String, dynamic> membership) {
