@@ -7,7 +7,9 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({super.key, this.initialNotificationId});
+
+  final String? initialNotificationId;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -15,6 +17,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading = true;
+  bool _handledInitialNotification = false;
   List<Map<String, dynamic>> _notifications = [];
 
   SupabaseClient get _client => Supabase.instance.client;
@@ -48,6 +51,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
 
       await _markLoadedNotificationsAsRead();
+      _openInitialNotificationIfNeeded();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -227,6 +231,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         SnackBar(content: Text(appStrings.notificationsMarkReadError(e))),
       );
     }
+  }
+
+  void _openInitialNotificationIfNeeded() {
+    if (_handledInitialNotification) return;
+
+    final notificationId = widget.initialNotificationId?.trim();
+    if (notificationId == null || notificationId.isEmpty) return;
+
+    final index = _notifications.indexWhere(
+      (notification) => notification['id']?.toString() == notificationId,
+    );
+
+    if (index == -1) return;
+
+    _handledInitialNotification = true;
+    final notification = _notifications[index];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _openNotification(notification);
+    });
   }
 
   Future<void> _openNotification(Map<String, dynamic> notification) async {

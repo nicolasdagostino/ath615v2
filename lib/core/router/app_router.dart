@@ -11,6 +11,7 @@ import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
 import '../../features/onboarding/presentation/screens/scan_gym_qr_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
@@ -92,6 +93,15 @@ class AppRouter {
         GoRoute(
           path: '/gym-settings',
           builder: (context, state) => const GymSettingsScreen(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          builder: (context, state) {
+            return NotificationsScreen(
+              initialNotificationId:
+                  state.uri.queryParameters['notificationId'],
+            );
+          },
         ),
         GoRoute(
           path: '/workout/:id',

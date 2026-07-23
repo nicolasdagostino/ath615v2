@@ -703,6 +703,21 @@ class AppStrings {
   String get currentMembership =>
       pick('Current membership', 'Membresía actual');
 
+  String get myMemberships => pick('My memberships', 'Mis membresías');
+  String get noMembershipHistory =>
+      pick('No membership history', 'Aún no tienes membresías');
+  String get choosePlanToBookClasses => pick(
+    'Choose a plan to start booking classes.',
+    'Elige un plan para comenzar a reservar clases.',
+  );
+  String get showMore => pick('Show more', 'Ver más');
+  String get purchased => pick('Purchased', 'Comprada');
+  String get starts => pick('Starts', 'Comienza');
+  String get scheduled => pick('Scheduled', 'Programada');
+  String get exhausted => pick('Exhausted', 'Agotada');
+  String get expired => pick('Expired', 'Expirada');
+  String get replaced => pick('Replaced', 'Reemplazada');
+
   String get profileUpdated => pick('Profile updated', 'Perfil actualizado');
   String get updatePhoto => pick('Update photo', 'Actualizar foto');
   String get photoUpdated => pick('Photo updated', 'Foto actualizada');

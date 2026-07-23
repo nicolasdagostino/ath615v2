@@ -75,27 +75,30 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   late final _deepLinks = DeepLinkService(_router);
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
-  void _openWorkoutFromPush(RemoteMessage message) {
-    final workoutId =
-        message.data['workoutId'] ??
-        message.data['workout_id'] ??
-        message.data['id'];
-
-    final notificationId = message.data['notificationId'];
-
-    if (notificationId != null) {
-      Supabase.instance.client
-          .from('notifications')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', notificationId)
-          .ignore();
-    }
+  void _handlePushTap(RemoteMessage message) {
+    final workoutId = message.data['workoutId'] ?? message.data['workout_id'];
+    final notificationId =
+        message.data['notificationId'] ?? message.data['notification_id'];
 
     debugPrint('PUSH OPEN DATA => ${message.data}');
 
-    if (workoutId == null || workoutId.toString().isEmpty) return;
+    if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
+      Supabase.instance.client
+          .from('notifications')
+          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('id', notificationId.toString())
+          .ignore();
+    }
 
-    _router.push('/workout/${workoutId.toString()}');
+    if (workoutId != null && workoutId.toString().trim().isNotEmpty) {
+      _router.push('/workout/${workoutId.toString()}');
+      return;
+    }
+
+    if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
+      final encodedId = Uri.encodeQueryComponent(notificationId.toString());
+      _router.push('/notifications?notificationId=$encodedId');
+    }
   }
 
   void _showForegroundPush(RemoteMessage message) {
@@ -120,7 +123,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
         ),
         action: SnackBarAction(
           label: 'Open',
-          onPressed: () => _openWorkoutFromPush(message),
+          onPressed: () => _handlePushTap(message),
         ),
       ),
     );
@@ -140,11 +143,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
 
       FirebaseMessaging.onMessage.listen(_showForegroundPush);
 
-      FirebaseMessaging.onMessageOpenedApp.listen(_openWorkoutFromPush);
+      FirebaseMessaging.onMessageOpenedApp.listen(_handlePushTap);
 
       FirebaseMessaging.instance.getInitialMessage().then((message) {
         if (message != null) {
-          _openWorkoutFromPush(message);
+          _handlePushTap(message);
         }
       });
     });
