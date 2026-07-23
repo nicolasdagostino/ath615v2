@@ -656,6 +656,12 @@ class AppStrings {
       pick('$count credits remaining', '$count créditos restantes');
 
   String get noActivePlan => pick('No active plan', 'Sin plan activo');
+  String get noActivePlansAvailable =>
+      pick('No active plans available', 'No hay planes activos disponibles');
+  String get createPlanBeforeAssigning => pick(
+    'Create an active membership plan before assigning one to this member.',
+    'Creá un plan de membresía activo antes de asignárselo a este miembro.',
+  );
   String get noCredits => pick('No credits', 'Sin créditos');
   String get expires => pick('Expires', 'Vence');
 
@@ -711,6 +717,7 @@ class AppStrings {
     'Elige un plan para comenzar a reservar clases.',
   );
   String get showMore => pick('Show more', 'Ver más');
+  String get viewDetails => pick('View details', 'Ver detalles');
   String get purchased => pick('Purchased', 'Comprada');
   String get starts => pick('Starts', 'Comienza');
   String get scheduled => pick('Scheduled', 'Programada');

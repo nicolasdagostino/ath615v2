@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -1102,13 +1103,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _creditReasonLabel(String reason) {
-    if (reason == 'assigned') return appStrings.assigned;
-    if (reason == 'booked') return appStrings.booked;
-    if (reason == 'cancelled') return appStrings.cancelled;
-    return reason;
-  }
-
   Future<Map<String, dynamic>> _loadMemberMembershipData(
     String memberId,
   ) async {
@@ -1116,7 +1110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .from('member_memberships')
         .select(
           'id, credits_remaining, starts_at, expires_at, status, is_active, '
-          'created_at, membership_plans(name, plan_type)',
+          'created_at, membership_plans(name, plan_type, credits)',
         )
         .eq('user_id', memberId)
         .eq('is_active', true)
@@ -1145,18 +1139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     membership ??= memberships.firstOrNull;
 
-    final logs = await Supabase.instance.client
-        .from('membership_credit_logs')
-        .select('amount, reason, created_at')
-        .eq('user_id', memberId)
-        .order('created_at', ascending: false)
-        .limit(12);
-
-    return {
-      'membership': membership,
-      'memberships': memberships,
-      'logs': List<Map<String, dynamic>>.from(logs),
-    };
+    return {'membership': membership, 'memberships': memberships};
   }
 
   Future<Map<String, dynamic>> _loadMemberStats(String memberId) async {
@@ -1344,25 +1327,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setSheetState) {
+          builder: (modalContext, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom,
               ),
               child: SafeArea(
                 child: Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                   decoration: BoxDecoration(
-                    color: AppColors.surface(context),
+                    color: AppColors.surface(modalContext),
                     borderRadius: BorderRadius.circular(AppRadii.sheet),
                     border: Border.all(
-                      color: AppColors.border(context),
+                      color: AppColors.border(modalContext),
                       width: 1,
                     ),
-                    boxShadow: AppShadows.card(context),
+                    boxShadow: AppShadows.card(modalContext),
                   ),
                   child: ListView(
                     shrinkWrap: true,
@@ -1370,7 +1353,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         appStrings.assignPlan.toUpperCase(),
                         style: _DashText.title.copyWith(
-                          color: AppColors.textPrimary(context),
+                          color: AppColors.textPrimary(modalContext),
                           fontSize: 16,
                           letterSpacing: -0.3,
                         ),
@@ -1379,33 +1362,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         appStrings.selectPlan.toUpperCase(),
                         style: _DashText.subtle.copyWith(
-                          color: AppColors.textSecondary(context),
+                          color: AppColors.textSecondary(modalContext),
                           letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedPlanId,
-                        dropdownColor: AppColors.surface(context),
-                        iconEnabledColor: AppColors.textSecondary(context),
-                        style: _DashText.body.copyWith(
-                          color: AppColors.textPrimary(context),
-                          fontWeight: FontWeight.w700,
-                        ),
-                        hint: Text(
-                          appStrings.selectPlan,
-                          style: _DashText.body.copyWith(
-                            color: AppColors.textSecondary(context),
-                            fontWeight: FontWeight.w600,
+                      if (plans.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceAlt(modalContext),
+                            borderRadius: BorderRadius.circular(AppRadii.input),
+                            border: Border.all(
+                              color: AppColors.border(modalContext),
+                            ),
                           ),
-                        ),
-                        decoration: _dashInput(
-                          context,
-                          appStrings.selectPlan,
-                          Icons.card_membership_outlined,
-                        ),
-                        selectedItemBuilder: (context) {
-                          return List<Map<String, dynamic>>.from(plans).map((
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.info_outline_rounded,
+                                color: AppColors.accent,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      appStrings.noActivePlansAvailable,
+                                      style: _DashText.body.copyWith(
+                                        color: AppColors.textPrimary(
+                                          modalContext,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      appStrings.createPlanBeforeAssigning,
+                                      style: _DashText.subtle.copyWith(
+                                        color: AppColors.textSecondary(
+                                          modalContext,
+                                        ),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          initialValue: selectedPlanId,
+                          dropdownColor: AppColors.surface(modalContext),
+                          iconEnabledColor: AppColors.textSecondary(
+                            modalContext,
+                          ),
+                          style: _DashText.body.copyWith(
+                            color: AppColors.textPrimary(modalContext),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          hint: Text(
+                            appStrings.selectPlan,
+                            style: _DashText.body.copyWith(
+                              color: AppColors.textSecondary(modalContext),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          decoration: _dashInput(
+                            modalContext,
+                            appStrings.selectPlan,
+                            Icons.card_membership_outlined,
+                          ),
+                          selectedItemBuilder: (context) {
+                            return List<Map<String, dynamic>>.from(plans).map((
+                              plan,
+                            ) {
+                              final name =
+                                  plan['name']?.toString() ?? appStrings.plan;
+                              final credits = plan['credits'];
+
+                              final label = credits == null
+                                  ? '$name · ${appStrings.unlimited}'
+                                  : '$name · $credits ${appStrings.creditsLower}';
+
+                              return Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  label,
+                                  style: _DashText.body.copyWith(
+                                    color: AppColors.textPrimary(modalContext),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              );
+                            }).toList();
+                          },
+                          items: List<Map<String, dynamic>>.from(plans).map((
                             plan,
                           ) {
                             final name =
@@ -1416,47 +1473,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? '$name · ${appStrings.unlimited}'
                                 : '$name · $credits ${appStrings.creditsLower}';
 
-                            return Align(
-                              alignment: Alignment.centerLeft,
+                            return DropdownMenuItem<String>(
+                              value: plan['id'].toString(),
                               child: Text(
                                 label,
                                 style: _DashText.body.copyWith(
-                                  color: AppColors.textPrimary(context),
-                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary(modalContext),
                                 ),
                               ),
                             );
-                          }).toList();
-                        },
-                        items: List<Map<String, dynamic>>.from(plans).map((
-                          plan,
-                        ) {
-                          final name =
-                              plan['name']?.toString() ?? appStrings.plan;
-                          final credits = plan['credits'];
-
-                          final label = credits == null
-                              ? '$name · ${appStrings.unlimited}'
-                              : '$name · $credits ${appStrings.creditsLower}';
-
-                          return DropdownMenuItem<String>(
-                            value: plan['id'].toString(),
-                            child: Text(
-                              label,
-                              style: _DashText.body.copyWith(
-                                color: AppColors.textPrimary(context),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: saving
-                            ? null
-                            : (value) {
-                                setSheetState(() {
-                                  selectedPlanId = value;
-                                });
-                              },
-                      ),
+                          }).toList(),
+                          onChanged: saving
+                              ? null
+                              : (value) {
+                                  setSheetState(() {
+                                    selectedPlanId = value;
+                                  });
+                                },
+                        ),
                       const SizedBox(height: 18),
                       AppButton(
                         label: appStrings.assign,
@@ -1477,13 +1511,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     },
                                   );
 
-                                  if (!context.mounted) return;
+                                  if (!modalContext.mounted) return;
 
-                                  Navigator.pop(context, true);
+                                  Navigator.pop(modalContext, true);
 
                                   if (!rootContext.mounted) return;
                                 } catch (e) {
-                                  if (!context.mounted) return;
+                                  if (!modalContext.mounted) return;
 
                                   ScaffoldMessenger.of(
                                     rootContext,
@@ -1495,7 +1529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   );
                                 } finally {
-                                  if (context.mounted) {
+                                  if (modalContext.mounted) {
                                     setSheetState(() {
                                       saving = false;
                                     });
@@ -1514,6 +1548,316 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return assigned ?? false;
+  }
+
+  String _memberMembershipStatusLabel(String? status) {
+    switch (status) {
+      case 'active':
+        return appStrings.active;
+      case 'scheduled':
+        return appStrings.scheduled;
+      case 'exhausted':
+        return appStrings.exhausted;
+      case 'expired':
+        return appStrings.expired;
+      case 'cancelled':
+        return appStrings.cancelled;
+      case 'replaced':
+        return appStrings.replaced;
+      default:
+        return status ?? '-';
+    }
+  }
+
+  IconData _memberMembershipStatusIcon(String? status) {
+    switch (status) {
+      case 'active':
+        return Icons.check_circle_rounded;
+      case 'scheduled':
+        return Icons.schedule_rounded;
+      case 'exhausted':
+        return Icons.inventory_2_rounded;
+      case 'expired':
+        return Icons.event_busy_rounded;
+      case 'cancelled':
+        return Icons.cancel_rounded;
+      case 'replaced':
+        return Icons.swap_horiz_rounded;
+      default:
+        return Icons.card_membership_rounded;
+    }
+  }
+
+  Color _memberMembershipStatusColor(BuildContext context, String? status) {
+    switch (status) {
+      case 'active':
+        return const Color(0xFF2EAD68);
+      case 'scheduled':
+        return const Color(0xFF3A7BD5);
+      case 'exhausted':
+        return const Color(0xFFE09B2D);
+      case 'expired':
+      case 'cancelled':
+      case 'replaced':
+        return AppColors.textSecondary(context);
+      default:
+        return AppColors.accent;
+    }
+  }
+
+  String _formatMembershipClassDateTime(String? raw) {
+    if (raw == null || raw.isEmpty) return '—';
+
+    final date = DateTime.tryParse(raw)?.toLocal();
+    if (date == null) return '—';
+
+    return DateFormat('d MMM yyyy · HH:mm').format(date);
+  }
+
+  Future<void> _openMemberMembershipDetails(
+    Map<String, dynamic> membership,
+  ) async {
+    final planData = membership['membership_plans'];
+    final plan = planData is Map
+        ? Map<String, dynamic>.from(planData)
+        : <String, dynamic>{};
+
+    final status = membership['status']?.toString();
+    final planName = plan['name']?.toString() ?? appStrings.plan;
+    final remainingCredits = membership['credits_remaining'];
+    final totalCredits = plan['credits'];
+
+    final creditsLabel = remainingCredits == null
+        ? appStrings.unlimited
+        : totalCredits == null
+        ? remainingCredits.toString()
+        : '$remainingCredits / $totalCredits';
+
+    List<Map<String, dynamic>> attendedClasses = [];
+    Object? loadError;
+
+    try {
+      final rows = await Supabase.instance.client
+          .from('class_bookings')
+          .select('id, status, classes(title, starts_at)')
+          .eq('membership_id', membership['id'])
+          .eq('status', 'attended')
+          .order('created_at', ascending: false);
+
+      attendedClasses = List<Map<String, dynamic>>.from(rows);
+    } catch (error) {
+      loadError = error;
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final statusColor = _memberMembershipStatusColor(sheetContext, status);
+
+        return SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.86,
+            ),
+            margin: const EdgeInsets.fromLTRB(12, 72, 12, 12),
+            padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt(sheetContext),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.border(sheetContext),
+                width: 1,
+              ),
+              boxShadow: AppShadows.card(sheetContext),
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border(sheetContext),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(
+                        _memberMembershipStatusIcon(status),
+                        color: statusColor,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            planName,
+                            style: _DashText.title.copyWith(
+                              color: AppColors.textPrimary(sheetContext),
+                              fontSize: 26,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            _memberMembershipStatusLabel(status).toUpperCase(),
+                            style: _DashText.section.copyWith(
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                _MemberDetailCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MemberDetailInfoRow(
+                        label: appStrings.purchased,
+                        value: _formatDate(
+                          membership['created_at']?.toString(),
+                        ),
+                      ),
+                      _MemberDetailInfoRow(
+                        label: appStrings.starts,
+                        value: _formatDate(membership['starts_at']?.toString()),
+                      ),
+                      _MemberDetailInfoRow(
+                        label: appStrings.expires,
+                        value: _formatDate(
+                          membership['expires_at']?.toString(),
+                        ),
+                      ),
+                      _MemberDetailInfoRow(
+                        label: appStrings.credits,
+                        value: creditsLabel,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  appStrings.classesAttended.toUpperCase(),
+                  style: _DashText.section.copyWith(
+                    color: AppColors.textPrimary(sheetContext),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (loadError != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface(sheetContext),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border(sheetContext)),
+                    ),
+                    child: Text(appStrings.noClasses, style: _DashText.subtle),
+                  )
+                else if (attendedClasses.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface(sheetContext),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border(sheetContext)),
+                    ),
+                    child: Text(appStrings.noClasses, style: _DashText.subtle),
+                  )
+                else
+                  ...attendedClasses.map((booking) {
+                    final classData = booking['classes'];
+                    final classRow = classData is Map
+                        ? Map<String, dynamic>.from(classData)
+                        : <String, dynamic>{};
+
+                    final title =
+                        classRow['title']?.toString() ??
+                        appStrings.classFallback;
+
+                    final startsAt = classRow['starts_at']?.toString();
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(sheetContext),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.border(sheetContext),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.calendar_today_rounded,
+                              color: statusColor,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: _DashText.body.copyWith(
+                                    color: AppColors.textPrimary(sheetContext),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatMembershipClassDateTime(startsAt),
+                                  style: _DashText.subtle,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: statusColor,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _openMember(Map<String, dynamic> member) {
@@ -1565,9 +1909,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final membership =
                     membershipData['membership'] as Map<String, dynamic>?;
 
-                final creditLogs = List<Map<String, dynamic>>.from(
-                  membershipData['logs'] ?? [],
-                );
+                final membershipPlan = membership?['membership_plans'] as Map?;
+                final membershipPlanName =
+                    membershipPlan?['name']?.toString() ?? appStrings.plan;
+                final membershipStatus =
+                    membership?['status']?.toString() ?? '';
+                final membershipRemaining = membership?['credits_remaining'];
+                final membershipTotalCredits = membershipPlan?['credits'];
+
+                final membershipCreditsLabel = membershipRemaining == null
+                    ? appStrings.unlimited
+                    : membershipTotalCredits == null
+                    ? membershipRemaining.toString()
+                    : '$membershipRemaining / $membershipTotalCredits';
 
                 final stats = snapshot.hasData
                     ? snapshot.data![2] as Map<String, dynamic>
@@ -1801,59 +2155,195 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: AppColors.textPrimary(context),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                if (membership == null)
-                                  Text(
-                                    appStrings.noActivePlan,
-                                    style: _DashText.subtle,
-                                  )
-                                else ...[
-                                  _MemberDetailInfoRow(
-                                    label: appStrings.activePlan,
-                                    value:
-                                        '${(membership['membership_plans'] as Map?)?['name'] ?? appStrings.plan}',
-                                  ),
-                                  _MemberDetailInfoRow(
-                                    label: appStrings.credits,
-                                    value:
-                                        '${membership['credits_remaining'] ?? appStrings.unlimited}',
-                                  ),
-                                  _MemberDetailInfoRow(
-                                    label: appStrings.expires,
-                                    value: _formatDate(
-                                      membership['expires_at']?.toString(),
-                                    ),
-                                  ),
-                                ],
                                 const SizedBox(height: 14),
-                                Text(
-                                  appStrings.creditHistory.toUpperCase(),
-                                  style: _DashText.section.copyWith(
-                                    color: AppColors.textPrimary(context),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                if (creditLogs.isEmpty)
-                                  Text(
-                                    appStrings.noCreditHistory,
-                                    style: _DashText.subtle,
+                                if (membership == null)
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(18),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceAlt(context),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: AppColors.border(context),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.accent.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.card_membership_outlined,
+                                            color: AppColors.accent,
+                                            size: 22,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 13),
+                                        Expanded(
+                                          child: Text(
+                                            appStrings.noActivePlan,
+                                            style: _DashText.body.copyWith(
+                                              color: AppColors.textPrimary(
+                                                context,
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   )
                                 else
-                                  ...creditLogs.map((log) {
-                                    final amount = log['amount'];
-                                    final sign = (amount is int && amount > 0)
-                                        ? '+'
-                                        : '';
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: Text(
-                                        '$sign$amount · ${_creditReasonLabel(log['reason']?.toString() ?? '')} · ${_formatDate(log['created_at']?.toString())}',
-                                        style: _DashText.subtle,
+                                  InkWell(
+                                    onTap: () => _openMemberMembershipDetails(
+                                      membership,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        16,
+                                        14,
+                                        16,
                                       ),
-                                    );
-                                  }),
-                                const SizedBox(height: 16),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceAlt(context),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppColors.border(context),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            width: 46,
+                                            height: 46,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.accent
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                            ),
+                                            child: Icon(
+                                              membershipStatus == 'scheduled'
+                                                  ? Icons.schedule_rounded
+                                                  : Icons
+                                                        .check_circle_outline_rounded,
+                                              color: AppColors.accent,
+                                              size: 23,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  membershipPlanName,
+                                                  style: _DashText.title.copyWith(
+                                                    color:
+                                                        AppColors.textPrimary(
+                                                          context,
+                                                        ),
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  membershipStatus ==
+                                                          'scheduled'
+                                                      ? appStrings.scheduled
+                                                            .toUpperCase()
+                                                      : appStrings.active
+                                                            .toUpperCase(),
+                                                  style: _DashText.section
+                                                      .copyWith(
+                                                        color: AppColors.accent,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Text(
+                                                  '${_formatDate(membership['starts_at']?.toString())}'
+                                                  ' — '
+                                                  '${_formatDate(membership['expires_at']?.toString())}',
+                                                  style: _DashText.subtle.copyWith(
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                          context,
+                                                        ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 7),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .confirmation_number_outlined,
+                                                      size: 15,
+                                                      color:
+                                                          AppColors.textSecondary(
+                                                            context,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(width: 7),
+                                                    Expanded(
+                                                      child: Text(
+                                                        membershipCreditsLabel,
+                                                        style: _DashText.body
+                                                            .copyWith(
+                                                              color:
+                                                                  AppColors.textPrimary(
+                                                                    context,
+                                                                  ),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      appStrings.viewDetails
+                                                          .toUpperCase(),
+                                                      style: _DashText.section
+                                                          .copyWith(
+                                                            color: AppColors
+                                                                .accent,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    const Icon(
+                                                      Icons
+                                                          .chevron_right_rounded,
+                                                      color: AppColors.accent,
+                                                      size: 19,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 18),
                                 AppButton(
                                   label: appStrings.assignPlan,
                                   onPressed: () async {
