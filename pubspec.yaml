@@ -2,7 +2,7 @@ name: ath615v2
 description: Athlete 615 gym app.
 publish_to: 'none'
 
-version: 1.0.12+106
+version: 1.0.12+107
 environment:
   sdk: ^3.10.0
 
