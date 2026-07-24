@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,6 +37,9 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   static const int _cancelMinutes = 60;
+  static const Duration _realtimeReloadDebounceDuration = Duration(
+    milliseconds: 350,
+  );
   bool _loading = true;
   String? _role;
   String? _gymId;
@@ -52,6 +57,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Map<String, String> _myClassStatuses = {};
   String? _bookingActionClassId;
   RealtimeChannel? _bookingRealtimeChannel;
+  Timer? _realtimeReloadDebounce;
   int _loadGeneration = 0;
 
   SupabaseClient get _client => Supabase.instance.client;
@@ -68,6 +74,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   void dispose() {
+    _realtimeReloadDebounce?.cancel();
     final channel = _bookingRealtimeChannel;
     if (channel != null) {
       _client.removeChannel(channel);
@@ -84,7 +91,7 @@ class _BookingScreenState extends State<BookingScreen> {
           table: 'class_bookings',
           callback: (_) {
             if (!mounted) return;
-            _load(showLoading: false);
+            _scheduleRealtimeReload();
           },
         )
         .onPostgresChanges(
@@ -93,10 +100,21 @@ class _BookingScreenState extends State<BookingScreen> {
           table: 'class_waitlist',
           callback: (_) {
             if (!mounted) return;
-            _load(showLoading: false);
+            _scheduleRealtimeReload();
           },
         )
         .subscribe();
+  }
+
+  void _scheduleRealtimeReload() {
+    if (!mounted) return;
+
+    _realtimeReloadDebounce?.cancel();
+    _realtimeReloadDebounce = Timer(_realtimeReloadDebounceDuration, () {
+      _realtimeReloadDebounce = null;
+      if (!mounted) return;
+      _load(showLoading: false);
+    });
   }
 
   Future<void> _load({bool showLoading = true}) async {
