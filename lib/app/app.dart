@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,60 +11,6 @@ import '../core/router/deep_link_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
-
-Future<void> setupPush() async {
-  try {
-    final messaging = FirebaseMessaging.instance;
-
-    await messaging.requestPermission();
-
-    String? apnsToken;
-    for (var i = 0; i < 10; i++) {
-      apnsToken = await messaging.getAPNSToken();
-      if (apnsToken != null) break;
-      await Future.delayed(const Duration(seconds: 1));
-    }
-
-    debugPrint('PUSH APNS TOKEN => $apnsToken');
-
-    if (apnsToken == null) {
-      debugPrint('PUSH SKIPPED => APNS token null');
-      return;
-    }
-
-    final token = await messaging.getToken();
-    debugPrint('PUSH TOKEN => $token');
-
-    final user = Supabase.instance.client.auth.currentUser;
-
-    if (token == null || user == null) {
-      debugPrint('PUSH SKIPPED => user or token null');
-      return;
-    }
-
-    await Supabase.instance.client
-        .from('device_tokens')
-        .delete()
-        .eq('platform', 'ios')
-        .eq('user_id', user.id);
-
-    await Supabase.instance.client
-        .from('device_tokens')
-        .delete()
-        .eq('token', token)
-        .neq('user_id', user.id);
-
-    await Supabase.instance.client.from('device_tokens').upsert({
-      'user_id': user.id,
-      'token': token,
-      'platform': 'ios',
-    }, onConflict: 'user_id,token');
-
-    debugPrint('PUSH TOKEN SAVED');
-  } catch (e) {
-    debugPrint('PUSH SETUP ERROR => $e');
-  }
-}
 
 class AthleteLabApp extends StatefulWidget {
   const AthleteLabApp({super.key});
@@ -74,6 +23,126 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   late final _router = AppRouter.router;
   late final _deepLinks = DeepLinkService(_router);
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  StreamSubscription<String>? _tokenRefreshSubscription;
+  StreamSubscription<AuthState>? _authSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
+  StreamSubscription<RemoteMessage>? _openedMessageSubscription;
+  Timer? _initialPushTimer;
+  Future<void> _pushWork = Future.value();
+  bool _pushSetupScheduled = false;
+  bool _pushSetupPending = false;
+
+  String? get _pushPlatform {
+    if (kIsWeb) return null;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => 'ios',
+      TargetPlatform.android => 'android',
+      _ => null,
+    };
+  }
+
+  void _enqueuePushWork(Future<void> Function() work) {
+    _pushWork = _pushWork.then((_) => work()).catchError((Object error) {
+      debugPrint('PUSH ERROR => $error');
+    });
+  }
+
+  void _schedulePushSetup() {
+    if (!mounted) return;
+    if (_pushSetupScheduled) {
+      _pushSetupPending = true;
+      return;
+    }
+    _pushSetupScheduled = true;
+    _enqueuePushWork(() async {
+      try {
+        await _setupPush();
+      } finally {
+        _pushSetupScheduled = false;
+        if (_pushSetupPending && mounted) {
+          _pushSetupPending = false;
+          _schedulePushSetup();
+        }
+      }
+    });
+  }
+
+  Future<void> _persistPushToken(String token) async {
+    if (!mounted) return;
+
+    final normalizedToken = token.trim();
+    final platform = _pushPlatform;
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (normalizedToken.isEmpty || platform == null || user == null) {
+      debugPrint('PUSH SKIPPED => user, token, or platform unavailable');
+      return;
+    }
+
+    await Supabase.instance.client
+        .from('device_tokens')
+        .delete()
+        .eq('platform', platform)
+        .eq('user_id', user.id);
+
+    await Supabase.instance.client
+        .from('device_tokens')
+        .delete()
+        .eq('token', normalizedToken)
+        .neq('user_id', user.id);
+
+    await Supabase.instance.client.from('device_tokens').upsert({
+      'user_id': user.id,
+      'token': normalizedToken,
+      'platform': platform,
+    }, onConflict: 'user_id,token');
+
+    debugPrint('PUSH TOKEN SAVED');
+  }
+
+  Future<void> _setupPush() async {
+    try {
+      final platform = _pushPlatform;
+      if (platform == null) {
+        debugPrint('PUSH SKIPPED => unsupported platform');
+        return;
+      }
+
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission();
+      if (!mounted) return;
+
+      if (platform == 'ios') {
+        String? apnsToken;
+        for (var i = 0; i < 10 && mounted; i++) {
+          apnsToken = await messaging.getAPNSToken();
+          if (apnsToken != null) break;
+          await Future.delayed(const Duration(seconds: 1));
+        }
+
+        if (!mounted) return;
+        debugPrint('PUSH APNS TOKEN AVAILABLE');
+
+        if (apnsToken == null) {
+          debugPrint('PUSH SKIPPED => APNS token null');
+          return;
+        }
+      }
+
+      final token = await messaging.getToken();
+      if (!mounted) return;
+      debugPrint('PUSH FCM TOKEN AVAILABLE');
+
+      if (token == null) {
+        debugPrint('PUSH SKIPPED => token null');
+        return;
+      }
+
+      await _persistPushToken(token);
+    } catch (e) {
+      debugPrint('PUSH SETUP ERROR => $e');
+    }
+  }
 
   void _handlePushTap(RemoteMessage message) {
     final workoutId = message.data['workoutId'] ?? message.data['workout_id'];
@@ -137,16 +206,35 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       debugPrint('ATH615 STARTING DEEPLINK SERVICE');
       _deepLinks.start();
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setupPush();
+      _initialPushTimer = Timer(const Duration(seconds: 2), () {
+        _schedulePushSetup();
       });
 
-      FirebaseMessaging.onMessage.listen(_showForegroundPush);
+      _authSubscription = Supabase.instance.client.auth.onAuthStateChange
+          .listen((state) {
+            final authenticated =
+                state.event == AuthChangeEvent.initialSession ||
+                state.event == AuthChangeEvent.signedIn;
+            if (!authenticated || state.session == null) return;
+            _initialPushTimer?.cancel();
+            _schedulePushSetup();
+          });
 
-      FirebaseMessaging.onMessageOpenedApp.listen(_handlePushTap);
+      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
+          .listen((token) {
+            _enqueuePushWork(() => _persistPushToken(token));
+          });
+
+      _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
+        _showForegroundPush,
+      );
+
+      _openedMessageSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
+        _handlePushTap,
+      );
 
       FirebaseMessaging.instance.getInitialMessage().then((message) {
-        if (message != null) {
+        if (mounted && message != null) {
           _handlePushTap(message);
         }
       });
@@ -155,6 +243,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
 
   @override
   void dispose() {
+    _initialPushTimer?.cancel();
+    _tokenRefreshSubscription?.cancel();
+    _authSubscription?.cancel();
+    _foregroundMessageSubscription?.cancel();
+    _openedMessageSubscription?.cancel();
     _deepLinks.dispose();
     super.dispose();
   }
