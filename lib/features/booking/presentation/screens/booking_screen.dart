@@ -52,6 +52,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Map<String, String> _myClassStatuses = {};
   String? _bookingActionClassId;
   RealtimeChannel? _bookingRealtimeChannel;
+  int _loadGeneration = 0;
 
   SupabaseClient get _client => Supabase.instance.client;
 
@@ -99,6 +100,21 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _load({bool showLoading = true}) async {
+    if (!mounted) return;
+
+    final requestedDay = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+    );
+    final loadGeneration = ++_loadGeneration;
+
+    bool isCurrentLoad() {
+      return mounted &&
+          loadGeneration == _loadGeneration &&
+          DateUtils.isSameDay(requestedDay, _selectedDay);
+    }
+
     if (showLoading) {
       setState(() => _loading = true);
     }
@@ -151,7 +167,7 @@ class _BookingScreenState extends State<BookingScreen> {
       }
 
       if (gymId == null) {
-        if (!mounted) return;
+        if (!isCurrentLoad()) return;
         setState(() {
           _gymId = null;
           _role = role;
@@ -168,11 +184,7 @@ class _BookingScreenState extends State<BookingScreen> {
         return;
       }
 
-      final dayStart = DateTime(
-        _selectedDay.year,
-        _selectedDay.month,
-        _selectedDay.day,
-      );
+      final dayStart = requestedDay;
       final dayEnd = dayStart.add(const Duration(days: 1));
 
       final classes = await _client
@@ -240,7 +252,7 @@ class _BookingScreenState extends State<BookingScreen> {
         }
       }
 
-      if (!mounted) return;
+      if (!isCurrentLoad()) return;
       setState(() {
         _role = role;
         _gymId = gymId;
@@ -256,12 +268,15 @@ class _BookingScreenState extends State<BookingScreen> {
         _creditsRemaining = creditsRemaining;
       });
     } catch (e) {
+      if (!isCurrentLoad()) return;
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(appStrings.bookingLoadError(e))));
     } finally {
-      if (mounted && showLoading) setState(() => _loading = false);
+      if (isCurrentLoad() && _loading) {
+        setState(() => _loading = false);
+      }
     }
   }
 
