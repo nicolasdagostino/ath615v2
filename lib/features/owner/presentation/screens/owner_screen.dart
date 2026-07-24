@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../auth/data/auth_repository.dart';
 
 class OwnerScreen extends StatefulWidget {
   const OwnerScreen({super.key});
@@ -77,7 +78,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await client.auth.signOut();
+              await AuthRepository(client).signOut();
               if (!context.mounted) return;
               context.go('/login');
             },

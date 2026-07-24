@@ -11,6 +11,7 @@ import '../core/router/deep_link_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
+import '../features/auth/data/auth_repository.dart';
 
 class AthleteLabApp extends StatefulWidget {
   const AthleteLabApp({super.key});
@@ -68,7 +69,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   }
 
   Future<void> _persistPushToken(String token) async {
-    if (!mounted) return;
+    if (!mounted || AuthRepository.isSigningOut) return;
 
     final normalizedToken = token.trim();
     final platform = _pushPlatform;
@@ -90,6 +91,8 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
         .delete()
         .eq('token', normalizedToken)
         .neq('user_id', user.id);
+
+    if (AuthRepository.isSigningOut) return;
 
     await Supabase.instance.client.from('device_tokens').upsert({
       'user_id': user.id,

@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_pickers.dart';
 import '../widgets/manage_plans_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../auth/data/auth_repository.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -1274,7 +1275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           (currentUserEmail != null && memberEmail == currentUserEmail);
 
       if (changedOwnRole && role != 'admin') {
-        await Supabase.instance.client.auth.signOut();
+        await AuthRepository(Supabase.instance.client).signOut();
 
         if (!mounted) return;
         context.go('/login');

@@ -1,7 +1,13 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
   AuthRepository(this._client);
+
+  static bool _isSigningOut = false;
+
+  static bool get isSigningOut => _isSigningOut;
 
   final SupabaseClient _client;
 
@@ -37,8 +43,43 @@ class AuthRepository {
     await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  Future<void> _removeCurrentDeviceToken() async {
+    final user = currentUser;
+    if (user == null) return;
+
+    String? token;
+    try {
+      token = await FirebaseMessaging.instance.getToken();
+    } catch (_) {
+      debugPrint('PUSH LOGOUT WARNING => could not obtain device token');
+      return;
+    }
+
+    final normalizedToken = token?.trim();
+    if (normalizedToken == null || normalizedToken.isEmpty) {
+      debugPrint('PUSH LOGOUT WARNING => device token unavailable');
+      return;
+    }
+
+    try {
+      await _client
+          .from('device_tokens')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('token', normalizedToken);
+    } catch (_) {
+      debugPrint('PUSH LOGOUT WARNING => could not remove device association');
+    }
+  }
+
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    _isSigningOut = true;
+    try {
+      await _removeCurrentDeviceToken();
+      await _client.auth.signOut();
+    } finally {
+      _isSigningOut = false;
+    }
   }
 
   Future<Map<String, dynamic>?> myProfile() async {
@@ -61,6 +102,6 @@ class AuthRepository {
 
   Future<void> deleteMyAccount() async {
     await _client.functions.invoke('delete-my-account');
-    await signOut();
+    await _client.auth.signOut();
   }
 }

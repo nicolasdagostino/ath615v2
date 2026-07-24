@@ -11,6 +11,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
+import '../../../auth/data/auth_repository.dart';
 
 class JoinGymScreen extends StatefulWidget {
   const JoinGymScreen({super.key});
@@ -473,7 +474,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
               onPressed: _loading
                   ? null
                   : () async {
-                      await _client.auth.signOut();
+                      await AuthRepository(_client).signOut();
                       if (!context.mounted) return;
                       context.go('/login');
                     },
