@@ -215,59 +215,63 @@ class _BookingScreenState extends State<BookingScreen> {
           .lt('starts_at', dayEnd.toUtc().toIso8601String())
           .order('starts_at', ascending: true);
 
-      final bookings = await _client
-          .from('class_bookings')
-          .select('class_id, status')
-          .eq('user_id', user.id)
-          .neq('status', 'cancelled');
-
-      final waitlist = await _client
-          .from('class_waitlist')
-          .select('class_id, created_at')
-          .eq('user_id', user.id);
-
-      final bookingRows = List<Map<String, dynamic>>.from(bookings);
-      final bookedIds = bookingRows
-          .map((b) => b['class_id'].toString())
-          .toSet();
-      final waitlistRows = List<Map<String, dynamic>>.from(waitlist);
-      final waitlistPositions = <String, int>{};
-      final bookingStatuses = {
-        for (final b in bookingRows)
-          b['class_id'].toString(): b['status'].toString(),
-      };
-
       final classRows = List<Map<String, dynamic>>.from(classes);
+      final classIds = classRows.map((c) => c['id'].toString()).toList();
+      var bookingRows = <Map<String, dynamic>>[];
+      var waitlistRows = <Map<String, dynamic>>[];
+
+      if (classIds.isNotEmpty) {
+        final bookings = await _client
+            .from('class_bookings')
+            .select('class_id, user_id, status')
+            .inFilter('class_id', classIds)
+            .neq('status', 'cancelled');
+
+        final waitlist = await _client
+            .from('class_waitlist')
+            .select('class_id, user_id, created_at')
+            .inFilter('class_id', classIds)
+            .order('class_id', ascending: true)
+            .order('created_at', ascending: true);
+
+        bookingRows = List<Map<String, dynamic>>.from(bookings);
+        waitlistRows = List<Map<String, dynamic>>.from(waitlist);
+      }
+
+      final bookedCountByClass = <String, int>{};
+      final bookedIds = <String>{};
+      final bookingStatuses = <String, String>{};
+
+      for (final booking in bookingRows) {
+        final classId = booking['class_id']?.toString();
+        if (classId == null) continue;
+
+        bookedCountByClass[classId] = (bookedCountByClass[classId] ?? 0) + 1;
+
+        if (booking['user_id']?.toString() == user.id) {
+          bookedIds.add(classId);
+          bookingStatuses[classId] = booking['status'].toString();
+        }
+      }
+
+      final waitlistPositions = <String, int>{};
+      final waitlistCountByClass = <String, int>{};
+
+      for (final entry in waitlistRows) {
+        final classId = entry['class_id']?.toString();
+        if (classId == null) continue;
+
+        final position = (waitlistCountByClass[classId] ?? 0) + 1;
+        waitlistCountByClass[classId] = position;
+
+        if (entry['user_id']?.toString() == user.id) {
+          waitlistPositions[classId] = position;
+        }
+      }
 
       for (final c in classRows) {
-        final bookingCount = await _client
-            .from('class_bookings')
-            .select('id')
-            .eq('class_id', c['id'])
-            .neq('status', 'cancelled')
-            .count(CountOption.exact);
-
-        c['booked_count'] = bookingCount.count;
-
         final classId = c['id'].toString();
-        if (waitlistRows.any((w) => w['class_id'].toString() == classId)) {
-          final classWaitlist = await _client
-              .from('class_waitlist')
-              .select('user_id')
-              .eq('class_id', classId)
-              .order('created_at', ascending: true);
-
-          final classWaitlistRows = List<Map<String, dynamic>>.from(
-            classWaitlist,
-          );
-          final index = classWaitlistRows.indexWhere(
-            (w) => w['user_id']?.toString() == user.id,
-          );
-
-          if (index >= 0) {
-            waitlistPositions[classId] = index + 1;
-          }
-        }
+        c['booked_count'] = bookedCountByClass[classId] ?? 0;
       }
 
       if (!isCurrentLoad()) return;
