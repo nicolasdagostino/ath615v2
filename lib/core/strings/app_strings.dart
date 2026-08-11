@@ -593,6 +593,15 @@ class AppStrings {
   String get classFallback => pick('Class', 'Clase');
 
   String get dashboardTitle => pick('Dashboard', 'Panel');
+  String get dashboardSummary => pick('Today at a glance', 'Resumen de hoy');
+  String get dashboardToday => pick('Today', 'Hoy');
+  String get dashboardOverviewLoading =>
+      pick('Loading dashboard…', 'Cargando panel…');
+  String get todayClasses => pick('Today’s classes', 'Clases de hoy');
+  String bookingsOfCapacity(int bookings, int capacity) => pick(
+    '$bookings of $capacity spots booked',
+    '$bookings de $capacity plazas reservadas',
+  );
   String get inviteAthlete => pick('Invite athlete', 'Invitar atleta');
   String get inviteAthleteDescription => pick(
     'Send an invitation email to a new athlete.',

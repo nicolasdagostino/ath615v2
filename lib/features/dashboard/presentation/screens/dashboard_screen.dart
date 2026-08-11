@@ -2573,15 +2573,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
-                    if (_gymJoinRequests.isNotEmpty ||
-                        _membershipRequests.isNotEmpty ||
-                        _membersWithoutPlan.isNotEmpty ||
-                        _membershipsExpiringSoon.isNotEmpty) ...[
-                      _ActionRequiredCard(
+                    if (_loadingMembers)
+                      AppAsyncState.loading(
+                        message: appStrings.dashboardOverviewLoading,
+                      )
+                    else if (_membersError case final error?)
+                      AppAsyncState.error(
+                        message: error,
+                        actionLabel: appStrings.retry,
+                        onAction: _loadDashboardData,
+                      )
+                    else
+                      _DashboardOverview(
+                        membersCount: _members.length,
+                        activeMembersCount: _members
+                            .where((m) => m['is_active'] == true)
+                            .length,
+                        todayBookings: _todayBookings,
+                        todayCapacity: _todayCapacity,
+                        todayClasses: _todayClasses,
                         joinRequests: _gymJoinRequests,
                         membershipRequests: _membershipRequests,
                         membersWithoutPlan: _membersWithoutPlan,
                         membershipsExpiringSoon: _membershipsExpiringSoon,
+                        weeklyBookings: _weeklyBookings,
+                        recentActivity: _recentActivity,
                         processingJoinRequestId: _processingGymJoinRequestId,
                         processingJoinAction: _processingGymJoinRequestAction,
                         processingMembershipRequestId:
@@ -2597,59 +2613,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _search.clear();
                           });
                         },
+                        onSendNotification: _openCommunicationSheet,
                       ),
-                      const SizedBox(height: 14),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.members,
-                            value: '${_members.length}',
-                            icon: Icons.groups_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.active,
-                            value:
-                                '${_members.where((m) => m['is_active'] == true).length}',
-                            icon: Icons.verified_user_rounded,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.occupancyToday,
-                            value: _todayCapacity == 0
-                                ? '0%'
-                                : '${((_todayBookings / _todayCapacity) * 100).round()}%',
-                            icon: Icons.pie_chart_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.classesToday,
-                            value: '$_todayClasses',
-                            icon: Icons.fitness_center_rounded,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _RecentActivityCard(activity: _recentActivity),
-                    const SizedBox(height: 14),
-                    _CommunicationCard(
-                      onSendNotification: _openCommunicationSheet,
-                    ),
-                    const SizedBox(height: 14),
-                    _WeeklyBookingsCard(bookings: _weeklyBookings),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -3359,6 +3324,62 @@ Widget buildDashboardHeaderForTest({
   );
 }
 
+@visibleForTesting
+Widget buildDashboardCompositionForTest() {
+  return Builder(
+    builder: (context) => Scaffold(
+      backgroundColor: AppColors.background(context),
+      body: Column(
+        children: [
+          buildDashboardHeaderForTest(
+            gymName: 'Athlete 615',
+            unreadNotifications: 3,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.dashboardTitle,
+                    selected: true,
+                    onTap: () {},
+                  ),
+                ),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.members,
+                    selected: false,
+                    onTap: () {},
+                  ),
+                ),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.membershipTitle,
+                    selected: false,
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.lg,
+              ),
+              children: [buildDashboardOverviewForTest()],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _HeaderIcon extends StatelessWidget {
   const _HeaderIcon({
     required this.icon,
@@ -3461,6 +3482,185 @@ class _DashboardTabChip extends StatelessWidget {
   }
 }
 
+class _DashboardOverview extends StatelessWidget {
+  const _DashboardOverview({
+    required this.membersCount,
+    required this.activeMembersCount,
+    required this.todayBookings,
+    required this.todayCapacity,
+    required this.todayClasses,
+    required this.joinRequests,
+    required this.membershipRequests,
+    required this.membersWithoutPlan,
+    required this.membershipsExpiringSoon,
+    required this.weeklyBookings,
+    required this.recentActivity,
+    required this.processingJoinRequestId,
+    required this.processingJoinAction,
+    required this.processingMembershipRequestId,
+    required this.onApproveJoin,
+    required this.onRejectJoin,
+    required this.onApproveMembership,
+    required this.onRejectMembership,
+    required this.onOpenWithoutPlan,
+    required this.onSendNotification,
+  });
+
+  final int membersCount;
+  final int activeMembersCount;
+  final int todayBookings;
+  final int todayCapacity;
+  final int todayClasses;
+  final List<Map<String, dynamic>> joinRequests;
+  final List<Map<String, dynamic>> membershipRequests;
+  final List<Map<String, dynamic>> membersWithoutPlan;
+  final List<Map<String, dynamic>> membershipsExpiringSoon;
+  final List<int> weeklyBookings;
+  final List<Map<String, dynamic>> recentActivity;
+  final String? processingJoinRequestId;
+  final String? processingJoinAction;
+  final String? processingMembershipRequestId;
+  final Future<void> Function(Map<String, dynamic>) onApproveJoin;
+  final Future<void> Function(Map<String, dynamic>) onRejectJoin;
+  final Future<void> Function(Map<String, dynamic>) onApproveMembership;
+  final Future<void> Function(Map<String, dynamic>) onRejectMembership;
+  final VoidCallback onOpenWithoutPlan;
+  final VoidCallback onSendNotification;
+
+  @override
+  Widget build(BuildContext context) {
+    final occupancy = todayCapacity == 0
+        ? '0%'
+        : '${((todayBookings / todayCapacity) * 100).round()}%';
+    final hasAttention =
+        joinRequests.isNotEmpty ||
+        membershipRequests.isNotEmpty ||
+        membersWithoutPlan.isNotEmpty ||
+        membershipsExpiringSoon.isNotEmpty;
+
+    return Column(
+      key: const ValueKey('dashboard-overview'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appStrings.dashboardToday.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          appStrings.dashboardSummary,
+          style: AppTypography.bodySecondary(context),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          key: const ValueKey('dashboard-kpis'),
+          children: [
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.members,
+                value: '$membersCount',
+                icon: Icons.groups_outlined,
+              ),
+            ),
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.active,
+                value: '$activeMembersCount',
+                icon: Icons.check_circle_outline_rounded,
+              ),
+            ),
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.occupancyToday,
+                value: occupancy,
+                icon: Icons.pie_chart_outline_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        if (hasAttention) ...[
+          _ActionRequiredCard(
+            joinRequests: joinRequests,
+            membershipRequests: membershipRequests,
+            membersWithoutPlan: membersWithoutPlan,
+            membershipsExpiringSoon: membershipsExpiringSoon,
+            processingJoinRequestId: processingJoinRequestId,
+            processingJoinAction: processingJoinAction,
+            processingMembershipRequestId: processingMembershipRequestId,
+            onApproveJoin: onApproveJoin,
+            onRejectJoin: onRejectJoin,
+            onApproveMembership: onApproveMembership,
+            onRejectMembership: onRejectMembership,
+            onOpenWithoutPlan: onOpenWithoutPlan,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        _TodayClassesSummary(
+          classes: todayClasses,
+          bookings: todayBookings,
+          capacity: todayCapacity,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _WeeklyBookingsCard(bookings: weeklyBookings),
+        const SizedBox(height: AppSpacing.lg),
+        _RecentActivityCard(activity: recentActivity),
+        const SizedBox(height: AppSpacing.lg),
+        _CommunicationCard(onSendNotification: onSendNotification),
+      ],
+    );
+  }
+}
+
+@visibleForTesting
+Widget buildDashboardOverviewForTest({
+  int membersCount = 26,
+  int activeMembersCount = 24,
+  int todayBookings = 8,
+  int todayCapacity = 12,
+  int todayClasses = 4,
+}) {
+  Future<void> noAction(Map<String, dynamic> _) async {}
+
+  return _DashboardOverview(
+    membersCount: membersCount,
+    activeMembersCount: activeMembersCount,
+    todayBookings: todayBookings,
+    todayCapacity: todayCapacity,
+    todayClasses: todayClasses,
+    joinRequests: const [
+      {'id': 'request-1', 'member_name': 'Alex Member'},
+    ],
+    membershipRequests: const [],
+    membersWithoutPlan: const [
+      {'id': 'member-1', 'full_name': 'Sam Athlete'},
+    ],
+    membershipsExpiringSoon: const [
+      {'id': 'member-2', 'full_name': 'Taylor Athlete'},
+    ],
+    weeklyBookings: const [2, 5, 4, 8, 6, 3, 7],
+    recentActivity: const [
+      {
+        'member_name': 'Alex Member',
+        'status': 'booked',
+        'classes': {
+          'title': 'Cross Training',
+          'starts_at': '2026-08-11T07:30:00Z',
+        },
+      },
+    ],
+    processingJoinRequestId: null,
+    processingJoinAction: null,
+    processingMembershipRequestId: null,
+    onApproveJoin: noAction,
+    onRejectJoin: noAction,
+    onApproveMembership: noAction,
+    onRejectMembership: noAction,
+    onOpenWithoutPlan: () {},
+    onSendNotification: () {},
+  );
+}
+
 class _DashboardCard extends StatelessWidget {
   const _DashboardCard({required this.child});
 
@@ -3550,75 +3750,80 @@ class _ActionRequiredCard extends StatelessWidget {
             },
           );
         },
-        child: _DashboardCard(
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.priority_high_rounded,
-                  color: AppColors.accent,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appStrings.actionRequired.toUpperCase(),
-                      style: _DashText.section,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      pendingRequests > 0
-                          ? appStrings.pendingApprovalCount(pendingRequests)
-                          : membershipsExpiringSoon.isNotEmpty
-                          ? appStrings.membershipsExpiringSoonCount(
-                              membershipsExpiringSoon.length,
-                            )
-                          : appStrings.membersWithoutPlanCount(
-                              membersWithoutPlan.length,
-                            ),
-                      style: _DashText.subtle,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(minWidth: 34),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '$total',
-                  style: _DashText.body.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
+        child: Column(
+          key: const ValueKey('dashboard-attention'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    appStrings.actionRequired.toUpperCase(),
+                    style: AppTypography.sectionTitle(context),
                   ),
                 ),
+                Text(
+                  '$total',
+                  style: AppTypography.itemTitle(
+                    context,
+                  ).copyWith(color: AppColors.accent),
+                ),
+                const SizedBox(width: AppSpacing.xxs),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary(context),
+                  size: 20,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (pendingRequests > 0)
+              _AttentionRow(
+                icon: Icons.person_add_alt_1_outlined,
+                label: appStrings.pendingApprovalCount(pendingRequests),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
+            if (membersWithoutPlan.isNotEmpty)
+              _AttentionRow(
+                icon: Icons.card_membership_outlined,
+                label: appStrings.membersWithoutPlanCount(
+                  membersWithoutPlan.length,
+                ),
               ),
-            ],
-          ),
+            if (membershipsExpiringSoon.isNotEmpty)
+              _AttentionRow(
+                icon: Icons.event_busy_outlined,
+                label: appStrings.membershipsExpiringSoonCount(
+                  membershipsExpiringSoon.length,
+                ),
+              ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _AttentionRow extends StatelessWidget {
+  const _AttentionRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: AppSizes.minimumTouchTarget),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.accent, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(label, style: AppTypography.body(context))),
+        ],
       ),
     );
   }
@@ -4057,44 +4262,117 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardCard(
+    return Container(
+      constraints: const BoxConstraints(minHeight: 86),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  value,
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary(context),
-                    height: 1,
-                  ),
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt(context),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Icon(icon, size: 17, color: AppColors.accent),
-              ),
-            ],
+          Icon(icon, size: 17, color: AppColors.accent),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            value,
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary(context),
+              height: 1,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             label.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: _DashText.subtle,
+            style: AppTypography.helper(context).copyWith(
+              fontFamily: GoogleFonts.barlowCondensed().fontFamily,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              height: 1,
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TodayClassesSummary extends StatelessWidget {
+  const _TodayClassesSummary({
+    required this.classes,
+    required this.bookings,
+    required this.capacity,
+  });
+
+  final int classes;
+  final int bookings;
+  final int capacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey('dashboard-today-classes'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appStrings.todayClasses.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Container(
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.minimumTouchTarget,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 56,
+                child: Text(
+                  '$classes',
+                  style: GoogleFonts.barlowCondensed(
+                    color: AppColors.textPrimary(context),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appStrings.classesToday,
+                      style: AppTypography.body(context),
+                    ),
+                    Text(
+                      appStrings.bookingsOfCapacity(bookings, capacity),
+                      style: AppTypography.helper(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.fitness_center_rounded,
+                color: AppColors.accent,
+                size: 19,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -4123,7 +4401,15 @@ class _WeeklyBookingsCard extends StatelessWidget {
     final hasBookings = maxValue > 0;
     final labels = _dayLabels();
 
-    return _DashboardCard(
+    return Container(
+      key: const ValueKey('dashboard-analytics'),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border.symmetric(
+          horizontal: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4256,43 +4542,52 @@ class _CommunicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appStrings.communicationTitle.toUpperCase(),
-            style: _DashText.section,
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appStrings.communicationTitle.toUpperCase(),
+                style: AppTypography.sectionTitle(context),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                appStrings.communicationSubtitle,
+                style: AppTypography.bodySecondary(context),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            appStrings.communicationSubtitle,
-            style: _DashText.body.copyWith(
-              color: AppColors.textSecondary(context),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.minimumTouchTarget,
+          ),
+          child: FilledButton.icon(
+            onPressed: onSendNotification,
+            icon: const Icon(
+              Icons.campaign_outlined,
+              size: 18,
+              color: AppColors.accent,
             ),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onSendNotification,
-              icon: const Icon(Icons.campaign_outlined, size: 18),
-              label: Text(appStrings.sendNotification),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary(context),
-                side: BorderSide(color: AppColors.border(context)),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+            label: Text(
+              appStrings.sendNotification.toUpperCase(),
+              style: AppTypography.buttonLabel(
+                context,
+              ).copyWith(color: Colors.white),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.textPrimary(context),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.input),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -4544,83 +4839,74 @@ class _RecentActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appStrings.recentActivity.toUpperCase(),
-            style: _DashText.section,
-          ),
-          const SizedBox(height: 14),
-          if (activity.isEmpty)
-            _DashboardEmptyState(
-              icon: Icons.history_rounded,
-              message: appStrings.noRecentActivity,
-            )
-          else
-            ...activity.asMap().entries.map((entry) {
-              final index = entry.key;
-              final row = entry.value;
-              final isLast = index == activity.length - 1;
+    return Column(
+      key: const ValueKey('dashboard-activity'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appStrings.recentActivity.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        if (activity.isEmpty)
+          AppAsyncState.empty(
+            icon: Icons.history_rounded,
+            message: appStrings.noRecentActivity,
+          )
+        else
+          ...activity.asMap().entries.map((entry) {
+            final index = entry.key;
+            final row = entry.value;
+            final isLast = index == activity.length - 1;
 
-              return Padding(
-                padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt(context),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border(context)),
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              decoration: BoxDecoration(
+                border: isLast
+                    ? null
+                    : Border(
+                        bottom: BorderSide(
+                          color: AppColors.border(context),
+                          width: 0.8,
+                        ),
                       ),
-                      child: Icon(
-                        _statusIcon(row),
-                        size: 18,
-                        color: AppColors.accent,
-                      ),
+              ),
+              child: Row(
+                children: [
+                  Icon(_statusIcon(row), size: 18, color: AppColors.accent),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _memberName(row),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.body(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          '${_actionLabel(row)} · ${_classTitle(row)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.helper(context),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _memberName(row),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${_actionLabel(row)} · ${_classTitle(row)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _DashText.subtle.copyWith(
-                              color: AppColors.textSecondary(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _classTimeLabel(row),
-                      textAlign: TextAlign.right,
-                      style: _DashText.subtle.copyWith(height: 1.25),
-                    ),
-                  ],
-                ),
-              );
-            }),
-        ],
-      ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    _classTimeLabel(row),
+                    textAlign: TextAlign.right,
+                    style: AppTypography.helper(context),
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
     );
   }
 }
