@@ -44,7 +44,7 @@ class BookingHeader extends StatelessWidget {
     return SizedBox(
       width: 132,
       child: Text(
-        gymName ?? appStrings.appBrand,
+        appStrings.appBrand,
         style: _font(
           16,
           weight: FontWeight.w800,
@@ -59,8 +59,8 @@ class BookingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceAlt(context),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+      color: AppColors.background(context),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -73,12 +73,23 @@ class BookingHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${_monthLabel()} ${selectedDay.year}',
+                      appStrings.bookingTitle.toUpperCase(),
                       style: _font(
-                        22,
+                        20,
                         weight: FontWeight.w800,
                         color: AppColors.textPrimary(context),
                         letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_monthLabel()} ${selectedDay.year}',
+                      style: GoogleFonts.barlow(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary(context),
+                        letterSpacing: 0.3,
+                        height: 1,
                       ),
                     ),
                   ],

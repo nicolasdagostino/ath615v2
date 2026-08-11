@@ -86,6 +86,7 @@ class AppStrings {
   String get logout => pick('Log out', 'Cerrar sesión');
 
   String get bookingTitle => pick('Booking', 'Reservas');
+  String get loadingClasses => pick('Loading classes…', 'Cargando clases…');
   String get bookingBook => pick('Book', 'Reservar');
   String get bookingCancel => pick('Cancel', 'Cancelar');
   String get bookingBooked => pick('Booked', 'Reservada');

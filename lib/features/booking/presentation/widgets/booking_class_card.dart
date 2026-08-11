@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import 'booking_text_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class BookingClassCard extends StatelessWidget {
   const BookingClassCard({
@@ -35,293 +37,178 @@ class BookingClassCard extends StatelessWidget {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  bool get _hasBooking =>
+  String? _coachName() {
+    final coach = klass['coach'];
+    if (coach is! Map) return null;
+    final name = coach['full_name']?.toString().trim();
+    return name == null || name.isEmpty ? null : name;
+  }
+
+  String? _programName() {
+    final program = klass['programs'];
+    if (program is! Map) return null;
+    final name = program['name']?.toString().trim();
+    final title = klass['title']?.toString().trim();
+    if (name == null || name.isEmpty || name == title) return null;
+    return name;
+  }
+
+  bool get _booked =>
       buttonLabel == appStrings.bookingBooked ||
       buttonLabel == appStrings.bookingCancel;
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        klass['title']?.toString().toUpperCase() ??
-        appStrings.classFallback.toUpperCase();
+    final coach = _coachName();
+    final program = _programName();
+    final full = capacity > 0 && bookedCount >= capacity;
 
-    final program = klass['programs'] as Map<String, dynamic>?;
-    final programImageUrl = program?['image_url']?.toString().trim();
-    final hasProgramImage =
-        programImageUrl != null && programImageUrl.isNotEmpty;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: _hasBooking
-            ? Border.all(
-                color: const Color(0xFFB59B6A).withValues(alpha: 0.55),
-                width: 1.2,
-              )
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 112),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+            ),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ColorFiltered(
-                colorFilter: const ColorFilter.matrix(<double>[
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  1,
-                  0,
-                ]),
-                child: hasProgramImage
-                    ? Image.network(
-                        programImageUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.centerRight,
-                      )
-                    : const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFF111111),
-                              Color(0xFF252525),
-                              Color(0xFF323232),
-                            ],
-                          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 64,
+                child: Text(
+                  _timeLabel(klass['starts_at'].toString()),
+                  style: GoogleFonts.barlowCondensed(
+                    color: AppColors.textPrimary(context),
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    height: 1,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (klass['title']?.toString() ?? appStrings.classFallback)
+                          .toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.itemTitle(context),
+                    ),
+                    if (program != null)
+                      Text(program, style: AppTypography.helper(context)),
+                    if (coach != null)
+                      Text(
+                        '${appStrings.coach} · $coach',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodySecondary(context),
+                      ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      '$bookedCount / $capacity ${appStrings.spots.toLowerCase()}',
+                      style: AppTypography.helper(context).copyWith(
+                        color: full
+                            ? AppColors.textPrimary(context)
+                            : AppColors.textSecondary(context),
+                        fontWeight: full ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    if (_booked || waitlistPosition != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: _booked
+                                    ? AppColors.success
+                                    : AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Flexible(
+                              child: Text(
+                                _booked
+                                    ? appStrings.bookingBooked
+                                    : appStrings.bookingWaitlistPosition(
+                                        waitlistPosition!,
+                                      ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.helper(context),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-              ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      const Color(0xFF111111),
-                      const Color(0xFF171717).withValues(alpha: 0.94),
-                      const Color(0xFF252525).withValues(alpha: 0.58),
-                    ],
-                    stops: const [0.0, 0.46, 1.0],
-                  ),
+                  ],
                 ),
               ),
-            ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadii.card),
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            _timeLabel(klass['starts_at']),
-                            style: BookingTextStyles.displayTime,
-                          ),
-                          const Spacer(),
-                          if (_hasBooking) ...[
-                            const _BookedBadge(),
-                            const SizedBox(width: 10),
-                          ] else if (waitlistPosition != null) ...[
-                            _WaitlistBadge(position: waitlistPosition!),
-                            const SizedBox(width: 10),
-                          ],
-                          _InlineSpots(value: '$bookedCount / $capacity'),
-                          if (onMorePressed != null) ...[
-                            const SizedBox(width: 6),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(
-                                Icons.more_horiz,
-                                color: Color(0xFFABABAB),
-                              ),
-                              onPressed: onMorePressed,
-                            ),
-                          ],
-                        ],
+              const SizedBox(width: AppSpacing.xs),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (onMorePressed != null)
+                    IconButton(
+                      constraints: const BoxConstraints.tightFor(
+                        width: AppSizes.minimumTouchTarget,
+                        height: AppSizes.minimumTouchTarget,
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: BookingTextStyles.classTitle,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          SizedBox(
-                            width: 180,
-                            child: _ActionButton(
-                              label: isLoading
-                                  ? '...'
-                                  : buttonLabel.toUpperCase(),
-                              onPressed: buttonAction,
-                              filled: buttonAction != null,
-                            ),
-                          ),
-                        ],
+                      onPressed: onMorePressed,
+                      icon: Icon(
+                        Icons.more_horiz_rounded,
+                        color: AppColors.textSecondary(context),
                       ),
-                    ],
+                    ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 104,
+                      minHeight: AppSizes.minimumTouchTarget,
+                      maxWidth: 128,
+                    ),
+                    child: FilledButton(
+                      onPressed: buttonAction,
+                      style: FilledButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: AppColors.textPrimary(context),
+                        disabledBackgroundColor: AppColors.surfaceAlt(context),
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: AppColors.textSecondary(
+                          context,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.input),
+                        ),
+                      ),
+                      child: Text(
+                        isLoading ? '…' : buttonLabel.toUpperCase(),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.buttonLabel(context).copyWith(
+                          color: buttonAction == null
+                              ? AppColors.textSecondary(context)
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BookedBadge extends StatelessWidget {
-  const _BookedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    const green = Color(0xFF22C55E);
-
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: green.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: green.withValues(alpha: 0.55), width: 1),
-      ),
-      child: Text(
-        'BOOKED',
-        style: BookingTextStyles.metaValue.copyWith(
-          color: green,
-          fontSize: 11,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _WaitlistBadge extends StatelessWidget {
-  const _WaitlistBadge({required this.position});
-
-  final int position;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 9),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFFB59B6A).withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: const Color(0xFFB59B6A).withValues(alpha: 0.58),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        'WAITLIST #$position',
-        style: BookingTextStyles.metaValue.copyWith(
-          color: const Color(0xFFB59B6A),
-          fontSize: 11,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _InlineSpots extends StatelessWidget {
-  const _InlineSpots({required this.value});
-
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          appStrings.spots.toUpperCase(),
-          style: BookingTextStyles.metaLabel,
-        ),
-        const SizedBox(width: 6),
-        Text(value, style: BookingTextStyles.metaValue),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.onPressed,
-    required this.filled,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          elevation: 0,
-          backgroundColor: filled
-              ? const Color(0xFFBCA36D)
-              : const Color(0xFFF0F1F4),
-          disabledBackgroundColor: const Color(0xFFF0F1F4),
-          foregroundColor: filled ? Colors.white : const Color(0xFF384052),
-          disabledForegroundColor: const Color(0xFF8F96A3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            ],
           ),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: BookingTextStyles.button,
         ),
       ),
     );

@@ -7,13 +7,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_async_state.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_sheet.dart';
 import '../widgets/class_details_sheet.dart';
 import '../widgets/booking_class_card.dart';
 import '../widgets/booking_day_chips.dart';
-import '../widgets/booking_loading_state.dart';
 import '../widgets/booking_header.dart';
 import '../widgets/membership_status_card.dart';
 import '../widgets/create_class_sheet.dart';
@@ -41,6 +42,7 @@ class _BookingScreenState extends State<BookingScreen> {
     milliseconds: 350,
   );
   bool _loading = true;
+  String? _loadError;
   String? _role;
   String? _gymId;
   bool _hasActiveMembership = false;
@@ -134,7 +136,10 @@ class _BookingScreenState extends State<BookingScreen> {
     }
 
     if (showLoading) {
-      setState(() => _loading = true);
+      setState(() {
+        _loading = true;
+        _loadError = null;
+      });
     }
 
     try {
@@ -288,13 +293,12 @@ class _BookingScreenState extends State<BookingScreen> {
         _membershipName = membershipName;
         _membershipExpiresAt = membershipExpiresAt;
         _creditsRemaining = creditsRemaining;
+        _loadError = null;
       });
     } catch (e) {
       if (!isCurrentLoad()) return;
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.bookingLoadError(e))));
+      setState(() => _loadError = appStrings.bookingLoadError(e));
     } finally {
       if (isCurrentLoad() && _loading) {
         setState(() => _loading = false);
@@ -753,23 +757,29 @@ class _BookingScreenState extends State<BookingScreen> {
 
     return Scaffold(
       floatingActionButton: _canCreateClass
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               heroTag: 'create-class',
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.textPrimary(context),
               foregroundColor: Colors.white,
-              elevation: 4,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(AppRadii.input),
               ),
               onPressed: _showCreateClassSheet,
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add_rounded, color: AppColors.accent),
+              label: Text(
+                appStrings.createClassTitle.toUpperCase(),
+                style: AppTypography.buttonLabel(
+                  context,
+                ).copyWith(color: Colors.white),
+              ),
             )
           : null,
       backgroundColor: AppColors.background(context),
       body: Column(
         children: [
           Container(
-            color: AppColors.surfaceAlt(context),
+            color: AppColors.background(context),
             child: Column(
               children: [
                 BookingHeader(
@@ -802,16 +812,38 @@ class _BookingScreenState extends State<BookingScreen> {
               color: AppColors.accent,
               onRefresh: _refresh,
               child: _loading
-                  ? const BookingLoadingState()
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        AppAsyncState.loading(
+                          message: appStrings.loadingClasses,
+                        ),
+                      ],
+                    )
+                  : _loadError != null
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        AppAsyncState.error(
+                          message: _loadError!,
+                          actionLabel: appStrings.retry,
+                          onAction: _load,
+                        ),
+                      ],
+                    )
                   : _classes.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(28, 115, 28, 24),
-                      children: const [_BookingRestDayEmptyState()],
+                      children: [
+                        AppAsyncState.empty(
+                          icon: Icons.event_busy_outlined,
+                          message: appStrings.restDayMessage,
+                        ),
+                      ],
                     )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                       itemCount: _classes.length,
                       itemBuilder: (context, index) {
                         final klass = _classes[index];
@@ -920,41 +952,6 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BookingRestDayEmptyState extends StatelessWidget {
-  const _BookingRestDayEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          appStrings.restDayTitle,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.barlowCondensed(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary(context),
-            letterSpacing: -0.3,
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(height: 22),
-        Text(
-          appStrings.restDayMessage,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.barlowCondensed(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary(context),
-            letterSpacing: 0.3,
-            height: 1.35,
-          ),
-        ),
-      ],
     );
   }
 }
