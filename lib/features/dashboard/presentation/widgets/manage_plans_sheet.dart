@@ -6,7 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../members/presentation/widgets/membership_plan_row.dart';
 
 Future<void> showManagePlansSheet({
   required BuildContext context,
@@ -21,9 +24,10 @@ Future<void> showManagePlansSheet({
 }
 
 class _ManagePlansSheet extends StatefulWidget {
-  const _ManagePlansSheet({required this.gymId});
+  const _ManagePlansSheet({required this.gymId, this.initialPlansForTesting});
 
   final String gymId;
+  final List<Map<String, dynamic>>? initialPlansForTesting;
 
   @override
   State<_ManagePlansSheet> createState() => _ManagePlansSheetState();
@@ -36,6 +40,8 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
 
   bool _loading = true;
   bool _saving = false;
+  bool _showCreateForm = false;
+  String? _loadError;
   String _planType = 'class_pack';
 
   bool get _canCreate {
@@ -60,7 +66,12 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.initialPlansForTesting case final plans?) {
+      _plans = plans;
+      _loading = false;
+    } else {
+      _load();
+    }
   }
 
   @override
@@ -72,7 +83,10 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
 
     try {
       final rows = await _client
@@ -85,6 +99,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
 
       if (!mounted) return;
       setState(() => _plans = List<Map<String, dynamic>>.from(rows));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _loadError = error.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -116,6 +133,7 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
       _name.clear();
       _credits.clear();
       _price.clear();
+      if (mounted) setState(() => _showCreateForm = false);
       await _load();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -602,225 +620,190 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
       ),
       child: SafeArea(
         child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
           margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           decoration: BoxDecoration(
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(AppRadii.sheet),
             border: Border.all(color: AppColors.border(context), width: 1),
-            boxShadow: AppShadows.card(context),
           ),
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text(
-                appStrings.managePlans.toUpperCase(),
-                style: _PlansText.title.copyWith(
-                  color: AppColors.textPrimary(context),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _name,
-                onChanged: (_) => setState(() {}),
-                textCapitalization: TextCapitalization.words,
-                style: _PlansText.body.copyWith(
-                  color: AppColors.textPrimary(context),
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: _plansInput(
-                  context,
-                  appStrings.planName,
-                  Icons.badge_outlined,
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _planType,
-                dropdownColor: AppColors.surface(context),
-                iconEnabledColor: AppColors.textSecondary(context),
-                style: _PlansText.body.copyWith(
-                  color: AppColors.textPrimary(context),
-                  fontWeight: FontWeight.w700,
-                ),
-                decoration: _plansInput(
-                  context,
-                  appStrings.planType,
-                  Icons.tune_rounded,
-                ),
-                items: [
-                  DropdownMenuItem(
-                    value: 'class_pack',
-                    child: Text(
-                      appStrings.classPack,
-                      style: _PlansText.body.copyWith(color: Colors.white),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appStrings.membershipTitle.toUpperCase(),
+                          style: AppTypography.itemTitle(context),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          appStrings.manageMembershipsDescription,
+                          style: AppTypography.bodySecondary(context),
+                        ),
+                      ],
                     ),
                   ),
-                  DropdownMenuItem(
-                    value: 'unlimited',
-                    child: Text(
-                      appStrings.unlimited,
-                      style: _PlansText.body.copyWith(color: Colors.white),
+                  const SizedBox(width: AppSpacing.sm),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: AppSizes.minimumTouchTarget,
+                    ),
+                    child: FilledButton.icon(
+                      onPressed: () =>
+                          setState(() => _showCreateForm = !_showCreateForm),
+                      icon: Icon(
+                        _showCreateForm
+                            ? Icons.close_rounded
+                            : Icons.add_rounded,
+                        size: 18,
+                        color: AppColors.accent,
+                      ),
+                      label: Text(
+                        appStrings.createPlan.toUpperCase(),
+                        style: AppTypography.buttonLabel(
+                          context,
+                        ).copyWith(color: Colors.white),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.textPrimary(context),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.input),
+                        ),
+                      ),
                     ),
                   ),
                 ],
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _planType = value);
-                },
               ),
-              if (_planType == 'class_pack') ...[
+              if (_showCreateForm) ...[
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _name,
+                  onChanged: (_) => setState(() {}),
+                  textCapitalization: TextCapitalization.words,
+                  style: AppTypography.body(context),
+                  decoration: _plansInput(
+                    context,
+                    appStrings.planName,
+                    Icons.badge_outlined,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _planType,
+                  dropdownColor: AppColors.surface(context),
+                  iconEnabledColor: AppColors.textSecondary(context),
+                  style: _PlansText.body.copyWith(
+                    color: AppColors.textPrimary(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: _plansInput(
+                    context,
+                    appStrings.planType,
+                    Icons.tune_rounded,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'class_pack',
+                      child: Text(
+                        appStrings.classPack,
+                        style: _PlansText.body.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'unlimited',
+                      child: Text(
+                        appStrings.unlimited,
+                        style: _PlansText.body.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _planType = value);
+                  },
+                ),
+                if (_planType == 'class_pack') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _credits,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: _PlansText.body.copyWith(
+                      color: AppColors.textPrimary(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: _plansInput(
+                      context,
+                      appStrings.credits,
+                      Icons.confirmation_number_outlined,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _credits,
+                  controller: _price,
                   onChanged: (_) => setState(() {}),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                  ],
                   style: _PlansText.body.copyWith(
                     color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: _plansInput(
                     context,
-                    appStrings.credits,
-                    Icons.confirmation_number_outlined,
+                    appStrings.planPrice,
+                    Icons.euro_rounded,
                   ),
+                ),
+                const SizedBox(height: 14),
+                AppButton(
+                  label: appStrings.createPlan,
+                  loading: _saving,
+                  onPressed: _canCreate ? _create : null,
                 ),
               ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: _price,
-                onChanged: (_) => setState(() {}),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
-                ],
-                style: _PlansText.body.copyWith(
-                  color: AppColors.textPrimary(context),
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: _plansInput(
-                  context,
-                  appStrings.planPrice,
-                  Icons.euro_rounded,
-                ),
-              ),
-              const SizedBox(height: 14),
-              AppButton(
-                label: appStrings.createPlan,
-                loading: _saving,
-                onPressed: _canCreate ? _create : null,
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.md),
               if (_loading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFFB59B6A)),
-                  ),
+                AppAsyncState.loading(
+                  message: appStrings.loadingMembershipPlans,
+                )
+              else if (_loadError case final error?)
+                AppAsyncState.error(
+                  message: error,
+                  actionLabel: appStrings.retry,
+                  onAction: _load,
                 )
               else if (_plans.isEmpty)
-                Text(
-                  appStrings.noPlansYet,
-                  style: _PlansText.subtle.copyWith(
-                    color: AppColors.textSecondary(context),
-                  ),
+                AppAsyncState.empty(
+                  icon: Icons.card_membership_outlined,
+                  message: appStrings.noPlansYet,
                 )
               else
-                ..._plans.map((plan) {
-                  final active = plan['is_active'] == true;
-                  final type = plan['plan_type']?.toString() == 'unlimited'
-                      ? appStrings.unlimited
-                      : appStrings.classPack;
-                  final credits = plan['credits'];
-                  final price = plan['price'];
-                  final currency =
-                      plan['currency']?.toString().toUpperCase() ?? 'EUR';
-                  final numericPrice = price is num
-                      ? price.toDouble()
-                      : double.tryParse(price?.toString() ?? '');
-                  final formattedAmount = numericPrice?.toStringAsFixed(2);
-                  final useEuroSuffix = Localizations.localeOf(
-                    context,
-                  ).languageCode.startsWith('es');
-                  final priceLabel = formattedAmount == null
-                      ? null
-                      : currency == 'EUR'
-                      ? useEuroSuffix
-                            ? '${formattedAmount.replaceAll('.', ',')} €'
-                            : '€$formattedAmount'
-                      : '$formattedAmount $currency';
-                  final details = <String>[
-                    type,
-                    if (credits != null) '$credits ${appStrings.creditsLower}',
-                    appStrings.planDays(plan['duration_days'] as int? ?? 30),
-                  ];
-                  final subtitle = details.join(' · ');
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Material(
-                      color: AppColors.surfaceAlt(context),
-                      borderRadius: BorderRadius.circular(18),
-                      child: InkWell(
-                        onTap: () => _edit(plan),
-                        borderRadius: BorderRadius.circular(18),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      plan['name']?.toString() ??
-                                          appStrings.plan,
-                                      style: _PlansText.rowTitle.copyWith(
-                                        color: AppColors.textPrimary(context),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      subtitle,
-                                      style: _PlansText.subtle.copyWith(
-                                        color: AppColors.textSecondary(context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (priceLabel != null) ...[
-                                    Text(
-                                      priceLabel,
-                                      style: GoogleFonts.barlowCondensed(
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFFB59B6A),
-                                        height: 1,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 7),
-                                  ],
-                                  _PlanStatusBadge(
-                                    active: active,
-                                    onTap: () => _toggle(plan),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+                ..._plans.map(
+                  (plan) => MembershipPlanRow(
+                    plan: plan,
+                    onOpenActions: () => _edit(plan),
+                    onToggleActive: () => _toggle(plan),
+                  ),
+                ),
             ],
           ),
         ),
@@ -829,43 +812,9 @@ class _ManagePlansSheetState extends State<_ManagePlansSheet> {
   }
 }
 
-class _PlanStatusBadge extends StatelessWidget {
-  const _PlanStatusBadge({required this.active, required this.onTap});
-
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.accent : AppColors.textSecondary(context);
-    final background = active
-        ? AppColors.accent.withValues(alpha: 0.14)
-        : AppColors.surfaceAlt(context);
-    final label = active ? appStrings.active : appStrings.inactive;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.75), width: 1),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: GoogleFonts.barlowCondensed(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: 0.8,
-            height: 1,
-          ),
-        ),
-      ),
-    );
-  }
+@visibleForTesting
+Widget buildManagePlansSheetForTest(List<Map<String, dynamic>> plans) {
+  return _ManagePlansSheet(gymId: 'test-gym', initialPlansForTesting: plans);
 }
 
 InputDecoration _plansInput(BuildContext context, String hint, IconData icon) {
@@ -911,21 +860,14 @@ class _PlansText {
     height: 1,
   );
 
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
+  static TextStyle body = GoogleFonts.barlow(
     color: const Color(0xFFE5E7EB),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
   );
 
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
+  static TextStyle subtle = GoogleFonts.barlow(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: const Color(0xFF8F96A3),

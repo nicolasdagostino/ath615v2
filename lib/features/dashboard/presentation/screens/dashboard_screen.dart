@@ -2811,72 +2811,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
 
                   if (_selectedTab == _DashboardTab.plans) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.activeMemberships,
-                            value: '${_activeMembershipMembers.length}',
-                            icon: Icons.card_membership_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.membersWithoutPlan,
-                            value: '${_membersWithoutPlan.length}',
-                            icon: Icons.person_off_outlined,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.expiringSoon,
-                            value: '${_membershipsExpiringSoon.length}',
-                            icon: Icons.event_busy_outlined,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _MetricCard(
-                            label: appStrings.activeValue,
-                            value: _activeMembershipValueLabel,
-                            icon: Icons.euro_rounded,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _DashboardCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appStrings.membershipTitle.toUpperCase(),
-                            style: _DashText.section,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            appStrings.manageMembershipsDescription,
-                            style: _DashText.subtle,
-                          ),
-                          const SizedBox(height: 16),
-                          _MembershipInsightRow(
-                            icon: Icons.emoji_events_outlined,
-                            label: appStrings.mostUsedPlan,
-                            value: _mostUsedPlanName,
-                          ),
-                          const SizedBox(height: 16),
-                          AppButton(
-                            label: appStrings.managePlans,
-                            onPressed: _openPlans,
-                          ),
-                        ],
-                      ),
+                    _MembershipOverview(
+                      activeMemberships: _activeMembershipMembers.length,
+                      membersWithoutPlan: _membersWithoutPlan.length,
+                      expiringSoon: _membershipsExpiringSoon.length,
+                      activeValue: _activeMembershipValueLabel,
+                      mostUsedPlan: _mostUsedPlanName,
+                      onManagePlans: _openPlans,
                     ),
                   ],
                 ],
@@ -2887,6 +2828,185 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+}
+
+class _MembershipOverview extends StatelessWidget {
+  const _MembershipOverview({
+    required this.activeMemberships,
+    required this.membersWithoutPlan,
+    required this.expiringSoon,
+    required this.activeValue,
+    required this.mostUsedPlan,
+    required this.onManagePlans,
+  });
+
+  final int activeMemberships;
+  final int membersWithoutPlan;
+  final int expiringSoon;
+  final String activeValue;
+  final String mostUsedPlan;
+  final VoidCallback onManagePlans;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey('membership-overview'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appStrings.membershipTitle.toUpperCase(),
+                    style: AppTypography.sectionTitle(context),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    appStrings.manageMembershipsDescription,
+                    style: AppTypography.bodySecondary(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppSizes.minimumTouchTarget,
+              ),
+              child: FilledButton.icon(
+                onPressed: onManagePlans,
+                icon: const Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: AppColors.accent,
+                ),
+                label: Text(
+                  appStrings.managePlans.toUpperCase(),
+                  style: AppTypography.buttonLabel(
+                    context,
+                  ).copyWith(color: Colors.white),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.textPrimary(context),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.input),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.activeMemberships,
+                value: '$activeMemberships',
+                icon: Icons.card_membership_outlined,
+              ),
+            ),
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.membersWithoutPlan,
+                value: '$membersWithoutPlan',
+                icon: Icons.person_off_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.expiringSoon,
+                value: '$expiringSoon',
+                icon: Icons.event_busy_outlined,
+              ),
+            ),
+            Expanded(
+              child: _MetricCard(
+                label: appStrings.activeValue,
+                value: activeValue,
+                icon: Icons.euro_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _MembershipInsightRow(
+          icon: Icons.emoji_events_outlined,
+          label: appStrings.mostUsedPlan,
+          value: mostUsedPlan,
+        ),
+      ],
+    );
+  }
+}
+
+@visibleForTesting
+Widget buildMembershipOverviewForTest() {
+  return _MembershipOverview(
+    activeMemberships: 12,
+    membersWithoutPlan: 3,
+    expiringSoon: 2,
+    activeValue: '420,00',
+    mostUsedPlan: 'Beach',
+    onManagePlans: () {},
+  );
+}
+
+@visibleForTesting
+Widget buildMembershipTabCompositionForTest() {
+  return Builder(
+    builder: (context) => Scaffold(
+      backgroundColor: AppColors.background(context),
+      body: Column(
+        children: [
+          buildDashboardHeaderForTest(unreadNotifications: 2),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.dashboardTitle,
+                    selected: false,
+                    onTap: () {},
+                  ),
+                ),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.members,
+                    selected: false,
+                    onTap: () {},
+                  ),
+                ),
+                Expanded(
+                  child: _DashboardTabChip(
+                    label: appStrings.membershipTitle,
+                    selected: true,
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              children: [buildMembershipOverviewForTest()],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _MembershipInsightRow extends StatelessWidget {
@@ -2904,11 +3024,11 @@ class _MembershipInsightRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      constraints: const BoxConstraints(minHeight: AppSizes.minimumTouchTarget),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border(context), width: 1),
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
       ),
       child: Row(
         children: [
@@ -2917,9 +3037,7 @@ class _MembershipInsightRow extends StatelessWidget {
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: _DashText.subtle.copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.helper(context),
             ),
           ),
           const SizedBox(width: 12),
@@ -2929,10 +3047,9 @@ class _MembershipInsightRow extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _DashText.body.copyWith(
-                color: AppColors.textPrimary(context),
-                fontWeight: FontWeight.w800,
-              ),
+              style: AppTypography.body(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -3659,27 +3776,6 @@ Widget buildDashboardOverviewForTest({
     onOpenWithoutPlan: () {},
     onSendNotification: () {},
   );
-}
-
-class _DashboardCard extends StatelessWidget {
-  const _DashboardCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        border: Border.all(color: AppColors.border(context), width: 1),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppShadows.card(context),
-      ),
-      child: child,
-    );
-  }
 }
 
 class _ActionRequiredCard extends StatelessWidget {

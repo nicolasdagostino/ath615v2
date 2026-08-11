@@ -395,6 +395,8 @@ class AppStrings {
     'Este plan tiene membresías o solicitudes vinculadas, por lo que no se puede eliminar permanentemente. Desactívalo para conservar el historial.',
   );
   String get noPlansYet => pick('No plans yet.', 'Aún no hay planes.');
+  String get loadingMembershipPlans =>
+      pick('Loading membership plans…', 'Cargando planes…');
 
   String get manageProgramsTitle =>
       pick('Manage programs', 'Gestionar programas');
