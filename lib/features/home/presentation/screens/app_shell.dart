@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../booking/presentation/screens/booking_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../explore/presentation/screens/explore_screen.dart';
+import '../../../notifications/data/notifications_repository.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../workouts/presentation/screens/workouts_screen.dart';
@@ -71,15 +72,12 @@ class _AppShellState extends State<AppShell> {
     if (user == null) return;
 
     try {
-      final rows = await Supabase.instance.client
-          .from('notifications')
-          .select('id')
-          .eq('user_id', user.id)
-          .isFilter('read_at', null)
-          .not('sent_at', 'is', null);
+      final count = await SupabaseNotificationsRepository(
+        Supabase.instance.client,
+      ).unreadCount();
 
       if (!mounted) return;
-      setState(() => _unreadNotifications = List.from(rows).length);
+      setState(() => _unreadNotifications = count);
     } catch (_) {
       if (!mounted) return;
       setState(() => _unreadNotifications = 0);

@@ -12,6 +12,7 @@ import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
 import '../features/auth/data/auth_repository.dart';
+import '../features/notifications/data/notifications_repository.dart';
 
 class AthleteLabApp extends StatefulWidget {
   const AthleteLabApp({super.key});
@@ -155,11 +156,9 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
     debugPrint('PUSH OPEN DATA => ${message.data}');
 
     if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
-      Supabase.instance.client
-          .from('notifications')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', notificationId.toString())
-          .ignore();
+      SupabaseNotificationsRepository(
+        Supabase.instance.client,
+      ).markRead(notificationId.toString()).ignore();
     }
 
     if (workoutId != null && workoutId.toString().trim().isNotEmpty) {

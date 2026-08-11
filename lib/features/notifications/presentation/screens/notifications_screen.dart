@@ -5,11 +5,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/notifications_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key, this.initialNotificationId});
+  const NotificationsScreen({
+    super.key,
+    this.initialNotificationId,
+    this.repository,
+  });
 
   final String? initialNotificationId;
+  final NotificationsRepository? repository;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -20,7 +26,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _handledInitialNotification = false;
   List<Map<String, dynamic>> _notifications = [];
 
-  SupabaseClient get _client => Supabase.instance.client;
+  late final NotificationsRepository _repository =
+      widget.repository ??
+      SupabaseNotificationsRepository(Supabase.instance.client);
 
   @override
   void initState() {
@@ -32,18 +40,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _loading = true);
 
     try {
-      final user = _client.auth.currentUser;
-      if (user == null) return;
-
-      final rows = await _client
-          .from('notifications')
-          .select(
-            'id, title, body, type, data, scheduled_for, sent_at, read_at',
-          )
-          .eq('user_id', user.id)
-          .not('sent_at', 'is', null)
-          .order('scheduled_for', ascending: false)
-          .limit(50);
+      final rows = await _repository.listOwn();
 
       if (!mounted) return;
       setState(() {
@@ -71,18 +68,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markLoadedNotificationsAsRead() async {
-    final user = _client.auth.currentUser;
-    if (user == null || _notifications.isEmpty) return;
+    if (_notifications.isEmpty) return;
 
     final now = DateTime.now().toUtc().toIso8601String();
 
     try {
-      await _client
-          .from('notifications')
-          .update({'read_at': now})
-          .eq('user_id', user.id)
-          .isFilter('read_at', null)
-          .not('sent_at', 'is', null);
+      await _repository.markAllRead();
 
       if (!mounted) return;
       setState(() {
@@ -97,10 +88,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (notification['read_at'] != null) return;
 
     try {
-      await _client
-          .from('notifications')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', notification['id']);
+      final notificationId = notification['id']?.toString();
+      if (notificationId == null || notificationId.isEmpty) return;
+      final updated = await _repository.markRead(notificationId);
+      if (!updated) return;
 
       if (!mounted) return;
       setState(() {
@@ -110,16 +101,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markAllAsRead() async {
-    final user = _client.auth.currentUser;
-    if (user == null) return;
-
     try {
-      await _client
-          .from('notifications')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('user_id', user.id)
-          .isFilter('read_at', null)
-          .not('sent_at', 'is', null);
+      await _repository.markAllRead();
 
       await _load();
     } catch (e) {
@@ -210,20 +193,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     if (confirmed != true) return;
 
-    final user = _client.auth.currentUser;
-    if (user == null) return;
-
     if (!mounted) return;
 
     final previous = List<Map<String, dynamic>>.from(_notifications);
     setState(() => _notifications = []);
 
     try {
-      await _client
-          .from('notifications')
-          .delete()
-          .eq('user_id', user.id)
-          .not('sent_at', 'is', null);
+      await _repository.clearOwn();
     } catch (e) {
       if (!mounted) return;
       setState(() => _notifications = previous);
