@@ -12,6 +12,9 @@ import '../widgets/manage_plans_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../members/data/member_coach_repository.dart';
+import '../../../members/domain/member_coach_capability.dart';
+import '../../../members/presentation/widgets/member_role_capability_section.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -35,6 +38,8 @@ enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
+  late final MemberCoachRepository _memberCoachRepository =
+      SupabaseMemberCoachRepository(Supabase.instance.client);
 
   bool _loadingMembers = true;
   _DashboardTab _selectedTab = _DashboardTab.overview;
@@ -55,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
 
-  int get _coachesCount => _members.where((m) => m['role'] == 'coach').length;
+  int get _coachesCount => _members.where(memberHasCoachCapability).length;
 
   int get _adminsCount => _members.where((m) => m['role'] == 'admin').length;
 
@@ -191,12 +196,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _loadingMembers = true);
 
     try {
-      final result = await Supabase.instance.client.functions.invoke(
+      final membersFuture = Supabase.instance.client.functions.invoke(
         'admin-list-members',
       );
+      final capabilitiesFuture = _memberCoachRepository.listCapabilities();
+      final result = await membersFuture;
+      final capabilities = await capabilitiesFuture;
 
       final data = Map<String, dynamic>.from(result.data as Map);
-      final members = List<Map<String, dynamic>>.from(data['members'] as List);
+      final sourceMembers = List<Map<String, dynamic>>.from(
+        data['members'] as List,
+      );
+      final members = sourceMembers.map((member) {
+        final memberId = member['id']?.toString();
+        return memberWithCoachCapability(
+          member,
+          memberId == null
+              ? memberHasCoachCapability(member)
+              : capabilities[memberId] ?? memberHasCoachCapability(member),
+        );
+      }).toList();
 
       final gymId = members.isEmpty
           ? _gymId
@@ -910,7 +929,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return role == 'athlete';
 
         case _MemberRoleFilter.coach:
-          return role == 'coach';
+          return memberHasCoachCapability(m);
 
         case _MemberRoleFilter.admin:
           return role == 'admin';
@@ -1262,7 +1281,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         params: {'p_member_id': member['id'], 'p_role': role},
       );
 
-      member['role'] = role;
+      final updatedMember = memberWithRole(member, role);
+      member
+        ..clear()
+        ..addAll(updatedMember);
 
       final currentUser = Supabase.instance.client.auth.currentUser;
       final currentUserId = currentUser?.id;
@@ -1290,7 +1312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final index = _members.indexWhere((m) => m['id'] == member['id']);
 
         if (index != -1) {
-          _members[index] = {..._members[index], 'role': role};
+          _members[index] = memberWithRole(_members[index], role);
         }
       });
 
@@ -1303,6 +1325,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error updating role: $e')));
+    }
+  }
+
+  Future<void> _updateMemberCoachCapability({
+    required Map<String, dynamic> member,
+    required bool isCoach,
+    required void Function(void Function()) setSheetState,
+  }) async {
+    final memberId = member['id']?.toString();
+    if (memberId == null || memberId.isEmpty) return;
+
+    try {
+      final updated = await _memberCoachRepository.setCapability(
+        memberId: memberId,
+        isCoach: isCoach,
+      );
+      if (!updated) throw StateError('member_not_updated');
+
+      final updatedMember = memberWithCoachCapability(member, isCoach);
+      member
+        ..clear()
+        ..addAll(updatedMember);
+
+      if (!mounted) return;
+      setSheetState(() {});
+      setState(() {
+        final index = _members.indexWhere(
+          (candidate) => candidate['id']?.toString() == memberId,
+        );
+        if (index != -1) {
+          _members[index] = memberWithCoachCapability(_members[index], isCoach);
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.coachCapabilityUpdated)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appStrings.coachCapabilityUpdateError(error))),
+      );
     }
   }
 
@@ -1864,6 +1928,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _openMember(Map<String, dynamic> member) {
     String historyFilter = 'all';
+    var updatingCoach = false;
 
     Future<List<dynamic>> loadMemberData() {
       return Future.wait([
@@ -2036,10 +2101,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       selectedRole == 'admin'
-                                          ? 'Admin'
+                                          ? appStrings.adminRole
                                           : selectedRole == 'coach'
-                                          ? 'Coach'
-                                          : appStrings.member,
+                                          ? appStrings.coach
+                                          : appStrings.athleteRole,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: _DashText.subtle.copyWith(
@@ -2093,46 +2158,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   color: AppColors.border(context),
                                   height: 24,
                                 ),
-                                Text(
-                                  appStrings.role.toUpperCase(),
-                                  style: _DashText.subtle,
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _RoleFilterChip(
-                                      label: appStrings.member,
-                                      selected: selectedRole == 'athlete',
-                                      onTap: () => _updateMemberRole(
-                                        member: member,
-                                        role: 'athlete',
-                                        currentSelectedRole: selectedRole,
-                                        setSheetState: setSheetState,
-                                      ),
-                                    ),
-                                    _RoleFilterChip(
-                                      label: 'Coach',
-                                      selected: selectedRole == 'coach',
-                                      onTap: () => _updateMemberRole(
-                                        member: member,
-                                        role: 'coach',
-                                        currentSelectedRole: selectedRole,
-                                        setSheetState: setSheetState,
-                                      ),
-                                    ),
-                                    _RoleFilterChip(
-                                      label: 'Admin',
-                                      selected: selectedRole == 'admin',
-                                      onTap: () => _updateMemberRole(
-                                        member: member,
-                                        role: 'admin',
-                                        currentSelectedRole: selectedRole,
-                                        setSheetState: setSheetState,
-                                      ),
-                                    ),
-                                  ],
+                                MemberRoleCapabilitySection(
+                                  role: selectedRole,
+                                  isCoach: memberHasCoachCapability(member),
+                                  isUpdatingCoach: updatingCoach,
+                                  onRoleSelected: (role) => _updateMemberRole(
+                                    member: member,
+                                    role: role,
+                                    currentSelectedRole: selectedRole,
+                                    setSheetState: setSheetState,
+                                  ),
+                                  onCoachChanged: (isCoach) async {
+                                    setSheetState(() => updatingCoach = true);
+                                    await _updateMemberCoachCapability(
+                                      member: member,
+                                      isCoach: isCoach,
+                                      setSheetState: setSheetState,
+                                    );
+                                    if (context.mounted) {
+                                      setSheetState(
+                                        () => updatingCoach = false,
+                                      );
+                                    }
+                                  },
                                 ),
                                 const SizedBox(height: 16),
                                 AppButton(
@@ -2966,6 +3014,10 @@ class _MemberTile extends StatelessWidget {
         : role == 'admin'
         ? appStrings.adminRole
         : role;
+    final hasCoachCapability = memberHasCoachCapability(member);
+    final roleCapabilityLabel = hasCoachCapability && role != 'coach'
+        ? '$roleLabel · ${appStrings.coach}'
+        : roleLabel;
     final membershipName = member['membership_name']?.toString();
     final creditsRemaining = member['credits_remaining'];
     final membershipLabel = membershipName == null || membershipName.isEmpty
@@ -3015,7 +3067,7 @@ class _MemberTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           membershipLabel == null
-                              ? '$statusLabel · $roleLabel'
+                              ? statusLabel
                               : '$membershipLabel · $statusLabel',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -3025,6 +3077,13 @@ class _MemberTile extends StatelessWidget {
                                 : const Color(0xFF8F96A3),
                             fontWeight: FontWeight.w700,
                           ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          roleCapabilityLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _DashText.subtle,
                         ),
                       ],
                     ),

@@ -404,6 +404,21 @@ class AppStrings {
   String get disabled => pick('Disabled', 'Desactivado');
   String get athleteRole => pick('Athlete', 'Miembro');
   String get adminRole => pick('Admin', 'Admin');
+  String get coachCapability => pick('Coach capability', 'Capacidad Coach');
+  String get coachCapabilityDescription => pick(
+    'Allows this member to coach without changing their operational role.',
+    'Permite que este miembro sea Coach sin cambiar su rol operativo.',
+  );
+  String get legacyCoachCapabilityDescription => pick(
+    'Legacy Coach role includes this capability. Change the role before disabling it.',
+    'El rol Coach legacy incluye esta capacidad. Cambia el rol antes de desactivarla.',
+  );
+  String get coachCapabilityUpdated =>
+      pick('Coach capability updated', 'Capacidad Coach actualizada');
+  String coachCapabilityUpdateError(Object error) => pick(
+    'Could not update Coach capability: $error',
+    'No se pudo actualizar la capacidad Coach: $error',
+  );
   String get activateMember => pick('Activate member', 'Activar miembro');
   String get deactivateMember =>
       pick('Deactivate member', 'Desactivar miembro');
