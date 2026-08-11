@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
@@ -203,15 +204,13 @@ class _ShellBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        border: Border(
-          top: BorderSide(color: AppColors.border(context), width: 0.8),
-        ),
+        color: const Color(0xFF0E0E10),
+        border: const Border(top: BorderSide(color: Color(0xFF242427))),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 58,
+          height: 64,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
@@ -225,7 +224,7 @@ class _ShellBottomNav extends StatelessWidget {
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 8),
+                      padding: const EdgeInsets.only(top: 7, bottom: 5),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -243,7 +242,22 @@ class _ShellBottomNav extends StatelessWidget {
                               size: 22,
                               color: selected
                                   ? AppColors.accent
-                                  : AppColors.textSecondary(context),
+                                  : const Color(0xFF85858C),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.label.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                              height: 1,
+                              color: selected
+                                  ? AppColors.accent
+                                  : const Color(0xFF85858C),
                             ),
                           ),
                         ],

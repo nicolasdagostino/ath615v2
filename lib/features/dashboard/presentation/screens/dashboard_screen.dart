@@ -10,11 +10,16 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../widgets/manage_plans_sheet.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_control_styles.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_async_state.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
 import '../../../members/presentation/widgets/member_role_capability_section.dart';
+import '../../../members/presentation/widgets/member_list_row.dart';
+import '../../../members/presentation/widgets/member_filter_chip.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -42,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       SupabaseMemberCoachRepository(Supabase.instance.client);
 
   bool _loadingMembers = true;
+  String? _membersError;
   _DashboardTab _selectedTab = _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
@@ -193,7 +199,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadMembers() async {
-    setState(() => _loadingMembers = true);
+    setState(() {
+      _loadingMembers = true;
+      _membersError = null;
+    });
 
     try {
       final membersFuture = Supabase.instance.client.functions.invoke(
@@ -225,12 +234,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _gymId = gymId;
         _members = members;
+        _membersError = null;
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.loadMembersError(e))));
+      setState(() => _membersError = appStrings.loadMembersError(e));
     } finally {
       if (mounted) setState(() => _loadingMembers = false);
     }
@@ -2513,7 +2521,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onOpenNotifications: widget.onOpenNotifications,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: Row(
               children: [
                 Expanded(
@@ -2527,7 +2535,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: _DashboardTabChip(
                     label: appStrings.members,
@@ -2539,7 +2546,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: _DashboardTabChip(
                     label: appStrings.membershipTitle,
@@ -2559,7 +2565,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: const Color(0xFFB59B6A),
               onRefresh: _loadDashboardData,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                padding: EdgeInsets.fromLTRB(
+                  _selectedTab == _DashboardTab.members ? 16 : 24,
+                  24,
+                  _selectedTab == _DashboardTab.members ? 16 : 24,
+                  28,
+                ),
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
                     if (_gymJoinRequests.isNotEmpty ||
@@ -2642,192 +2653,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
-                    _DashboardCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      appStrings.members.toUpperCase(),
-                                      style: _DashText.section,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appStrings.members.toUpperCase(),
+                                    style: AppTypography.sectionTitle(context),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    appStrings.membersCount(_members.length),
+                                    style: AppTypography.bodySecondary(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 142,
+                              height: AppSizes.fieldHeight,
+                              child: FilledButton(
+                                onPressed: _openInviteMemberSheet,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.textPrimary(
+                                    context,
+                                  ),
+                                  foregroundColor: AppColors.surface(context),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.input,
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      appStrings.dashboardHeaderSubtitle,
-                                      style: _DashText.subtle,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.add_rounded,
+                                      size: 19,
+                                      color: AppColors.accent,
+                                    ),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Flexible(
+                                      child: Text(
+                                        appStrings.inviteAthlete.toUpperCase(),
+                                        maxLines: 2,
+                                        textAlign: TextAlign.center,
+                                        style:
+                                            AppTypography.buttonLabel(
+                                              context,
+                                            ).copyWith(
+                                              color: AppColors.surface(context),
+                                            ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              SizedBox(
-                                width: 145,
-                                height: 48,
-                                child: FilledButton(
-                                  onPressed: _openInviteMemberSheet,
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.surfaceAlt(
-                                      context,
-                                    ),
-                                    foregroundColor: AppColors.textPrimary(
-                                      context,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(
-                                        color: AppColors.border(context),
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    appStrings.inviteAthlete,
-                                    textAlign: TextAlign.center,
-                                    style: _DashText.body.copyWith(
-                                      color: AppColors.textPrimary(context),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14,
-                                      height: 1.0,
-                                    ),
-                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextField(
+                          controller: _search,
+                          onChanged: (_) => setState(() {}),
+                          style: AppTypography.body(context),
+                          decoration: AppControlStyles.input(
+                            context,
+                            hintText: appStrings.searchMembers,
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: AppColors.accent,
+                              size: 20,
+                            ),
+                            suffixIcon: Icon(
+                              Icons.tune_rounded,
+                              color: AppColors.textSecondary(context),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              MemberFilterChip(
+                                label: appStrings.membersAllFilter(
+                                  _members.length,
                                 ),
+                                selected: _roleFilter == _MemberRoleFilter.all,
+                                onTap: () {
+                                  setState(() {
+                                    _roleFilter = _MemberRoleFilter.all;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label: appStrings.membersAthletesFilter(
+                                  _athletesCount,
+                                ),
+                                selected:
+                                    _roleFilter == _MemberRoleFilter.athlete,
+                                onTap: () {
+                                  setState(() {
+                                    _roleFilter = _MemberRoleFilter.athlete;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label: appStrings.membersCoachesFilter(
+                                  _coachesCount,
+                                ),
+                                selected:
+                                    _roleFilter == _MemberRoleFilter.coach,
+                                onTap: () {
+                                  setState(() {
+                                    _roleFilter = _MemberRoleFilter.coach;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label: appStrings.membersAdminsFilter(
+                                  _adminsCount,
+                                ),
+                                selected:
+                                    _roleFilter == _MemberRoleFilter.admin,
+                                onTap: () {
+                                  setState(() {
+                                    _roleFilter = _MemberRoleFilter.admin;
+                                  });
+                                },
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
-                          TextField(
-                            controller: _search,
-                            onChanged: (_) => setState(() {}),
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: appStrings.searchMember,
-                              hintStyle: GoogleFonts.barlowCondensed(
-                                color: AppColors.textSecondary(context),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.2,
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.search,
-                                color: AppColors.accent,
-                                size: 20,
-                              ),
-                              filled: true,
-                              fillColor: AppColors.surfaceAlt(context),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 15,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.input,
-                                ),
-                                borderSide: BorderSide(
-                                  color: AppColors.border(context),
-                                  width: 1,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.input,
-                                ),
-                                borderSide: const BorderSide(
-                                  color: AppColors.accent,
-                                  width: 1.2,
-                                ),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.input,
-                                ),
-                                borderSide: BorderSide(
-                                  color: AppColors.border(context),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                        ),
 
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _RoleFilterChip(
-                                  label: appStrings.all,
-                                  selected:
-                                      _roleFilter == _MemberRoleFilter.all,
-                                  onTap: () {
-                                    setState(() {
-                                      _roleFilter = _MemberRoleFilter.all;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 10),
-                                _RoleFilterChip(
-                                  label: 'Athletes ($_athletesCount)',
-                                  selected:
-                                      _roleFilter == _MemberRoleFilter.athlete,
-                                  onTap: () {
-                                    setState(() {
-                                      _roleFilter = _MemberRoleFilter.athlete;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 10),
-                                _RoleFilterChip(
-                                  label: 'Coaches ($_coachesCount)',
-                                  selected:
-                                      _roleFilter == _MemberRoleFilter.coach,
-                                  onTap: () {
-                                    setState(() {
-                                      _roleFilter = _MemberRoleFilter.coach;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 10),
-                                _RoleFilterChip(
-                                  label: 'Admins ($_adminsCount)',
-                                  selected:
-                                      _roleFilter == _MemberRoleFilter.admin,
-                                  onTap: () {
-                                    setState(() {
-                                      _roleFilter = _MemberRoleFilter.admin;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
+                        const SizedBox(height: AppSpacing.sm),
 
-                          const SizedBox(height: 16),
-
-                          if (_loadingMembers)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 22),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFFB59B6A),
-                                ),
-                              ),
-                            )
-                          else if (members.isEmpty)
-                            Text(
-                              appStrings.noMembersFound,
-                              style: _DashText.subtle,
-                            )
-                          else
-                            ...members.map(
-                              (member) => _MemberTile(
-                                member: member,
-                                onTap: () => _openMember(member),
+                        if (_loadingMembers)
+                          AppAsyncState.loading(
+                            message: appStrings.loadingMembers,
+                          )
+                        else if (_membersError case final error?)
+                          AppAsyncState.error(
+                            message: error,
+                            actionLabel: appStrings.retry,
+                            onAction: _loadMembers,
+                          )
+                        else if (members.isEmpty)
+                          AppAsyncState.empty(
+                            message: appStrings.noMembersFound,
+                          )
+                        else
+                          ...members.map(
+                            (member) => MemberListRow(
+                              member: member,
+                              onTap: () => _openMember(member),
+                              onMore: () => _openMemberActionsSheet(
+                                context: context,
+                                active: member['is_active'] == true,
+                                isPending:
+                                    member['invitation_status'] == 'pending',
+                                isDisabled:
+                                    member['invitation_status'] == 'disabled',
                                 onAssignPlan: () =>
                                     _openAssignPlan(member['id'].toString()),
                                 onToggleActive: () =>
@@ -2838,8 +2840,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _deletePendingMember(member),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ],
 
@@ -2969,146 +2971,6 @@ class _MembershipInsightRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MemberTile extends StatelessWidget {
-  const _MemberTile({
-    required this.member,
-    required this.onTap,
-    required this.onAssignPlan,
-    required this.onToggleActive,
-    required this.onResendInvitation,
-    required this.onDeletePendingMember,
-  });
-
-  final Map<String, dynamic> member;
-  final VoidCallback onTap;
-  final Future<void> Function() onAssignPlan;
-  final Future<void> Function() onToggleActive;
-  final Future<void> Function() onResendInvitation;
-  final Future<void> Function() onDeletePendingMember;
-
-  @override
-  Widget build(BuildContext context) {
-    final email = (member['email'] ?? '-').toString();
-    final name = (member['full_name'] ?? email).toString();
-    final role = (member['role'] ?? '-').toString();
-    final active = member['is_active'] == true;
-    final status =
-        (member['invitation_status'] ?? (active ? 'active' : 'disabled'))
-            .toString();
-    final isPending = status == 'pending';
-    final isDisabled = status == 'disabled';
-    final statusLabel = isPending
-        ? appStrings.pending
-        : isDisabled
-        ? appStrings.disabled
-        : appStrings.active;
-    final roleLabel = role == 'athlete'
-        ? appStrings.athleteRole
-        : role == 'coach'
-        ? appStrings.coach
-        : role == 'admin'
-        ? appStrings.adminRole
-        : role;
-    final hasCoachCapability = memberHasCoachCapability(member);
-    final roleCapabilityLabel = hasCoachCapability && role != 'coach'
-        ? '$roleLabel · ${appStrings.coach}'
-        : roleLabel;
-    final membershipName = member['membership_name']?.toString();
-    final creditsRemaining = member['credits_remaining'];
-    final membershipLabel = membershipName == null || membershipName.isEmpty
-        ? null
-        : creditsRemaining == null
-        ? '$membershipName · ${appStrings.unlimited}'
-        : '$membershipName · $creditsRemaining ${appStrings.creditsLower}';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Opacity(
-            opacity: active ? 1 : 0.55,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-              child: Row(
-                children: [
-                  _MemberAvatar(
-                    name: name,
-                    avatarUrl: member['avatar_url']?.toString(),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _DashText.title.copyWith(
-                            color: AppColors.textPrimary(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _DashText.subtle,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          membershipLabel == null
-                              ? statusLabel
-                              : '$membershipLabel · $statusLabel',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _DashText.subtle.copyWith(
-                            color: active
-                                ? const Color(0xFFB59B6A)
-                                : const Color(0xFF8F96A3),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          roleCapabilityLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _DashText.subtle,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.more_horiz_rounded,
-                      color: AppColors.textSecondary(context),
-                    ),
-                    onPressed: () => _openMemberActionsSheet(
-                      context: context,
-                      active: active,
-                      isPending: isPending,
-                      isDisabled: isDisabled,
-                      onAssignPlan: onAssignPlan,
-                      onToggleActive: onToggleActive,
-                      onResendInvitation: onResendInvitation,
-                      onDeletePendingMember: onDeletePendingMember,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -3410,8 +3272,13 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceAlt(context),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
+      ),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -3428,7 +3295,7 @@ class _DashboardHeader extends StatelessWidget {
                   child: SizedBox(
                     width: 132,
                     child: Text(
-                      gymName ?? appStrings.appBrand,
+                      appStrings.appBrand,
                       style: _DashText.title.copyWith(
                         color: AppColors.textPrimary(context),
                       ),
@@ -3444,7 +3311,7 @@ class _DashboardHeader extends StatelessWidget {
                       appStrings.dashboardTitle.toUpperCase(),
                       style: _DashText.title.copyWith(
                         color: AppColors.textPrimary(context),
-                        fontSize: 22,
+                        fontSize: 20,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -3475,6 +3342,21 @@ class _DashboardHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+@visibleForTesting
+Widget buildDashboardHeaderForTest({
+  String? gymName,
+  int unreadNotifications = 0,
+  VoidCallback? onManagePlans,
+  VoidCallback? onOpenNotifications,
+}) {
+  return _DashboardHeader(
+    gymName: gymName,
+    unreadNotifications: unreadNotifications,
+    onManagePlans: onManagePlans ?? () {},
+    onOpenNotifications: onOpenNotifications ?? () {},
+  );
 }
 
 class _HeaderIcon extends StatelessWidget {
@@ -3532,40 +3414,6 @@ class _HeaderIcon extends StatelessWidget {
   }
 }
 
-class _RoleFilterChip extends StatelessWidget {
-  const _RoleFilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      selected: selected,
-      label: Text(
-        label.toUpperCase(),
-        style: GoogleFonts.barlowCondensed(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: selected ? Colors.white : AppColors.textSecondary(context),
-          height: 1.0,
-        ),
-      ),
-      selectedColor: AppColors.accent,
-      backgroundColor: AppColors.surfaceAlt(context),
-      side: BorderSide.none,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      onSelected: (_) => onTap(),
-    );
-  }
-}
-
 class _DashboardTabChip extends StatelessWidget {
   const _DashboardTabChip({
     required this.label,
@@ -3579,28 +3427,36 @@ class _DashboardTabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
+    return Semantics(
       selected: selected,
-      label: SizedBox(
-        width: double.infinity,
-        child: Center(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: AppSizes.minimumTouchTarget,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected ? AppColors.accent : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
           child: Text(
             label.toUpperCase(),
             style: GoogleFonts.barlowCondensed(
               fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               letterSpacing: 0.8,
-              color: selected ? Colors.white : AppColors.textSecondary(context),
-              height: 1.0,
+              color: selected
+                  ? AppColors.textPrimary(context)
+                  : AppColors.textSecondary(context),
+              height: 1,
             ),
           ),
         ),
       ),
-      selectedColor: AppColors.accent,
-      backgroundColor: AppColors.surfaceAlt(context),
-      side: BorderSide.none,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      onSelected: (_) => onTap(),
     );
   }
 }

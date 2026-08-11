@@ -8,6 +8,7 @@ class AppColors {
 
   static const accent = Color(0xFFB59B6A);
   static const danger = Color(0xFFB42318);
+  static const success = Color(0xFF24835B);
 
   static Color background(BuildContext context) =>
       isDark(context) ? const Color(0xFF171717) : const Color(0xFFF7F8FA);

@@ -378,6 +378,9 @@ class AppStrings {
   String get unlimited => pick('Unlimited', 'Ilimitado');
   String get credits => pick('Credits', 'Créditos');
   String get creditsLower => pick('credits', 'créditos');
+  String creditsCompact(int count) => count == 1
+      ? pick('1 credit', '1 crédito')
+      : pick('$count credits', '$count créditos');
   String get createPlan => pick('Create plan', 'Crear plan');
   String get editPlan => pick('Edit plan', 'Editar plan');
   String get deletePlan => pick('Delete plan', 'Eliminar plan');
@@ -601,8 +604,18 @@ class AppStrings {
   String get occupancyToday => pick('Occupancy Today', 'Ocupación hoy');
   String get classesToday => pick('Classes Today', 'Clases hoy');
   String get searchMember => pick('Search member', 'Buscar miembro');
+  String get loadingMembers => pick('Loading members…', 'Cargando miembros…');
   String get noMembersFound =>
       pick('No members found.', 'No se encontraron miembros.');
+  String membersCount(int count) => count == 1
+      ? pick('1 member', '1 miembro')
+      : pick('$count members', '$count miembros');
+  String membersAllFilter(int count) => pick('All $count', 'Todos $count');
+  String membersAthletesFilter(int count) =>
+      pick('Athletes $count', 'Atletas $count');
+  String membersCoachesFilter(int count) =>
+      pick('Coaches $count', 'Coaches $count');
+  String membersAdminsFilter(int count) => pick('Admin $count', 'Admin $count');
 
   String get subscriptions => pick('Subscriptions', 'Suscripciones');
   String get dropIns => pick('Drop-ins', 'Drop-ins');
