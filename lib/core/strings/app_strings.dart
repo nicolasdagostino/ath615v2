@@ -430,6 +430,30 @@ class AppStrings {
   );
 
   String get createClassTitle => pick('Create class', 'Crear clase');
+  String get selectCoach => pick('Select Coach', 'Seleccionar Coach');
+  String get coachFieldLabel => pick('Coach', 'Coach');
+  String get noCoach => pick('No Coach', 'Sin Coach');
+  String get loadingCoaches =>
+      pick('Loading Coaches...', 'Cargando Coaches...');
+  String get noCoachesAvailable =>
+      pick('No Coaches available.', 'No hay Coaches disponibles.');
+  String get currentCoach => pick('Current Coach', 'Coach actual');
+  String get notAvailableForNewClasses =>
+      pick('Unavailable for new classes', 'No disponible para nuevas clases');
+  String get currentCoachUnavailable => pick(
+    'The current Coach is kept for this class but cannot be selected for a new assignment.',
+    'El Coach actual se conserva en esta clase, pero no puede seleccionarse para una asignación nueva.',
+  );
+  String get coachesLoadError =>
+      pick('Could not load Coaches.', 'No se pudieron cargar los Coaches.');
+  String get retry => pick('Retry', 'Reintentar');
+  String get duration => pick('Duration', 'Duración');
+  String get minutesShort => pick('min', 'min');
+  String get placesLower => pick('spots', 'plazas');
+  String get classRequiredFieldsHint => pick(
+    'Select a program, date and time to create the class.',
+    'Selecciona programa, fecha y hora para crear la clase.',
+  );
   String get classNeedProgram => pick(
     'Create at least one active program before creating classes.',
     'Crea al menos un programa activo antes de crear clases.',

@@ -7,20 +7,34 @@ import '../../../../core/theme/app_design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_pickers.dart';
+import '../../data/class_coach_repository.dart';
+import '../../domain/class_coach.dart';
+import 'class_coach_selector.dart';
 
 Future<void> showCreateClassSheet({
   required BuildContext context,
-  required SupabaseClient client,
+  SupabaseClient? client,
   required String gymId,
   required Future<void> Function() onCreated,
+  ClassCoachRepository? coachRepository,
+  Future<List<Map<String, dynamic>>> Function()? programsLoader,
 }) async {
+  assert(
+    client != null || (coachRepository != null && programsLoader != null),
+    'A Supabase client or injected option loaders are required.',
+  );
   await showGeneralDialog(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.transparent,
     transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) =>
-        _CreateClassSheet(client: client, gymId: gymId, onCreated: onCreated),
+    pageBuilder: (_, _, _) => _CreateClassSheet(
+      client: client,
+      gymId: gymId,
+      onCreated: onCreated,
+      coachRepository: coachRepository,
+      programsLoader: programsLoader,
+    ),
   );
 }
 
@@ -29,11 +43,15 @@ class _CreateClassSheet extends StatefulWidget {
     required this.client,
     required this.gymId,
     required this.onCreated,
+    this.coachRepository,
+    this.programsLoader,
   });
 
-  final SupabaseClient client;
+  final SupabaseClient? client;
   final String gymId;
   final Future<void> Function() onCreated;
+  final ClassCoachRepository? coachRepository;
+  final Future<List<Map<String, dynamic>>> Function()? programsLoader;
 
   @override
   State<_CreateClassSheet> createState() => _CreateClassSheetState();
@@ -46,16 +64,24 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   final _capacity = TextEditingController(text: '12');
 
   bool _loadingPrograms = true;
+  bool _loadingCoaches = true;
   bool _saving = false;
   bool _repeatWeekly = false;
   final List<int> _selectedDays = [];
   List<Map<String, dynamic>> _programs = [];
+  List<ClassCoachOption> _coaches = [];
   String? _selectedProgramId;
+  String? _selectedCoachId;
+  Object? _coachesError;
+
+  late final ClassCoachRepository _coachRepository =
+      widget.coachRepository ?? SupabaseClassCoachRepository(widget.client!);
 
   @override
   void initState() {
     super.initState();
     _loadPrograms();
+    _loadCoaches();
   }
 
   @override
@@ -68,14 +94,17 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
   Future<void> _loadPrograms() async {
     setState(() => _loadingPrograms = true);
     try {
-      final rows = await widget.client
-          .from('programs')
-          .select('id, name')
-          .eq('gym_id', widget.gymId)
-          .eq('is_active', true)
-          .order('name');
-
-      final programs = List<Map<String, dynamic>>.from(rows);
+      final injectedLoader = widget.programsLoader;
+      final programs = injectedLoader != null
+          ? await injectedLoader()
+          : List<Map<String, dynamic>>.from(
+              await widget.client!
+                  .from('programs')
+                  .select('id, name')
+                  .eq('gym_id', widget.gymId)
+                  .eq('is_active', true)
+                  .order('name'),
+            );
 
       if (!mounted) return;
       setState(() {
@@ -89,6 +118,24 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       ).showSnackBar(SnackBar(content: Text(appStrings.programsLoadError(e))));
     } finally {
       if (mounted) setState(() => _loadingPrograms = false);
+    }
+  }
+
+  Future<void> _loadCoaches() async {
+    setState(() {
+      _loadingCoaches = true;
+      _coachesError = null;
+    });
+
+    try {
+      final coaches = await _coachRepository.listAssignable();
+      if (!mounted) return;
+      setState(() => _coaches = coaches);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _coachesError = error);
+    } finally {
+      if (mounted) setState(() => _loadingCoaches = false);
     }
   }
 
@@ -118,6 +165,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
   bool get _canCreate {
     return !_loadingPrograms &&
+        !_loadingCoaches &&
         !_saving &&
         _selectedProgram != null &&
         _selectedStartsAt != null &&
@@ -147,9 +195,9 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
       if (_repeatWeekly && _selectedDays.isNotEmpty) {
         final time = TimeOfDay.fromDateTime(startsAt);
 
-        await widget.client.rpc(
+        await widget.client!.rpc(
           'create_recurring_classes_multi',
-          params: {
+          params: withRecurringClassCoach({
             'p_gym_id': widget.gymId,
             'p_program_id': program['id'],
             'p_title': programName,
@@ -161,12 +209,12 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             'p_duration_minutes': durationMinutes,
             'p_capacity': capacity,
             'p_weeks': 8,
-          },
+          }, _selectedCoachId),
         );
       } else if (_repeatWeekly) {
-        await widget.client.rpc(
+        await widget.client!.rpc(
           'create_recurring_classes',
-          params: {
+          params: withRecurringClassCoach({
             'p_gym_id': widget.gymId,
             'p_program_id': program['id'],
             'p_title': programName,
@@ -174,18 +222,22 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
             'p_duration_minutes': durationMinutes,
             'p_capacity': capacity,
             'p_weeks': 8,
-          },
+          }, _selectedCoachId),
         );
       } else {
-        await widget.client.from('classes').insert({
-          'gym_id': widget.gymId,
-          'program_id': program['id'],
-          'title': programName,
-          'starts_at': startsAt.toUtc().toIso8601String(),
-          'duration_minutes': durationMinutes,
-          'capacity': capacity,
-          'created_by': widget.client.auth.currentUser?.id,
-        });
+        await widget.client!
+            .from('classes')
+            .insert(
+              withClassCoach({
+                'gym_id': widget.gymId,
+                'program_id': program['id'],
+                'title': programName,
+                'starts_at': startsAt.toUtc().toIso8601String(),
+                'duration_minutes': durationMinutes,
+                'capacity': capacity,
+                'created_by': widget.client!.auth.currentUser?.id,
+              }, _selectedCoachId),
+            );
       }
 
       if (!mounted) return;
@@ -312,7 +364,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                 22,
                 12,
                 22,
-                110 + MediaQuery.of(context).viewInsets.bottom,
+                32 + MediaQuery.of(context).viewInsets.bottom,
               ),
               children: [
                 if (_loadingPrograms)
@@ -336,14 +388,16 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     initialValue: _selectedProgramId,
                     dropdownColor: AppColors.surface(context),
                     iconEnabledColor: AppColors.textSecondary(context),
-                    style: _ClassSheetText.body.copyWith(
+                    style: GoogleFonts.barlow(
                       color: AppColors.textPrimary(context),
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                     hint: Text(
                       appStrings.workoutProgram,
-                      style: _ClassSheetText.body.copyWith(
+                      style: GoogleFonts.barlow(
                         color: AppColors.textPrimary(context),
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -368,8 +422,9 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                           child: Text(
                             program['name']?.toString() ??
                                 appStrings.workoutProgram,
-                            style: _ClassSheetText.body.copyWith(
+                            style: GoogleFonts.barlow(
                               color: AppColors.textPrimary(context),
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -380,11 +435,21 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                         setState(() => _selectedProgramId = value),
                   ),
                 const SizedBox(height: 12),
+                ClassCoachSelector(
+                  coaches: _coaches,
+                  selectedCoachId: _selectedCoachId,
+                  loading: _loadingCoaches,
+                  error: _coachesError,
+                  onChanged: (coachId) =>
+                      setState(() => _selectedCoachId = coachId),
+                  onRetry: _loadCoaches,
+                ),
+                const SizedBox(height: 12),
                 _ClassSheetActionRow(
                   icon: Icons.calendar_month_outlined,
                   title: appStrings.workoutDate,
                   subtitle: _selectedDate == null
-                      ? ''
+                      ? appStrings.selectDate
                       : _formatDate(_selectedDate!),
                   onTap: _pickDate,
                 ),
@@ -393,9 +458,51 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                   icon: Icons.schedule_rounded,
                   title: appStrings.time,
                   subtitle: _selectedTime == null
-                      ? ''
+                      ? appStrings.selectTime
                       : _selectedTime!.format(context),
                   onTap: _pickTime,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _duration,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.barlow(
+                          color: AppColors.textPrimary(context),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _classSheetInput(
+                          context,
+                          appStrings.duration,
+                          Icons.timer_outlined,
+                          suffix: appStrings.minutesShort,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _capacity,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.barlow(
+                          color: AppColors.textPrimary(context),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        decoration: _classSheetInput(
+                          context,
+                          appStrings.capacity,
+                          Icons.groups_outlined,
+                          suffix: appStrings.placesLower,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -408,7 +515,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     ),
                   ),
                   child: SwitchListTile(
-                    contentPadding: const EdgeInsets.fromLTRB(18, 6, 12, 6),
+                    contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
                     activeThumbColor: AppColors.accent,
                     activeTrackColor: AppColors.accent.withValues(alpha: 0.28),
                     inactiveThumbColor: AppColors.textSecondary(context),
@@ -423,8 +530,10 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     ),
                     subtitle: Text(
                       appStrings.repeatWeeklyDescription,
-                      style: _ClassSheetText.subtle.copyWith(
+                      style: GoogleFonts.barlow(
                         color: AppColors.textSecondary(context),
+                        fontSize: 13,
+                        height: 1.3,
                       ),
                     ),
                   ),
@@ -479,46 +588,6 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 150,
-                      child: TextField(
-                        controller: _duration,
-                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                        keyboardType: TextInputType.number,
-                        style: _ClassSheetText.body.copyWith(
-                          color: AppColors.textPrimary(context),
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: _classSheetInput(
-                          context,
-                          appStrings.durationMinutes,
-                          Icons.timer_outlined,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 150,
-                      child: TextField(
-                        controller: _capacity,
-                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                        keyboardType: TextInputType.number,
-                        style: _ClassSheetText.body.copyWith(
-                          color: AppColors.textPrimary(context),
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: _classSheetInput(
-                          context,
-                          appStrings.capacity,
-                          Icons.groups_outlined,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                 if (_isPastClass) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -528,23 +597,24 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
                     ),
                   ),
                 ],
+                if (!_canCreate && !_loadingPrograms && !_loadingCoaches) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    appStrings.classRequiredFieldsHint,
+                    style: GoogleFonts.barlow(
+                      color: AppColors.textSecondary(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                _CreateClassButton(
+                  label: appStrings.createClassTitle,
+                  loading: _saving,
+                  enabled: _canCreate,
+                  onPressed: _save,
+                ),
               ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
-              decoration: BoxDecoration(
-                color: AppColors.background(context),
-                boxShadow: AppShadows.card(context),
-              ),
-              child: _CreateClassButton(
-                label: appStrings.createClassTitle,
-                loading: _saving,
-                enabled: _canCreate,
-                onPressed: _save,
-              ),
             ),
           ),
         ],
@@ -560,8 +630,7 @@ InputDecoration _programDropdownInput(
 ) {
   return InputDecoration(
     hintText: hint,
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
+    labelText: hint,
     prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
     fillColor: AppColors.surface(context),
@@ -584,12 +653,20 @@ InputDecoration _programDropdownInput(
 InputDecoration _classSheetInput(
   BuildContext context,
   String hint,
-  IconData icon,
-) {
+  IconData icon, {
+  required String suffix,
+}) {
   return InputDecoration(
-    hintText: hint,
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
+    labelText: hint,
+    suffixText: suffix,
+    labelStyle: GoogleFonts.barlow(
+      color: AppColors.textSecondary(context),
+      fontWeight: FontWeight.w600,
+    ),
+    suffixStyle: GoogleFonts.barlow(
+      color: AppColors.textSecondary(context),
+      fontWeight: FontWeight.w600,
+    ),
     hintStyle: _ClassSheetText.subtle.copyWith(
       color: AppColors.textSecondary(context),
     ),
@@ -747,13 +824,13 @@ class _ClassSheetActionRow extends StatelessWidget {
                         color: AppColors.textPrimary(context),
                       ),
                     ),
-                    const SizedBox(height: 4),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: _ClassSheetText.subtle.copyWith(
+                        style: GoogleFonts.barlow(
                           color: AppColors.textSecondary(context),
+                          fontSize: 13,
                         ),
                       ),
                     ],

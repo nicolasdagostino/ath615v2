@@ -6,6 +6,9 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_pickers.dart';
+import '../../data/class_coach_repository.dart';
+import '../../domain/class_coach.dart';
+import 'class_coach_selector.dart';
 
 Future<void> showEditClassSheet({
   required BuildContext context,
@@ -52,9 +55,18 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   late final TextEditingController _capacity;
 
   bool _loadingPrograms = true;
+  bool _loadingCoaches = true;
   bool _saving = false;
   List<Map<String, dynamic>> _programs = [];
+  List<ClassCoachOption> _coaches = [];
   String? _selectedProgramId;
+  String? _selectedCoachId;
+  late final String? _currentCoachId;
+  late final String? _currentCoachName;
+  Object? _coachesError;
+
+  late final ClassCoachRepository _coachRepository =
+      SupabaseClassCoachRepository(widget.client);
 
   @override
   void initState() {
@@ -71,8 +83,12 @@ class _EditClassSheetState extends State<_EditClassSheet> {
       text: (widget.klass['capacity'] ?? 12).toString(),
     );
     _selectedProgramId = widget.klass['program_id']?.toString();
+    _currentCoachId = widget.klass['coach_id']?.toString();
+    _selectedCoachId = _currentCoachId;
+    _currentCoachName = _coachName(widget.klass['coach']);
 
     _loadPrograms();
+    _loadCoaches();
   }
 
   @override
@@ -112,6 +128,32 @@ class _EditClassSheetState extends State<_EditClassSheet> {
     }
   }
 
+  String? _coachName(Object? value) {
+    if (value is Map) return value['full_name']?.toString();
+    if (value is List && value.isNotEmpty && value.first is Map) {
+      return (value.first as Map)['full_name']?.toString();
+    }
+    return null;
+  }
+
+  Future<void> _loadCoaches() async {
+    setState(() {
+      _loadingCoaches = true;
+      _coachesError = null;
+    });
+
+    try {
+      final coaches = await _coachRepository.listAssignable();
+      if (!mounted) return;
+      setState(() => _coaches = coaches);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _coachesError = error);
+    } finally {
+      if (mounted) setState(() => _loadingCoaches = false);
+    }
+  }
+
   DateTime? get _selectedStartsAt {
     final date = _selectedDate;
     final time = _selectedTime;
@@ -133,6 +175,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
   bool get _canSave {
     return !_loadingPrograms &&
+        !_loadingCoaches &&
         !_saving &&
         _selectedProgram != null &&
         _selectedStartsAt != null;
@@ -157,13 +200,15 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
       await widget.client
           .from('classes')
-          .update({
-            'program_id': program['id'],
-            'title': programName,
-            'starts_at': startsAt.toUtc().toIso8601String(),
-            'duration_minutes': durationMinutes,
-            'capacity': capacity,
-          })
+          .update(
+            withClassCoach({
+              'program_id': program['id'],
+              'title': programName,
+              'starts_at': startsAt.toUtc().toIso8601String(),
+              'duration_minutes': durationMinutes,
+              'capacity': capacity,
+            }, _selectedCoachId),
+          )
           .eq('id', widget.klass['id']);
 
       if (!mounted) return;
@@ -286,7 +331,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                 22,
                 12,
                 22,
-                110 + MediaQuery.of(context).viewInsets.bottom,
+                32 + MediaQuery.of(context).viewInsets.bottom,
               ),
               children: [
                 if (_loadingPrograms)
@@ -308,14 +353,16 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                     initialValue: _selectedProgramId,
                     dropdownColor: AppColors.surface(context),
                     iconEnabledColor: AppColors.textSecondary(context),
-                    style: _EditClassSheetText.body.copyWith(
+                    style: GoogleFonts.barlow(
                       color: AppColors.textPrimary(context),
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                     hint: Text(
                       appStrings.workoutProgram,
-                      style: _EditClassSheetText.body.copyWith(
+                      style: GoogleFonts.barlow(
                         color: AppColors.textPrimary(context),
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -340,8 +387,9 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                           child: Text(
                             program['name']?.toString() ??
                                 appStrings.workoutProgram,
-                            style: _EditClassSheetText.body.copyWith(
+                            style: GoogleFonts.barlow(
                               color: AppColors.textPrimary(context),
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -352,11 +400,23 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                         setState(() => _selectedProgramId = value),
                   ),
                 const SizedBox(height: 12),
+                ClassCoachSelector(
+                  coaches: _coaches,
+                  selectedCoachId: _selectedCoachId,
+                  currentCoachId: _currentCoachId,
+                  currentCoachName: _currentCoachName,
+                  loading: _loadingCoaches,
+                  error: _coachesError,
+                  onChanged: (coachId) =>
+                      setState(() => _selectedCoachId = coachId),
+                  onRetry: _loadCoaches,
+                ),
+                const SizedBox(height: 12),
                 _EditClassActionRow(
                   icon: Icons.calendar_month_outlined,
                   title: appStrings.workoutDate,
                   subtitle: _selectedDate == null
-                      ? ''
+                      ? appStrings.selectDate
                       : _formatDate(_selectedDate!),
                   onTap: _pickDate,
                 ),
@@ -365,67 +425,60 @@ class _EditClassSheetState extends State<_EditClassSheet> {
                   icon: Icons.schedule_rounded,
                   title: appStrings.time,
                   subtitle: _selectedTime == null
-                      ? ''
+                      ? appStrings.selectTime
                       : _selectedTime!.format(context),
                   onTap: _pickTime,
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    SizedBox(
-                      width: 150,
+                    Expanded(
                       child: TextField(
                         controller: _duration,
                         onTapOutside: (_) => FocusScope.of(context).unfocus(),
                         keyboardType: TextInputType.number,
-                        style: _EditClassSheetText.body.copyWith(
+                        style: GoogleFonts.barlow(
                           color: AppColors.textPrimary(context),
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
                         decoration: _editClassInput(
                           context,
-                          appStrings.durationMinutes,
+                          appStrings.duration,
                           Icons.timer_outlined,
+                          suffix: appStrings.minutesShort,
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    SizedBox(
-                      width: 150,
+                    Expanded(
                       child: TextField(
                         controller: _capacity,
                         onTapOutside: (_) => FocusScope.of(context).unfocus(),
                         keyboardType: TextInputType.number,
-                        style: _EditClassSheetText.body.copyWith(
+                        style: GoogleFonts.barlow(
                           color: AppColors.textPrimary(context),
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
                         decoration: _editClassInput(
                           context,
                           appStrings.capacity,
                           Icons.groups_outlined,
+                          suffix: appStrings.placesLower,
                         ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                _EditClassButton(
+                  label: appStrings.workoutSaveChanges,
+                  loading: _saving,
+                  enabled: _canSave,
+                  onPressed: _save,
+                ),
               ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
-              decoration: BoxDecoration(
-                color: AppColors.background(context),
-                boxShadow: AppShadows.card(context),
-              ),
-              child: _EditClassButton(
-                label: appStrings.workoutSaveChanges,
-                loading: _saving,
-                enabled: _canSave,
-                onPressed: _save,
-              ),
             ),
           ),
         ],
@@ -441,8 +494,7 @@ InputDecoration _programDropdownInput(
 ) {
   return InputDecoration(
     hintText: hint,
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
+    labelText: hint,
     prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
     filled: true,
     fillColor: AppColors.surface(context),
@@ -465,12 +517,20 @@ InputDecoration _programDropdownInput(
 InputDecoration _editClassInput(
   BuildContext context,
   String hint,
-  IconData icon,
-) {
+  IconData icon, {
+  required String suffix,
+}) {
   return InputDecoration(
-    hintText: hint,
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
+    labelText: hint,
+    suffixText: suffix,
+    labelStyle: GoogleFonts.barlow(
+      color: AppColors.textSecondary(context),
+      fontWeight: FontWeight.w600,
+    ),
+    suffixStyle: GoogleFonts.barlow(
+      color: AppColors.textSecondary(context),
+      fontWeight: FontWeight.w600,
+    ),
     hintStyle: _EditClassSheetText.subtle.copyWith(
       color: AppColors.textSecondary(context),
     ),
@@ -624,8 +684,9 @@ class _EditClassActionRow extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: _EditClassSheetText.subtle.copyWith(
+                        style: GoogleFonts.barlow(
                           color: AppColors.textSecondary(context),
+                          fontSize: 13,
                         ),
                       ),
                     ],
