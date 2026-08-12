@@ -51,7 +51,7 @@ class ExploreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceAlt(context),
+      color: AppColors.background(context),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
       child: SafeArea(
         bottom: false,

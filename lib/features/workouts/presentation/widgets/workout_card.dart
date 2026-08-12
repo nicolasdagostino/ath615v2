@@ -6,7 +6,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../screens/workout_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'workout_text_styles.dart';
 
 class WorkoutCard extends StatefulWidget {
   const WorkoutCard({
@@ -177,96 +176,77 @@ class _WorkoutCardState extends State<WorkoutCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = widget.imageUrl != null && widget.imageUrl!.isNotEmpty;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border(context), width: 1),
-        boxShadow: AppShadows.card(context),
+        border: Border(bottom: BorderSide(color: AppColors.border(context))),
       ),
-      clipBehavior: Clip.antiAlias,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.background(context),
         child: InkWell(
+          key: ValueKey('workout-${widget.workoutId}'),
           onTap: _openDetail,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            padding: const EdgeInsets.symmetric(vertical: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        widget.program.toUpperCase(),
-                        style: GoogleFonts.barlowCondensed(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary(context),
-                          letterSpacing: -0.3,
-                          height: 1.0,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.date.toUpperCase(),
+                            style: GoogleFonts.barlow(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary(context),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            widget.program.toUpperCase(),
+                            style: GoogleFonts.barlowCondensed(
+                              fontSize: 23,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary(context),
+                              letterSpacing: -0.3,
+                              height: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (widget.canManage)
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(
-                          Icons.more_horiz,
-                          color: AppColors.textSecondary(context),
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.more_horiz,
+                            color: AppColors.textSecondary(context),
+                          ),
+                          onPressed: _showManageActions,
                         ),
-                        onPressed: _showManageActions,
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.date,
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary(context),
-                    letterSpacing: 0.3,
-                    height: 1.0,
-                  ),
-                ),
-                if (hasImage) ...[
-                  const SizedBox(height: 18),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      widget.imageUrl!,
-                      width: double.infinity,
-                      height: 172,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   _previewDescription,
-                  maxLines: 4,
+                  maxLines: 5,
                   overflow: TextOverflow.ellipsis,
-                  style: WorkoutTextStyles.body.copyWith(
+                  style: GoogleFonts.barlow(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary(context),
-                    height: 1.28,
+                    height: 1.35,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  appStrings.tapToView.toUpperCase(),
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.accent,
-                    letterSpacing: 0.8,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     _InlineStat(
@@ -278,9 +258,15 @@ class _WorkoutCardState extends State<WorkoutCard> {
                     const SizedBox(width: 18),
                     _InlineStat(
                       icon: Icons.chat_bubble_outline,
-                      label: '${_comments.length}',
+                      label: appStrings.workoutCommentCount(_comments.length),
                       active: false,
                       onTap: _openDetail,
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: AppColors.accent,
                     ),
                   ],
                 ),
@@ -311,10 +297,9 @@ class _InlineStat extends StatelessWidget {
     final color = active ? const Color(0xFFE11D48) : const Color(0xFFABABAB);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(10),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -322,9 +307,9 @@ class _InlineStat extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.barlowCondensed(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+              style: GoogleFonts.barlow(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary(context),
                 height: 1,
               ),

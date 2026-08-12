@@ -240,16 +240,20 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
 
     return Scaffold(
       floatingActionButton: _canManage
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               heroTag: 'create-workout',
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.textPrimary(context),
               foregroundColor: Colors.white,
-              elevation: 4,
+              elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
               ),
               onPressed: _openCreateWorkout,
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add, color: AppColors.accent),
+              label: Text(
+                appStrings.workoutCreate.toUpperCase(),
+                style: GoogleFonts.barlowCondensed(fontWeight: FontWeight.w800),
+              ),
             )
           : null,
       backgroundColor: AppColors.background(context),
@@ -282,7 +286,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                     )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 34, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
                       itemCount: _workouts.length,
                       itemBuilder: (context, index) {
                         final workout = _workouts[index];

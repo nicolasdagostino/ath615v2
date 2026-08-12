@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_control_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../workouts/presentation/widgets/edit_workout_sheet.dart';
 import '../../../workouts/presentation/widgets/workout_card.dart';
@@ -37,27 +38,40 @@ class _ExploreFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      selected: selected,
-      label: Text(
-        label.toUpperCase(),
-        style: GoogleFonts.barlowCondensed(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: selected ? Colors.white : AppColors.textSecondary(context),
-          height: 1.0,
+    return Material(
+      color: selected
+          ? AppColors.textPrimary(context)
+          : AppColors.surfaceAlt(context),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? AppColors.textPrimary(context)
+                  : AppColors.border(context),
+            ),
+          ),
+          child: Text(
+            label.toUpperCase(),
+            style: GoogleFonts.barlowCondensed(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: selected
+                  ? AppColors.background(context)
+                  : AppColors.textSecondary(context),
+              height: 1.0,
+            ),
+          ),
         ),
       ),
-      selectedColor: AppColors.accent,
-      backgroundColor: AppColors.isDark(context)
-          ? AppColors.surfaceAlt(context)
-          : AppColors.surface(context),
-      side: selected
-          ? BorderSide.none
-          : BorderSide(color: AppColors.border(context)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      onSelected: (_) => onTap(),
     );
   }
 }
@@ -339,56 +353,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
             unreadNotifications: widget.unreadNotifications,
             onOpenNotifications: widget.onOpenNotifications,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
             child: TextField(
-              style: GoogleFonts.barlowCondensed(
+              style: GoogleFonts.barlow(
                 color: AppColors.textPrimary(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
               ),
               cursorColor: AppColors.accent,
-              decoration: InputDecoration(
+              decoration: AppControlStyles.input(
+                context,
                 hintText: appStrings.exploreSearchWorkouts,
-                hintStyle: GoogleFonts.barlowCondensed(
-                  color: AppColors.textSecondary(context),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
-                ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                   color: AppColors.accent,
                   size: 20,
-                ),
-                filled: true,
-                fillColor: AppColors.surfaceAlt(context),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 15,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.input),
-                  borderSide: BorderSide(
-                    color: AppColors.border(context),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.input),
-                  borderSide: const BorderSide(
-                    color: AppColors.accent,
-                    width: 1.2,
-                  ),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.input),
-                  borderSide: BorderSide(
-                    color: AppColors.border(context),
-                    width: 1,
-                  ),
                 ),
               ),
               onChanged: (value) => setState(() => _search = value),
@@ -463,7 +445,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
                       itemCount: filteredWorkouts.length,
                       itemBuilder: (context, index) {
                         final workout = filteredWorkouts[index];
