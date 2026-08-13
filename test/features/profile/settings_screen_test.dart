@@ -32,6 +32,7 @@ void main() {
               onAccount: () {},
               onChangePassword: () {},
               onGymSettings: () {},
+              onNotifications: () {},
               onLanguage: () {},
               onAppearance: () {},
               onHelp: () {},
@@ -115,6 +116,8 @@ void main() {
 
       expect(find.text(appStrings.profileAccount), findsOne);
       expect(find.text(appStrings.profileChangePassword), findsOne);
+      expect(find.byKey(const ValueKey('settings-notifications')), findsOne);
+      expect(find.text(appStrings.notificationPreferences), findsOne);
       expect(find.text(appStrings.profileTraining), findsNothing);
       expect(find.text(appStrings.profileMembership), findsNothing);
       expect(find.text(appStrings.personalRecords), findsNothing);

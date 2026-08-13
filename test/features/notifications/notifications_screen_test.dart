@@ -1,5 +1,6 @@
 import 'package:ath615v2/features/notifications/data/notifications_repository.dart';
 import 'package:ath615v2/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:ath615v2/core/widgets/app_message_detail_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -167,6 +168,14 @@ void main() {
     expect(repository.markReadCalls, 1);
     expect(repository.markAllCalls, 0);
     expect(refreshes, greaterThanOrEqualTo(2));
+    expect(find.byType(AppMessageDetailSheet), findsOneWidget);
+    final detailIcon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byType(AppMessageDetailSheet),
+        matching: find.byIcon(Icons.campaign_outlined),
+      ),
+    );
+    expect(detailIcon.color, const Color(0xFF159ED1));
   });
 
   testWidgets('membership request opens the administrative destination', (
@@ -190,6 +199,55 @@ void main() {
 
     expect(opened, 1);
   });
+
+  testWidgets('workout notification opens WOD date without a detail sheet', (
+    tester,
+  ) async {
+    DateTime? openedDate;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NotificationsScreen(
+          repository: _WorkoutNotificationsRepository(),
+          workoutDateResolver: (_) async => DateTime(2026, 8, 13),
+          onOpenWorkoutDate: (date) => openedDate = date,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NOTIFICATIONS'));
+    await tester.pump();
+    await tester.tap(find.text('How did it go?'));
+    await tester.pumpAndSettle();
+
+    expect(openedDate, DateTime(2026, 8, 13));
+    expect(find.byType(AppMessageDetailSheet), findsNothing);
+  });
+
+  for (final entry in <String, IconData>{
+    'class_reminder': Icons.calendar_month_outlined,
+    'birthday': Icons.cake_outlined,
+    'membership_approved': Icons.card_membership_outlined,
+    'unknown_type': Icons.notifications_none_rounded,
+  }.entries) {
+    testWidgets('${entry.key} uses the shared primary detail', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NotificationsScreen(
+            repository: _TypedNotificationsRepository(entry.key),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('NOTIFICATIONS'));
+      await tester.pump();
+      await tester.tap(find.text('Typed notification'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppMessageDetailSheet), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(entry.value));
+      expect(icon.color, const Color(0xFF159ED1));
+    });
+  }
 }
 
 class _MembershipRequestNotificationsRepository
@@ -204,6 +262,41 @@ class _MembershipRequestNotificationsRepository
       'data': <String, dynamic>{'requestId': 'request-1'},
       'scheduled_for': '2026-08-14T10:00:00Z',
       'sent_at': '2026-08-14T10:00:00Z',
+      'read_at': null,
+    },
+  ];
+}
+
+class _WorkoutNotificationsRepository extends _FakeNotificationsRepository {
+  @override
+  Future<List<NotificationRecord>> listOwn() async => [
+    {
+      'id': '10000000-0000-0000-0000-000000000088',
+      'title': 'How did it go?',
+      'body': 'Share your score.',
+      'type': 'post_score_reminder',
+      'data': <String, dynamic>{'workoutId': 'workout-1'},
+      'scheduled_for': '2026-08-13T10:00:00Z',
+      'sent_at': '2026-08-13T10:00:00Z',
+      'read_at': null,
+    },
+  ];
+}
+
+class _TypedNotificationsRepository extends _FakeNotificationsRepository {
+  _TypedNotificationsRepository(this.type);
+  final String type;
+
+  @override
+  Future<List<NotificationRecord>> listOwn() async => [
+    {
+      'id': '10000000-0000-0000-0000-000000000077',
+      'title': 'Typed notification',
+      'body': 'A message body.',
+      'type': type,
+      'data': <String, dynamic>{},
+      'scheduled_for': '2026-08-13T10:00:00Z',
+      'sent_at': '2026-08-13T10:00:00Z',
       'read_at': null,
     },
   ];

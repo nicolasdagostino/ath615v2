@@ -12,6 +12,8 @@ import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
 import '../../features/onboarding/presentation/screens/scan_gym_qr_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/notifications/presentation/screens/notification_preferences_screen.dart';
+import '../../features/notifications/navigation/notification_destination.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
@@ -55,8 +57,12 @@ class AppRouter {
         ),
         GoRoute(
           path: '/app',
-          builder: (context, state) =>
-              AppShell(initialSection: state.uri.queryParameters['section']),
+          builder: (context, state) => AppShell(
+            initialSection: state.uri.queryParameters['section'],
+            initialWorkoutDate: parseNotificationDate(
+              state.uri.queryParameters['date'],
+            ),
+          ),
         ),
         GoRoute(
           path: '/join-gym',
@@ -106,6 +112,10 @@ class AppRouter {
                   state.uri.queryParameters['notificationId'],
             );
           },
+        ),
+        GoRoute(
+          path: '/notification-preferences',
+          builder: (context, state) => const NotificationPreferencesScreen(),
         ),
         GoRoute(
           path: '/workout/:id',

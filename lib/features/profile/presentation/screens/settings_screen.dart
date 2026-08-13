@@ -117,6 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onAccount: () => context.push('/account'),
                       onChangePassword: () => showChangePasswordSheet(context),
                       onGymSettings: () => context.push('/gym-settings'),
+                      onNotifications: () =>
+                          context.push('/notification-preferences'),
                       onLanguage: () {
                         final next =
                             localeController.locale.languageCode == 'en'
@@ -178,6 +180,7 @@ class SettingsContent extends StatelessWidget {
     required this.onAccount,
     required this.onChangePassword,
     required this.onGymSettings,
+    required this.onNotifications,
     required this.onLanguage,
     required this.onAppearance,
     required this.onHelp,
@@ -193,6 +196,7 @@ class SettingsContent extends StatelessWidget {
   final VoidCallback onAccount;
   final VoidCallback onChangePassword;
   final VoidCallback onGymSettings;
+  final VoidCallback onNotifications;
   final VoidCallback onLanguage;
   final VoidCallback onAppearance;
   final VoidCallback onHelp;
@@ -234,6 +238,12 @@ class SettingsContent extends StatelessWidget {
         title:
             '${appStrings.appearance} · ${themeController.isDark ? appStrings.dark : appStrings.light}',
         onTap: onAppearance,
+      ),
+      _SettingsRow(
+        key: const ValueKey('settings-notifications'),
+        icon: Icons.notifications_none_rounded,
+        title: appStrings.notificationPreferences,
+        onTap: onNotifications,
       ),
       if (canEditGym)
         _SettingsRow(

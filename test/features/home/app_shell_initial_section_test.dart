@@ -82,6 +82,14 @@ void main() {
     );
   });
 
+  testWidgets('WOD date deep link selects the workouts destination', (
+    tester,
+  ) async {
+    await pumpShell(tester, 'athlete', initialSection: 'wod');
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+    expect(initialShellIndexForRole('athlete', requestedSection: 'wod'), 0);
+  });
+
   testWidgets('athlete opens directly on Booking', (tester) async {
     await pumpShell(tester, 'athlete');
 

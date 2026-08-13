@@ -88,6 +88,7 @@ serve(async (req) => {
             classId: klass.id,
             bookingId: booking.id,
             workoutId: workout.id,
+            workoutDate,
             action: 'post_score',
           },
           scheduled_for: now.toISOString(),
@@ -103,7 +104,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }), {
+    const message = e instanceof Error ? e.message : String(e)
+    return new Response(JSON.stringify({ ok: false, error: message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

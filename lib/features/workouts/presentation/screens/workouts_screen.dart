@@ -25,6 +25,7 @@ class WorkoutsScreen extends StatefulWidget {
     required this.onOpenNotifications,
     this.dataSource,
     this.nowForTesting,
+    this.initialDate,
   });
 
   final String? gymName;
@@ -32,6 +33,7 @@ class WorkoutsScreen extends StatefulWidget {
   final VoidCallback onOpenNotifications;
   final WorkoutsDateDataSource? dataSource;
   final DateTime? nowForTesting;
+  final DateTime? initialDate;
 
   @override
   State<WorkoutsScreen> createState() => _WorkoutsScreenState();
@@ -57,7 +59,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = _today;
+    _selectedDate = _dateOnly(widget.initialDate ?? _today);
     _visibleWeek = _startOfWeek(_selectedDate);
     _loadViewerAndDate();
   }

@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { shouldSendNotificationPush } from '../_shared/notification-preferences.ts'
 
 function base64Url(input: ArrayBuffer | string) {
   const bytes = typeof input === 'string'
@@ -125,6 +126,18 @@ serve(async (req) => {
     const sentTokens = new Set<string>()
 
     for (const n of notifications) {
+      const { data: preferences, error: preferencesError } = await admin
+        .from('notification_preferences')
+        .select('communications_push_enabled, notifications_push_enabled')
+        .eq('user_id', n.user_id)
+        .maybeSingle()
+
+      if (preferencesError) throw preferencesError
+
+      if (!shouldSendNotificationPush(n.type, preferences)) {
+        continue
+      }
+
       const { data: tokens, error: tokenError } = await admin
         .from('device_tokens')
         .select('token')
@@ -156,6 +169,7 @@ serve(async (req) => {
                 data: {
                   type: String(n.type ?? ''),
                   workoutId: String(n.data?.workoutId ?? ''),
+                  workoutDate: String(n.data?.workoutDate ?? ''),
                   notificationId: String(n.id),
                 },
                 apns: {

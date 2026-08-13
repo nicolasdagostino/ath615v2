@@ -245,6 +245,7 @@ class AppStrings {
   String get notificationsEmpty =>
       pick('No notifications yet.', 'Aún no hay notificaciones.');
   String get notificationFallbackTitle => pick('Notification', 'Notificación');
+  String get open => pick('Open', 'Abrir');
   String notificationSent(String date) => pick('Sent $date', 'Enviado $date');
   String notificationScheduled(String date) =>
       pick('Scheduled $date', 'Programado $date');
@@ -267,6 +268,21 @@ class AppStrings {
       : pick('$count unread', '$count sin leer');
   String get noNotificationsTitle =>
       pick('No notifications', 'Sin notificaciones');
+  String get notificationPreferences => pick('Notifications', 'Notificaciones');
+  String get gymCommunicationsPreference =>
+      pick('Gym communications', 'Comunicaciones del gimnasio');
+  String get gymCommunicationsPreferenceDescription => pick(
+    'Receive announcements and communications sent by your gym.',
+    'Recibir avisos y comunicados enviados por tu gimnasio.',
+  );
+  String get notificationsPreferenceDescription => pick(
+    'Receive reminders and updates about classes, workouts, memberships and your activity.',
+    'Recibir recordatorios y avisos relacionados con clases, workouts, membresías y tu actividad.',
+  );
+  String get notificationPreferencesSaveError => pick(
+    'We could not save your notification preferences.',
+    'No pudimos guardar tus preferencias de notificaciones.',
+  );
 
   String get authLoginTitle => pick('ATHLETE 615', 'ATHLETE 615');
   String get authLoginSubtitle =>

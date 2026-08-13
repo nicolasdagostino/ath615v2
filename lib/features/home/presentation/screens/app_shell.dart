@@ -20,10 +20,12 @@ class AppShell extends StatefulWidget {
     this.initialRoleForTesting,
     this.screenBuilderForTesting,
     this.initialSection,
+    this.initialWorkoutDate,
     this.initialUnreadForTesting = 0,
   });
 
   final String? initialSection;
+  final DateTime? initialWorkoutDate;
 
   @visibleForTesting
   final int initialUnreadForTesting;
@@ -186,6 +188,7 @@ class _AppShellState extends State<AppShell> {
               gymName: _gymName,
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
+              initialDate: widget.initialWorkoutDate,
             ),
             BookingScreen(
               gymName: _gymName,
@@ -272,6 +275,7 @@ class _AppShellState extends State<AppShell> {
 
 @visibleForTesting
 int initialShellIndexForRole(String? role, {String? requestedSection}) {
+  if (requestedSection == 'wod') return 0;
   if (requestedSection == 'membership' &&
       (role == 'admin' || role == 'owner')) {
     return 4;

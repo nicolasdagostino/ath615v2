@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,9 +8,11 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_message_detail_sheet.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../data/notifications_repository.dart';
+import '../../navigation/notification_destination.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
@@ -21,6 +22,8 @@ class NotificationsScreen extends StatefulWidget {
     this.gymName,
     this.onNotificationsRead,
     this.onOpenMembershipRequests,
+    this.workoutDateResolver,
+    this.onOpenWorkoutDate,
   });
 
   final String? initialNotificationId;
@@ -28,6 +31,9 @@ class NotificationsScreen extends StatefulWidget {
   final String? gymName;
   final VoidCallback? onNotificationsRead;
   final VoidCallback? onOpenMembershipRequests;
+  final Future<DateTime?> Function(Map<String, dynamic> data)?
+  workoutDateResolver;
+  final ValueChanged<DateTime>? onOpenWorkoutDate;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -157,32 +163,57 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
-    if (data is Map && data['workoutId'] != null) {
+    if (data is Map &&
+        (data['workoutId'] != null ||
+            data['workout_date'] != null ||
+            data['workoutDate'] != null)) {
+      final normalizedData = Map<String, dynamic>.from(data);
+      final date =
+          await (widget.workoutDateResolver?.call(normalizedData) ??
+              resolveWorkoutNotificationDate(
+                client: Supabase.instance.client,
+                data: normalizedData,
+              ));
       if (!mounted) return;
-      context.push('/workout/${data['workoutId']}');
+      final destinationDate = date ?? DateTime.now();
+      if (widget.onOpenWorkoutDate case final callback?) {
+        callback(destinationDate);
+      } else {
+        context.go(wodDestination(destinationDate));
+      }
       return;
     }
 
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showAppMessageDetailSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _NotificationDetailsSheet(
-        title:
-            notification['title']?.toString() ??
-            appStrings.notificationFallbackTitle,
-        body: notification['body']?.toString() ?? '',
-        meta: notification['sent_at'] != null
-            ? appStrings.notificationSent(
-                _formatDate(notification['sent_at']?.toString()),
-              )
-            : appStrings.notificationScheduled(
-                _formatDate(notification['scheduled_for']?.toString()),
-              ),
-      ),
+      title:
+          notification['title']?.toString() ??
+          appStrings.notificationFallbackTitle,
+      body: notification['body']?.toString() ?? '',
+      metadata: notification['sent_at'] != null
+          ? appStrings.notificationSent(
+              _formatDate(notification['sent_at']?.toString()),
+            )
+          : appStrings.notificationScheduled(
+              _formatDate(notification['scheduled_for']?.toString()),
+            ),
+      icon: _notificationIcon(notification['type']?.toString()),
+      closeLabel: appStrings.close,
     );
   }
+
+  IconData _notificationIcon(String? type) => switch (type) {
+    'communication' => Icons.campaign_outlined,
+    'class_reminder' => Icons.calendar_month_outlined,
+    'birthday' => Icons.cake_outlined,
+    'waitlist_promoted' => Icons.group_add_outlined,
+    'gym_join_approved' || 'gym_join_rejected' => Icons.storefront_outlined,
+    'membership_approved' ||
+    'membership_scheduled' ||
+    'membership_payment_completed' => Icons.card_membership_outlined,
+    _ => Icons.notifications_none_rounded,
+  };
 
   List<Map<String, dynamic>> get _visibleNotifications => _notifications
       .where(
@@ -390,114 +421,6 @@ class _MessageRow extends StatelessWidget {
   );
 }
 
-class _NotificationDetailsSheet extends StatelessWidget {
-  const _NotificationDetailsSheet({
-    required this.title,
-    required this.body,
-    required this.meta,
-  });
-
-  final String title;
-  final String body;
-  final String meta;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.border(context)),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border(context),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceAlt(context),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.campaign_outlined,
-                      color: AppColors.accent,
-                      size: 21,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: _NotificationText.title(
-                        context,
-                      ).copyWith(fontSize: 24),
-                    ),
-                  ),
-                ],
-              ),
-              if (body.isNotEmpty) ...[
-                const SizedBox(height: 18),
-                Text(
-                  body,
-                  style: _NotificationText.body(context).copyWith(
-                    color: AppColors.textPrimary(context),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              Text(meta, style: _NotificationText.subtle(context)),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary(context),
-                    side: BorderSide(color: AppColors.border(context)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    appStrings.close.toUpperCase(),
-                    style: _NotificationText.button(context),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _NotificationsLoadingState extends StatelessWidget {
   const _NotificationsLoadingState();
 
@@ -571,39 +494,4 @@ class _SkeletonBox extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NotificationText {
-  const _NotificationText._();
-
-  static TextStyle title(BuildContext context) => GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary(context),
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle body(BuildContext context) => GoogleFonts.barlowCondensed(
-    color: AppColors.textSecondary(context),
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-
-  static TextStyle button(BuildContext context) => GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary(context),
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle subtle(BuildContext context) => GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary(context),
-    letterSpacing: 0.3,
-    height: 1,
-  );
 }

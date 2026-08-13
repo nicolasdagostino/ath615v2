@@ -8,11 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/router/app_router.dart';
 import '../core/router/deep_link_service.dart';
+import '../core/strings/app_strings.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/notifications/data/notifications_repository.dart';
+import '../features/notifications/navigation/notification_destination.dart';
 
 class AthleteLabApp extends StatefulWidget {
   const AthleteLabApp({super.key});
@@ -148,9 +150,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
     }
   }
 
-  void _handlePushTap(RemoteMessage message) {
+  Future<void> _handlePushTap(RemoteMessage message) async {
     final type = message.data['type']?.toString();
     final workoutId = message.data['workoutId'] ?? message.data['workout_id'];
+    final workoutDate =
+        message.data['workoutDate'] ?? message.data['workout_date'];
     final notificationId =
         message.data['notificationId'] ?? message.data['notification_id'];
 
@@ -162,8 +166,13 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       ).markRead(notificationId.toString()).ignore();
     }
 
-    if (workoutId != null && workoutId.toString().trim().isNotEmpty) {
-      _router.push('/workout/${workoutId.toString()}');
+    if ((workoutId != null && workoutId.toString().trim().isNotEmpty) ||
+        workoutDate != null) {
+      final date = await resolveWorkoutNotificationDate(
+        client: Supabase.instance.client,
+        data: Map<String, dynamic>.from(message.data),
+      );
+      _router.go(wodDestination(date ?? DateTime.now()));
       return;
     }
 
@@ -180,7 +189,8 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
 
   void _showForegroundPush(RemoteMessage message) {
     notificationsInboxEvents.refresh();
-    final title = message.notification?.title ?? 'Notification';
+    final title =
+        message.notification?.title ?? appStrings.notificationFallbackTitle;
     final body = message.notification?.body ?? '';
 
     final messenger = _messengerKey.currentState;
@@ -195,13 +205,18 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
             if (body.isNotEmpty) Text(body),
           ],
         ),
         action: SnackBarAction(
-          label: 'Open',
-          onPressed: () => _handlePushTap(message),
+          label: appStrings.open,
+          onPressed: () => _handlePushTap(message).ignore(),
         ),
       ),
     );
@@ -239,12 +254,12 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       );
 
       _openedMessageSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
-        _handlePushTap,
+        (message) => _handlePushTap(message).ignore(),
       );
 
       FirebaseMessaging.instance.getInitialMessage().then((message) {
         if (mounted && message != null) {
-          _handlePushTap(message);
+          _handlePushTap(message).ignore();
         }
       });
     });
