@@ -1,21 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../booking_colors.dart';
+import 'attendance_admin_actions.dart';
+
+class ClassDetailAdminAction {
+  const ClassDetailAdminAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+}
+
+class ClassDetailAttendeeActions {
+  const ClassDetailAttendeeActions({
+    required this.onAddMember,
+    required this.onAddGuest,
+    this.onChanged,
+    this.canMarkAttendance = true,
+  });
+
+  final Future<Map<String, dynamic>?> Function(int bookingCount) onAddMember;
+  final Future<Map<String, dynamic>?> Function(int bookingCount) onAddGuest;
+  final Future<void> Function()? onChanged;
+  final bool canMarkAttendance;
+}
 
 Future<void> showClassDetailsSheet({
   required BuildContext context,
   required SupabaseClient client,
   required Map<String, dynamic> klass,
+  required String actionLabel,
+  required VoidCallback? onAction,
+  List<ClassDetailAdminAction> adminActions = const [],
+  ClassDetailAttendeeActions? attendeeActions,
 }) async {
   final classId = klass['id'].toString();
 
   final bookings = await client
       .from('class_bookings')
-      .select('user_id, guest_name, is_guest, created_at')
+      .select('id, user_id, guest_name, is_guest, status, created_at')
       .eq('class_id', classId)
       .neq('status', 'cancelled')
       .order('created_at', ascending: true);
@@ -37,10 +74,11 @@ Future<void> showClassDetailsSheet({
   final myWaitlistPosition = myWaitlistIndex >= 0 ? myWaitlistIndex + 1 : null;
 
   final userIds = <String>{
+    if (klass['coach_id'] != null) klass['coach_id'].toString(),
     ...bookingRows
-        .where((b) => b['user_id'] != null)
-        .map((b) => b['user_id'].toString()),
-    ...waitlistRows.map((w) => w['user_id'].toString()),
+        .where((booking) => booking['user_id'] != null)
+        .map((booking) => booking['user_id'].toString()),
+    ...waitlistRows.map((entry) => entry['user_id'].toString()),
   }.toList();
 
   final profiles = userIds.isEmpty
@@ -51,188 +89,381 @@ Future<void> showClassDetailsSheet({
               .select('id, full_name, avatar_url')
               .inFilter('id', userIds),
         );
-
-  final profileById = {for (final p in profiles) p['id'].toString(): p};
+  final profileById = {
+    for (final profile in profiles) profile['id'].toString(): profile,
+  };
 
   if (!context.mounted) return;
-
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) {
-      final startsAt = DateTime.parse(klass['starts_at']).toLocal();
-      final timeLabel =
-          '${startsAt.hour.toString().padLeft(2, '0')}:${startsAt.minute.toString().padLeft(2, '0')}';
-      final title =
-          klass['title']?.toString().toUpperCase() ??
-          appStrings.classFallback.toUpperCase();
-      final capacity = klass['capacity'] as int? ?? 0;
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, setSheetState) {
+        Future<void> addMember() async {
+          final result = await attendeeActions?.onAddMember(bookingRows.length);
+          if (result == null) return;
+          final booking = Map<String, dynamic>.from(result['booking'] as Map);
+          final member = Map<String, dynamic>.from(result['member'] as Map);
+          final userId = member['user_id']?.toString();
+          bookingRows.add(booking);
+          if (userId != null) {
+            profileById[userId] = {
+              'id': userId,
+              'full_name': member['full_name'],
+              'avatar_url': member['avatar_url'],
+            };
+          }
+          setSheetState(() {});
+        }
 
-      return SafeArea(
-        child: Container(
-          margin: EdgeInsets.all(AppSpacing.sheetMargin),
-          padding: EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            color: AppColors.surface(sheetContext),
-            borderRadius: BorderRadius.circular(AppRadii.sheet),
-            border: Border.all(color: AppColors.border(sheetContext), width: 1),
-            boxShadow: AppShadows.card(sheetContext),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    timeLabel,
-                    style: _ClassDetailsText.time.copyWith(
-                      color: AppColors.accent,
-                    ),
+        Future<void> addGuest() async {
+          final booking = await attendeeActions?.onAddGuest(bookingRows.length);
+          if (booking == null) return;
+          bookingRows.add(booking);
+          setSheetState(() {});
+        }
+
+        Future<void> updateAttendeeStatus(
+          Map<String, dynamic> booking,
+          String status,
+        ) async {
+          try {
+            await updateClassBookingAttendance(
+              client: client,
+              bookingId: booking['id'].toString(),
+              status: status,
+            );
+            booking['status'] = status;
+            setSheetState(() {});
+            await attendeeActions?.onChanged?.call();
+          } catch (error) {
+            if (!sheetContext.mounted) return;
+            ScaffoldMessenger.of(sheetContext).showSnackBar(
+              SnackBar(content: Text(appStrings.attendanceError(error))),
+            );
+          }
+        }
+
+        Future<void> removeAttendee(
+          Map<String, dynamic> booking,
+          String name,
+        ) async {
+          final confirmed = await showAppConfirmationDialog(
+            context: sheetContext,
+            title: appStrings.removeBooking,
+            message: name,
+            confirmLabel: appStrings.remove,
+            cancelLabel: appStrings.cancel,
+          );
+          if (!confirmed) return;
+          try {
+            await removeClassBookingAsAdmin(
+              client: client,
+              bookingId: booking['id'].toString(),
+            );
+            bookingRows.removeWhere((row) => row['id'] == booking['id']);
+            setSheetState(() {});
+            await attendeeActions?.onChanged?.call();
+          } catch (error) {
+            if (!sheetContext.mounted) return;
+            ScaffoldMessenger.of(sheetContext).showSnackBar(
+              SnackBar(content: Text(appStrings.attendanceError(error))),
+            );
+          }
+        }
+
+        return SizedBox.expand(
+          child: ClassDetailsView(
+            klass: klass,
+            bookings: bookingRows,
+            waitlist: waitlistRows,
+            profilesById: profileById,
+            myWaitlistPosition: myWaitlistPosition,
+            actionLabel: actionLabel,
+            adminActions: adminActions,
+            attendeeActions: attendeeActions == null
+                ? null
+                : ClassDetailAttendeeActions(
+                    onAddMember: (_) async {
+                      await addMember();
+                      return null;
+                    },
+                    onAddGuest: (_) async {
+                      await addGuest();
+                      return null;
+                    },
+                    onChanged: attendeeActions.onChanged,
+                    canMarkAttendance: attendeeActions.canMarkAttendance,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _ClassDetailsText.title.copyWith(
-                        color: AppColors.textPrimary(sheetContext),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (myWaitlistPosition != null) ...[
-                const SizedBox(height: 16),
-                _ClassDetailsPositionPill(position: myWaitlistPosition),
-              ],
-              const SizedBox(height: 18),
-              _ClassDetailsSectionHeader(
-                title: appStrings.attending,
-                count: '${bookingRows.length} / $capacity',
-              ),
-              const SizedBox(height: 8),
-              if (bookingRows.isEmpty)
-                _ClassDetailsEmptyText(label: appStrings.noBookingsYet)
-              else
-                ...bookingRows.map((booking) {
-                  final isGuest = booking['is_guest'] == true;
-                  final userId = booking['user_id']?.toString();
-                  final profile = userId == null ? null : profileById[userId];
-                  final name = isGuest
-                      ? booking['guest_name']?.toString()
-                      : profile?['full_name']?.toString();
-                  final avatarUrl = isGuest
-                      ? null
-                      : profile?['avatar_url']?.toString();
-
-                  return _ClassDetailsMemberRow(
-                    name: (name == null || name.trim().isEmpty)
-                        ? appStrings.member
-                        : name.trim(),
-                    avatarUrl: avatarUrl,
-                  );
-                }),
-              const SizedBox(height: 18),
-              _ClassDetailsSectionHeader(
-                title: appStrings.waitlist,
-                count: waitlistRows.length.toString(),
-              ),
-              const SizedBox(height: 8),
-              if (waitlistRows.isEmpty)
-                _ClassDetailsEmptyText(label: appStrings.noWaitlistYet)
-              else
-                ...waitlistRows.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final wait = entry.value;
-                  final profile = profileById[wait['user_id'].toString()];
-                  final name = profile?['full_name']?.toString();
-                  final avatarUrl = profile?['avatar_url']?.toString();
-
-                  return _ClassDetailsMemberRow(
-                    name: (name == null || name.trim().isEmpty)
-                        ? appStrings.member
-                        : name.trim(),
-                    avatarUrl: avatarUrl,
-                    position: index + 1,
-                  );
-                }),
-            ],
+            onAttendeeStatusChanged: updateAttendeeStatus,
+            onAttendeeRemoved: removeAttendee,
+            onAction: onAction == null
+                ? null
+                : () {
+                    Navigator.pop(sheetContext);
+                    onAction();
+                  },
+            onBack: () => Navigator.pop(sheetContext),
           ),
-        ),
-      );
-    },
+        );
+      },
+    ),
   );
 }
 
-class _ClassDetailsText {
-  const _ClassDetailsText._();
+class ClassDetailsView extends StatelessWidget {
+  const ClassDetailsView({
+    super.key,
+    required this.klass,
+    required this.bookings,
+    required this.waitlist,
+    required this.profilesById,
+    required this.actionLabel,
+    required this.onAction,
+    required this.onBack,
+    this.adminActions = const [],
+    this.attendeeActions,
+    this.myWaitlistPosition,
+    this.onAttendeeStatusChanged,
+    this.onAttendeeRemoved,
+  });
 
-  static TextStyle time = GoogleFonts.barlowCondensed(
-    fontSize: 24,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.4,
-    height: 1,
-  );
+  final Map<String, dynamic> klass;
+  final List<Map<String, dynamic>> bookings;
+  final List<Map<String, dynamic>> waitlist;
+  final Map<String, Map<String, dynamic>> profilesById;
+  final int? myWaitlistPosition;
+  final String actionLabel;
+  final VoidCallback? onAction;
+  final VoidCallback onBack;
+  final List<ClassDetailAdminAction> adminActions;
+  final ClassDetailAttendeeActions? attendeeActions;
+  final Future<void> Function(Map<String, dynamic>, String)?
+  onAttendeeStatusChanged;
+  final Future<void> Function(Map<String, dynamic>, String)? onAttendeeRemoved;
 
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 22,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.3,
-    height: 1,
-  );
+  String _formatDate(DateTime date) {
+    final locale = appStrings.isEs ? 'es' : 'en';
+    return DateFormat('EEE, d MMMM', locale).format(date);
+  }
 
-  static TextStyle section = GoogleFonts.barlowCondensed(
-    fontSize: 13,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 0.8,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 16,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.3,
-    height: 1,
-  );
-}
-
-class _ClassDetailsPositionPill extends StatelessWidget {
-  const _ClassDetailsPositionPill({required this.position});
-
-  final int position;
+  String _time(DateTime date) =>
+      '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.45),
-          width: 1,
-        ),
+    final startsAt = DateTime.parse(klass['starts_at'].toString()).toLocal();
+    final title = klass['title']?.toString().trim().isNotEmpty == true
+        ? klass['title'].toString().trim()
+        : appStrings.classFallback;
+    final duration = klass['duration_minutes'] as int? ?? 60;
+    final capacity = klass['capacity'] as int? ?? 0;
+    final description = klass['description']?.toString().trim() ?? '';
+    final coach = klass['coach'];
+    final coachMap = coach is Map ? Map<String, dynamic>.from(coach) : null;
+    final coachId = klass['coach_id']?.toString();
+    final coachProfile = coachId == null ? null : profilesById[coachId];
+    final coachName =
+        coachProfile?['full_name']?.toString().trim() ??
+        coachMap?['full_name']?.toString().trim();
+    final coachAvatar =
+        coachProfile?['avatar_url']?.toString() ??
+        coachMap?['avatar_url']?.toString();
+
+    return Material(
+      color: AppColors.background(context),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadii.sheet),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
         children: [
-          const Icon(
-            Icons.hourglass_top_rounded,
-            color: AppColors.accent,
-            size: 18,
+          _ClassDetailHeader(
+            title: title,
+            onBack: onBack,
+            adminActions: adminActions,
           ),
-          const SizedBox(width: 10),
-          Text(
-            appStrings.bookingWaitlistPosition(position).toUpperCase(),
-            style: _ClassDetailsText.section.copyWith(color: AppColors.accent),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenX,
+                AppSpacing.md,
+                AppSpacing.screenX,
+                AppSpacing.xl,
+              ),
+              children: [
+                Text(
+                  appStrings.pick('Class', 'Clase'),
+                  style: AppTypography.helper(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.lg,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    _ClassFact(
+                      icon: Icons.schedule_rounded,
+                      value: _time(startsAt),
+                    ),
+                    _ClassFact(
+                      icon: Icons.calendar_today_outlined,
+                      value: _formatDate(startsAt),
+                    ),
+                    _ClassFact(
+                      icon: Icons.timer_outlined,
+                      value: '$duration MIN',
+                    ),
+                  ],
+                ),
+                const _ClassDetailDivider(),
+                _ClassSectionTitle(label: appStrings.coach),
+                const SizedBox(height: AppSpacing.md),
+                if (coachName != null && coachName.isNotEmpty)
+                  ClassPersonRow(
+                    key: const ValueKey('class-detail-coach'),
+                    name: coachName,
+                    avatarUrl: coachAvatar,
+                    showDivider: false,
+                  )
+                else
+                  Text(
+                    appStrings.pick('No coach assigned', 'Sin coach asignado'),
+                    style: AppTypography.bodySecondary(context),
+                  ),
+                const _ClassDetailDivider(),
+                _ClassSectionTitle(
+                  label: appStrings.pick('Description', 'Descripción'),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  description.isEmpty
+                      ? appStrings.pick(
+                          'No description added.',
+                          'No se añadió descripción.',
+                        )
+                      : description,
+                  style: AppTypography.bodySecondary(context).copyWith(
+                    color: description.isEmpty
+                        ? AppColors.textSecondary(context)
+                        : AppColors.textPrimary(context),
+                  ),
+                ),
+                const _ClassDetailDivider(),
+                _ClassAttendeesHeader(
+                  label: appStrings.pick('Attendees', 'Asistentes'),
+                  count: '${bookings.length} / $capacity',
+                  actions: attendeeActions,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (bookings.isEmpty)
+                  _ClassEmptyLabel(label: appStrings.noBookingsYet)
+                else
+                  ...bookings.map((booking) {
+                    final isGuest = booking['is_guest'] == true;
+                    final userId = booking['user_id']?.toString();
+                    final profile = userId == null
+                        ? null
+                        : profilesById[userId];
+                    final rawName = isGuest
+                        ? booking['guest_name']?.toString()
+                        : profile?['full_name']?.toString();
+                    final name = rawName == null || rawName.trim().isEmpty
+                        ? appStrings.member
+                        : rawName.trim();
+                    return ClassPersonRow(
+                      name: name,
+                      avatarUrl: isGuest
+                          ? null
+                          : profile?['avatar_url']?.toString(),
+                      status: _attendeeStatus(booking['status']?.toString()),
+                      actionKey: ValueKey('class-attendee-${booking['id']}'),
+                      onAction: attendeeActions == null
+                          ? null
+                          : () => _showAttendeeActions(
+                              context,
+                              booking: booking,
+                              name: name,
+                            ),
+                    );
+                  }),
+                if (waitlist.isNotEmpty || myWaitlistPosition != null) ...[
+                  const _ClassDetailDivider(),
+                  _ClassSectionHeader(
+                    label: appStrings.waitlist,
+                    count: waitlist.length.toString(),
+                  ),
+                  if (myWaitlistPosition != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      appStrings.bookingWaitlistPosition(myWaitlistPosition!),
+                      style: AppTypography.helper(
+                        context,
+                      ).copyWith(color: BookingColors.primary),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.sm),
+                  ...waitlist.asMap().entries.map((entry) {
+                    final profile =
+                        profilesById[entry.value['user_id'].toString()];
+                    final rawName = profile?['full_name']?.toString();
+                    return ClassPersonRow(
+                      name: rawName == null || rawName.trim().isEmpty
+                          ? appStrings.member
+                          : rawName.trim(),
+                      avatarUrl: profile?['avatar_url']?.toString(),
+                      position: entry.key + 1,
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+          _ClassDetailBottomAction(label: actionLabel, onPressed: onAction),
+        ],
+      ),
+    );
+  }
+
+  String _attendeeStatus(String? status) => switch (status) {
+    'attended' => appStrings.attended,
+    'no_show' => appStrings.noShow,
+    _ => appStrings.bookingBooked,
+  };
+
+  void _showAttendeeActions(
+    BuildContext context, {
+    required Map<String, dynamic> booking,
+    required String name,
+  }) {
+    final status = booking['status']?.toString() ?? 'booked';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      builder: (sheetContext) => AppAdminActionSheet(
+        accentColor: BookingColors.primary,
+        onClose: () => Navigator.pop(sheetContext),
+        actions: [
+          if (attendeeActions?.canMarkAttendance == true &&
+              status != 'attended')
+            AppAdminAction(
+              icon: Icons.check_circle_outline_rounded,
+              label: appStrings.markAttendance,
+              onTap: () => onAttendeeStatusChanged?.call(booking, 'attended'),
+            ),
+          if (attendeeActions?.canMarkAttendance == true && status != 'no_show')
+            AppAdminAction(
+              icon: Icons.person_off_outlined,
+              label: appStrings.markNoShow,
+              onTap: () => onAttendeeStatusChanged?.call(booking, 'no_show'),
+            ),
+          AppAdminAction(
+            icon: Icons.person_remove_alt_1_outlined,
+            label: appStrings.remove,
+            destructive: true,
+            onTap: () => onAttendeeRemoved?.call(booking, name),
           ),
         ],
       ),
@@ -240,143 +471,399 @@ class _ClassDetailsPositionPill extends StatelessWidget {
   }
 }
 
-class _ClassDetailsSectionHeader extends StatelessWidget {
-  const _ClassDetailsSectionHeader({required this.title, required this.count});
+class _ClassDetailHeader extends StatelessWidget {
+  const _ClassDetailHeader({
+    required this.title,
+    required this.onBack,
+    required this.adminActions,
+  });
 
   final String title;
+  final VoidCallback onBack;
+  final List<ClassDetailAdminAction> adminActions;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const ValueKey('class-detail-header'),
+    height: 58,
+    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenX),
+    child: Row(
+      children: [
+        IconButton(
+          key: const ValueKey('class-detail-back'),
+          constraints: const BoxConstraints.tightFor(
+            width: kMinInteractiveDimension,
+            height: kMinInteractiveDimension,
+          ),
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+        ),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary(context),
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: kMinInteractiveDimension,
+          height: kMinInteractiveDimension,
+          child: adminActions.isEmpty
+              ? null
+              : ClassDetailAdminButton(actions: adminActions),
+        ),
+      ],
+    ),
+  );
+}
+
+class ClassDetailAdminButton extends StatelessWidget {
+  const ClassDetailAdminButton({super.key, required this.actions});
+
+  final List<ClassDetailAdminAction> actions;
+
+  @override
+  Widget build(BuildContext context) => BookingOutlineIconButton(
+    tooltip: appStrings.classOptions,
+    icon: Icons.edit_outlined,
+    onPressed: () => showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      isScrollControlled: true,
+      builder: (sheetContext) => ClassDetailAdminSheet(
+        actions: actions,
+        onClose: () => Navigator.pop(sheetContext),
+      ),
+    ),
+  );
+}
+
+class BookingOutlineIconButton extends StatelessWidget {
+  const BookingOutlineIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => AppOutlinedAdminButton(
+    icon: icon,
+    tooltip: tooltip,
+    onPressed: onPressed,
+    accentColor: BookingColors.primary,
+  );
+}
+
+class ClassDetailAdminSheet extends StatelessWidget {
+  const ClassDetailAdminSheet({
+    super.key,
+    required this.actions,
+    required this.onClose,
+  });
+
+  final List<ClassDetailAdminAction> actions;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => AppAdminActionSheet(
+    accentColor: BookingColors.primary,
+    onClose: onClose,
+    actions: [
+      for (final action in actions)
+        AppAdminAction(
+          icon: action.icon,
+          label: action.label,
+          onTap: action.onTap,
+          destructive: action.destructive,
+        ),
+    ],
+  );
+}
+
+class _ClassFact extends StatelessWidget {
+  const _ClassFact({required this.icon, required this.value});
+
+  final IconData icon;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 18, color: AppColors.textSecondary(context)),
+      const SizedBox(width: AppSpacing.xs),
+      Text(
+        value,
+        style: AppTypography.body(
+          context,
+        ).copyWith(fontWeight: FontWeight.w600),
+      ),
+    ],
+  );
+}
+
+class _ClassDetailDivider extends StatelessWidget {
+  const _ClassDetailDivider();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+    child: Divider(height: 1, color: AppColors.border(context)),
+  );
+}
+
+class _ClassSectionTitle extends StatelessWidget {
+  const _ClassSectionTitle({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    label.toUpperCase(),
+    style: AppTypography.sectionTitle(context).copyWith(letterSpacing: 0.6),
+  );
+}
+
+class _ClassAttendeesHeader extends StatelessWidget {
+  const _ClassAttendeesHeader({
+    required this.label,
+    required this.count,
+    required this.actions,
+  });
+
+  final String label;
   final String count;
+  final ClassDetailAttendeeActions? actions;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final titleAndCount = Row(
       children: [
-        Text(
-          title.toUpperCase(),
-          style: _ClassDetailsText.section.copyWith(
-            color: AppColors.textPrimary(context),
-          ),
+        Expanded(child: _ClassSectionTitle(label: label)),
+        Text(count, style: AppTypography.helper(context)),
+      ],
+    );
+    final attendeeActions = actions;
+    if (attendeeActions == null) return titleAndCount;
+
+    final buttons = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BookingOutlineIconButton(
+          key: const ValueKey('class-detail-add-member'),
+          icon: Icons.person_add_alt_1_rounded,
+          tooltip: appStrings.addMember,
+          onPressed: () => attendeeActions.onAddMember(0),
         ),
-        const Spacer(),
-        Container(
-          height: 30,
-          constraints: const BoxConstraints(minWidth: 38),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceAlt(context),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.border(context), width: 1),
-          ),
-          child: Text(
-            count,
-            style: _ClassDetailsText.section.copyWith(color: AppColors.accent),
-          ),
+        BookingOutlineIconButton(
+          key: const ValueKey('class-detail-add-guest'),
+          icon: Icons.group_add_outlined,
+          tooltip: appStrings.addGuest,
+          onPressed: () => attendeeActions.onAddGuest(0),
         ),
       ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 250) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              titleAndCount,
+              const SizedBox(height: AppSpacing.xs),
+              Align(alignment: Alignment.centerRight, child: buttons),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: titleAndCount),
+            const SizedBox(width: AppSpacing.xs),
+            buttons,
+          ],
+        );
+      },
     );
   }
 }
 
-class _ClassDetailsMemberRow extends StatelessWidget {
-  const _ClassDetailsMemberRow({
+class _ClassSectionHeader extends StatelessWidget {
+  const _ClassSectionHeader({required this.label, required this.count});
+
+  final String label;
+  final String count;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(child: _ClassSectionTitle(label: label)),
+      Text(count, style: AppTypography.helper(context)),
+    ],
+  );
+}
+
+class ClassPersonRow extends StatelessWidget {
+  const ClassPersonRow({
+    super.key,
     required this.name,
-    required this.avatarUrl,
+    this.avatarUrl,
     this.position,
+    this.showDivider = true,
+    this.status,
+    this.onAction,
+    this.actionKey,
   });
 
   final String name;
   final String? avatarUrl;
   final int? position;
+  final bool showDivider;
+  final String? status;
+  final VoidCallback? onAction;
+  final Key? actionKey;
+
+  String get _initials {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty);
+    return parts.take(2).map((part) => part[0].toUpperCase()).join();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border(context), width: 1),
-      ),
+      constraints: const BoxConstraints(minHeight: 54),
+      decoration: showDivider
+          ? BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.border(context),
+                  width: 0.6,
+                ),
+              ),
+            )
+          : null,
       child: Row(
         children: [
           if (position != null) ...[
             SizedBox(
               width: 24,
-              child: Text(
-                '#$position',
-                style: _ClassDetailsText.section.copyWith(
-                  color: AppColors.accent,
-                ),
-              ),
+              child: Text('$position', style: AppTypography.helper(context)),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
           ],
-          _ClassDetailsAvatar(name: name, avatarUrl: avatarUrl),
-          const SizedBox(width: 10),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.surfaceAlt(context),
+            foregroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+            child: hasAvatar
+                ? null
+                : Text(
+                    _initials.isEmpty ? 'M' : _initials,
+                    style: AppTypography.buttonLabel(
+                      context,
+                    ).copyWith(color: BookingColors.primary),
+                  ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: _ClassDetailsText.rowTitle.copyWith(
-                color: AppColors.textPrimary(context),
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w600),
+                ),
+                if (status != null)
+                  Text(status!, style: AppTypography.helper(context)),
+              ],
             ),
           ),
+          if (onAction != null)
+            IconButton(
+              key: actionKey,
+              tooltip: appStrings.memberOptions,
+              onPressed: onAction,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 19,
+                color: BookingColors.primary,
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-class _ClassDetailsAvatar extends StatelessWidget {
-  const _ClassDetailsAvatar({required this.name, required this.avatarUrl});
-
-  final String name;
-  final String? avatarUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        color: AppColors.surface(context),
-        child: hasAvatar
-            ? Image.network(
-                avatarUrl!,
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-              )
-            : Text(
-                name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
-                style: _ClassDetailsText.rowTitle.copyWith(
-                  color: AppColors.accent,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _ClassDetailsEmptyText extends StatelessWidget {
-  const _ClassDetailsEmptyText({required this.label});
+class _ClassEmptyLabel extends StatelessWidget {
+  const _ClassEmptyLabel({required this.label});
 
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: _ClassDetailsText.subtle.copyWith(
-        color: AppColors.textSecondary(context),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    child: Text(label, style: AppTypography.bodySecondary(context)),
+  );
+}
+
+class _ClassDetailBottomAction extends StatelessWidget {
+  const _ClassDetailBottomAction({required this.label, this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: AppColors.background(context),
+      border: Border(
+        top: BorderSide(color: AppColors.border(context), width: 0.8),
       ),
-    );
-  }
+    ),
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenX,
+          AppSpacing.sm,
+          AppSpacing.screenX,
+          AppSpacing.sm,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: AppSizes.buttonHeight,
+          child: FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: BookingColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(label.toUpperCase()),
+          ),
+        ),
+      ),
+    ),
+  );
 }

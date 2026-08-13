@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/auth_repository.dart';
+import '../widgets/auth_form_scaffold.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -87,8 +88,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _AuthShell(
-      title: appStrings.authSetNewPasswordTitle.toUpperCase(),
+    return AuthFormScaffold(
+      title: appStrings.authSetNewPasswordTitle,
       subtitle: _sessionReady
           ? appStrings.authSetNewPasswordSubtitleReady
           : appStrings.authSetNewPasswordSubtitleWaiting,
@@ -97,17 +98,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         children: [
           Text(
             appStrings.authNewPasswordSection.toUpperCase(),
-            style: _AuthText.section,
+            style: authSectionStyle(context),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _password,
             obscureText: _obscurePassword,
-            style: _AuthText.body,
+            style: authInputStyle(context),
             decoration:
-                _authInput(
-                  appStrings.authNewPasswordSection,
-                  Icons.lock_outline_rounded,
+                authFormInput(
+                  context,
+                  label: appStrings.authNewPasswordSection,
+                  icon: Icons.lock_outline_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -115,7 +117,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
-                    color: const Color(0xFF8F96A3),
+                    color: AppColors.textSecondary(context),
                     onPressed: () {
                       setState(() {
                         _obscurePassword = !_obscurePassword;
@@ -128,11 +130,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           TextField(
             controller: _confirmPassword,
             obscureText: _obscureConfirmPassword,
-            style: _AuthText.body,
+            style: authInputStyle(context),
             decoration:
-                _authInput(
-                  appStrings.authConfirmPassword,
-                  Icons.lock_outline_rounded,
+                authFormInput(
+                  context,
+                  label: appStrings.authConfirmPassword,
+                  icon: Icons.lock_outline_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -140,7 +143,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
-                    color: const Color(0xFF8F96A3),
+                    color: AppColors.textSecondary(context),
                     onPressed: () {
                       setState(() {
                         _obscureConfirmPassword = !_obscureConfirmPassword;
@@ -161,101 +164,4 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       ),
     );
   }
-}
-
-class _AuthShell extends StatelessWidget {
-  const _AuthShell({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
-          children: [
-            Text(title, style: _AuthText.logo),
-            const SizedBox(height: 6),
-            Text(subtitle, style: _AuthText.subtle),
-            const SizedBox(height: 34),
-            Container(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: child,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-InputDecoration _authInput(String hint, IconData icon) {
-  return InputDecoration(
-    hintText: hint,
-    labelText: hint,
-    hintStyle: _AuthText.subtle,
-    labelStyle: _AuthText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
-    filled: true,
-    fillColor: const Color(0xFFF4F5F7),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
-    ),
-  );
-}
-
-class _AuthText {
-  const _AuthText._();
-
-  static TextStyle logo = GoogleFonts.barlowCondensed(
-    fontSize: 30,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.4,
-    height: 1,
-  );
-
-  static TextStyle section = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
-    letterSpacing: 0.3,
-    height: 1,
-  );
 }

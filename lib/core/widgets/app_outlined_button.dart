@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_design_tokens.dart';
+import '../theme/app_typography.dart';
+
 class AppOutlinedButton extends StatelessWidget {
   const AppOutlinedButton({
     super.key,
@@ -13,18 +17,23 @@ class AppOutlinedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: AppSizes.buttonHeight,
       width: double.infinity,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF111111),
-          side: const BorderSide(color: Color(0xFF111111)),
+          foregroundColor: AppColors.textPrimary(context),
+          disabledForegroundColor: AppColors.textSecondary(context),
+          backgroundColor: AppColors.surface(context),
+          side: BorderSide(color: AppColors.border(context)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        child: Text(
+          label.toUpperCase(),
+          style: AppTypography.buttonLabel(context),
+        ),
       ),
     );
   }

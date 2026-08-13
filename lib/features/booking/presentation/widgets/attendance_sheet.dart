@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../booking_colors.dart';
+import 'attendance_add_booking_sheets.dart';
 
 Future<void> showAttendanceSheet({
   required BuildContext context,
@@ -59,153 +61,27 @@ Future<void> showAttendanceSheet({
         builder: (context, setSheetState) {
           Future<void> addGuest() async {
             final capacity = klass['capacity'] as int? ?? 0;
-            if (capacity > 0 && bookingRows.length >= capacity) {
-              ScaffoldMessenger.of(sheetContext).showSnackBar(
-                SnackBar(content: Text(appStrings.bookingClassFull)),
-              );
-              return;
-            }
-
-            final controller = TextEditingController();
-
-            final guestName = await showModalBottomSheet<String>(
+            final booking = await showAttendanceAddGuest(
               context: sheetContext,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (dialogContext) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
-                  ),
-                  child: SafeArea(
-                    child: Container(
-                      margin: EdgeInsets.all(AppSpacing.sheetMargin),
-                      padding: EdgeInsets.all(AppSpacing.cardPadding),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface(dialogContext),
-                        borderRadius: BorderRadius.circular(AppRadii.sheet),
-                        border: Border.all(
-                          color: AppColors.border(dialogContext),
-                          width: 1,
-                        ),
-                        boxShadow: AppShadows.card(dialogContext),
-                      ),
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          Text(
-                            appStrings.addGuest.toUpperCase(),
-                            style: _AttendanceText.title.copyWith(
-                              color: AppColors.textPrimary(dialogContext),
-                              fontSize: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          TextField(
-                            controller: controller,
-                            autofocus: true,
-                            textCapitalization: TextCapitalization.words,
-                            cursorColor: AppColors.accent,
-                            style: _AttendanceText.rowTitle.copyWith(
-                              color: AppColors.textPrimary(dialogContext),
-                            ),
-                            decoration: InputDecoration(
-                              labelText: appStrings.guestName,
-                              labelStyle: _AttendanceText.subtle.copyWith(
-                                color: AppColors.textSecondary(dialogContext),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(
-                                  color: AppColors.border(dialogContext),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _AttendanceSheetSecondaryButton(
-                                  label: appStrings.cancel,
-                                  onTap: () =>
-                                      Navigator.of(dialogContext).pop(),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _AttendanceSheetPrimaryButton(
-                                  label: appStrings.addGuest,
-                                  onTap: () {
-                                    final value = controller.text.trim();
-                                    if (value.isEmpty) return;
-                                    Navigator.of(dialogContext).pop(value);
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
+              client: client,
+              classId: classId,
+              bookingCount: bookingRows.length,
+              capacity: capacity,
             );
-
-            if (guestName == null || guestName.trim().isEmpty) return;
-
-            try {
-              final inserted = await client
-                  .from('class_bookings')
-                  .insert({
-                    'class_id': classId,
-                    'user_id': null,
-                    'guest_name': guestName.trim(),
-                    'is_guest': true,
-                    'status': 'booked',
-                  })
-                  .select(
-                    'id, user_id, status, created_at, guest_name, is_guest',
-                  )
-                  .single();
-
-              bookingRows.add(Map<String, dynamic>.from(inserted));
-              setSheetState(() {});
-              await onChanged();
-            } catch (e) {
-              if (!sheetContext.mounted) return;
-              ScaffoldMessenger.of(sheetContext).showSnackBar(
-                SnackBar(content: Text(appStrings.attendanceError(e))),
-              );
-            }
+            if (booking == null) return;
+            bookingRows.add(booking);
+            setSheetState(() {});
+            await onChanged();
           }
 
           Future<void> addMember() async {
             final capacity = klass['capacity'] as int? ?? 0;
-            if (bookingRows.length >= capacity) {
-              ScaffoldMessenger.of(sheetContext).showSnackBar(
-                SnackBar(content: Text(appStrings.bookingClassFull)),
-              );
-              return;
-            }
-
-            final result = await showModalBottomSheet<Map<String, dynamic>>(
+            final result = await showAttendanceAddMember(
               context: sheetContext,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (dialogContext) {
-                return _AttendanceAddMemberSheet(
-                  client: client,
-                  classId: classId,
-                );
-              },
+              client: client,
+              classId: classId,
+              bookingCount: bookingRows.length,
+              capacity: capacity,
             );
 
             if (result == null) return;
@@ -235,17 +111,19 @@ Future<void> showAttendanceSheet({
               backgroundColor: Colors.transparent,
               builder: (dialogContext) {
                 return SafeArea(
+                  top: false,
                   child: Container(
-                    margin: EdgeInsets.all(AppSpacing.sheetMargin),
-                    padding: EdgeInsets.all(AppSpacing.cardPadding),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenX,
+                      AppSpacing.lg,
+                      AppSpacing.screenX,
+                      AppSpacing.lg,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surface(dialogContext),
-                      borderRadius: BorderRadius.circular(AppRadii.sheet),
-                      border: Border.all(
-                        color: AppColors.border(dialogContext),
-                        width: 1,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(AppRadii.sheet),
                       ),
-                      boxShadow: AppShadows.card(dialogContext),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -253,10 +131,12 @@ Future<void> showAttendanceSheet({
                       children: [
                         Text(
                           appStrings.addBooking.toUpperCase(),
-                          style: _AttendanceText.title.copyWith(
-                            color: AppColors.textPrimary(dialogContext),
-                            fontSize: 22,
-                          ),
+                          style: Theme.of(dialogContext).textTheme.titleLarge
+                              ?.copyWith(
+                                color: AppColors.textPrimary(dialogContext),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
                         ),
                         const SizedBox(height: 16),
                         _AttendanceBookingAction(
@@ -1017,7 +897,7 @@ class _AttendanceBookingAction extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.accent, size: 22),
+              Icon(icon, color: BookingColors.primary, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1052,8 +932,8 @@ class _AttendanceAddBookingButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.background(context),
+          backgroundColor: BookingColors.primary,
+          foregroundColor: Colors.white,
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
@@ -1084,7 +964,7 @@ class _AttendanceCountPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: _AttendanceText.section.copyWith(color: AppColors.accent),
+        style: _AttendanceText.section.copyWith(color: BookingColors.primary),
       ),
     );
   }

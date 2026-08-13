@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_design_tokens.dart';
+import '../theme/app_typography.dart';
+
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -15,15 +19,17 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: AppSizes.buttonHeight,
       width: double.infinity,
       child: FilledButton(
         onPressed: loading ? null : onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF111111),
+          backgroundColor: AppColors.accent,
+          disabledBackgroundColor: AppColors.surfaceAlt(context),
           foregroundColor: Colors.white,
+          disabledForegroundColor: AppColors.textSecondary(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
           ),
         ),
         child: loading
@@ -32,7 +38,14 @@ class AppButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+            : Text(
+                label.toUpperCase(),
+                style: AppTypography.buttonLabel(context).copyWith(
+                  color: onPressed == null
+                      ? AppColors.textSecondary(context)
+                      : Colors.white,
+                ),
+              ),
       ),
     );
   }

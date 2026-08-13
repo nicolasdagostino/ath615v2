@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_control_styles.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 import '../../domain/class_coach.dart';
 
 class ClassCoachSelector extends StatelessWidget {
@@ -17,6 +19,7 @@ class ClassCoachSelector extends StatelessWidget {
     required this.onRetry,
     this.currentCoachId,
     this.currentCoachName,
+    this.accentColor = AppColors.accent,
   });
 
   final List<ClassCoachOption> coaches;
@@ -27,6 +30,7 @@ class ClassCoachSelector extends StatelessWidget {
   final VoidCallback onRetry;
   final String? currentCoachId;
   final String? currentCoachName;
+  final Color accentColor;
 
   bool get _currentCoachUnavailable {
     final id = currentCoachId;
@@ -40,12 +44,9 @@ class ClassCoachSelector extends StatelessWidget {
     if (loading) {
       return _SelectorMessage(
         key: const Key('class-coach-loading'),
-        icon: const SizedBox.square(
+        icon: SizedBox.square(
           dimension: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.accent,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
         ),
         message: appStrings.loadingCoaches,
       );
@@ -76,36 +77,23 @@ class ClassCoachSelector extends StatelessWidget {
           isExpanded: true,
           dropdownColor: AppColors.surface(context),
           iconEnabledColor: AppColors.textSecondary(context),
-          style: GoogleFonts.barlow(
-            color: AppColors.textPrimary(context),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: InputDecoration(
-            labelText: appStrings.coachFieldLabel,
-            labelStyle: GoogleFonts.barlow(
-              color: AppColors.textSecondary(context),
-              fontWeight: FontWeight.w600,
-            ),
-            prefixIcon: const Icon(
-              Icons.sports_outlined,
-              color: AppColors.accent,
-            ),
-            filled: true,
-            fillColor: AppColors.surface(context),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 15,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadii.input),
-              borderSide: BorderSide(color: AppColors.border(context)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadii.input),
-              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-            ),
-          ),
+          style: appFormValueStyle(context),
+          decoration:
+              AppControlStyles.input(
+                context,
+                hintText: appStrings.coachFieldLabel,
+                prefixIcon: const Icon(
+                  Icons.sports_outlined,
+                  color: AppColors.accent,
+                ),
+              ).copyWith(
+                fillColor: AppColors.surface(context),
+                prefixIcon: Icon(Icons.sports_outlined, color: accentColor),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.input),
+                  borderSide: BorderSide(color: accentColor, width: 1.2),
+                ),
+              ),
           items: [
             DropdownMenuItem<String>(
               value: '',
@@ -140,10 +128,7 @@ class ClassCoachSelector extends StatelessWidget {
           Text(
             appStrings.noCoachesAvailable,
             key: const Key('class-coach-empty'),
-            style: GoogleFonts.barlow(
-              color: AppColors.textSecondary(context),
-              fontSize: 13,
-            ),
+            style: AppTypography.helper(context),
           ),
         ],
         if (unavailableId != null) ...[
@@ -151,10 +136,7 @@ class ClassCoachSelector extends StatelessWidget {
           Text(
             appStrings.currentCoachUnavailable,
             key: const Key('class-coach-unavailable'),
-            style: GoogleFonts.barlow(
-              color: AppColors.textSecondary(context),
-              fontSize: 13,
-            ),
+            style: AppTypography.helper(context),
           ),
         ],
       ],
@@ -191,10 +173,7 @@ class _SelectorMessage extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: GoogleFonts.barlow(
-                color: AppColors.textPrimary(context),
-                fontSize: 14,
-              ),
+              style: AppTypography.body(context).copyWith(fontSize: 14),
             ),
           ),
           ?action,

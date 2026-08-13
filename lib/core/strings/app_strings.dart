@@ -41,6 +41,7 @@ class AppStrings {
   String get noWaitlistYet =>
       pick('No one is waiting yet.', 'Aún no hay nadie en espera.');
   String get member => pick('Member', 'Miembro');
+  String get memberOptions => pick('Member options', 'Opciones de miembro');
   String get workoutOptions => pick('WORKOUT OPTIONS', 'OPCIONES DEL WOD');
   String get athleteInvitationSent =>
       pick('Athlete invitation sent', 'Invitación enviada al atleta');
@@ -87,6 +88,7 @@ class AppStrings {
 
   String get bookingTitle => pick('Booking', 'Reservas');
   String get loadingClasses => pick('Loading classes…', 'Cargando clases…');
+  String get bookingClasses => pick('Classes', 'Clases');
   String get bookingBook => pick('Book', 'Reservar');
   String get bookingCancel => pick('Cancel', 'Cancelar');
   String get bookingBooked => pick('Booked', 'Reservada');
@@ -165,8 +167,8 @@ class AppStrings {
 
   String get restDayTitle => pick('REST DAY', 'DÍA DE DESCANSO');
   String get restDayMessage => pick(
-    "Resting is as important as work. Let your mind and body rest, do some mobility and stretching. Don't be tempted to train if you feel good.",
-    'Descansar es tan importante como entrenar. Deja que tu mente y tu cuerpo recuperen, haz movilidad y estiramientos. No caigas en la tentación de entrenar si te sientes bien.',
+    'No classes scheduled. Enjoy the recovery.',
+    'No hay clases programadas. Aprovecha para recuperar.',
   );
   String get imageSelected => pick('Image selected', 'Imagen seleccionada');
   String get changeImage => pick('Change image', 'Cambiar imagen');
@@ -178,7 +180,9 @@ class AppStrings {
   String get workoutFallbackTitle => pick('Workout', 'WOD');
   String get workoutEdit => pick('Edit', 'Editar');
   String get workoutDelete => pick('Delete', 'Eliminar');
+  String get workoutDeleteAction => pick('Delete WOD', 'Eliminar WOD');
   String get workoutPostScore => pick('Post score', 'Sube tu resultado');
+  String get workoutLogResult => pick('LOG RESULT', 'REGISTRAR');
   String get workoutFirstComment =>
       pick('Be the first to comment', 'Sé el primero en comentar');
   String workoutCommentCount(int count) => count == 1
@@ -194,6 +198,7 @@ class AppStrings {
   String get workoutCommentHint => pick('How did it go?', '¿Cómo te fue?');
   String get workoutNoComments =>
       pick('No comments yet.', 'Aún no hay comentarios.');
+  String get workoutCommentsTitle => pick('COMMENTS', 'COMENTARIOS');
   String get userFallbackName => pick('User', 'Usuario');
 
   String get workoutEditTitle => pick('Edit workout', 'Editar WOD');
@@ -403,7 +408,11 @@ class AppStrings {
       pick('Manage programs', 'Gestionar programas');
   String get programName => pick('Program name', 'Nombre del programa');
   String get createProgram => pick('Create program', 'Crear programa');
+  String get editProgram => pick('Edit program', 'Editar programa');
+  String get deleteProgram => pick('Delete program', 'Eliminar programa');
   String get noProgramsYet => pick('No programs yet.', 'Aún no hay programas.');
+  String get programsLoading =>
+      pick('Loading programs…', 'Cargando programas…');
   String get active => pick('Active', 'Activo');
   String get inactive => pick('Inactive', 'Inactivo');
   String get pending => pick('Pending', 'Pendiente');
@@ -650,6 +659,8 @@ class AppStrings {
       pick('No subscriptions available.', 'No hay suscripciones disponibles.');
   String get noDropInsAvailable =>
       pick('No drop-ins available.', 'No hay Drop-ins disponibles.');
+  String get plansLoadError =>
+      pick('We could not load the plans.', 'No pudimos cargar los planes.');
   String get unlimitedAccess => pick('Unlimited access', 'Acceso ilimitado');
   String classCredit(int count) =>
       pick('$count class credit', '$count crédito de clase');
@@ -864,6 +875,8 @@ class AppStrings {
 
   String get attended => pick('Attended', 'Asistió');
   String get noShow => pick('No show', 'No asistió');
+  String get markAttendance => pick('Mark attendance', 'Marcar asistencia');
+  String get markNoShow => pick('Mark no-show', 'Marcar no asistió');
   String get addBooking => pick('Add booking', 'Agregar reserva');
   String get addMember => pick('Add member', 'Agregar miembro');
   String get addGuest => pick('Add guest', 'Agregar invitado');

@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../booking/presentation/screens/booking_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
-import '../../../explore/presentation/screens/explore_screen.dart';
 import '../../../notifications/data/notifications_repository.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../workouts/presentation/screens/workouts_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({
+    super.key,
+    this.initialRoleForTesting,
+    this.screenBuilderForTesting,
+  });
+
+  @visibleForTesting
+  final String? initialRoleForTesting;
+
+  @visibleForTesting
+  final Widget Function(String section)? screenBuilderForTesting;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -24,14 +34,24 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   String? _role;
+  bool _initialSectionResolved = false;
   String? _gymName;
   int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadRole();
-    _loadUnreadNotifications();
+    final initialRole = widget.initialRoleForTesting;
+    if (initialRole == null) {
+      _loadRole();
+    } else {
+      _role = initialRole;
+      _index = initialShellIndexForRole(initialRole);
+      _initialSectionResolved = true;
+    }
+    if (widget.screenBuilderForTesting == null) {
+      _loadUnreadNotifications();
+    }
   }
 
   Future<void> _loadRole() async {
@@ -65,6 +85,10 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _role = profile['role'] as String?;
       _gymName = gymName;
+      if (!_initialSectionResolved) {
+        _index = initialShellIndexForRole(_role);
+        _initialSectionResolved = true;
+      }
     });
   }
 
@@ -103,35 +127,38 @@ class _AppShellState extends State<AppShell> {
 
     final canSeeDashboard = _role == 'admin' || _role == 'owner';
 
-    final screens = [
-      WorkoutsScreen(
-        gymName: _gymName,
-        unreadNotifications: _unreadNotifications,
-        onOpenNotifications: _openNotifications,
-      ),
-      BookingScreen(
-        gymName: _gymName,
-        unreadNotifications: _unreadNotifications,
-        onOpenNotifications: _openNotifications,
-      ),
-      ExploreScreen(
-        gymName: _gymName,
-        unreadNotifications: _unreadNotifications,
-        onOpenNotifications: _openNotifications,
-      ),
-      ProfileScreen(
-        gymName: _gymName,
-        onGymNameChanged: _loadRole,
-        unreadNotifications: _unreadNotifications,
-        onOpenNotifications: _openNotifications,
-      ),
-      if (canSeeDashboard)
-        DashboardScreen(
-          gymName: _gymName,
-          unreadNotifications: _unreadNotifications,
-          onOpenNotifications: _openNotifications,
-        ),
-    ];
+    final testScreenBuilder = widget.screenBuilderForTesting;
+    final screens = testScreenBuilder == null
+        ? <Widget>[
+            WorkoutsScreen(
+              gymName: _gymName,
+              unreadNotifications: _unreadNotifications,
+              onOpenNotifications: _openNotifications,
+            ),
+            BookingScreen(
+              gymName: _gymName,
+              unreadNotifications: _unreadNotifications,
+              onOpenNotifications: _openNotifications,
+            ),
+            ProfileScreen(
+              gymName: _gymName,
+              onGymNameChanged: _loadRole,
+              unreadNotifications: _unreadNotifications,
+              onOpenNotifications: _openNotifications,
+            ),
+            if (canSeeDashboard)
+              DashboardScreen(
+                gymName: _gymName,
+                unreadNotifications: _unreadNotifications,
+                onOpenNotifications: _openNotifications,
+              ),
+          ]
+        : <Widget>[
+            testScreenBuilder('workouts'),
+            testScreenBuilder('booking'),
+            testScreenBuilder('profile'),
+            if (canSeeDashboard) testScreenBuilder('dashboard'),
+          ];
 
     final navItems = [
       _ShellNavItem(
@@ -143,11 +170,6 @@ class _AppShellState extends State<AppShell> {
         icon: Icons.calendar_month_outlined,
         activeIcon: Icons.calendar_month,
         label: appStrings.navBooking,
-      ),
-      _ShellNavItem(
-        icon: Icons.search_outlined,
-        activeIcon: Icons.search,
-        label: appStrings.navExplore,
       ),
       _ShellNavItem(
         icon: Icons.person_outline,
@@ -177,6 +199,15 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+@visibleForTesting
+int initialShellIndexForRole(String? role) {
+  return switch (role) {
+    'admin' || 'owner' => 3,
+    'athlete' => 1,
+    _ => 0,
+  };
+}
+
 class _ShellNavItem {
   const _ShellNavItem({
     required this.icon,
@@ -204,13 +235,13 @@ class _ShellBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
-        border: const Border(top: BorderSide(color: Color(0xFF242427))),
+        color: AppColors.surface(context),
+        border: Border(top: BorderSide(color: AppColors.border(context))),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: 68,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
@@ -221,8 +252,7 @@ class _ShellBottomNav extends StatelessWidget {
                 return Expanded(
                   child: InkWell(
                     onTap: () => onSelected(i),
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadii.input),
                     child: Padding(
                       padding: const EdgeInsets.only(top: 7, bottom: 5),
                       child: Column(
@@ -234,15 +264,17 @@ class _ShellBottomNav extends StatelessWidget {
                             height: 28,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: Colors.transparent,
+                              color: selected
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Icon(
                               selected ? item.activeIcon : item.icon,
                               size: 22,
                               color: selected
-                                  ? AppColors.accent
-                                  : const Color(0xFF85858C),
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -250,14 +282,11 @@ class _ShellBottomNav extends StatelessWidget {
                             item.label.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                              height: 1,
+                            style: AppTypography.buttonLabel(context).copyWith(
+                              fontSize: 10,
                               color: selected
-                                  ? AppColors.accent
-                                  : const Color(0xFF85858C),
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         ],

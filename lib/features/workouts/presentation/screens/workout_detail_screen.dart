@@ -4,20 +4,57 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import '../../../../core/widgets/app_detail_header.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../workout_colors.dart';
 
 import '../widgets/workout_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> showWorkoutSocialSheet({
+  required BuildContext context,
+  required String workoutId,
+  required String program,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.46),
+    builder: (_) => FractionallySizedBox(
+      key: const ValueKey('workout-social-sheet'),
+      heightFactor: 0.92,
+      child: WorkoutDetailScreen(
+        workoutId: workoutId,
+        socialOnly: true,
+        programHint: program,
+      ),
+    ),
+  );
+}
 
 class WorkoutDetailScreen extends StatefulWidget {
   const WorkoutDetailScreen({
     super.key,
     required this.workoutId,
     this.fromExplore = false,
+    this.canManage = false,
+    this.onEdit,
+    this.onDelete,
+    this.socialOnly = false,
+    this.programHint,
   });
 
   final String workoutId;
   final bool fromExplore;
+  final bool canManage;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final bool socialOnly;
+  final String? programHint;
 
   @override
   State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
@@ -31,6 +68,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   Map<String, String> _authorNames = {};
   Map<String, String> _authorAvatars = {};
   String? _role;
+  String? _currentAvatarUrl;
   bool _isPostingComment = false;
 
   final _commentCtrl = TextEditingController();
@@ -69,7 +107,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           ? null
           : await _client
                 .from('profiles')
-                .select('role')
+                .select('role, avatar_url')
                 .eq('id', user.id)
                 .maybeSingle();
 
@@ -90,6 +128,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           _authorNames = {};
           _authorAvatars = {};
           _role = currentProfile?['role']?.toString();
+          _currentAvatarUrl = currentProfile?['avatar_url']?.toString();
         });
         return;
       }
@@ -140,6 +179,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         _authorNames = authors;
         _authorAvatars = avatars;
         _role = currentProfile?['role']?.toString();
+        _currentAvatarUrl = currentProfile?['avatar_url']?.toString();
       });
     } catch (e) {
       if (!mounted) return;
@@ -181,115 +221,15 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final commentId = comment['id']?.toString();
     if (commentId == null || !_canDeleteComment(comment)) return;
 
-    final shouldDelete = await showModalBottomSheet<bool>(
+    final shouldDelete = await showAppConfirmationDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.sheet),
-                border: Border.all(color: AppColors.border(context), width: 1),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Text(
-                    'DELETE COMMENT',
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary(context),
-                      letterSpacing: -0.3,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Are you sure you want to delete this comment? This action cannot be undone.',
-                    style: GoogleFonts.barlowCondensed(
-                      color: AppColors.textSecondary(context),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 54,
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.textPrimary(context),
-                              side: BorderSide(
-                                color: AppColors.border(context),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.card,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'CANCEL',
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary(context),
-                                letterSpacing: -0.2,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 54,
-                          child: FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFB42318),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.card,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'DELETE',
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -0.2,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      title: appStrings.pick('Delete comment', 'Eliminar comentario'),
+      message: appStrings.pick(
+        'Are you sure you want to delete this comment? This action cannot be undone.',
+        '¿Quieres eliminar este comentario? Esta acción no se puede deshacer.',
+      ),
+      confirmLabel: appStrings.pick('Delete', 'Eliminar'),
+      cancelLabel: appStrings.cancel,
     );
 
     if (shouldDelete != true) return;
@@ -357,12 +297,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     }
   }
 
-  String _formatDate(String raw) {
-    final parts = raw.split('-');
-    if (parts.length != 3) return raw;
-    return '${parts[2]}/${parts[1]}/${parts[0]}';
-  }
-
   String _timeAgo(String? raw) {
     if (raw == null) return '';
     final createdAt = DateTime.tryParse(raw)?.toLocal();
@@ -386,6 +320,292 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     return value;
   }
 
+  Future<void> _showWorkoutActions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      builder: (sheetContext) => AppAdminActionSheet(
+        accentColor: WorkoutColors.primary,
+        onClose: () => Navigator.pop(sheetContext),
+        actions: [
+          AppAdminAction(
+            icon: Icons.edit_outlined,
+            label: appStrings.workoutEditTitle,
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onEdit?.call();
+            },
+          ),
+          AppAdminAction(
+            icon: Icons.delete_outline,
+            label: appStrings.workoutDeleteAction,
+            destructive: true,
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onDelete?.call();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _socialAvatar(String? avatarUrl, String fallback) {
+    return CircleAvatar(
+      radius: 19,
+      backgroundColor: AppColors.surfaceAlt(context),
+      foregroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+          ? NetworkImage(avatarUrl)
+          : null,
+      child: avatarUrl == null || avatarUrl.isEmpty
+          ? Text(
+              fallback,
+              style: GoogleFonts.barlow(
+                color: WorkoutColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildSocialOnly(String programName) {
+    return Material(
+      color: AppColors.surface(context),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadii.sheet),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: SizedBox(
+              height: 58,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenX,
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    Expanded(
+                      child: Text(
+                        appStrings.workoutCommentsTitle,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary(context),
+                            ),
+                      ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('workout-social-close'),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      onPressed: Navigator.of(context).pop,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: WorkoutColors.primary,
+                    ),
+                  )
+                : ListView(
+                    key: const ValueKey('workout-social-comments'),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenX,
+                      AppSpacing.md,
+                      AppSpacing.screenX,
+                      AppSpacing.xl,
+                    ),
+                    children: [
+                      Text(
+                        appStrings
+                            .workoutLikesCount(_likes.length)
+                            .toUpperCase(),
+                        style: AppTypography.sectionTitle(context),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        appStrings.workoutCommentsTitle,
+                        style: AppTypography.sectionTitle(context),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_comments.isEmpty)
+                        Text(
+                          appStrings.workoutNoComments,
+                          style: AppTypography.bodySecondary(context),
+                        )
+                      else
+                        for (final comment in _comments) ...[
+                          Builder(
+                            builder: (context) {
+                              final userId = comment['user_id']?.toString();
+                              final name = _displayAuthorName(
+                                _authorNames[userId],
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.sm,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _socialAvatar(
+                                      _authorAvatars[userId],
+                                      name.isEmpty
+                                          ? '?'
+                                          : name[0].toUpperCase(),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  name,
+                                                  style:
+                                                      AppTypography.itemTitle(
+                                                        context,
+                                                      ),
+                                                ),
+                                              ),
+                                              Text(
+                                                _timeAgo(
+                                                  comment['created_at']
+                                                      ?.toString(),
+                                                ),
+                                                style: AppTypography.helper(
+                                                  context,
+                                                ),
+                                              ),
+                                              if (_canDeleteComment(comment))
+                                                IconButton(
+                                                  constraints:
+                                                      const BoxConstraints.tightFor(
+                                                        width: 36,
+                                                        height: 36,
+                                                      ),
+                                                  onPressed: () =>
+                                                      _deleteComment(comment),
+                                                  icon: Icon(
+                                                    Icons.delete_outline,
+                                                    size: 18,
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                          context,
+                                                        ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          Text(
+                                            comment['body']?.toString() ?? '',
+                                            style: AppTypography.body(context),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          Divider(color: AppColors.border(context), height: 1),
+                        ],
+                    ],
+                  ),
+          ),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenX,
+                AppSpacing.sm,
+                AppSpacing.screenX,
+                AppSpacing.sm + MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface(context),
+                border: Border(
+                  top: BorderSide(color: AppColors.border(context)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _socialAvatar(_currentAvatarUrl, '?'),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('workout-social-composer'),
+                      controller: _commentCtrl,
+                      focusNode: _commentFocus,
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: appStrings.workoutCommentHint,
+                        filled: true,
+                        fillColor: AppColors.surfaceAlt(context),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.input),
+                          borderSide: BorderSide(
+                            color: AppColors.border(context),
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (_) => _addComment(),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('workout-social-send'),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
+                    ),
+                    onPressed: _isPostingComment ? null : _addComment,
+                    icon: _isPostingComment
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: WorkoutColors.primary,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.send_rounded,
+                            color: WorkoutColors.primary,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final workout = _workout;
@@ -395,18 +615,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     final imageUrl = workout?['image_url']?.toString();
     final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
+    if (widget.socialOnly) {
+      return _buildSocialOnly(widget.programHint ?? programName);
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.background(context),
         body: Container(
-          color: AppColors.surface(context),
+          color: AppColors.background(context),
           child: SafeArea(
             bottom: false,
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
+                    child: CircularProgressIndicator(
+                      color: WorkoutColors.primary,
+                    ),
                   )
                 : workout == null
                 ? Center(
@@ -450,31 +676,34 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     ),
                   )
                 : Container(
-                    color: AppColors.surface(context),
+                    color: AppColors.background(context),
                     child: Column(
                       children: [
-                        AppDetailHeader(
-                          title: widget.fromExplore
-                              ? appStrings.workoutHistoryTitle
-                              : appStrings.workoutsTitle,
+                        AppSecondaryActionHeader(
+                          key: const ValueKey('workout-detail-header'),
                           onBack: Navigator.of(context).pop,
+                          action: widget.canManage
+                              ? AppOutlinedAdminButton(
+                                  key: const ValueKey(
+                                    'workout-detail-admin-edit',
+                                  ),
+                                  icon: Icons.edit_outlined,
+                                  tooltip: appStrings.workoutOptions,
+                                  onPressed: _showWorkoutActions,
+                                  accentColor: WorkoutColors.primary,
+                                )
+                              : null,
                         ),
                         Expanded(
                           child: ListView(
-                            padding: const EdgeInsets.fromLTRB(0, 12, 0, 28),
+                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 28),
                             children: [
-                              const SizedBox(height: 12),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 22,
+                                  horizontal: AppSpacing.screenX,
                                 ),
                                 child: Container(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    18,
-                                    20,
-                                    18,
-                                  ),
+                                  padding: const EdgeInsets.only(bottom: 24),
                                   decoration: BoxDecoration(
                                     border: Border(
                                       bottom: BorderSide(
@@ -497,20 +726,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
-                                        _formatDate(
-                                          workout['workout_date'].toString(),
-                                        ),
-                                        style: GoogleFonts.barlow(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: AppColors.textSecondary(
-                                            context,
-                                          ),
-                                          letterSpacing: 0.3,
-                                          height: 1.0,
-                                        ),
-                                      ),
                                       if (hasImage) ...[
                                         const SizedBox(height: 18),
                                         ClipRRect(
@@ -576,7 +791,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                     children: [
                                       const Icon(
                                         Icons.chat_bubble_outline,
-                                        color: Color(0xFFB59B6A),
+                                        color: WorkoutColors.primary,
                                         size: 20,
                                       ),
                                       const SizedBox(height: 8),
@@ -645,9 +860,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                     initial,
                                                     style:
                                                         GoogleFonts.barlowCondensed(
-                                                          color: const Color(
-                                                            0xFFB59B6A,
-                                                          ),
+                                                          color: WorkoutColors
+                                                              .primary,
                                                           fontSize: 15,
                                                           fontWeight:
                                                               FontWeight.w700,
@@ -786,6 +1000,27 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: AppColors.surfaceAlt(
+                                            context,
+                                          ),
+                                          foregroundImage:
+                                              _currentAvatarUrl != null &&
+                                                  _currentAvatarUrl!.isNotEmpty
+                                              ? NetworkImage(_currentAvatarUrl!)
+                                              : null,
+                                          child:
+                                              _currentAvatarUrl == null ||
+                                                  _currentAvatarUrl!.isEmpty
+                                              ? Icon(
+                                                  Icons.person_outline_rounded,
+                                                  color: WorkoutColors.primary,
+                                                  size: 18,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: AppSpacing.sm),
                                         Expanded(
                                           child: TextField(
                                             controller: _commentCtrl,
@@ -836,7 +1071,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                                 borderSide: const BorderSide(
-                                                  color: AppColors.accent,
+                                                  color: WorkoutColors.primary,
                                                   width: 1.2,
                                                 ),
                                               ),
@@ -860,7 +1095,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                         ),
                                         const SizedBox(width: 6),
                                         Material(
-                                          color: AppColors.textPrimary(context),
+                                          color: WorkoutColors.primary,
                                           borderRadius: BorderRadius.circular(
                                             10,
                                           ),
@@ -886,7 +1121,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                     )
                                                   : Icon(
                                                       Icons.send_rounded,
-                                                      color: AppColors.accent,
+                                                      color: Colors.white,
                                                       size: 17,
                                                     ),
                                             ),

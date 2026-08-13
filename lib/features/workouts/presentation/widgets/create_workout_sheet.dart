@@ -1,29 +1,31 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../../../../core/strings/app_strings.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_design_tokens.dart';
-
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../core/strings/app_strings.dart';
 import '../../../../core/widgets/app_pickers.dart';
+import 'workout_form_controls.dart';
 
 Future<void> showCreateWorkoutSheet({
   required BuildContext context,
   required SupabaseClient client,
   required String gymId,
   required Future<void> Function() onCreated,
+  DateTime? initialDate,
 }) async {
   await showGeneralDialog(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.transparent,
     transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) =>
-        _CreateWorkoutSheet(client: client, gymId: gymId, onCreated: onCreated),
+    pageBuilder: (_, _, _) => _CreateWorkoutSheet(
+      client: client,
+      gymId: gymId,
+      onCreated: onCreated,
+      initialDate: initialDate,
+    ),
   );
 }
 
@@ -32,11 +34,13 @@ class _CreateWorkoutSheet extends StatefulWidget {
     required this.client,
     required this.gymId,
     required this.onCreated,
+    this.initialDate,
   });
 
   final SupabaseClient client;
   final String gymId;
   final Future<void> Function() onCreated;
+  final DateTime? initialDate;
 
   @override
   State<_CreateWorkoutSheet> createState() => _CreateWorkoutSheetState();
@@ -49,13 +53,14 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   List<Map<String, dynamic>> _programs = [];
   String? _programId;
 
-  DateTime _date = DateTime.now();
+  late DateTime _date;
   final _description = TextEditingController();
   File? _image;
 
   @override
   void initState() {
     super.initState();
+    _date = widget.initialDate ?? DateTime.now();
     _description.addListener(() => setState(() {}));
     _loadPrograms();
   }
@@ -161,418 +166,46 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.border(context),
-                  width: 0.8,
-                ),
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
-            child: SafeArea(
-              bottom: false,
-              child: SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Color(0xFFB59B6A),
-                            size: 34,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          appStrings.workoutCreateTitle.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _WorkoutSheetText.title.copyWith(
-                            color: AppColors.textPrimary(context),
-                            fontSize: 24,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 44),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(
-                22,
-                22,
-                22,
-                110 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              children: [
-                if (_loadingPrograms)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFB59B6A),
-                      ),
-                    ),
-                  )
-                else if (_programs.isEmpty)
-                  Text(
-                    appStrings.workoutNeedProgram,
-                    style: _WorkoutSheetText.body,
-                  )
-                else
-                  DropdownButtonFormField<String>(
-                    initialValue: _programId,
-                    dropdownColor: AppColors.surface(context),
-                    iconEnabledColor: AppColors.textSecondary(context),
-                    style: _WorkoutSheetText.body.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    hint: Text(
-                      appStrings.workoutProgram,
-                      style: _WorkoutSheetText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    decoration:
-                        _programDropdownInput(
-                          context,
-                          appStrings.workoutProgram,
-                          Icons.grid_view_rounded,
-                        ).copyWith(
-                          labelText: null,
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                        ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          appStrings.workoutProgram,
-                          style: _WorkoutSheetText.subtle.copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                      ),
-                      ..._programs.map((p) {
-                        return DropdownMenuItem<String>(
-                          value: p['id'].toString(),
-                          child: Text(
-                            p['name']?.toString() ?? appStrings.workoutProgram,
-                            style: _WorkoutSheetText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                    onChanged: (v) => setState(() => _programId = v),
-                  ),
-                const SizedBox(height: 12),
-                _WorkoutSheetActionRow(
-                  icon: Icons.calendar_month_outlined,
-                  title: appStrings.workoutDate,
-                  subtitle: '${_date.day}/${_date.month}/${_date.year}',
-                  onTap: () async {
-                    final picked = await showAppDatePicker(
-                      context: context,
-                      initialDate: _date,
-                      firstDate: DateTime.now().subtract(
-                        const Duration(days: 7),
-                      ),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) setState(() => _date = picked);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _WorkoutSheetActionRow(
-                  icon: Icons.image_outlined,
-                  title: appStrings.workoutSelectImage,
-                  subtitle: _image == null ? '' : appStrings.imageSelected,
-                  onTap: _pickImage,
-                ),
-                if (_image != null) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      _image!,
-                      height: 170,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _description,
-                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                  minLines: 10,
-                  maxLines: 18,
-                  keyboardType: TextInputType.multiline,
-                  style: _WorkoutSheetText.body.copyWith(
-                    color: AppColors.textPrimary(context),
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: null,
-                    hintText: appStrings.workoutWriteWod,
-                    alignLabelWithHint: true,
-                    floatingLabelBehavior: FloatingLabelBehavior.never,
-                    labelStyle: _WorkoutSheetText.subtle.copyWith(
-                      color: AppColors.textSecondary(context),
-                      fontSize: 13,
-                    ),
-                    hintStyle: _WorkoutSheetText.subtle.copyWith(
-                      color: const Color(0xFFABABAB),
-                      fontSize: 15,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surface(context),
-                    contentPadding: const EdgeInsets.fromLTRB(18, 26, 18, 22),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.input),
-                      borderSide: BorderSide(
-                        color: AppColors.border(context),
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.input),
-                      borderSide: const BorderSide(
-                        color: AppColors.accent,
-                        width: 1.2,
-                      ),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.input),
-                      borderSide: BorderSide(
-                        color: AppColors.border(context),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
-              decoration: BoxDecoration(
-                color: AppColors.background(context),
-                boxShadow: [...AppShadows.card(context)],
-              ),
-              child: _CreateWorkoutButton(
-                label: appStrings.workoutCreateTitle,
-                loading: _saving,
-                enabled: _canSave,
-                onPressed: _save,
-              ),
-            ),
-          ),
-        ],
+    return WorkoutFormScaffold(
+      title: appStrings.workoutCreateTitle,
+      onClose: () => Navigator.of(context).pop(),
+      submit: WorkoutFormButton(
+        label: appStrings.workoutCreateTitle,
+        loading: _saving,
+        enabled: _canSave,
+        onPressed: _save,
       ),
-    );
-  }
-}
-
-InputDecoration _programDropdownInput(
-  BuildContext context,
-  String hint,
-  IconData icon,
-) {
-  return InputDecoration(
-    hintText: hint,
-    labelText: null,
-    floatingLabelBehavior: FloatingLabelBehavior.never,
-    prefixIcon: Icon(icon, color: const Color(0xFFB59B6A), size: 20),
-    filled: true,
-    fillColor: AppColors.surface(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFAF986C), width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
-}
-
-class _WorkoutSheetText {
-  const _WorkoutSheetText._();
-
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFFABABAB),
-    letterSpacing: 0.3,
-    height: 1,
-  );
-}
-
-class _CreateWorkoutButton extends StatelessWidget {
-  const _CreateWorkoutButton({
-    required this.label,
-    required this.loading,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool loading;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: loading || !enabled ? null : onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB59B6A),
-          disabledBackgroundColor: AppColors.isDark(context)
-              ? AppColors.surface(context)
-              : const Color(0xFFE9E9EC),
-          foregroundColor: Colors.white,
-          disabledForegroundColor: AppColors.textSecondary(context),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+      children: [
+        WorkoutFormFields(
+          loadingPrograms: _loadingPrograms,
+          programs: _programs,
+          programId: _programId,
+          onProgramChanged: (value) => setState(() => _programId = value),
+          dateLabel:
+              '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
+          onDateTap: () async {
+            final picked = await showAppDatePicker(
+              context: context,
+              initialDate: _date,
+              firstDate: DateTime.now().subtract(const Duration(days: 7)),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+            );
+            if (picked != null) setState(() => _date = picked);
+          },
+          imageTitle: appStrings.workoutSelectImage,
+          imageSubtitle: _image == null ? '' : appStrings.imageSelected,
+          onImageTap: _pickImage,
+          imagePreview: _image == null
+              ? null
+              : Image.file(
+                  _image!,
+                  height: 170,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+          descriptionController: _description,
         ),
-        child: loading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                label.toUpperCase(),
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
-                  height: 1,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _WorkoutSheetActionRow extends StatelessWidget {
-  const _WorkoutSheetActionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface(context),
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Icon(icon, color: AppColors.accent, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: _WorkoutSheetText.rowTitle),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(subtitle, style: _WorkoutSheetText.subtle),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-              ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
   }
 }

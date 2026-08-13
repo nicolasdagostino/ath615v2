@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   const AppColors._();
 
+  static const primary = Color(0xFF159ED1);
   static bool isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
 

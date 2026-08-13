@@ -1,168 +1,78 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import 'package:intl/intl.dart';
 import '../../../../core/strings/app_strings.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_selected_date_label.dart';
+import '../booking_colors.dart';
 
 class BookingHeader extends StatelessWidget {
-  String _monthLabel() {
-    final locale = appStrings.isEs ? 'es' : 'en';
-    return DateFormat('MMMM', locale).format(selectedDay).toUpperCase();
-  }
-
-  const BookingHeader({
-    super.key,
-    required this.gymName,
-    required this.selectedDay,
-    required this.unreadNotifications,
-    required this.onOpenNotifications,
-  });
+  const BookingHeader({super.key, required this.gymName});
 
   final String? gymName;
-  final DateTime selectedDay;
-  final int unreadNotifications;
-  final VoidCallback onOpenNotifications;
-
-  TextStyle _font(
-    double size, {
-    FontWeight weight = FontWeight.w500,
-    Color color = const Color(0xFF111318),
-    double? letterSpacing,
-    double? height,
-  }) {
-    return GoogleFonts.barlowCondensed(
-      fontSize: size,
-      fontWeight: weight,
-      color: color,
-      letterSpacing: letterSpacing,
-      height: height,
-    );
-  }
-
-  Widget _brandLogo(BuildContext context) {
-    return SizedBox(
-      width: 132,
-      child: Text(
-        appStrings.appBrand,
-        style: _font(
-          16,
-          weight: FontWeight.w800,
-          color: AppColors.textPrimary(context),
-          letterSpacing: -0.3,
-          height: 1.0,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.background(context),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+    return ColoredBox(
+      color: BookingColors.primary,
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 56,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appStrings.bookingTitle.toUpperCase(),
-                      style: _font(
-                        20,
-                        weight: FontWeight.w800,
-                        color: AppColors.textPrimary(context),
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${_monthLabel()} ${selectedDay.year}',
-                      style: GoogleFonts.barlow(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary(context),
-                        letterSpacing: 0.3,
-                        height: 1,
-                      ),
-                    ),
-                  ],
+          height: AppSizes.mainHeaderHeight,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenX),
+            child: Center(
+              child: Text(
+                (gymName ?? appStrings.appBrand).toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.1,
                 ),
               ),
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _brandLogo(context),
-                ),
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: SizedBox(
-                  width: 132,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: onOpenNotifications,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const SizedBox(
-                            width: 38,
-                            height: 38,
-                            child: Icon(
-                              Icons.notifications,
-                              size: 32,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                          if (unreadNotifications > 0)
-                            Positioned(
-                              right: -7,
-                              top: -7,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.danger,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  unreadNotifications > 99
-                                      ? '99+'
-                                      : unreadNotifications.toString(),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class BookingClassesChip extends StatelessWidget {
+  const BookingClassesChip({super.key});
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Container(
+      key: const ValueKey('booking-classes-chip'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: BookingColors.primary,
+        borderRadius: BorderRadius.circular(AppRadii.input),
+      ),
+      child: Text(
+        appStrings.bookingClasses.toUpperCase(),
+        style: AppTypography.buttonLabel(
+          context,
+        ).copyWith(color: Colors.white, letterSpacing: 0.6),
+      ),
+    ),
+  );
+}
+
+class BookingSelectedDateLabel extends StatelessWidget {
+  const BookingSelectedDateLabel({super.key, required this.selectedDay});
+
+  final DateTime selectedDay;
+
+  @override
+  Widget build(BuildContext context) =>
+      AppSelectedDateLabel(selectedDate: selectedDay);
 }

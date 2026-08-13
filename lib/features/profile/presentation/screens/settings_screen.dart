@@ -2,21 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
-import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../../../auth/data/auth_repository.dart';
-
-Color _profileHubBackground(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
-}
+import '../widgets/change_password_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.profileLoaderForTesting});
+
+  @visibleForTesting
+  final Future<Map<String, dynamic>?> Function()? profileLoaderForTesting;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -24,6 +27,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, dynamic>? _profile;
+  bool _loading = true;
   bool _leavingGym = false;
 
   AuthRepository get _repo => AuthRepository(Supabase.instance.client);
@@ -35,101 +39,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final profile = await _repo.myProfile();
+    final profile =
+        await (widget.profileLoaderForTesting?.call() ?? _repo.myProfile());
     if (!mounted) return;
     setState(() {
       _profile = profile;
+      _loading = false;
     });
   }
 
-  Future<void> _leaveGym() async {
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.border(context)),
-            boxShadow: AppShadows.card(context),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Text(
-                appStrings.leaveGym.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: _SettingsText.header.copyWith(
-                  color: AppColors.textPrimary(context),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                appStrings.leaveGymConfirm,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary(context),
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary(context),
-                        side: BorderSide(color: AppColors.border(context)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(appStrings.cancel.toUpperCase()),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(appStrings.leaveGym.toUpperCase()),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _leavingGym = true);
-
-    try {
-      await Supabase.instance.client.rpc('leave_current_gym');
-
-      if (!mounted) return;
-      context.go('/');
-    } catch (e) {
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.leaveGymError(e))));
+      ).showSnackBar(SnackBar(content: Text(appStrings.couldNotOpenLink)));
+    }
+  }
+
+  Future<void> _logout() async {
+    await _repo.signOut();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
+  Future<void> _leaveGym() async {
+    final confirmed = await showAppConfirmationDialog(
+      context: context,
+      title: appStrings.leaveGym,
+      message: appStrings.leaveGymConfirm,
+      confirmLabel: appStrings.leaveGym,
+      cancelLabel: appStrings.cancel,
+      icon: Icons.logout_rounded,
+    );
+    if (!confirmed) return;
+
+    setState(() => _leavingGym = true);
+    try {
+      await Supabase.instance.client.rpc('leave_current_gym');
+      if (!mounted) return;
+      context.go('/');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appStrings.leaveGymError(error))));
     } finally {
       if (mounted) setState(() => _leavingGym = false);
     }
@@ -139,45 +94,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final role = _profile?['role']?.toString();
     final gymId = _profile?['gym_id']?.toString();
-    final canEditGym = role == 'admin' || role == 'owner';
-    final canLeaveGym = role == 'athlete' && gymId != null && gymId.isNotEmpty;
-
     return Scaffold(
-      backgroundColor: _profileHubBackground(context),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Settings',
-                    style: _SettingsText.header.copyWith(
-                      color: AppColors.textPrimary(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _SettingsMenuSection(
-              children: [
-                _SettingsListCard(
-                  children: [
-                    _SettingsMenuRow(
-                      title:
-                          '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
-                      onTap: () {
+            _SettingsHeader(onBack: () => Navigator.of(context).maybePop()),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : SettingsContent(
+                      canEditGym: role == 'admin' || role == 'owner',
+                      canLeaveGym:
+                          role == 'athlete' &&
+                          gymId != null &&
+                          gymId.isNotEmpty,
+                      leavingGym: _leavingGym,
+                      onAccount: () => context.push('/account'),
+                      onChangePassword: () => showChangePasswordSheet(context),
+                      onGymSettings: () => context.push('/gym-settings'),
+                      onLanguage: () {
                         final next =
                             localeController.locale.languageCode == 'en'
                             ? 'es'
@@ -185,46 +125,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         localeController.setLanguage(next);
                         setState(() {});
                       },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _SettingsListCard(
-                  children: [
-                    _SettingsMenuRow(
-                      title:
-                          '${appStrings.appearance} · ${themeController.isDark ? appStrings.dark : appStrings.light}',
-                      onTap: () async {
+                      onAppearance: () async {
                         await themeController.toggle();
                         if (mounted) setState(() {});
                       },
+                      onHelp: () => _openUrl('https://athlete615.com/support'),
+                      onPrivacy: () =>
+                          _openUrl('https://athlete615.com/privacy-policy'),
+                      onTerms: () => _openUrl(
+                        'https://athlete615.com/terms-and-conditions',
+                      ),
+                      onLeaveGym: _leaveGym,
+                      onLogout: _logout,
                     ),
-                  ],
-                ),
-                if (canEditGym) ...[
-                  const SizedBox(height: 34),
-                  _SettingsListCard(
-                    children: [
-                      _SettingsMenuRow(
-                        title: appStrings.gymInformation,
-                        onTap: () => context.push('/gym-settings'),
-                      ),
-                    ],
-                  ),
-                ],
-                if (canLeaveGym) ...[
-                  const SizedBox(height: 34),
-                  _SettingsListCard(
-                    children: [
-                      _SettingsMenuRow(
-                        title: appStrings.leaveGym,
-                        danger: true,
-                        onTap: _leavingGym ? null : _leaveGym,
-                      ),
-                    ],
-                  ),
-                ],
-              ],
             ),
           ],
         ),
@@ -233,63 +146,166 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _SettingsText {
-  const _SettingsText._();
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({required this.onBack});
+  final VoidCallback onBack;
 
-  static TextStyle header = GoogleFonts.barlowCondensed(
-    fontSize: 22,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.3,
-    height: 1,
+  @override
+  Widget build(BuildContext context) => Stack(
+    alignment: Alignment.center,
+    children: [
+      AppSecondaryActionHeader(onBack: onBack),
+      IgnorePointer(
+        child: Text(
+          appStrings.profileSettings.toUpperCase(),
+          key: const ValueKey('settings-title'),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppColors.textPrimary(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ],
   );
 }
 
-class _SettingsMenuSection extends StatelessWidget {
-  const _SettingsMenuSection({required this.children});
+class SettingsContent extends StatelessWidget {
+  const SettingsContent({
+    super.key,
+    required this.canEditGym,
+    required this.canLeaveGym,
+    required this.leavingGym,
+    required this.onAccount,
+    required this.onChangePassword,
+    required this.onGymSettings,
+    required this.onLanguage,
+    required this.onAppearance,
+    required this.onHelp,
+    required this.onPrivacy,
+    required this.onTerms,
+    required this.onLeaveGym,
+    required this.onLogout,
+  });
 
-  final List<Widget> children;
+  final bool canEditGym;
+  final bool canLeaveGym;
+  final bool leavingGym;
+  final VoidCallback onAccount;
+  final VoidCallback onChangePassword;
+  final VoidCallback onGymSettings;
+  final VoidCallback onLanguage;
+  final VoidCallback onAppearance;
+  final VoidCallback onHelp;
+  final VoidCallback onPrivacy;
+  final VoidCallback onTerms;
+  final VoidCallback onLeaveGym;
+  final VoidCallback onLogout;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height * 0.72,
+  Widget build(BuildContext context) => ListView(
+    key: const ValueKey('settings-scroll'),
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.screenX,
+      AppSpacing.md,
+      AppSpacing.screenX,
+      72,
+    ),
+    children: [
+      _SettingsRow(
+        icon: Icons.person_outline_rounded,
+        title: appStrings.profileAccount,
+        onTap: onAccount,
       ),
-      color: _profileHubBackground(context),
-      padding: const EdgeInsets.fromLTRB(24, 34, 24, 72),
-      child: Column(children: children),
-    );
-  }
+      _SettingsRow(
+        key: const ValueKey('settings-change-password'),
+        icon: Icons.lock_outline_rounded,
+        title: appStrings.profileChangePassword,
+        onTap: onChangePassword,
+      ),
+      const SizedBox(height: AppSpacing.md),
+      _SettingsRow(
+        icon: Icons.language_outlined,
+        title:
+            '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
+        onTap: onLanguage,
+      ),
+      _SettingsRow(
+        icon: Icons.contrast_outlined,
+        title:
+            '${appStrings.appearance} · ${themeController.isDark ? appStrings.dark : appStrings.light}',
+        onTap: onAppearance,
+      ),
+      if (canEditGym)
+        _SettingsRow(
+          icon: Icons.storefront_outlined,
+          title: appStrings.gymInformation,
+          onTap: onGymSettings,
+        ),
+      const SizedBox(height: AppSpacing.md),
+      _SettingsRow(
+        icon: Icons.help_outline_rounded,
+        title: appStrings.profileHelp,
+        onTap: onHelp,
+      ),
+      _SettingsRow(
+        icon: Icons.shield_outlined,
+        title: appStrings.profilePrivacyPolicy,
+        onTap: onPrivacy,
+      ),
+      _SettingsRow(
+        icon: Icons.description_outlined,
+        title: appStrings.profileTerms,
+        onTap: onTerms,
+      ),
+      if (canLeaveGym) ...[
+        const SizedBox(height: AppSpacing.md),
+        _SettingsRow(
+          key: const ValueKey('settings-leave-gym'),
+          icon: Icons.directions_walk_outlined,
+          title: appStrings.leaveGym,
+          danger: true,
+          onTap: leavingGym ? null : onLeaveGym,
+        ),
+      ],
+      const SizedBox(height: AppSpacing.xl),
+      SizedBox(
+        height: AppSizes.buttonHeight,
+        child: OutlinedButton.icon(
+          key: const ValueKey('settings-logout'),
+          onPressed: onLogout,
+          icon: const Icon(Icons.logout_rounded),
+          label: Text(
+            appStrings.profileLogout.toUpperCase(),
+            style: GoogleFonts.barlow(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        appStrings.pick(
+          'Delete account is available inside Account.',
+          'Eliminar cuenta está disponible dentro de Cuenta.',
+        ),
+        textAlign: TextAlign.center,
+        style: AppTypography.bodySecondary(context).copyWith(fontSize: 12),
+      ),
+    ],
+  );
 }
 
-class _SettingsListCard extends StatelessWidget {
-  const _SettingsListCard({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border(context), width: 1),
-        boxShadow: AppShadows.card(context),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _SettingsMenuRow extends StatelessWidget {
-  const _SettingsMenuRow({
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    super.key,
+    required this.icon,
     required this.title,
     required this.onTap,
     this.danger = false,
   });
 
+  final IconData icon;
   final String title;
   final VoidCallback? onTap;
   final bool danger;
@@ -297,32 +313,34 @@ class _SettingsMenuRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = danger ? AppColors.danger : AppColors.textPrimary(context);
-
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  letterSpacing: 0,
-                  height: 1.2,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Row(
+            children: [
+              SizedBox(width: 38, child: Icon(icon, size: 20, color: color)),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.barlow(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
+                  ),
                 ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 22,
-              color: AppColors.textSecondary(context),
-            ),
-          ],
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textSecondary(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

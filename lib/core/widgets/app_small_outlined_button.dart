@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_design_tokens.dart';
+import '../theme/app_typography.dart';
+
 class AppSmallOutlinedButton extends StatelessWidget {
   const AppSmallOutlinedButton({
     super.key,
@@ -15,10 +19,17 @@ class AppSmallOutlinedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xFF111111),
-      side: const BorderSide(color: Color(0xFF111111)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      foregroundColor: AppColors.textPrimary(context),
+      disabledForegroundColor: AppColors.textSecondary(context),
+      backgroundColor: AppColors.surface(context),
+      side: BorderSide(color: AppColors.border(context)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.input),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
     );
 
     if (icon != null) {
@@ -26,14 +37,14 @@ class AppSmallOutlinedButton extends StatelessWidget {
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(label, style: AppTypography.buttonLabel(context)),
       );
     }
 
     return OutlinedButton(
       onPressed: onPressed,
       style: style,
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      child: Text(label, style: AppTypography.buttonLabel(context)),
     );
   }
 }

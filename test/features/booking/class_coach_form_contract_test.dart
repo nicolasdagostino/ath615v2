@@ -33,12 +33,15 @@ void main() {
     },
   );
 
-  test('edit preserves and sends the current coach id', () {
+  test('edit preserves the current title and coach id in its payload', () {
     final source = File(
       'lib/features/booking/presentation/widgets/edit_class_sheet.dart',
     ).readAsStringSync();
 
     expect(source, contains("widget.klass['coach_id']"));
+    expect(source, contains("widget.klass['title']"));
+    expect(source, contains('controller: _title'));
+    expect(source, contains("'title': classTitle"));
     expect(source, contains('_selectedCoachId = _currentCoachId'));
     expect(source, contains('currentCoachName: _currentCoachName'));
     expect(source, contains('withClassCoach'));

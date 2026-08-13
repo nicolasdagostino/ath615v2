@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -8,18 +6,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_centered_loading_indicator.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_secondary_action_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-Color _gymSettingsBackground(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFF252525) : const Color(0xFFF1F2F4);
-}
 
 bool _stripePaymentsEnabled = false;
 
 class GymSettingsScreen extends StatefulWidget {
-  const GymSettingsScreen({super.key});
+  const GymSettingsScreen({super.key, this.gymLoaderForTesting});
+
+  final Future<Map<String, dynamic>?> Function()? gymLoaderForTesting;
 
   @override
   State<GymSettingsScreen> createState() => _GymSettingsScreenState();
@@ -57,6 +56,13 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   }
 
   Future<void> _loadGym() async {
+    final injected = widget.gymLoaderForTesting;
+    if (injected != null) {
+      final gym = await injected();
+      _applyGym(gym);
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
@@ -77,18 +83,24 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
           .eq('id', _gymId!)
           .single();
 
-      _business.text = (gym['business_name'] ?? gym['name'] ?? '').toString();
-      _phone.text = (gym['phone'] ?? '').toString();
-      _email.text = (gym['email'] ?? '').toString();
-      _website.text = (gym['website'] ?? '').toString();
-      _address.text = (gym['address'] ?? '').toString();
-      _logoUrl = gym['logo_url']?.toString();
-      _gymCode = gym['gym_code']?.toString();
-      _stripeChargesEnabled = gym['stripe_charges_enabled'] == true;
+      _applyGym(gym);
     }
 
     if (!mounted) return;
     setState(() => _loading = false);
+  }
+
+  void _applyGym(Map<String, dynamic>? gym) {
+    if (gym == null) return;
+    _gymId = gym['id']?.toString() ?? _gymId;
+    _business.text = (gym['business_name'] ?? gym['name'] ?? '').toString();
+    _phone.text = (gym['phone'] ?? '').toString();
+    _email.text = (gym['email'] ?? '').toString();
+    _website.text = (gym['website'] ?? '').toString();
+    _address.text = (gym['address'] ?? '').toString();
+    _logoUrl = gym['logo_url']?.toString();
+    _gymCode = gym['gym_code']?.toString();
+    _stripeChargesEnabled = gym['stripe_charges_enabled'] == true;
   }
 
   Future<void> _uploadLogo() async {
@@ -263,138 +275,133 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _gymSettingsBackground(context),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: AppColors.accent,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  appStrings.gymInformation,
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary(context),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: AppColors.border(context)),
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.background(context),
+    body: SafeArea(
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              AppSecondaryActionHeader(
+                onBack: () => Navigator.of(context).maybePop(),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appStrings.gymInformation.toUpperCase(),
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary(context),
-                      letterSpacing: -0.2,
-                    ),
+              IgnorePointer(
+                child: Text(
+                  appStrings.gymInformation.toUpperCase(),
+                  key: const ValueKey('gym-information-title'),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textPrimary(context),
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 10),
-                  if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: _loading
+                ? const AppCenteredLoadingIndicator(color: AppColors.primary)
+                : ListView(
+                    key: const ValueKey('gym-information-scroll'),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.screenX,
+                      AppSpacing.md,
+                      AppSpacing.screenX,
+                      AppSpacing.xl + MediaQuery.viewInsetsOf(context).bottom,
+                    ),
+                    children: [
+                      Center(
+                        child: _GymLogoPicker(
+                          logoUrl: _logoUrl,
+                          uploading: _uploadingLogo,
+                          onTap: _uploadLogo,
                         ),
                       ),
-                    )
-                  else ...[
-                    Center(
-                      child: _GymLogoPicker(
-                        logoUrl: _logoUrl,
-                        uploading: _uploadingLogo,
-                        onTap: _uploadLogo,
+                      if (_gymCode != null && _gymCode!.trim().isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        _GymQrCard(gymCode: _gymCode!),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(
+                        label: appStrings.gymInformation.toUpperCase(),
                       ),
-                    ),
-                    if (_gymCode != null && _gymCode!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 18),
-                      _GymQrCard(gymCode: _gymCode!),
+                      const SizedBox(height: AppSpacing.sm),
+                      _GymInfoField(
+                        key: const ValueKey('gym-business-field'),
+                        label: appStrings.profileGymName,
+                        icon: Icons.storefront_outlined,
+                        controller: _business,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _GymInfoField(
+                        label: appStrings.phone,
+                        icon: Icons.phone_outlined,
+                        controller: _phone,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _GymInfoField(
+                        label: appStrings.authEmail,
+                        icon: Icons.email_outlined,
+                        controller: _email,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _GymInfoField(
+                        label: appStrings.website,
+                        icon: Icons.language_outlined,
+                        controller: _website,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _GymInfoField(
+                        label: appStrings.address,
+                        icon: Icons.location_on_outlined,
+                        controller: _address,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      AppFormSubmitButton(
+                        key: const ValueKey('gym-information-save'),
+                        label: appStrings.saveChanges,
+                        loading: _saving,
+                        enabled: !_saving,
+                        onPressed: _saveGym,
+                        accentColor: AppColors.primary,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      OutlinedButton(
+                        onPressed:
+                            _stripePaymentsEnabled && !_stripeChargesEnabled
+                            ? _connectStripe
+                            : null,
+                        child: Text(
+                          _stripePaymentsEnabled
+                              ? _stripeChargesEnabled
+                                    ? appStrings.stripeConnected
+                                    : appStrings.connectStripe
+                              : appStrings.comingSoon,
+                        ),
+                      ),
                     ],
-                    const SizedBox(height: 18),
-                    _GymInfoField(
-                      label: appStrings.profileGymName,
-                      controller: _business,
-                    ),
-                    const SizedBox(height: 12),
-                    _GymInfoField(label: appStrings.phone, controller: _phone),
-                    const SizedBox(height: 12),
-                    _GymInfoField(
-                      label: appStrings.authEmail,
-                      controller: _email,
-                    ),
-                    const SizedBox(height: 12),
-                    _GymInfoField(
-                      label: appStrings.website,
-                      controller: _website,
-                    ),
-                    const SizedBox(height: 12),
-                    _GymInfoField(
-                      label: appStrings.address,
-                      controller: _address,
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 18),
-                    AppButton(
-                      label: appStrings.saveChanges,
-                      loading: _saving,
-                      onPressed: _saveGym,
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      label: _stripePaymentsEnabled
-                          ? _stripeChargesEnabled
-                                ? appStrings.stripeConnected
-                                : appStrings.connectStripe
-                          : appStrings.comingSoon,
-                      loading: _stripePaymentsEnabled && _connectingStripe,
-                      onPressed:
-                          _stripePaymentsEnabled && !_stripeChargesEnabled
-                          ? _connectStripe
-                          : null,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _GymInfoField extends StatelessWidget {
   const _GymInfoField({
+    super.key,
     required this.label,
+    required this.icon,
     required this.controller,
     this.maxLines = 1,
   });
 
   final String label;
+  final IconData icon;
   final TextEditingController controller;
   final int maxLines;
 
@@ -403,33 +410,13 @@ class _GymInfoField extends StatelessWidget {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      cursorColor: AppColors.accent,
-      style: GoogleFonts.barlowCondensed(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary(context),
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.barlowCondensed(
-          color: AppColors.textSecondary(context),
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        filled: true,
-        fillColor: AppColors.surfaceAlt(context),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.border(context)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.accent),
-        ),
+      cursorColor: AppColors.primary,
+      style: appFormValueStyle(context),
+      decoration: appFormInput(
+        context,
+        icon: icon,
+        accentColor: AppColors.primary,
+        hintText: label,
       ),
     );
   }
@@ -456,11 +443,7 @@ class _GymQrCard extends StatelessWidget {
         children: [
           Text(
             appStrings.gymQrCode.toUpperCase(),
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary(context),
-            ),
+            style: AppTypography.sectionTitle(context),
           ),
           const SizedBox(height: 10),
           Container(
@@ -479,23 +462,15 @@ class _GymQrCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             gymCode,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: AppColors.accent,
-              letterSpacing: 1.2,
-            ),
+            style: AppTypography.itemTitle(
+              context,
+            ).copyWith(color: AppColors.primary, letterSpacing: 1.2),
           ),
           const SizedBox(height: 4),
           Text(
             appStrings.gymQrCodeMessage,
             textAlign: TextAlign.center,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary(context),
-              height: 1.2,
-            ),
+            style: AppTypography.helper(context),
           ),
         ],
       ),
@@ -534,7 +509,7 @@ class _GymLogoPicker extends StatelessWidget {
             ),
             child: uploading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   )
                 : hasLogo
                 ? Image.network(logoUrl!, fit: BoxFit.cover)
@@ -547,12 +522,9 @@ class _GymLogoPicker extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             appStrings.updateLogo,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.accent,
-              letterSpacing: 0.2,
-            ),
+            style: AppTypography.buttonLabel(
+              context,
+            ).copyWith(color: AppColors.primary),
           ),
         ],
       ),

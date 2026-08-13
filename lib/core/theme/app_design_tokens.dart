@@ -31,6 +31,7 @@ class AppSpacing {
 class AppSizes {
   const AppSizes._();
 
+  static const double mainHeaderHeight = 50;
   static const double minimumTouchTarget = 44;
   static const double fieldHeight = 52;
   static const double buttonHeight = 54;

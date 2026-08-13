@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_pickers.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 import '../../data/class_coach_repository.dart';
 import '../../domain/class_coach.dart';
+import '../booking_colors.dart';
 import 'class_coach_selector.dart';
+import 'class_form_components.dart';
 
 Future<void> showEditClassSheet({
   required BuildContext context,
@@ -16,6 +20,8 @@ Future<void> showEditClassSheet({
   required String gymId,
   required Map<String, dynamic> klass,
   required Future<void> Function() onUpdated,
+  ClassCoachRepository? coachRepository,
+  Future<List<Map<String, dynamic>>> Function()? programsLoader,
 }) async {
   await showGeneralDialog(
     context: context,
@@ -27,6 +33,8 @@ Future<void> showEditClassSheet({
       gymId: gymId,
       klass: klass,
       onUpdated: onUpdated,
+      coachRepository: coachRepository,
+      programsLoader: programsLoader,
     ),
   );
 }
@@ -37,12 +45,16 @@ class _EditClassSheet extends StatefulWidget {
     required this.gymId,
     required this.klass,
     required this.onUpdated,
+    this.coachRepository,
+    this.programsLoader,
   });
 
   final SupabaseClient client;
   final String gymId;
   final Map<String, dynamic> klass;
   final Future<void> Function() onUpdated;
+  final ClassCoachRepository? coachRepository;
+  final Future<List<Map<String, dynamic>>> Function()? programsLoader;
 
   @override
   State<_EditClassSheet> createState() => _EditClassSheetState();
@@ -51,6 +63,7 @@ class _EditClassSheet extends StatefulWidget {
 class _EditClassSheetState extends State<_EditClassSheet> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  late final TextEditingController _title;
   late final TextEditingController _duration;
   late final TextEditingController _capacity;
 
@@ -66,7 +79,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
   Object? _coachesError;
 
   late final ClassCoachRepository _coachRepository =
-      SupabaseClassCoachRepository(widget.client);
+      widget.coachRepository ?? SupabaseClassCoachRepository(widget.client);
 
   @override
   void initState() {
@@ -76,6 +89,9 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
     _selectedDate = DateTime(startsAt.year, startsAt.month, startsAt.day);
     _selectedTime = TimeOfDay.fromDateTime(startsAt);
+    _title = TextEditingController(
+      text: widget.klass['title']?.toString() ?? '',
+    );
     _duration = TextEditingController(
       text: (widget.klass['duration_minutes'] ?? 60).toString(),
     );
@@ -93,6 +109,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
   @override
   void dispose() {
+    _title.dispose();
     _duration.dispose();
     _capacity.dispose();
     super.dispose();
@@ -102,14 +119,17 @@ class _EditClassSheetState extends State<_EditClassSheet> {
     setState(() => _loadingPrograms = true);
 
     try {
-      final rows = await widget.client
-          .from('programs')
-          .select('id, name')
-          .eq('gym_id', widget.gymId)
-          .eq('is_active', true)
-          .order('name');
-
-      final programs = List<Map<String, dynamic>>.from(rows);
+      final injectedLoader = widget.programsLoader;
+      final programs = injectedLoader != null
+          ? await injectedLoader()
+          : List<Map<String, dynamic>>.from(
+              await widget.client
+                  .from('programs')
+                  .select('id, name')
+                  .eq('gym_id', widget.gymId)
+                  .eq('is_active', true)
+                  .order('name'),
+            );
 
       if (!mounted) return;
       setState(() {
@@ -195,6 +215,15 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
       final programName =
           program['name']?.toString() ?? appStrings.classFallback;
+      final customTitle = _title.text.trim();
+      final classTitle = customTitle.isEmpty ? programName : customTitle;
+
+      if (classTitle.length > 100) {
+        throw Exception(
+          'El nombre de la clase no puede superar 100 caracteres.',
+        );
+      }
+
       final durationMinutes = int.tryParse(_duration.text.trim()) ?? 60;
       final capacity = int.tryParse(_capacity.text.trim()) ?? 12;
 
@@ -203,7 +232,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
           .update(
             withClassCoach({
               'program_id': program['id'],
-              'title': programName,
+              'title': classTitle,
               'starts_at': startsAt.toUtc().toIso8601String(),
               'duration_minutes': durationMinutes,
               'capacity': capacity,
@@ -217,20 +246,11 @@ class _EditClassSheetState extends State<_EditClassSheet> {
     } catch (e) {
       if (!mounted) return;
 
-      await showDialog<void>(
+      await showAppMessageDialog(
         context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: Text(appStrings.error),
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
+        title: appStrings.error,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        error: true,
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -243,6 +263,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      accentColor: BookingColors.primary,
     );
 
     if (picked != null) setState(() => _selectedDate = picked);
@@ -252,6 +273,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
     final picked = await showAppTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
+      accentColor: BookingColors.primary,
     );
 
     if (picked != null) setState(() => _selectedTime = picked);
@@ -263,444 +285,173 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.border(context),
-                  width: 0.8,
+    return BookingClassFormScaffold(
+      title: appStrings.editClass,
+      onClose: () => Navigator.of(context).pop(),
+      submit: BookingClassSubmitButton(
+        label: appStrings.workoutSaveChanges,
+        loading: _saving,
+        enabled: _canSave,
+        onPressed: _save,
+      ),
+      children: [
+        const BookingClassSectionLabel(label: 'NOMBRE DE LA CLASE'),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: _title,
+          maxLength: 100,
+          textCapitalization: TextCapitalization.sentences,
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+          style: appFormValueStyle(context),
+          decoration: bookingClassInput(
+            context,
+            icon: Icons.edit_outlined,
+            hintText: 'Opcional · usa el programa si queda vacío',
+          ).copyWith(counterText: ''),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        BookingClassSectionLabel(
+          label: appStrings.workoutProgram.toUpperCase(),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        if (_loadingPrograms)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: CircularProgressIndicator(color: BookingColors.primary),
+            ),
+          )
+        else if (_programs.isEmpty)
+          Text(appStrings.classNeedProgram, style: AppTypography.body(context))
+        else
+          DropdownButtonFormField<String>(
+            initialValue: _selectedProgramId,
+            isExpanded: true,
+            dropdownColor: AppColors.surface(context),
+            iconEnabledColor: AppColors.textSecondary(context),
+            style: appFormValueStyle(context),
+            hint: Text(
+              appStrings.workoutProgram,
+              style: appFormPlaceholderStyle(context),
+            ),
+            decoration: bookingClassInput(
+              context,
+              icon: Icons.fitness_center_outlined,
+            ),
+            items: [
+              DropdownMenuItem<String>(
+                enabled: false,
+                child: Text(
+                  appStrings.workoutProgram,
+                  style: appFormPlaceholderStyle(context),
                 ),
               ),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
-            child: SafeArea(
-              bottom: false,
-              child: SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.accent,
-                            size: 34,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          appStrings.editClass.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _EditClassSheetText.title.copyWith(
-                            color: AppColors.textPrimary(context),
-                            fontSize: 24,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 44),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(
-                22,
-                12,
-                22,
-                32 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              children: [
-                if (_loadingPrograms)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
-                    ),
-                  )
-                else if (_programs.isEmpty)
-                  Text(
-                    appStrings.classNeedProgram,
-                    style: _EditClassSheetText.body.copyWith(
-                      color: AppColors.textPrimary(context),
-                    ),
-                  )
-                else
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedProgramId,
-                    dropdownColor: AppColors.surface(context),
-                    iconEnabledColor: AppColors.textSecondary(context),
-                    style: GoogleFonts.barlow(
-                      color: AppColors.textPrimary(context),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    hint: Text(
-                      appStrings.workoutProgram,
-                      style: GoogleFonts.barlow(
-                        color: AppColors.textPrimary(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    decoration: _programDropdownInput(
-                      context,
-                      appStrings.workoutProgram,
-                      Icons.fitness_center_outlined,
-                    ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          appStrings.workoutProgram,
-                          style: _EditClassSheetText.subtle.copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                      ),
-                      ..._programs.map((program) {
-                        return DropdownMenuItem<String>(
-                          value: program['id'].toString(),
-                          child: Text(
-                            program['name']?.toString() ??
-                                appStrings.workoutProgram,
-                            style: GoogleFonts.barlow(
-                              color: AppColors.textPrimary(context),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedProgramId = value),
+              ..._programs.map((program) {
+                return DropdownMenuItem<String>(
+                  value: program['id'].toString(),
+                  child: Text(
+                    program['name']?.toString() ?? appStrings.workoutProgram,
+                    style: appFormValueStyle(context),
                   ),
-                const SizedBox(height: 12),
-                ClassCoachSelector(
-                  coaches: _coaches,
-                  selectedCoachId: _selectedCoachId,
-                  currentCoachId: _currentCoachId,
-                  currentCoachName: _currentCoachName,
-                  loading: _loadingCoaches,
-                  error: _coachesError,
-                  onChanged: (coachId) =>
-                      setState(() => _selectedCoachId = coachId),
-                  onRetry: _loadCoaches,
-                ),
-                const SizedBox(height: 12),
-                _EditClassActionRow(
-                  icon: Icons.calendar_month_outlined,
-                  title: appStrings.workoutDate,
-                  subtitle: _selectedDate == null
-                      ? appStrings.selectDate
-                      : _formatDate(_selectedDate!),
-                  onTap: _pickDate,
-                ),
-                const SizedBox(height: 12),
-                _EditClassActionRow(
-                  icon: Icons.schedule_rounded,
-                  title: appStrings.time,
-                  subtitle: _selectedTime == null
-                      ? appStrings.selectTime
-                      : _selectedTime!.format(context),
-                  onTap: _pickTime,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _duration,
-                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                        keyboardType: TextInputType.number,
-                        style: GoogleFonts.barlow(
-                          color: AppColors.textPrimary(context),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: _editClassInput(
-                          context,
-                          appStrings.duration,
-                          Icons.timer_outlined,
-                          suffix: appStrings.minutesShort,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _capacity,
-                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-                        keyboardType: TextInputType.number,
-                        style: GoogleFonts.barlow(
-                          color: AppColors.textPrimary(context),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: _editClassInput(
-                          context,
-                          appStrings.capacity,
-                          Icons.groups_outlined,
-                          suffix: appStrings.placesLower,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _EditClassButton(
-                  label: appStrings.workoutSaveChanges,
-                  loading: _saving,
-                  enabled: _canSave,
-                  onPressed: _save,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-InputDecoration _programDropdownInput(
-  BuildContext context,
-  String hint,
-  IconData icon,
-) {
-  return InputDecoration(
-    hintText: hint,
-    labelText: hint,
-    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
-    filled: true,
-    fillColor: AppColors.surface(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
-}
-
-InputDecoration _editClassInput(
-  BuildContext context,
-  String hint,
-  IconData icon, {
-  required String suffix,
-}) {
-  return InputDecoration(
-    labelText: hint,
-    suffixText: suffix,
-    labelStyle: GoogleFonts.barlow(
-      color: AppColors.textSecondary(context),
-      fontWeight: FontWeight.w600,
-    ),
-    suffixStyle: GoogleFonts.barlow(
-      color: AppColors.textSecondary(context),
-      fontWeight: FontWeight.w600,
-    ),
-    hintStyle: _EditClassSheetText.subtle.copyWith(
-      color: AppColors.textSecondary(context),
-    ),
-    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
-    filled: true,
-    fillColor: AppColors.surface(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
-}
-
-class _EditClassSheetText {
-  const _EditClassSheetText._();
-
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFFABABAB),
-    letterSpacing: 0.3,
-    height: 1,
-  );
-}
-
-class _EditClassButton extends StatelessWidget {
-  const _EditClassButton({
-    required this.label,
-    required this.loading,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool loading;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = enabled && !loading;
-
-    return SizedBox(
-      height: 58,
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: active ? onPressed : null,
-        style: FilledButton.styleFrom(
-          backgroundColor: active
-              ? AppColors.accent
-              : AppColors.surfaceAlt(context),
-          disabledBackgroundColor: AppColors.surfaceAlt(context),
-          foregroundColor: active
-              ? Colors.white
-              : AppColors.textSecondary(context),
-          disabledForegroundColor: AppColors.textSecondary(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: loading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                label.toUpperCase(),
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  height: 1,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _EditClassActionRow extends StatelessWidget {
-  const _EditClassActionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface(context),
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Icon(icon, color: AppColors.accent, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: _EditClassSheetText.rowTitle.copyWith(
-                        color: AppColors.textPrimary(context),
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.barlow(
-                          color: AppColors.textSecondary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-              ),
+                );
+              }),
             ],
+            onChanged: (value) => setState(() => _selectedProgramId = value),
           ),
+        const SizedBox(height: AppSpacing.lg),
+        BookingClassSectionLabel(
+          label: appStrings.coachFieldLabel.toUpperCase(),
         ),
-      ),
+        const SizedBox(height: AppSpacing.xs),
+        ClassCoachSelector(
+          coaches: _coaches,
+          selectedCoachId: _selectedCoachId,
+          currentCoachId: _currentCoachId,
+          currentCoachName: _currentCoachName,
+          loading: _loadingCoaches,
+          error: _coachesError,
+          onChanged: (coachId) => setState(() => _selectedCoachId = coachId),
+          onRetry: _loadCoaches,
+          accentColor: BookingColors.primary,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 260;
+            final date = BookingClassPickerField(
+              icon: Icons.calendar_month_outlined,
+              label: appStrings.workoutDate,
+              value: _selectedDate == null
+                  ? appStrings.selectDate
+                  : _formatDate(_selectedDate!),
+              placeholder: _selectedDate == null,
+              onTap: _pickDate,
+            );
+            final time = BookingClassPickerField(
+              icon: Icons.schedule_rounded,
+              label: appStrings.time,
+              value: _selectedTime == null
+                  ? appStrings.selectTime
+                  : _selectedTime!.format(context),
+              placeholder: _selectedTime == null,
+              onTap: _pickTime,
+            );
+            if (compact) {
+              return Column(
+                children: [
+                  date,
+                  const SizedBox(height: AppSpacing.sm),
+                  time,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: date),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: time),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        BookingClassSectionLabel(
+          label:
+              '${appStrings.duration.toUpperCase()} · ${appStrings.capacity.toUpperCase()}',
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _duration,
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                keyboardType: TextInputType.number,
+                style: appFormValueStyle(context),
+                decoration: bookingClassInput(
+                  context,
+                  icon: Icons.timer_outlined,
+                  suffix: appStrings.minutesShort,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: TextField(
+                controller: _capacity,
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                keyboardType: TextInputType.number,
+                style: appFormValueStyle(context),
+                decoration: bookingClassInput(
+                  context,
+                  icon: Icons.groups_outlined,
+                  suffix: appStrings.placesLower,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

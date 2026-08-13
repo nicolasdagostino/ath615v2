@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/auth_repository.dart';
+import '../widgets/auth_form_scaffold.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -76,29 +79,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _AuthShell(
-      title: appStrings.authLoginTitle.toUpperCase(),
+    return AuthFormScaffold(
+      title: appStrings.authLoginTitle,
       subtitle: appStrings.authSignUpSubtitle,
+      showLogo: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             appStrings.authSignUpSection.toUpperCase(),
-            style: _AuthText.section.copyWith(fontSize: 22),
+            style: authSectionStyle(context).copyWith(fontSize: 22),
           ),
           const SizedBox(height: 6),
           Text(
             appStrings.authStep(1, 3).toUpperCase(),
-            style: _AuthText.subtle.copyWith(letterSpacing: 1.2),
+            style: AppTypography.helper(context).copyWith(letterSpacing: 1.2),
           ),
           const SizedBox(height: 14),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: const LinearProgressIndicator(
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            child: LinearProgressIndicator(
               value: 0.33,
               minHeight: 6,
-              backgroundColor: Color(0xFFE7E9ED),
-              valueColor: AlwaysStoppedAnimation(Color(0xFFB59B6A)),
+              backgroundColor: AppColors.border(context),
+              valueColor: const AlwaysStoppedAnimation(AppColors.accent),
             ),
           ),
           const SizedBox(height: 18),
@@ -106,10 +110,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
             controller: _fullName,
             textCapitalization: TextCapitalization.words,
             onChanged: (_) => _refreshSubmitState(),
-            style: _AuthText.body,
-            decoration: _authInput(
-              appStrings.authFullName,
-              Icons.person_outline_rounded,
+            style: authInputStyle(context),
+            decoration: authFormInput(
+              context,
+              label: appStrings.authFullName,
+              icon: Icons.person_outline_rounded,
             ),
           ),
           const SizedBox(height: 12),
@@ -117,19 +122,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             onChanged: (_) => _refreshSubmitState(),
-            style: _AuthText.body,
-            decoration: _authInput(appStrings.authEmail, Icons.email_outlined),
+            style: authInputStyle(context),
+            decoration: authFormInput(
+              context,
+              label: appStrings.authEmail,
+              icon: Icons.email_outlined,
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _password,
             obscureText: _obscurePassword,
             onChanged: (_) => _refreshSubmitState(),
-            style: _AuthText.body,
+            style: authInputStyle(context),
             decoration:
-                _authInput(
-                  appStrings.authPassword,
-                  Icons.lock_outline_rounded,
+                authFormInput(
+                  context,
+                  label: appStrings.authPassword,
+                  icon: Icons.lock_outline_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -137,7 +147,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
-                    color: const Color(0xFF8F96A3),
+                    color: AppColors.textSecondary(context),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
@@ -149,11 +159,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             controller: _confirmPassword,
             obscureText: _obscureConfirmPassword,
             onChanged: (_) => _refreshSubmitState(),
-            style: _AuthText.body,
+            style: authInputStyle(context),
             decoration:
-                _authInput(
-                  appStrings.authConfirmPassword,
-                  Icons.lock_outline_rounded,
+                authFormInput(
+                  context,
+                  label: appStrings.authConfirmPassword,
+                  icon: Icons.lock_outline_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -161,7 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
-                    color: const Color(0xFF8F96A3),
+                    color: AppColors.textSecondary(context),
                     onPressed: () {
                       setState(
                         () =>
@@ -183,7 +194,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               onPressed: _loading ? null : () => context.go('/login'),
               child: Text(
                 appStrings.authAlreadyHaveAccount,
-                style: _AuthText.link,
+                style: authLinkStyle(context),
               ),
             ),
           ),
@@ -191,125 +202,4 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-}
-
-class _AuthShell extends StatelessWidget {
-  const _AuthShell({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      'assets/images/logo_negro.png',
-                      height: 96,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(title, style: _AuthText.logo),
-                  const SizedBox(height: 6),
-                  Text(subtitle, style: _AuthText.subtle),
-                  const SizedBox(height: 34),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: child,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-InputDecoration _authInput(String hint, IconData icon) {
-  return InputDecoration(
-    hintText: hint,
-    labelText: hint,
-    hintStyle: _AuthText.subtle,
-    labelStyle: _AuthText.subtle,
-    prefixIcon: Icon(icon, color: const Color(0xFF8F96A3), size: 20),
-    filled: true,
-    fillColor: const Color(0xFFF4F5F7),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
-    ),
-  );
-}
-
-class _AuthText {
-  const _AuthText._();
-
-  static TextStyle logo = GoogleFonts.barlowCondensed(
-    fontSize: 34,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.6,
-    height: 1,
-  );
-
-  static TextStyle section = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: const Color(0xFF0E0E11),
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFF384152),
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
-    letterSpacing: 0.3,
-    height: 1,
-  );
-
-  static TextStyle link = GoogleFonts.barlowCondensed(
-    fontSize: 16,
-    fontWeight: FontWeight.w700,
-    color: const Color(0xFFB59B6A),
-    letterSpacing: -0.1,
-  );
 }

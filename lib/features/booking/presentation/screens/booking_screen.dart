@@ -7,18 +7,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
+import '../../../../core/widgets/app_centered_loading_indicator.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../widgets/attendance_sheet.dart';
+import '../widgets/attendance_add_booking_sheets.dart';
 import '../widgets/class_details_sheet.dart';
 import '../widgets/booking_class_card.dart';
+import '../widgets/booking_create_class_button.dart';
 import '../widgets/booking_day_chips.dart';
 import '../widgets/booking_header.dart';
-import '../widgets/membership_status_card.dart';
 import '../widgets/create_class_sheet.dart';
 import '../widgets/edit_class_sheet.dart';
+import '../booking_colors.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
@@ -48,8 +50,6 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _hasActiveMembership = false;
   bool _isAccountActive = true;
   int? _creditsRemaining;
-  String? _membershipName;
-  DateTime? _membershipExpiresAt;
 
   DateTime _selectedDay = DateTime.now();
 
@@ -159,7 +159,6 @@ class _BookingScreenState extends State<BookingScreen> {
       bool hasActiveMembership = true;
       int? creditsRemaining;
       String? membershipName;
-      DateTime? membershipExpiresAt;
 
       if (role == 'athlete') {
         final result = await _client.rpc('get_current_usable_membership');
@@ -172,11 +171,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
         creditsRemaining = membership?['credits_remaining'] as int?;
         membershipName = membership?['plan_name']?.toString();
-
-        final rawExpires = membership?['expires_at']?.toString();
-        membershipExpiresAt = rawExpires == null
-            ? null
-            : DateTime.tryParse(rawExpires)?.toLocal();
 
         hasActiveMembership = membership != null;
 
@@ -201,8 +195,6 @@ class _BookingScreenState extends State<BookingScreen> {
           _hasActiveMembership = hasActiveMembership;
           _isAccountActive = isAccountActive;
           _creditsRemaining = creditsRemaining;
-          _membershipName = membershipName;
-          _membershipExpiresAt = membershipExpiresAt;
         });
         return;
       }
@@ -290,8 +282,6 @@ class _BookingScreenState extends State<BookingScreen> {
         _hasActiveMembership = hasActiveMembership;
         _isAccountActive = isAccountActive;
         _creditsRemaining = creditsRemaining;
-        _membershipName = membershipName;
-        _membershipExpiresAt = membershipExpiresAt;
         _creditsRemaining = creditsRemaining;
         _loadError = null;
       });
@@ -505,203 +495,102 @@ class _BookingScreenState extends State<BookingScreen> {
     required String title,
     required String message,
   }) async {
-    final confirmed = await showModalBottomSheet<bool>(
+    return showAppConfirmationDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: EdgeInsets.all(AppSpacing.sheetMargin),
-              padding: EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.sheet),
-                border: Border.all(color: AppColors.border(context), width: 1),
-                boxShadow: AppShadows.card(context),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.danger,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          title.toUpperCase(),
-                          style: _BookingSheetText.title.copyWith(
-                            color: AppColors.textPrimary(context),
-                            fontSize: 22,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    message,
-                    style: _BookingSheetText.body.copyWith(
-                      color: AppColors.textSecondary(context),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _BookingSheetSecondaryButton(
-                          label: appStrings.cancel,
-                          onTap: () => Navigator.pop(context, false),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _BookingSheetDangerButton(
-                          label: appStrings.delete,
-                          onTap: () => Navigator.pop(context, true),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    return confirmed == true;
-  }
-
-  Future<void> _deleteClassOptions(Map<String, dynamic> klass) async {
-    final recurringId = klass['recurring_id'];
-    final startsAt = klass['starts_at'];
-    final title = klass['title']?.toString() ?? appStrings.classFallback;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: EdgeInsets.all(AppSpacing.sheetMargin),
-              padding: EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.sheet),
-                border: Border.all(color: AppColors.border(context), width: 1),
-                boxShadow: AppShadows.card(context),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Text(
-                    appStrings.classOptions.toUpperCase(),
-                    style: _BookingSheetText.title.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontSize: 22,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _BookingSheetActionRow(
-                    icon: Icons.edit_outlined,
-                    title: appStrings.editClass,
-                    subtitle: title,
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await _showEditClassSheet(klass);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _BookingSheetActionRow(
-                    icon: Icons.delete_outline_rounded,
-                    title: appStrings.deleteThisClass,
-                    subtitle: title,
-                    danger: true,
-                    onTap: () async {
-                      Navigator.pop(context);
-
-                      final confirmed = await _confirmDeleteClass(
-                        title: appStrings.deleteClassTitle,
-                        message: appStrings.deleteOnlyThisClassMessage,
-                      );
-
-                      if (!confirmed) return;
-
-                      await _client
-                          .from('classes')
-                          .delete()
-                          .eq('id', klass['id']);
-                      await _load(showLoading: false);
-                    },
-                  ),
-                  if (recurringId != null) ...[
-                    const SizedBox(height: 12),
-                    _BookingSheetActionRow(
-                      icon: Icons.delete_sweep_outlined,
-                      title: appStrings.deleteThisAndFuture,
-                      subtitle: appStrings.deleteThisAndFutureSubtitle,
-                      danger: true,
-                      onTap: () async {
-                        Navigator.pop(context);
-
-                        final confirmed = await _confirmDeleteClass(
-                          title: appStrings.deleteFutureClassesTitle,
-                          message: appStrings.deleteThisAndFutureMessage,
-                        );
-
-                        if (!confirmed) return;
-
-                        await _client
-                            .from('classes')
-                            .delete()
-                            .eq('recurring_id', recurringId)
-                            .gte('starts_at', startsAt);
-                        await _load(showLoading: false);
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      title: title,
+      message: message,
+      confirmLabel: appStrings.delete,
+      cancelLabel: appStrings.cancel,
     );
   }
 
-  Future<void> _openClassSheet(Map<String, dynamic> klass) async {
-    if (_canManageAttendance) {
-      await showAttendanceSheet(
-        context: context,
-        client: _client,
-        klass: klass,
-        formatDateTime: _formatDateTime,
-        prettyStatus: _prettyStatus,
-        canMarkAttendance: _classState(klass) != 'upcoming',
-        onChanged: _load,
-      );
-      return;
-    }
+  Future<void> _deleteClass(Map<String, dynamic> klass) async {
+    final confirmed = await _confirmDeleteClass(
+      title: appStrings.deleteClassTitle,
+      message: appStrings.deleteOnlyThisClassMessage,
+    );
+    if (!confirmed) return;
 
+    await _client.from('classes').delete().eq('id', klass['id']);
+    await _load(showLoading: false);
+  }
+
+  Future<void> _deleteFutureClasses(Map<String, dynamic> klass) async {
+    final confirmed = await _confirmDeleteClass(
+      title: appStrings.deleteFutureClassesTitle,
+      message: appStrings.deleteThisAndFutureMessage,
+    );
+    if (!confirmed) return;
+
+    await _client
+        .from('classes')
+        .delete()
+        .eq('recurring_id', klass['recurring_id'])
+        .gte('starts_at', klass['starts_at']);
+    await _load(showLoading: false);
+  }
+
+  Future<void> _openClassSheet(
+    Map<String, dynamic> klass, {
+    required String actionLabel,
+    required VoidCallback? action,
+  }) async {
     await showClassDetailsSheet(
       context: context,
       client: _client,
       klass: klass,
+      actionLabel: actionLabel,
+      onAction: action,
+      adminActions: _canManageAttendance
+          ? [
+              ClassDetailAdminAction(
+                icon: Icons.edit_outlined,
+                label: appStrings.editClass,
+                onTap: () => _showEditClassSheet(klass),
+              ),
+              ClassDetailAdminAction(
+                icon: Icons.delete_outline_rounded,
+                label: appStrings.deleteThisClass,
+                destructive: true,
+                onTap: () => _deleteClass(klass),
+              ),
+              if (klass['recurring_id'] != null)
+                ClassDetailAdminAction(
+                  icon: Icons.delete_sweep_outlined,
+                  label: appStrings.deleteThisAndFuture,
+                  destructive: true,
+                  onTap: () => _deleteFutureClasses(klass),
+                ),
+            ]
+          : const [],
+      attendeeActions: _canManageAttendance
+          ? ClassDetailAttendeeActions(
+              onAddMember: (bookingCount) async {
+                final result = await showAttendanceAddMember(
+                  context: context,
+                  client: _client,
+                  classId: klass['id'].toString(),
+                  bookingCount: bookingCount,
+                  capacity: klass['capacity'] as int? ?? 0,
+                );
+                if (result != null) await _load(showLoading: false);
+                return result;
+              },
+              onAddGuest: (bookingCount) async {
+                final result = await showAttendanceAddGuest(
+                  context: context,
+                  client: _client,
+                  classId: klass['id'].toString(),
+                  bookingCount: bookingCount,
+                  capacity: klass['capacity'] as int? ?? 0,
+                );
+                if (result != null) await _load(showLoading: false);
+                return result;
+              },
+              onChanged: () => _load(showLoading: false),
+              canMarkAttendance: _classState(klass) != 'upcoming',
+            )
+          : null,
     );
   }
 
@@ -725,13 +614,6 @@ class _BookingScreenState extends State<BookingScreen> {
     return DateTime.now().isBefore(cancelLimit);
   }
 
-  String _prettyStatus(String status) {
-    if (status == 'no_show') return appStrings.noShow;
-    if (status == 'attended') return appStrings.attended;
-    if (status == 'booked') return appStrings.bookingBooked;
-    return status;
-  }
-
   String _formatDateTime(String raw) {
     final dt = DateTime.parse(raw).toLocal();
     final d = dt.day.toString().padLeft(2, '0');
@@ -745,35 +627,15 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
-        statusBarColor: AppColors.surfaceAlt(context),
-        statusBarIconBrightness: AppColors.isDark(context)
-            ? Brightness.light
-            : Brightness.dark,
-        statusBarBrightness: AppColors.isDark(context)
-            ? Brightness.dark
-            : Brightness.light,
+        statusBarColor: BookingColors.primary,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
     );
 
     return Scaffold(
       floatingActionButton: _canCreateClass
-          ? FloatingActionButton.extended(
-              heroTag: 'create-class',
-              backgroundColor: AppColors.textPrimary(context),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.input),
-              ),
-              onPressed: _showCreateClassSheet,
-              icon: const Icon(Icons.add_rounded, color: AppColors.accent),
-              label: Text(
-                appStrings.createClassTitle.toUpperCase(),
-                style: AppTypography.buttonLabel(
-                  context,
-                ).copyWith(color: Colors.white),
-              ),
-            )
+          ? BookingCreateClassButton(onPressed: _showCreateClassSheet)
           : null,
       backgroundColor: AppColors.background(context),
       body: Column(
@@ -782,13 +644,24 @@ class _BookingScreenState extends State<BookingScreen> {
             color: AppColors.background(context),
             child: Column(
               children: [
-                BookingHeader(
-                  gymName: widget.gymName,
-                  selectedDay: _selectedDay,
-                  unreadNotifications: widget.unreadNotifications,
-                  onOpenNotifications: widget.onOpenNotifications,
+                BookingHeader(gymName: widget.gymName),
+                const SizedBox(height: AppSpacing.md),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenX),
+                  child: BookingClassesChip(),
                 ),
-                const SizedBox(height: 0),
+                const SizedBox(height: AppSpacing.lg),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenX,
+                  ),
+                  child: Divider(
+                    height: 1,
+                    thickness: 0.8,
+                    color: AppColors.border(context),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 BookingDayChips(
                   selectedDay: _selectedDay,
                   canViewPastDays: _canManageAttendance,
@@ -797,26 +670,23 @@ class _BookingScreenState extends State<BookingScreen> {
                     _load();
                   },
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                BookingSelectedDateLabel(selectedDay: _selectedDay),
+                const SizedBox(height: AppSpacing.lg),
               ],
             ),
           ),
-          if (_role == 'athlete')
-            MembershipStatusCard(
-              hasActiveMembership: _hasActiveMembership,
-              creditsRemaining: _creditsRemaining,
-              planName: _membershipName,
-              expiresAt: _membershipExpiresAt,
-            ),
           Expanded(
             child: RefreshIndicator(
-              color: AppColors.accent,
+              color: BookingColors.primary,
               onRefresh: _refresh,
               child: _loading
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        AppAsyncState.loading(
-                          message: appStrings.loadingClasses,
+                      children: const [
+                        SizedBox(height: 180),
+                        AppCenteredLoadingIndicator(
+                          color: BookingColors.primary,
                         ),
                       ],
                     )
@@ -843,7 +713,12 @@ class _BookingScreenState extends State<BookingScreen> {
                     )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.screenX,
+                        0,
+                        AppSpacing.screenX,
+                        88,
+                      ),
                       itemCount: _classes.length,
                       itemBuilder: (context, index) {
                         final klass = _classes[index];
@@ -939,10 +814,11 @@ class _BookingScreenState extends State<BookingScreen> {
                             buttonAction: buttonAction,
                             isLoading: isProcessing,
                             waitlistPosition: waitlistPosition,
-                            onTap: () => _openClassSheet(klass),
-                            onMorePressed: _canCreateClass
-                                ? () => _deleteClassOptions(klass)
-                                : null,
+                            onTap: () => _openClassSheet(
+                              klass,
+                              actionLabel: buttonLabel,
+                              action: buttonAction,
+                            ),
                             formatDateTime: _formatDateTime,
                           ),
                         );
@@ -959,6 +835,7 @@ class _BookingScreenState extends State<BookingScreen> {
 class _BookingSheetText {
   const _BookingSheetText._();
 
+  // ignore: unused_field
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 20,
     fontWeight: FontWeight.w800,
@@ -975,87 +852,16 @@ class _BookingSheetText {
     height: 1,
   );
 
+  // ignore: unused_field
   static TextStyle body = GoogleFonts.barlowCondensed(
     color: const Color(0xFF666666),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
   );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFF666666),
-    letterSpacing: 0.3,
-    height: 1,
-  );
 }
 
-class _BookingSheetActionRow extends StatelessWidget {
-  const _BookingSheetActionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : AppColors.accent;
-
-    return Material(
-      color: AppColors.surfaceAlt(context),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: _BookingSheetText.rowTitle.copyWith(
-                        color: danger
-                            ? AppColors.danger
-                            : AppColors.textPrimary(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: _BookingSheetText.subtle.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+// ignore: unused_element
 class _BookingSheetSecondaryButton extends StatelessWidget {
   const _BookingSheetSecondaryButton({
     required this.label,
@@ -1090,6 +896,7 @@ class _BookingSheetSecondaryButton extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _BookingSheetDangerButton extends StatelessWidget {
   const _BookingSheetDangerButton({required this.label, required this.onTap});
 

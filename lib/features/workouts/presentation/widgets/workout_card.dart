@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
 import '../screens/workout_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -20,8 +20,10 @@ class WorkoutCard extends StatefulWidget {
     this.canManage = false,
     this.onEdit,
     this.onDelete,
-    this.openDetailFromExplore = false,
     this.onChanged,
+    this.accentColor = AppColors.accent,
+    this.useEditAction = false,
+    this.showDate = true,
   });
 
   final String workoutId;
@@ -34,8 +36,10 @@ class WorkoutCard extends StatefulWidget {
   final bool canManage;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  final bool openDetailFromExplore;
   final Future<void> Function()? onChanged;
+  final Color accentColor;
+  final bool useEditAction;
+  final bool showDate;
 
   @override
   State<WorkoutCard> createState() => _WorkoutCardState();
@@ -55,6 +59,14 @@ class _WorkoutCardState extends State<WorkoutCard> {
     super.initState();
     _likes = widget.likes;
     _comments = widget.comments;
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkoutCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.comments, widget.comments)) {
+      _comments = widget.comments;
+    }
   }
 
   Future<void> _toggleLike() async {
@@ -83,16 +95,12 @@ class _WorkoutCardState extends State<WorkoutCard> {
     }
   }
 
-  Future<void> _openDetail() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => WorkoutDetailScreen(
-          workoutId: widget.workoutId,
-          fromExplore: widget.openDetailFromExplore,
-        ),
-      ),
+  Future<void> _openSocial() async {
+    await showWorkoutSocialSheet(
+      context: context,
+      workoutId: widget.workoutId,
+      program: widget.program,
     );
-
     await widget.onChanged?.call();
   }
 
@@ -101,77 +109,27 @@ class _WorkoutCardState extends State<WorkoutCard> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(AppSpacing.sheetMargin),
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(AppRadii.panel),
-                border: Border.all(color: AppColors.border(context), width: 1),
-                boxShadow: AppShadows.card(context),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Text(
-                    widget.program.toUpperCase(),
-                    style: _WorkoutOptionsText.title.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontSize: 22,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    appStrings.workoutOptions.toUpperCase(),
-                    style: _WorkoutOptionsText.subtle.copyWith(
-                      color: AppColors.textSecondary(context),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SheetAction(
-                    icon: Icons.edit_outlined,
-                    label: appStrings.workoutEdit,
-                    subtitle: widget.program,
-                    onTap: () {
-                      Navigator.pop(context);
-                      widget.onEdit?.call();
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _SheetAction(
-                    icon: Icons.delete_outline,
-                    label: appStrings.workoutDelete,
-                    subtitle: widget.program,
-                    danger: true,
-                    onTap: () {
-                      Navigator.pop(context);
-                      widget.onDelete?.call();
-                    },
-                  ),
-                ],
-              ),
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      builder: (sheetContext) {
+        return AppAdminActionSheet(
+          accentColor: widget.accentColor,
+          onClose: () => Navigator.pop(sheetContext),
+          actions: [
+            AppAdminAction(
+              icon: Icons.edit_outlined,
+              label: appStrings.workoutEditTitle,
+              onTap: () => widget.onEdit?.call(),
             ),
-          ),
+            AppAdminAction(
+              icon: Icons.delete_outline,
+              label: appStrings.workoutDeleteAction,
+              destructive: true,
+              onTap: () => widget.onDelete?.call(),
+            ),
+          ],
         );
       },
     );
-  }
-
-  String get _previewDescription {
-    final lines = widget.description
-        .trim()
-        .split('\n')
-        .where((line) => line.trim().isNotEmpty)
-        .take(4)
-        .join('\n');
-
-    return lines.isEmpty ? appStrings.workoutDescription : lines;
   }
 
   @override
@@ -181,22 +139,21 @@ class _WorkoutCardState extends State<WorkoutCard> {
         border: Border(bottom: BorderSide(color: AppColors.border(context))),
       ),
       child: Material(
+        key: ValueKey('workout-${widget.workoutId}'),
         color: AppColors.background(context),
-        child: InkWell(
-          key: ValueKey('workout-${widget.workoutId}'),
-          onTap: _openDetail,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.showDate) ...[
                           Text(
                             widget.date.toUpperCase(),
                             style: GoogleFonts.barlow(
@@ -207,71 +164,101 @@ class _WorkoutCardState extends State<WorkoutCard> {
                             ),
                           ),
                           const SizedBox(height: 5),
-                          Text(
-                            widget.program.toUpperCase(),
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 23,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary(context),
-                              letterSpacing: -0.3,
-                              height: 1,
-                            ),
-                          ),
                         ],
-                      ),
-                    ),
-                    if (widget.canManage)
-                      SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.more_horiz,
-                            color: AppColors.textSecondary(context),
+                        Text(
+                          widget.program.toUpperCase(),
+                          style: GoogleFonts.barlowCondensed(
+                            fontSize: 23,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary(context),
+                            letterSpacing: -0.3,
+                            height: 1,
                           ),
-                          onPressed: _showManageActions,
                         ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
+                  if (widget.canManage)
+                    AppOutlinedAdminButton(
+                      icon: widget.useEditAction
+                          ? Icons.edit_outlined
+                          : Icons.more_horiz,
+                      tooltip: appStrings.workoutOptions,
+                      onPressed: _showManageActions,
+                      accentColor: widget.accentColor,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                widget.description,
+                key: ValueKey('workout-body-${widget.workoutId}'),
+                style: GoogleFonts.barlow(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary(context),
+                  height: 1.35,
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  _previewDescription,
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.barlow(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary(context),
-                    height: 1.35,
+              ),
+              if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    widget.imageUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _InlineStat(
-                      icon: _liked ? Icons.favorite : Icons.favorite_border,
-                      label: '${_likes.length}',
-                      active: _liked,
-                      onTap: _toggleLike,
-                    ),
-                    const SizedBox(width: 18),
-                    _InlineStat(
-                      icon: Icons.chat_bubble_outline,
-                      label: appStrings.workoutCommentCount(_comments.length),
-                      active: false,
-                      onTap: _openDetail,
-                    ),
-                    const Spacer(),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 18,
-                      color: AppColors.accent,
-                    ),
-                  ],
-                ),
               ],
-            ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _InlineStat(
+                    icon: _liked ? Icons.favorite : Icons.favorite_border,
+                    label: '${_likes.length}',
+                    active: _liked,
+                    onTap: _toggleLike,
+                  ),
+                  const SizedBox(width: 18),
+                  Tooltip(
+                    message: appStrings.workoutCommentCount(_comments.length),
+                    child: _InlineStat(
+                      key: ValueKey(
+                        'workout-comment-count-${widget.workoutId}',
+                      ),
+                      icon: Icons.chat_bubble_outline,
+                      label: '${_comments.length}',
+                      active: false,
+                      onTap: _openSocial,
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    key: ValueKey('workout-log-result-${widget.workoutId}'),
+                    onPressed: _openSocial,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: widget.accentColor,
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: widget.accentColor, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      appStrings.workoutLogResult,
+                      style: GoogleFonts.barlow(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -281,6 +268,7 @@ class _WorkoutCardState extends State<WorkoutCard> {
 
 class _InlineStat extends StatelessWidget {
   const _InlineStat({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,
@@ -307,6 +295,8 @@ class _InlineStat extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.barlow(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -315,103 +305,6 @@ class _InlineStat extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkoutOptionsText {
-  const _WorkoutOptionsText._();
-
-  static TextStyle title = GoogleFonts.barlowCondensed(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.3,
-    height: 1,
-  );
-
-  static TextStyle rowTitle = GoogleFonts.barlowCondensed(
-    fontSize: 17,
-    fontWeight: FontWeight.w800,
-    color: Colors.white,
-    letterSpacing: -0.2,
-    height: 1,
-  );
-
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: const Color(0xFFABABAB),
-    letterSpacing: 0.3,
-    height: 1,
-  );
-}
-
-class _SheetAction extends StatelessWidget {
-  const _SheetAction({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surfaceAlt(context),
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: danger ? AppColors.danger : AppColors.accent,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: _WorkoutOptionsText.rowTitle.copyWith(
-                        color: danger
-                            ? AppColors.danger
-                            : AppColors.textPrimary(context),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _WorkoutOptionsText.subtle.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-              ),
-            ],
-          ),
         ),
       ),
     );

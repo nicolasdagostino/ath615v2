@@ -14,6 +14,8 @@ import '../../../../core/theme/app_control_styles.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
+import '../../../../core/widgets/app_context_action_sheet.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
@@ -671,27 +673,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final name = (member['full_name'] ?? member['email'] ?? 'this member')
         .toString();
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppConfirmationDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete invitation?'),
-        content: Text(
+      title: 'Delete invitation?',
+      message:
           'This will permanently remove $name from your members list. Only pending invitations can be deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await Supabase.instance.client.functions.invoke(
@@ -3073,112 +3064,54 @@ Future<void> _openMemberActionsSheet({
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      return SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border(context), width: 1),
-            boxShadow: AppShadows.card(context),
+      return AppContextActionSheet(
+        title: appStrings.memberOptions,
+        actions: [
+          if (!isDisabled)
+            AppContextActionRow(
+              icon: Icons.card_membership_outlined,
+              label: appStrings.assignPlan,
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await onAssignPlan();
+              },
+            ),
+          AppContextActionRow(
+            icon: active
+                ? Icons.person_off_outlined
+                : Icons.person_add_alt_1_outlined,
+            label: active
+                ? appStrings.deactivateMember
+                : appStrings.activateMember,
+            destructive: active,
+            onTap: () async {
+              Navigator.pop(sheetContext);
+              await onToggleActive();
+            },
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isDisabled)
-                _MemberActionRow(
-                  icon: Icons.card_membership_outlined,
-                  label: appStrings.assignPlan,
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    await onAssignPlan();
-                  },
-                ),
-              _MemberActionRow(
-                icon: active
-                    ? Icons.person_off_outlined
-                    : Icons.person_add_alt_1_outlined,
-                label: active
-                    ? appStrings.deactivateMember
-                    : appStrings.activateMember,
-                danger: active,
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  await onToggleActive();
-                },
-              ),
-              if (isPending)
-                _MemberActionRow(
-                  icon: Icons.mail_outline_rounded,
-                  label: appStrings.resendInvitation,
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    await onResendInvitation();
-                  },
-                ),
-              if (isPending)
-                _MemberActionRow(
-                  icon: Icons.delete_outline_rounded,
-                  label: 'Delete invitation',
-                  danger: true,
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    await onDeletePendingMember();
-                  },
-                ),
-            ],
-          ),
-        ),
+          if (isPending)
+            AppContextActionRow(
+              icon: Icons.mail_outline_rounded,
+              label: appStrings.resendInvitation,
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await onResendInvitation();
+              },
+            ),
+          if (isPending)
+            AppContextActionRow(
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete invitation',
+              destructive: true,
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await onDeletePendingMember();
+              },
+            ),
+        ],
       );
     },
   );
-}
-
-class _MemberActionRow extends StatelessWidget {
-  const _MemberActionRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : AppColors.textPrimary(context);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 13, 4, 13),
-        child: Row(
-          children: [
-            Icon(icon, color: danger ? AppColors.danger : AppColors.accent),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: _DashText.body.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _MemberAvatar extends StatelessWidget {

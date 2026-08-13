@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import '../../../../core/widgets/app_button.dart';
 
 Color _profileHubBackground(BuildContext context) {
@@ -478,29 +479,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.recordsOnly
-                        ? appStrings.personalRecords
-                        : appStrings.profileTraining,
-                    style: _TrainingText.header.copyWith(
-                      color: AppColors.textPrimary(context),
-                    ),
-                  ),
-                ],
-              ),
+            AppDetailHeader(
+              title: widget.recordsOnly
+                  ? appStrings.personalRecords
+                  : appStrings.profileTraining,
+              onBack: context.pop,
             ),
             _TrainingMenuSection(
               children: [
@@ -563,13 +546,6 @@ InputDecoration _inputDecoration(BuildContext context, String hint) {
 
 class _TrainingText {
   const _TrainingText._();
-
-  static TextStyle header = GoogleFonts.barlowCondensed(
-    fontSize: 22,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.3,
-    color: Colors.white,
-  );
 
   static TextStyle title = GoogleFonts.barlowCondensed(
     fontSize: 18,

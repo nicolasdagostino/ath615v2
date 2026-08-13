@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../theme/app_colors.dart';
+import '../theme/app_design_tokens.dart';
 
 class AppDetailHeader extends StatelessWidget {
   const AppDetailHeader({
@@ -18,7 +17,12 @@ class AppDetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.background(context),
         border: Border(
@@ -53,12 +57,11 @@ class AppDetailHeader extends StatelessWidget {
                   title.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.barlowCondensed(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary(context),
                     letterSpacing: -0.2,
-                    height: 1,
                   ),
                 ),
               ),

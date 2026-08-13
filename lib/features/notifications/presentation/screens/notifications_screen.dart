@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_async_state.dart';
 import '../../data/notifications_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -114,84 +116,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _clearNotifications() async {
-    final confirmed = await showModalBottomSheet<bool>(
+    final confirmed = await showAppConfirmationDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  Text(
-                    appStrings.notificationsClearTitle.toUpperCase(),
-                    style: _NotificationText.title(context),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    appStrings.notificationsClearMessage,
-                    style: _NotificationText.body(context),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF384152),
-                            side: BorderSide(color: AppColors.border(context)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            appStrings.cancel.toUpperCase(),
-                            style: _NotificationText.button(context),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFB42318),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            appStrings.clear.toUpperCase(),
-                            style: _NotificationText.button(
-                              context,
-                            ).copyWith(color: AppColors.surface(context)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      title: appStrings.notificationsClearTitle,
+      message: appStrings.notificationsClearMessage,
+      confirmLabel: appStrings.clear,
+      cancelLabel: appStrings.cancel,
+      icon: Icons.delete_sweep_outlined,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     if (!mounted) return;
 
@@ -287,7 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             Expanded(
               child: RefreshIndicator(
-                color: const Color(0xFFB59B6A),
+                color: AppColors.accent,
                 onRefresh: _load,
                 child: _loading
                     ? const _NotificationsLoadingState()
@@ -296,8 +230,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(28, 120, 28, 24),
                         children: [
-                          _NotificationsEmptyState(
+                          AppAsyncState.empty(
                             message: appStrings.notificationsEmpty,
+                            icon: Icons.notifications_none_rounded,
                           ),
                         ],
                       )
@@ -593,17 +528,17 @@ class _NotificationCard extends StatelessWidget {
         : Icons.schedule_rounded;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.border(context)),
+        color: isUnread
+            ? AppColors.accent.withValues(alpha: 0.055)
+            : Colors.transparent,
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(28),
         child: InkWell(
-          borderRadius: BorderRadius.circular(28),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
@@ -611,14 +546,14 @@ class _NotificationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 40,
+                  height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isUnread
                         ? AppColors.surfaceAlt(context)
                         : AppColors.surfaceAlt(context),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
@@ -628,12 +563,30 @@ class _NotificationCard extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: _NotificationText.cardTitle(context)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: _NotificationText.cardTitle(context),
+                            ),
+                          ),
+                          if (isUnread)
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
                       if (body.isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
@@ -658,31 +611,6 @@ class _NotificationCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _NotificationsEmptyState extends StatelessWidget {
-  const _NotificationsEmptyState({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          appStrings.noNotificationsTitle.toUpperCase(),
-          textAlign: TextAlign.center,
-          style: _NotificationText.emptyTitle(context),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: _NotificationText.subtle(context),
-        ),
-      ],
     );
   }
 }
@@ -780,15 +708,6 @@ class _NotificationText {
         color: AppColors.textPrimary(context),
         letterSpacing: -0.2,
         height: 1.05,
-      );
-
-  static TextStyle emptyTitle(BuildContext context) =>
-      GoogleFonts.barlowCondensed(
-        fontSize: 30,
-        fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary(context),
-        letterSpacing: -0.3,
-        height: 1,
       );
 
   static TextStyle body(BuildContext context) => GoogleFonts.barlowCondensed(

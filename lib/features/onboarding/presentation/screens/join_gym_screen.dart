@@ -9,6 +9,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_control_styles.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -261,7 +264,8 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
       backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(AppSpacing.screenX),
           children: [
             Text(
               appStrings.appBrand,
@@ -286,7 +290,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
               decoration: BoxDecoration(
                 color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppRadii.card),
                 border: Border.all(color: AppColors.border(context)),
               ),
               child: _requestSent
@@ -323,23 +327,13 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                           },
                           textCapitalization: TextCapitalization.characters,
                           cursorColor: AppColors.accent,
-                          style: GoogleFonts.barlowCondensed(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary(context),
-                          ),
-                          decoration: InputDecoration(
+                          style: AppTypography.itemTitle(context),
+                          decoration: AppControlStyles.input(
+                            context,
                             hintText: appStrings.gymCode,
-                            labelText: appStrings.gymCode,
                             prefixIcon: Icon(
                               Icons.qr_code_2_rounded,
                               color: AppColors.textSecondary(context),
-                            ),
-                            filled: true,
-                            fillColor: AppColors.surfaceAlt(context),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide.none,
                             ),
                           ),
                         ),
