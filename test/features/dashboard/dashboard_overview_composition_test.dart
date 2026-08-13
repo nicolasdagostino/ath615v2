@@ -25,8 +25,10 @@ void main() {
 
   void expectCoreDashboardComposition() {
     expect(find.text('ATHLETE 615'), findsOneWidget);
-    expect(find.text('DASHBOARD'), findsAtLeastNWidgets(1));
+    expect(find.text('DASHBOARD'), findsOneWidget);
     expect(find.text('MEMBERS'), findsAtLeastNWidgets(1));
+    expect(find.text('MEMBERSHIPS'), findsOneWidget);
+    expect(find.byIcon(Icons.notifications), findsNothing);
     expect(find.byKey(const ValueKey('dashboard-kpis')), findsOneWidget);
     expect(find.byKey(const ValueKey('dashboard-attention')), findsOneWidget);
     expect(

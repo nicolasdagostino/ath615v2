@@ -51,6 +51,7 @@ class AppStrings {
   String get navExplore => pick('Explore', 'Explorar');
   String get navProfile => pick('Profile', 'Perfil');
   String get navDashboard => pick('Dashboard', 'Panel');
+  String get navMessages => pick('Messages', 'Mensajes');
 
   String get joinGymTitle => pick('Join a Gym', 'Únete a un gym');
   String get joinGymSubtitle => pick(
@@ -229,6 +230,17 @@ class AppStrings {
       pick('Delete workout error: $e', 'Error al eliminar WOD: $e');
 
   String get notificationsTitle => pick('Notifications', 'Notificaciones');
+  String get messagesTitle => pick('Messages', 'Mensajes');
+  String get communications => pick('Communications', 'Comunicaciones');
+  String get personalNotifications => pick('Notifications', 'Notificaciones');
+  String get communicationsEmpty => pick(
+    'No gym communications yet.',
+    'Aún no hay comunicaciones del gimnasio.',
+  );
+  String get personalNotificationsEmpty => pick(
+    'No personal notifications yet.',
+    'Aún no hay notificaciones personales.',
+  );
   String get notificationsMarkRead => pick('Mark read', 'Marcar como leídas');
   String get notificationsEmpty =>
       pick('No notifications yet.', 'Aún no hay notificaciones.');
@@ -242,10 +254,10 @@ class AppStrings {
       pick('Mark read error: $e', 'Error al marcar como leídas: $e');
 
   String get notificationsClearTitle =>
-      pick('Clear notifications?', '¿Vaciar notificaciones?');
+      pick('Delete all messages?', '¿Eliminar todos los mensajes?');
   String get notificationsClearMessage => pick(
-    'This will remove all notifications from your list.',
-    'Esto eliminará todas las notificaciones de tu lista.',
+    'All your communications and notifications from this gym will be deleted.',
+    'Se eliminarán todas tus comunicaciones y notificaciones de este gimnasio.',
   );
   String get clear => pick('Clear', 'Vaciar');
   String get close => pick('Close', 'Cerrar');
@@ -696,6 +708,7 @@ class AppStrings {
       pick('Membership request error: $e', 'Error al solicitar membresía: $e');
 
   String get membershipTitle => pick('Membership', 'Membresía');
+  String get adminMemberships => pick('Memberships', 'Membresía');
   String get joinRequests => pick('Join requests', 'Solicitudes de acceso');
   String get memberJoinedGym =>
       pick('Member added to gym.', 'Miembro agregado al gym.');

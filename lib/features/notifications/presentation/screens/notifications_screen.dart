@@ -5,8 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
+import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_primary_gym_header.dart';
+import '../../../../core/widgets/app_section_chip.dart';
 import '../../data/notifications_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -14,10 +18,16 @@ class NotificationsScreen extends StatefulWidget {
     super.key,
     this.initialNotificationId,
     this.repository,
+    this.gymName,
+    this.onNotificationsRead,
+    this.onOpenMembershipRequests,
   });
 
   final String? initialNotificationId;
   final NotificationsRepository? repository;
+  final String? gymName;
+  final VoidCallback? onNotificationsRead;
+  final VoidCallback? onOpenMembershipRequests;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -27,6 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading = true;
   bool _handledInitialNotification = false;
   List<Map<String, dynamic>> _notifications = [];
+  _MessagesSection _section = _MessagesSection.communications;
 
   late final NotificationsRepository _repository =
       widget.repository ??
@@ -49,7 +60,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications = List<Map<String, dynamic>>.from(rows);
       });
 
-      await _markLoadedNotificationsAsRead();
+      widget.onNotificationsRead?.call();
       _openInitialNotificationIfNeeded();
     } catch (e) {
       if (!mounted) return;
@@ -69,23 +80,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _markLoadedNotificationsAsRead() async {
-    if (_notifications.isEmpty) return;
-
-    final now = DateTime.now().toUtc().toIso8601String();
-
-    try {
-      await _repository.markAllRead();
-
-      if (!mounted) return;
-      setState(() {
-        for (final notification in _notifications) {
-          notification['read_at'] ??= now;
-        }
-      });
-    } catch (_) {}
-  }
-
   Future<void> _markAsRead(Map<String, dynamic> notification) async {
     if (notification['read_at'] != null) return;
 
@@ -99,20 +93,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(() {
         notification['read_at'] = DateTime.now().toUtc().toIso8601String();
       });
+      widget.onNotificationsRead?.call();
     } catch (_) {}
-  }
-
-  Future<void> _markAllAsRead() async {
-    try {
-      await _repository.markAllRead();
-
-      await _load();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appStrings.notificationsMarkReadError(e))),
-      );
-    }
   }
 
   Future<void> _clearNotifications() async {
@@ -124,21 +106,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       cancelLabel: appStrings.cancel,
       icon: Icons.delete_sweep_outlined,
     );
-
     if (!confirmed) return;
-
-    if (!mounted) return;
-
-    final previous = List<Map<String, dynamic>>.from(_notifications);
-    setState(() => _notifications = []);
 
     try {
       await _repository.clearOwn();
-    } catch (e) {
       if (!mounted) return;
-      setState(() => _notifications = previous);
+      setState(_notifications.clear);
+      widget.onNotificationsRead?.call();
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appStrings.notificationsMarkReadError(e))),
+        SnackBar(content: Text(appStrings.notificationsMarkReadError(error))),
       );
     }
   }
@@ -169,6 +147,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final data = notification['data'];
 
+    if (notification['type']?.toString() == 'membership_request') {
+      final callback = widget.onOpenMembershipRequests;
+      if (callback != null) {
+        callback();
+      } else if (mounted) {
+        context.go('/app?section=membership');
+      }
+      return;
+    }
+
     if (data is Map && data['workoutId'] != null) {
       if (!mounted) return;
       context.push('/workout/${data['workoutId']}');
@@ -196,202 +184,210 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  int get _unreadCount {
-    return _notifications.where((n) {
-      final sentAt = n['sent_at']?.toString();
-      final readAt = n['read_at']?.toString();
-      return sentAt != null &&
-          sentAt.isNotEmpty &&
-          (readAt == null || readAt.isEmpty);
-    }).length;
-  }
+  List<Map<String, dynamic>> get _visibleNotifications => _notifications
+      .where(
+        (notification) =>
+            (notification['type']?.toString() == 'communication') ==
+            (_section == _MessagesSection.communications),
+      )
+      .toList(growable: false);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _NotificationsHeader(
-              unreadCount: _unreadCount,
-              onBack: () => Navigator.of(context).pop(),
-              onMarkAllRead: _markAllAsRead,
-              onClear: _notifications.isEmpty ? null : _clearNotifications,
+      body: Column(
+        children: [
+          AppPrimaryGymHeader(gymName: widget.gymName),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenX,
+              AppSpacing.md,
+              AppSpacing.screenX,
+              0,
             ),
-            Expanded(
-              child: RefreshIndicator(
-                color: AppColors.accent,
-                onRefresh: _load,
-                child: _loading
-                    ? const _NotificationsLoadingState()
-                    : _notifications.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(28, 120, 28, 24),
-                        children: [
-                          AppAsyncState.empty(
-                            message: appStrings.notificationsEmpty,
-                            icon: Icons.notifications_none_rounded,
-                          ),
-                        ],
-                      )
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, index) {
-                          final notification = _notifications[index];
-                          final sentAt = notification['sent_at']?.toString();
-                          final readAt = notification['read_at']?.toString();
-                          final isSent = sentAt != null && sentAt.isNotEmpty;
-                          final isUnread =
-                              isSent && (readAt == null || readAt.isEmpty);
-
-                          return _NotificationCard(
-                            title:
-                                notification['title']?.toString() ??
-                                appStrings.notificationFallbackTitle,
-                            body: notification['body']?.toString() ?? '',
-                            meta: isSent
-                                ? appStrings.notificationSent(
-                                    _formatDate(sentAt),
-                                  )
-                                : appStrings.notificationScheduled(
-                                    _formatDate(
-                                      notification['scheduled_for']?.toString(),
-                                    ),
-                                  ),
-                            isUnread: isUnread,
-                            isSent: isSent,
-                            onTap: () => _openNotification(notification),
-                          );
-                        },
-                      ),
+            child: Row(
+              key: const ValueKey('messages-section-chips'),
+              children: [
+                Expanded(
+                  child: AppSectionChip(
+                    label: appStrings.communications,
+                    selected: _section == _MessagesSection.communications,
+                    onTap: () => setState(
+                      () => _section = _MessagesSection.communications,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppSectionChip(
+                    label: appStrings.personalNotifications,
+                    selected: _section == _MessagesSection.notifications,
+                    onTap: () => setState(
+                      () => _section = _MessagesSection.notifications,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_notifications.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.screenX,
+                  right: AppSpacing.screenX,
+                  top: AppSpacing.xs,
+                ),
+                child: TextButton.icon(
+                  key: const ValueKey('messages-clear-action'),
+                  onPressed: _clearNotifications,
+                  icon: const Icon(Icons.cleaning_services_outlined, size: 18),
+                  label: Text(appStrings.clear.toUpperCase()),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary(context),
+                    textStyle: AppTypography.buttonLabel(context),
+                    minimumSize: const Size(
+                      AppSizes.minimumTouchTarget,
+                      AppSizes.minimumTouchTarget,
+                    ),
+                  ),
+                ),
               ),
             ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppColors.accent,
+              onRefresh: _load,
+              child: _loading
+                  ? const _NotificationsLoadingState()
+                  : _visibleNotifications.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(28, 120, 28, 24),
+                      children: [
+                        AppAsyncState.empty(
+                          message: _section == _MessagesSection.communications
+                              ? appStrings.communicationsEmpty
+                              : appStrings.personalNotificationsEmpty,
+                          icon: _section == _MessagesSection.communications
+                              ? Icons.campaign_outlined
+                              : Icons.notifications_none_rounded,
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+                      itemCount: _visibleNotifications.length,
+                      itemBuilder: (context, index) {
+                        final notification = _visibleNotifications[index];
+                        final sentAt = notification['sent_at']?.toString();
+                        final readAt = notification['read_at']?.toString();
+                        final isSent = sentAt != null && sentAt.isNotEmpty;
+                        final isUnread =
+                            isSent && (readAt == null || readAt.isEmpty);
+
+                        return _MessageRow(
+                          title:
+                              notification['title']?.toString() ??
+                              appStrings.notificationFallbackTitle,
+                          body: notification['body']?.toString() ?? '',
+                          meta: isSent
+                              ? appStrings.notificationSent(_formatDate(sentAt))
+                              : appStrings.notificationScheduled(
+                                  _formatDate(
+                                    notification['scheduled_for']?.toString(),
+                                  ),
+                                ),
+                          isUnread: isUnread,
+                          isSent: isSent,
+                          onTap: () => _openNotification(notification),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _MessagesSection { communications, notifications }
+
+class _MessageRow extends StatelessWidget {
+  const _MessageRow({
+    required this.title,
+    required this.body,
+    required this.meta,
+    required this.isUnread,
+    required this.isSent,
+    required this.onTap,
+  });
+
+  final String title;
+  final String body;
+  final String meta;
+  final bool isUnread;
+  final bool isSent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppColors.border(context), width: 0.8),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              isSent ? Icons.campaign_outlined : Icons.schedule_outlined,
+              color: isUnread ? AppColors.primary : AppColors.muted(context),
+              size: 22,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTypography.itemTitle(context)),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySecondary(context),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(meta, style: AppTypography.helper(context)),
+                ],
+              ),
+            ),
+            if (isUnread)
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _NotificationsHeader extends StatelessWidget {
-  const _NotificationsHeader({
-    required this.unreadCount,
-    required this.onBack,
-    required this.onMarkAllRead,
-    required this.onClear,
-  });
-
-  final int unreadCount;
-  final VoidCallback onBack;
-  final VoidCallback onMarkAllRead;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surfaceAlt(context),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: 56,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _HeaderIcon(
-                    icon: Icons.chevron_left_rounded,
-                    onTap: onBack,
-                  ),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appStrings.notificationsTitle.toUpperCase(),
-                      style: _NotificationText.title(
-                        context,
-                      ).copyWith(fontSize: 22, letterSpacing: -0.2),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      unreadCount == 0
-                          ? appStrings.allCaughtUp
-                          : appStrings.unreadCount(unreadCount),
-                      style: _NotificationText.subtle(context),
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: SizedBox(
-                  width: 132,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (unreadCount > 0) ...[
-                        _HeaderIcon(
-                          icon: Icons.done_all_rounded,
-                          onTap: onMarkAllRead,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      _HeaderIcon(
-                        icon: Icons.delete_sweep_outlined,
-                        onTap: onClear,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: SizedBox(
-        width: 38,
-        height: 38,
-        child: Icon(
-          icon,
-          size: icon == Icons.chevron_left_rounded ? 34 : 28,
-          color: enabled
-              ? AppColors.accent
-              : AppColors.muted(context).withValues(alpha: 0.45),
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }
 
 class _NotificationDetailsSheet extends StatelessWidget {
@@ -502,119 +498,6 @@ class _NotificationDetailsSheet extends StatelessWidget {
   }
 }
 
-class _NotificationCard extends StatelessWidget {
-  const _NotificationCard({
-    required this.title,
-    required this.body,
-    required this.meta,
-    required this.isUnread,
-    required this.isSent,
-    required this.onTap,
-  });
-
-  final String title;
-  final String body;
-  final String meta;
-  final bool isUnread;
-  final bool isSent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = isUnread
-        ? Icons.notifications_active_outlined
-        : isSent
-        ? Icons.notifications_none_rounded
-        : Icons.schedule_rounded;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isUnread
-            ? AppColors.accent.withValues(alpha: 0.055)
-            : Colors.transparent,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isUnread
-                        ? AppColors.surfaceAlt(context)
-                        : AppColors.surfaceAlt(context),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isUnread
-                        ? AppColors.accent
-                        : AppColors.muted(context),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: _NotificationText.cardTitle(context),
-                            ),
-                          ),
-                          if (isUnread)
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: AppColors.accent,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      if (body.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          body,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: _NotificationText.body(context),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Text(meta, style: _NotificationText.subtle(context)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.muted(context),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _NotificationsLoadingState extends StatelessWidget {
   const _NotificationsLoadingState();
 
@@ -700,15 +583,6 @@ class _NotificationText {
     letterSpacing: -0.3,
     height: 1,
   );
-
-  static TextStyle cardTitle(BuildContext context) =>
-      GoogleFonts.barlowCondensed(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary(context),
-        letterSpacing: -0.2,
-        height: 1.05,
-      );
 
   static TextStyle body(BuildContext context) => GoogleFonts.barlowCondensed(
     color: AppColors.textSecondary(context),

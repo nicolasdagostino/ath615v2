@@ -34,8 +34,9 @@ void main() {
       ),
     );
 
-    expect(find.text('DASHBOARD'), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
+    expect(find.text('ATHLETE 615'), findsOneWidget);
+    expect(find.text('DASHBOARD'), findsNothing);
+    expect(find.byIcon(Icons.notifications), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

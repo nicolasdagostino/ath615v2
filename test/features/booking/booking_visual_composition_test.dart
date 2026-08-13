@@ -7,6 +7,7 @@ import 'package:ath615v2/features/booking/presentation/widgets/booking_class_car
 import 'package:ath615v2/features/booking/presentation/widgets/booking_create_class_button.dart';
 import 'package:ath615v2/features/booking/presentation/widgets/booking_day_chips.dart';
 import 'package:ath615v2/features/booking/presentation/widgets/booking_header.dart';
+import 'package:ath615v2/core/widgets/app_section_chip.dart';
 import 'package:ath615v2/features/booking/presentation/booking_colors.dart';
 import 'package:ath615v2/features/booking/presentation/widgets/membership_status_card.dart';
 import 'package:flutter/material.dart';
@@ -161,13 +162,10 @@ void main() {
       ),
     );
     expect(headerBox.color, BookingColors.primary);
-    final classesChip = tester.widget<Container>(
+    final classesChip = tester.widget<AppSectionChip>(
       find.byKey(const ValueKey('booking-classes-chip')),
     );
-    expect(
-      (classesChip.decoration! as BoxDecoration).color,
-      BookingColors.primary,
-    );
+    expect(classesChip.selected, isTrue);
     expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
     expect(find.byType(BookingCreateClassButton), findsOneWidget);
 

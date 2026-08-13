@@ -1,6 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef NotificationRecord = Map<String, dynamic>;
+
+class NotificationsInboxEvents extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
+
+final notificationsInboxEvents = NotificationsInboxEvents();
 
 abstract interface class NotificationsRepository {
   Future<List<NotificationRecord>> listOwn();

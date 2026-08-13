@@ -19,7 +19,14 @@ class AppShell extends StatefulWidget {
     super.key,
     this.initialRoleForTesting,
     this.screenBuilderForTesting,
+    this.initialSection,
+    this.initialUnreadForTesting = 0,
   });
+
+  final String? initialSection;
+
+  @visibleForTesting
+  final int initialUnreadForTesting;
 
   @visibleForTesting
   final String? initialRoleForTesting;
@@ -36,22 +43,60 @@ class _AppShellState extends State<AppShell> {
   String? _role;
   bool _initialSectionResolved = false;
   String? _gymName;
+  String? _dashboardSection;
   int _unreadNotifications = 0;
+  RealtimeChannel? _notificationsChannel;
 
   @override
   void initState() {
     super.initState();
+    _dashboardSection = widget.initialSection;
+    _unreadNotifications = widget.initialUnreadForTesting;
     final initialRole = widget.initialRoleForTesting;
     if (initialRole == null) {
       _loadRole();
     } else {
       _role = initialRole;
-      _index = initialShellIndexForRole(initialRole);
+      _index = initialShellIndexForRole(
+        initialRole,
+        requestedSection: widget.initialSection,
+      );
       _initialSectionResolved = true;
     }
     if (widget.screenBuilderForTesting == null) {
       _loadUnreadNotifications();
+      _subscribeToNotifications();
+      notificationsInboxEvents.addListener(_loadUnreadNotifications);
     }
+  }
+
+  void _subscribeToNotifications() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    _notificationsChannel = Supabase.instance.client
+        .channel('shell-notifications-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (_) => _loadUnreadNotifications(),
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    notificationsInboxEvents.removeListener(_loadUnreadNotifications);
+    final channel = _notificationsChannel;
+    if (channel != null) {
+      Supabase.instance.client.removeChannel(channel);
+    }
+    super.dispose();
   }
 
   Future<void> _loadRole() async {
@@ -86,7 +131,10 @@ class _AppShellState extends State<AppShell> {
       _role = profile['role'] as String?;
       _gymName = gymName;
       if (!_initialSectionResolved) {
-        _index = initialShellIndexForRole(_role);
+        _index = initialShellIndexForRole(
+          _role,
+          requestedSection: widget.initialSection,
+        );
         _initialSectionResolved = true;
       }
     });
@@ -109,12 +157,16 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  Future<void> _openNotifications() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+  void _openNotifications() {
+    setState(() => _index = 2);
+  }
 
-    await _loadUnreadNotifications();
+  void _openMembershipRequests() {
+    if (_role != 'admin' && _role != 'owner') return;
+    setState(() {
+      _dashboardSection = 'membership';
+      _index = 4;
+    });
   }
 
   @override
@@ -140,6 +192,11 @@ class _AppShellState extends State<AppShell> {
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
             ),
+            NotificationsScreen(
+              gymName: _gymName,
+              onNotificationsRead: _loadUnreadNotifications,
+              onOpenMembershipRequests: _openMembershipRequests,
+            ),
             ProfileScreen(
               gymName: _gymName,
               onGymNameChanged: _loadRole,
@@ -148,14 +205,17 @@ class _AppShellState extends State<AppShell> {
             ),
             if (canSeeDashboard)
               DashboardScreen(
+                key: ValueKey('dashboard-${_dashboardSection ?? 'panel'}'),
                 gymName: _gymName,
                 unreadNotifications: _unreadNotifications,
                 onOpenNotifications: _openNotifications,
+                initialSection: _dashboardSection,
               ),
           ]
         : <Widget>[
             testScreenBuilder('workouts'),
             testScreenBuilder('booking'),
+            testScreenBuilder('messages'),
             testScreenBuilder('profile'),
             if (canSeeDashboard) testScreenBuilder('dashboard'),
           ];
@@ -170,6 +230,12 @@ class _AppShellState extends State<AppShell> {
         icon: Icons.calendar_month_outlined,
         activeIcon: Icons.calendar_month,
         label: appStrings.navBooking,
+      ),
+      _ShellNavItem(
+        icon: Icons.chat_bubble_outline_rounded,
+        activeIcon: Icons.chat_bubble_rounded,
+        label: appStrings.navMessages,
+        badgeCount: _unreadNotifications,
       ),
       _ShellNavItem(
         icon: Icons.person_outline,
@@ -193,16 +259,25 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: _ShellBottomNav(
         index: _index,
         items: navItems,
-        onSelected: (value) => setState(() => _index = value),
+        onSelected: (value) {
+          setState(() => _index = value);
+          if (value == 2 && widget.screenBuilderForTesting == null) {
+            _loadUnreadNotifications();
+          }
+        },
       ),
     );
   }
 }
 
 @visibleForTesting
-int initialShellIndexForRole(String? role) {
+int initialShellIndexForRole(String? role, {String? requestedSection}) {
+  if (requestedSection == 'membership' &&
+      (role == 'admin' || role == 'owner')) {
+    return 4;
+  }
   return switch (role) {
-    'admin' || 'owner' => 3,
+    'admin' || 'owner' => 4,
     'athlete' => 1,
     _ => 0,
   };
@@ -213,11 +288,13 @@ class _ShellNavItem {
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final int badgeCount;
 }
 
 class _ShellBottomNav extends StatelessWidget {
@@ -269,12 +346,21 @@ class _ShellBottomNav extends StatelessWidget {
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
                             ),
-                            child: Icon(
-                              selected ? item.activeIcon : item.icon,
-                              size: 22,
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary(context),
+                            child: Badge(
+                              isLabelVisible: item.badgeCount > 0,
+                              backgroundColor: AppColors.danger,
+                              label: Text(
+                                item.badgeCount > 99
+                                    ? '99+'
+                                    : '${item.badgeCount}',
+                              ),
+                              child: Icon(
+                                selected ? item.activeIcon : item.icon,
+                                size: 22,
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary(context),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 2),

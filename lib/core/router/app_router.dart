@@ -53,7 +53,11 @@ class AppRouter {
           path: '/owner',
           builder: (context, state) => const OwnerScreen(),
         ),
-        GoRoute(path: '/app', builder: (context, state) => const AppShell()),
+        GoRoute(
+          path: '/app',
+          builder: (context, state) =>
+              AppShell(initialSection: state.uri.queryParameters['section']),
+        ),
         GoRoute(
           path: '/join-gym',
           builder: (context, state) => const JoinGymScreen(),

@@ -149,6 +149,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   }
 
   void _handlePushTap(RemoteMessage message) {
+    final type = message.data['type']?.toString();
     final workoutId = message.data['workoutId'] ?? message.data['workout_id'];
     final notificationId =
         message.data['notificationId'] ?? message.data['notification_id'];
@@ -166,6 +167,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       return;
     }
 
+    if (type == 'membership_request') {
+      _router.go('/app?section=membership');
+      return;
+    }
+
     if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
       final encodedId = Uri.encodeQueryComponent(notificationId.toString());
       _router.push('/notifications?notificationId=$encodedId');
@@ -173,6 +179,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   }
 
   void _showForegroundPush(RemoteMessage message) {
+    notificationsInboxEvents.refresh();
     final title = message.notification?.title ?? 'Notification';
     final body = message.notification?.body ?? '';
 

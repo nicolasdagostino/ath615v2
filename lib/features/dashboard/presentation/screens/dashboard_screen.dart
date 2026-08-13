@@ -16,6 +16,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_context_action_sheet.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_primary_gym_header.dart';
+import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
@@ -29,11 +31,13 @@ class DashboardScreen extends StatefulWidget {
     required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
+    this.initialSection,
   });
 
   final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
+  final String? initialSection;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -50,7 +54,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool _loadingMembers = true;
   String? _membersError;
-  _DashboardTab _selectedTab = _DashboardTab.overview;
+  late _DashboardTab _selectedTab = widget.initialSection == 'membership'
+      ? _DashboardTab.plans
+      : widget.initialSection == 'members'
+      ? _DashboardTab.members
+      : _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
   List<Map<String, dynamic>> _membershipRequests = [];
@@ -2505,14 +2513,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: AppColors.background(context),
       body: Column(
         children: [
-          _DashboardHeader(
-            gymName: widget.gymName,
-            unreadNotifications: widget.unreadNotifications,
-            onManagePlans: _openPlans,
-            onOpenNotifications: widget.onOpenNotifications,
-          ),
+          _DashboardHeader(gymName: widget.gymName),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenX,
+              AppSpacing.md,
+              AppSpacing.screenX,
+              0,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -2526,6 +2534,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _DashboardTabChip(
                     label: appStrings.members,
@@ -2537,9 +2546,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _DashboardTabChip(
-                    label: appStrings.membershipTitle,
+                    label: appStrings.adminMemberships,
                     selected: _selectedTab == _DashboardTab.plans,
                     onTap: () {
                       setState(() {
@@ -2553,7 +2563,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFFB59B6A),
+              color: AppColors.primary,
               onRefresh: _loadDashboardData,
               child: ListView(
                 padding: EdgeInsets.fromLTRB(
@@ -2980,7 +2990,7 @@ Widget buildMembershipTabCompositionForTest() {
                 ),
                 Expanded(
                   child: _DashboardTabChip(
-                    label: appStrings.membershipTitle,
+                    label: appStrings.adminMemberships,
                     selected: true,
                     onTap: () {},
                   ),
@@ -3272,91 +3282,12 @@ class _DashText {
 }
 
 class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({
-    required this.gymName,
-    required this.unreadNotifications,
-    required this.onManagePlans,
-    required this.onOpenNotifications,
-  });
+  const _DashboardHeader({required this.gymName});
 
   final String? gymName;
-  final int unreadNotifications;
-  final VoidCallback onManagePlans;
-  final VoidCallback onOpenNotifications;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      decoration: BoxDecoration(
-        color: AppColors.background(context),
-        border: Border(
-          bottom: BorderSide(color: AppColors.border(context), width: 0.8),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: 56,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    width: 132,
-                    child: Text(
-                      appStrings.appBrand,
-                      style: _DashText.title.copyWith(
-                        color: AppColors.textPrimary(context),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appStrings.dashboardTitle.toUpperCase(),
-                      style: _DashText.title.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontSize: 20,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: SizedBox(
-                  width: 132,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _HeaderIcon(
-                        icon: Icons.notifications,
-                        onTap: onOpenNotifications,
-                        badgeCount: unreadNotifications,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppPrimaryGymHeader(gymName: gymName);
 }
 
 @visibleForTesting
@@ -3366,12 +3297,7 @@ Widget buildDashboardHeaderForTest({
   VoidCallback? onManagePlans,
   VoidCallback? onOpenNotifications,
 }) {
-  return _DashboardHeader(
-    gymName: gymName,
-    unreadNotifications: unreadNotifications,
-    onManagePlans: onManagePlans ?? () {},
-    onOpenNotifications: onOpenNotifications ?? () {},
-  );
+  return _DashboardHeader(gymName: gymName);
 }
 
 @visibleForTesting
@@ -3381,10 +3307,7 @@ Widget buildDashboardCompositionForTest() {
       backgroundColor: AppColors.background(context),
       body: Column(
         children: [
-          buildDashboardHeaderForTest(
-            gymName: 'Athlete 615',
-            unreadNotifications: 3,
-          ),
+          buildDashboardHeaderForTest(gymName: 'Athlete 615'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
@@ -3396,6 +3319,7 @@ Widget buildDashboardCompositionForTest() {
                     onTap: () {},
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _DashboardTabChip(
                     label: appStrings.members,
@@ -3403,9 +3327,10 @@ Widget buildDashboardCompositionForTest() {
                     onTap: () {},
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _DashboardTabChip(
-                    label: appStrings.membershipTitle,
+                    label: appStrings.adminMemberships,
                     selected: false,
                     onTap: () {},
                   ),
@@ -3430,61 +3355,6 @@ Widget buildDashboardCompositionForTest() {
   );
 }
 
-class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon({
-    required this.icon,
-    required this.onTap,
-    this.badgeCount = 0,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final int badgeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          SizedBox(
-            width: 38,
-            height: 38,
-            child: Icon(
-              icon,
-              size: icon == Icons.notifications ? 32 : 28,
-              color: AppColors.accent,
-            ),
-          ),
-          if (badgeCount > 0)
-            Positioned(
-              right: -7,
-              top: -7,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.danger,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  badgeCount > 99 ? '99+' : badgeCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DashboardTabChip extends StatelessWidget {
   const _DashboardTabChip({
     required this.label,
@@ -3497,39 +3367,8 @@ class _DashboardTabChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      selected: selected,
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: AppSizes.minimumTouchTarget,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: selected ? AppColors.accent : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Text(
-            label.toUpperCase(),
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              letterSpacing: 0.8,
-              color: selected
-                  ? AppColors.textPrimary(context)
-                  : AppColors.textSecondary(context),
-              height: 1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      AppSectionChip(label: label, selected: selected, onTap: onTap);
 }
 
 class _DashboardOverview extends StatelessWidget {

@@ -9,7 +9,12 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  Future<void> pumpShell(WidgetTester tester, String role) async {
+  Future<void> pumpShell(
+    WidgetTester tester,
+    String role, {
+    int unread = 0,
+    String? initialSection,
+  }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -18,8 +23,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: AppShell(
-          key: ValueKey('shell-$role'),
+          key: ValueKey('shell-$role-$unread-$initialSection'),
           initialRoleForTesting: role,
+          initialUnreadForTesting: unread,
+          initialSection: initialSection,
           screenBuilderForTesting: (section) => ColoredBox(
             color: Colors.transparent,
             child: Center(
@@ -38,6 +45,41 @@ void main() {
     expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
     expect(find.byIcon(Icons.dashboard), findsOneWidget);
     expect(find.byKey(const ValueKey('screen-booking')), findsNothing);
+  });
+
+  testWidgets('messages is a primary destination for every role', (
+    tester,
+  ) async {
+    await pumpShell(tester, 'athlete');
+
+    await tester.tap(find.byIcon(Icons.chat_bubble_outline_rounded));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('screen-messages')), findsOneWidget);
+    expect(find.byIcon(Icons.chat_bubble_rounded), findsOneWidget);
+  });
+
+  testWidgets('messages badge is numeric and hidden at zero', (tester) async {
+    await pumpShell(tester, 'athlete', unread: 8);
+    expect(find.text('8'), findsOneWidget);
+
+    await pumpShell(tester, 'athlete');
+    expect(find.text('8'), findsNothing);
+  });
+
+  testWidgets('membership deep link opens the admin membership section', (
+    tester,
+  ) async {
+    await pumpShell(tester, 'admin', initialSection: 'membership');
+    expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
+    expect(
+      initialShellIndexForRole('admin', requestedSection: 'membership'),
+      4,
+    );
+    expect(
+      initialShellIndexForRole('athlete', requestedSection: 'membership'),
+      1,
+    );
   });
 
   testWidgets('athlete opens directly on Booking', (tester) async {

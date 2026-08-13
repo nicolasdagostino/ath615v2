@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_selected_date_label.dart';
+import '../../../../core/widgets/app_section_chip.dart';
 import '../booking_colors.dart';
 
 class BookingHeader extends StatelessWidget {
@@ -47,22 +47,10 @@ class BookingClassesChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
-    child: Container(
+    child: AppSectionChip(
       key: const ValueKey('booking-classes-chip'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: BookingColors.primary,
-        borderRadius: BorderRadius.circular(AppRadii.input),
-      ),
-      child: Text(
-        appStrings.bookingClasses.toUpperCase(),
-        style: AppTypography.buttonLabel(
-          context,
-        ).copyWith(color: Colors.white, letterSpacing: 0.6),
-      ),
+      label: appStrings.bookingClasses,
+      selected: true,
     ),
   );
 }
