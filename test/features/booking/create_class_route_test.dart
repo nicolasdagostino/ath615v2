@@ -179,18 +179,21 @@ void main() {
       ),
     );
     expect(enabledSubmit.onPressed, isNotNull);
-    await tester.drag(find.byType(ListView), const Offset(0, -220));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byType(Switch),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     expect(find.text('REPEAT ON'), findsOneWidget);
-    await tester.tap(find.byType(ChoiceChip).first);
+    final firstDay = find.byType(ChoiceChip, skipOffstage: false).first;
+    await tester.ensureVisible(firstDay);
+    await tester.pumpAndSettle();
+    await tester.tap(firstDay);
     await tester.pump();
-    expect(
-      tester.widget<ChoiceChip>(find.byType(ChoiceChip).first).selected,
-      isTrue,
-    );
+    expect(tester.widget<ChoiceChip>(firstDay).selected, isTrue);
     expect(tester.takeException(), isNull);
   });
 

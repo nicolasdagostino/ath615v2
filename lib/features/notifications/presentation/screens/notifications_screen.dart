@@ -104,10 +104,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _clearNotifications() async {
+    final clearsCommunications = _section == _MessagesSection.communications;
     final confirmed = await showAppConfirmationDialog(
       context: context,
-      title: appStrings.notificationsClearTitle,
-      message: appStrings.notificationsClearMessage,
+      title: clearsCommunications
+          ? appStrings.communicationsClearTitle
+          : appStrings.personalNotificationsClearTitle,
+      message: clearsCommunications
+          ? appStrings.communicationsClearMessage
+          : appStrings.personalNotificationsClearMessage,
       confirmLabel: appStrings.clear,
       cancelLabel: appStrings.cancel,
       icon: Icons.delete_sweep_outlined,
@@ -115,9 +120,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!confirmed) return;
 
     try {
-      await _repository.clearOwn();
+      await _repository.clearCategory(
+        clearsCommunications ? 'communication' : 'notification',
+      );
       if (!mounted) return;
-      setState(_notifications.clear);
+      setState(
+        () => _notifications.removeWhere(
+          (notification) =>
+              (notification['type']?.toString() == 'communication') ==
+              clearsCommunications,
+        ),
+      );
+      notificationsInboxEvents.refresh();
       widget.onNotificationsRead?.call();
     } catch (error) {
       if (!mounted) return;
@@ -200,6 +214,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
       icon: _notificationIcon(notification['type']?.toString()),
       closeLabel: appStrings.close,
+      footer: notification['type']?.toString() == 'communication'
+          ? _CommunicationReactionBar(
+              notificationId: notification['id'].toString(),
+              repository: _repository,
+            )
+          : null,
     );
   }
 
@@ -289,7 +309,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           Expanded(
             child: RefreshIndicator(
-              color: AppColors.accent,
+              color: AppColors.primary,
               onRefresh: _load,
               child: _loading
                   ? const _NotificationsLoadingState()
@@ -347,6 +367,147 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 }
 
 enum _MessagesSection { communications, notifications }
+
+class _CommunicationReactionBar extends StatefulWidget {
+  const _CommunicationReactionBar({
+    required this.notificationId,
+    required this.repository,
+  });
+
+  final String notificationId;
+  final NotificationsRepository repository;
+
+  @override
+  State<_CommunicationReactionBar> createState() =>
+      _CommunicationReactionBarState();
+}
+
+class _CommunicationReactionBarState extends State<_CommunicationReactionBar> {
+  CommunicationReactionSummary? _summary;
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final summary = await widget.repository.loadCommunicationReactions(
+        widget.notificationId,
+      );
+      if (mounted) setState(() => _summary = summary);
+    } catch (_) {
+      // The communication remains readable if reaction metadata cannot load.
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _toggle(String reaction) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final summary = await widget.repository.setCommunicationReaction(
+        widget.notificationId,
+        reaction,
+      );
+      if (mounted) setState(() => _summary = summary);
+    } catch (_) {
+      // Keep the last confirmed state when the mutation fails.
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
+        ),
+      );
+    }
+    final summary = _summary;
+    if (summary == null) return const SizedBox.shrink();
+
+    return Wrap(
+      key: const ValueKey('communication-reactions'),
+      spacing: AppSpacing.sm,
+      children: [
+        _ReactionButton(
+          key: const ValueKey('reaction-thumbs-up'),
+          emoji: '👍',
+          count: summary.thumbsUpCount,
+          selected: summary.myReaction == 'thumbs_up',
+          enabled: !_saving,
+          onTap: () => _toggle('thumbs_up'),
+        ),
+        _ReactionButton(
+          key: const ValueKey('reaction-heart'),
+          emoji: '❤️',
+          count: summary.heartCount,
+          selected: summary.myReaction == 'heart',
+          enabled: !_saving,
+          onTap: () => _toggle('heart'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReactionButton extends StatelessWidget {
+  const _ReactionButton({
+    super.key,
+    required this.emoji,
+    required this.count,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final int count;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: selected
+        ? AppColors.primary.withValues(alpha: 0.12)
+        : AppColors.surfaceAlt(context),
+    shape: StadiumBorder(
+      side: BorderSide(
+        color: selected ? AppColors.primary : AppColors.border(context),
+      ),
+    ),
+    child: InkWell(
+      customBorder: const StadiumBorder(),
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Text(
+          '$emoji $count',
+          style: AppTypography.body(context).copyWith(
+            color: selected
+                ? AppColors.primary
+                : AppColors.textPrimary(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 class _MessageRow extends StatelessWidget {
   const _MessageRow({

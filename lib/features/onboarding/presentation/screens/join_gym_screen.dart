@@ -9,10 +9,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_control_styles.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../../../auth/data/auth_repository.dart';
 
@@ -271,7 +270,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
               appStrings.appBrand,
               style: GoogleFonts.barlowCondensed(
                 fontSize: 34,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary(context),
                 letterSpacing: -0.8,
               ),
@@ -302,7 +301,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                           appStrings.joinGymTitle.toUpperCase(),
                           style: GoogleFonts.barlowCondensed(
                             fontSize: 24,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary(context),
                             letterSpacing: -0.4,
                           ),
@@ -326,15 +325,13 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                             });
                           },
                           textCapitalization: TextCapitalization.characters,
-                          cursorColor: AppColors.accent,
-                          style: AppTypography.itemTitle(context),
-                          decoration: AppControlStyles.input(
+                          cursorColor: AppColors.primary,
+                          style: appFormValueStyle(context),
+                          decoration: appFormInput(
                             context,
+                            icon: Icons.qr_code_2_rounded,
+                            accentColor: AppColors.primary,
                             hintText: appStrings.gymCode,
-                            prefixIcon: Icon(
-                              Icons.qr_code_2_rounded,
-                              color: AppColors.textSecondary(context),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -364,7 +361,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                                     child: _avatarBytes == null
                                         ? const Icon(
                                             Icons.add_a_photo_outlined,
-                                            color: AppColors.accent,
+                                            color: AppColors.primary,
                                             size: 28,
                                           )
                                         : null,
@@ -375,7 +372,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                                     style: GoogleFonts.barlowCondensed(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.accent,
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                 ],
@@ -387,7 +384,7 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                             appStrings.completeProfile.toUpperCase(),
                             style: GoogleFonts.barlowCondensed(
                               fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary(context),
                             ),
                           ),
@@ -396,12 +393,8 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                             controller: _phone,
                             keyboardType: TextInputType.phone,
                             onChanged: (_) => setState(() {}),
-                            cursorColor: AppColors.accent,
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary(context),
-                            ),
+                            cursorColor: AppColors.primary,
+                            style: appFormValueStyle(context),
                             decoration: _joinInput(
                               context,
                               appStrings.authPhone,
@@ -422,13 +415,9 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
                                 _birthDate.text.trim().isEmpty
                                     ? appStrings.authBirthDate
                                     : _formatDate(_birthDate.text),
-                                style: GoogleFonts.barlowCondensed(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: _birthDate.text.trim().isEmpty
-                                      ? AppColors.textSecondary(context)
-                                      : AppColors.textPrimary(context),
-                                ),
+                                style: _birthDate.text.trim().isEmpty
+                                    ? appFormPlaceholderStyle(context)
+                                    : appFormValueStyle(context),
                               ),
                             ),
                           ),
@@ -482,16 +471,11 @@ class _JoinGymScreenState extends State<JoinGymScreen> {
 }
 
 InputDecoration _joinInput(BuildContext context, String hint, IconData icon) {
-  return InputDecoration(
+  return appFormInput(
+    context,
+    icon: icon,
+    accentColor: AppColors.primary,
     hintText: hint,
-    labelText: hint,
-    prefixIcon: Icon(icon, color: AppColors.textSecondary(context)),
-    filled: true,
-    fillColor: AppColors.surfaceAlt(context),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-      borderSide: BorderSide.none,
-    ),
   );
 }
 
@@ -524,7 +508,7 @@ class _GymResultCard extends StatelessWidget {
             child: logoUrl == null || logoUrl.isEmpty
                 ? const Icon(
                     Icons.fitness_center_rounded,
-                    color: AppColors.accent,
+                    color: AppColors.primary,
                   )
                 : null,
           ),
@@ -537,7 +521,7 @@ class _GymResultCard extends StatelessWidget {
                   name,
                   style: GoogleFonts.barlowCondensed(
                     fontSize: 19,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary(context),
                   ),
                 ),
@@ -555,7 +539,7 @@ class _GymResultCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded, color: AppColors.accent),
+          const Icon(Icons.check_circle_rounded, color: AppColors.primary),
         ],
       ),
     );
@@ -574,7 +558,7 @@ class _PendingApprovalCard extends StatelessWidget {
         const Icon(
           Icons.hourglass_top_rounded,
           size: 42,
-          color: AppColors.accent,
+          color: AppColors.primary,
         ),
         const SizedBox(height: 14),
         Text(
@@ -582,7 +566,7 @@ class _PendingApprovalCard extends StatelessWidget {
           textAlign: TextAlign.center,
           style: GoogleFonts.barlowCondensed(
             fontSize: 24,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             color: AppColors.textPrimary(context),
           ),
         ),

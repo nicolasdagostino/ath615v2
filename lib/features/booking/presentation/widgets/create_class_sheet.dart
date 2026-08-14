@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../data/class_coach_repository.dart';
 import '../../domain/class_coach.dart';
 import '../booking_colors.dart';
@@ -27,12 +28,9 @@ Future<void> showCreateClassSheet({
     client != null || (coachRepository != null && programsLoader != null),
     'A Supabase client or injected option loaders are required.',
   );
-  await showGeneralDialog(
+  await showAppLargeFormSheet(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) => _CreateClassSheet(
+    builder: (_) => _CreateClassSheet(
       client: client,
       gymId: gymId,
       onCreated: onCreated,

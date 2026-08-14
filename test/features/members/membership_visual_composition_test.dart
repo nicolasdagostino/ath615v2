@@ -77,7 +77,7 @@ void main() {
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('Inactive'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.more_horiz_rounded).first);
+    await tester.tap(find.byIcon(Icons.edit_outlined).first);
     await tester.tap(find.text('Active'));
     expect(menuOpened, isTrue);
     expect(toggled, isTrue);

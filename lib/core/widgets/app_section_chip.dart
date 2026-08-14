@@ -10,11 +10,13 @@ class AppSectionChip extends StatelessWidget {
     required this.label,
     required this.selected,
     this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,11 @@ class AppSectionChip extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: selected ? AppColors.primary : AppColors.surface(context),
+        color: selected
+            ? AppColors.primary
+            : enabled
+            ? AppColors.surface(context)
+            : AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(AppRadii.input),
         border: selected ? null : Border.all(color: AppColors.border(context)),
       ),
@@ -35,7 +41,11 @@ class AppSectionChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
         style: AppTypography.buttonLabel(context).copyWith(
-          color: selected ? Colors.white : AppColors.textSecondary(context),
+          color: selected
+              ? Colors.white
+              : enabled
+              ? AppColors.textSecondary(context)
+              : AppColors.textSecondary(context).withValues(alpha: 0.55),
           letterSpacing: 0.6,
         ),
       ),
@@ -43,8 +53,9 @@ class AppSectionChip extends StatelessWidget {
 
     return Semantics(
       button: onTap != null,
+      enabled: enabled,
       selected: selected,
-      child: onTap == null
+      child: onTap == null || !enabled
           ? chip
           : Material(
               color: Colors.transparent,

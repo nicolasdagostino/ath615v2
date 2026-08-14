@@ -73,6 +73,42 @@ void main() {
     expect(detail, contains('appStrings.workoutCommentsTitle'));
   });
 
+  test('large creation and editing surfaces share the 92 percent sheet', () {
+    final shared = File(
+      'lib/core/widgets/app_large_form_sheet.dart',
+    ).readAsStringSync();
+    expect(shared, contains('appLargeFormSheetHeightFactor = 0.92'));
+
+    for (final path in [
+      'lib/features/workouts/presentation/widgets/create_workout_sheet.dart',
+      'lib/features/workouts/presentation/widgets/edit_workout_sheet.dart',
+      'lib/features/workouts/presentation/widgets/manage_programs_sheet.dart',
+      'lib/features/booking/presentation/widgets/create_class_sheet.dart',
+      'lib/features/booking/presentation/widgets/edit_class_sheet.dart',
+    ]) {
+      final source = File(path).readAsStringSync();
+      expect(source, contains('showAppLargeFormSheet'));
+      expect(source, isNot(contains('barrierColor: Colors.transparent')));
+    }
+  });
+
+  test('WOD create and edit can remove selected or persisted images', () {
+    final create = File(
+      'lib/features/workouts/presentation/widgets/create_workout_sheet.dart',
+    ).readAsStringSync();
+    final edit = File(
+      'lib/features/workouts/presentation/widgets/edit_workout_sheet.dart',
+    ).readAsStringSync();
+    final controls = File(
+      'lib/features/workouts/presentation/widgets/workout_form_controls.dart',
+    ).readAsStringSync();
+
+    expect(create, contains('setState(() => _image = null)'));
+    expect(edit, contains('_imageUrl = null'));
+    expect(edit, contains("'image_url': imageUrl"));
+    expect(controls, contains("ValueKey('workout-remove-image')"));
+  });
+
   test('Booking, WOD and Profile share the main header height token', () {
     final booking = File(
       'lib/features/booking/presentation/widgets/booking_header.dart',

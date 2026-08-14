@@ -101,16 +101,18 @@ void main() {
       final gymBlock = find.byKey(const ValueKey('profile-gym-identity'));
       expect(tester.getSize(gymBlock).height, lessThan(110));
       expect(tester.getCenter(gymNameFinder).dx, closeTo(160, 1));
+      final gymContent = find.byKey(const ValueKey('profile-gym-content'));
       expect(
-        tester.getCenter(gymNameFinder).dy,
+        tester.getCenter(gymContent).dy,
         closeTo(tester.getCenter(gymBlock).dy, 1),
       );
+      expect(find.byKey(const ValueKey('profile-gym-label')), findsOneWidget);
       expect(find.byType(Image), findsNothing);
       expect(
         find.byKey(const ValueKey('profile-gym-logo-fallback')),
         findsNothing,
       );
-      expect(tester.getSize(gymBlock).height, 48);
+      expect(tester.getSize(gymBlock).height, lessThan(96));
       expect(find.byKey(const ValueKey('profile-milestone')), findsOne);
       expect(find.text('4 / 50'), findsOne);
       expect(

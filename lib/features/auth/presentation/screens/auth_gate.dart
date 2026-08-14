@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/widgets/app_centered_loading_indicator.dart';
+
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -57,6 +59,6 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(body: AppCenteredLoadingIndicator());
   }
 }

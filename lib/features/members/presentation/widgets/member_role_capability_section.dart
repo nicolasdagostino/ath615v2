@@ -31,7 +31,7 @@ class MemberRoleCapabilitySection extends StatelessWidget {
           appStrings.role.toUpperCase(),
           style: textTheme.labelMedium?.copyWith(
             color: AppColors.textSecondary(context),
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
           ),
         ),
@@ -77,7 +77,7 @@ class MemberRoleCapabilitySection extends StatelessWidget {
               appStrings.coachCapability,
               style: textTheme.titleSmall?.copyWith(
                 color: AppColors.textPrimary(context),
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
@@ -116,18 +116,18 @@ class _RoleChoice extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 44),
       child: ChoiceChip(
-        label: Text(label),
+        label: Text(label.toUpperCase()),
         selected: selected,
         onSelected: enabled ? (_) => onSelected() : null,
-        selectedColor: AppColors.accent.withValues(alpha: 0.18),
+        selectedColor: AppColors.primary.withValues(alpha: 0.12),
         side: BorderSide(
-          color: selected ? AppColors.accent : AppColors.border(context),
+          color: selected ? AppColors.primary : AppColors.border(context),
         ),
         labelStyle: TextStyle(
           color: selected
               ? AppColors.textPrimary(context)
               : AppColors.textSecondary(context),
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

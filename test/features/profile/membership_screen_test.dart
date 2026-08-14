@@ -315,4 +315,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(source.currentLoads, 2);
   });
+
+  testWidgets('admin member section reuses current scheduled history detail', (
+    tester,
+  ) async {
+    final source = _FakeMemberships(
+      current: [
+        membership('current', 'active'),
+        membership('next', 'scheduled', type: 'unlimited'),
+      ],
+      history: [membership('old', 'expired')],
+      usage: {'old': const []},
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MemberMembershipsSection(
+              memberId: 'member-1',
+              dataSource: source,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('admin-member-memberships')), findsOne);
+    expect(find.text('CURRENT MEMBERSHIP'), findsOne);
+    expect(find.text('UPCOMING'), findsOne);
+    expect(find.text('HISTORY'), findsOne);
+
+    await tester.tap(find.byKey(const ValueKey('membership-row-old')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('membership-detail-sheet')), findsOne);
+    expect(source.usageMemberships, ['old']);
+  });
 }

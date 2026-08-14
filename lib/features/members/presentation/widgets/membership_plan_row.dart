@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
 
 class MembershipPlanRow extends StatelessWidget {
   const MembershipPlanRow({
@@ -107,25 +106,17 @@ class MembershipPlanRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               price,
-              style: GoogleFonts.barlowCondensed(
+              style: AppTypography.itemTitle(context).copyWith(
                 color: AppColors.textPrimary(context),
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                height: 1,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
-          IconButton(
+          AppOutlinedAdminButton(
             tooltip: appStrings.editPlan,
-            constraints: const BoxConstraints.tightFor(
-              width: AppSizes.minimumTouchTarget,
-              height: AppSizes.minimumTouchTarget,
-            ),
+            icon: Icons.edit_outlined,
+            accentColor: AppColors.primary,
             onPressed: onOpenActions,
-            icon: Icon(
-              Icons.more_horiz_rounded,
-              color: AppColors.textSecondary(context),
-            ),
           ),
         ],
       ),

@@ -6,7 +6,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 import '../../data/auth_repository.dart';
 import '../widgets/auth_form_scaffold.dart';
 
@@ -102,7 +102,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               value: 0.33,
               minHeight: 6,
               backgroundColor: AppColors.border(context),
-              valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
           const SizedBox(height: 18),
@@ -183,10 +183,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
           ),
           const SizedBox(height: 18),
-          AppButton(
+          AppFormSubmitButton(
             label: appStrings.authCreateAccount,
             loading: _loading,
-            onPressed: _canSubmit ? _submit : null,
+            enabled: _canSubmit,
+            accentColor: AppColors.primary,
+            onPressed: _submit,
           ),
           const SizedBox(height: 12),
           Center(

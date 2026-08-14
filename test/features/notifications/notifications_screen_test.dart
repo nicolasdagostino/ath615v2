@@ -9,7 +9,13 @@ class _FakeNotificationsRepository implements NotificationsRepository {
   var listCalls = 0;
   var markAllCalls = 0;
   var clearCalls = 0;
+  String? clearedCategory;
   var markReadCalls = 0;
+  var reaction = const CommunicationReactionSummary(
+    thumbsUpCount: 1,
+    heartCount: 2,
+    myReaction: null,
+  );
 
   @override
   Future<List<NotificationRecord>> listOwn() async {
@@ -54,9 +60,46 @@ class _FakeNotificationsRepository implements NotificationsRepository {
   }
 
   @override
-  Future<int> clearOwn() async {
+  Future<int> clearCategory(String category) async {
     clearCalls += 1;
-    return 2;
+    clearedCategory = category;
+    return 1;
+  }
+
+  @override
+  Future<CommunicationReactionSummary> loadCommunicationReactions(
+    String notificationId,
+  ) async => reaction;
+
+  @override
+  Future<CommunicationReactionSummary> setCommunicationReaction(
+    String notificationId,
+    String? nextReaction,
+  ) async {
+    reaction = switch ((reaction.myReaction, nextReaction)) {
+      (final current, final next) when current == next =>
+        CommunicationReactionSummary(
+          thumbsUpCount: reaction.thumbsUpCount - (next == 'thumbs_up' ? 1 : 0),
+          heartCount: reaction.heartCount - (next == 'heart' ? 1 : 0),
+          myReaction: null,
+        ),
+      (_, 'thumbs_up') => CommunicationReactionSummary(
+        thumbsUpCount:
+            reaction.thumbsUpCount + (reaction.myReaction == null ? 1 : 1),
+        heartCount:
+            reaction.heartCount - (reaction.myReaction == 'heart' ? 1 : 0),
+        myReaction: 'thumbs_up',
+      ),
+      (_, 'heart') => CommunicationReactionSummary(
+        thumbsUpCount:
+            reaction.thumbsUpCount -
+            (reaction.myReaction == 'thumbs_up' ? 1 : 0),
+        heartCount: reaction.heartCount + (reaction.myReaction == null ? 1 : 1),
+        myReaction: 'heart',
+      ),
+      _ => reaction,
+    };
+    return reaction;
   }
 }
 
@@ -96,7 +139,7 @@ void main() {
     expect(repository.markAllCalls, 0);
   });
 
-  testWidgets('clear keeps the active chip and removes the full inbox', (
+  testWidgets('clear keeps active chip and preserves the other category', (
     tester,
   ) async {
     final repository = _FakeNotificationsRepository();
@@ -114,19 +157,41 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('messages-clear-action')));
     await tester.pumpAndSettle();
-    expect(find.text('DELETE ALL MESSAGES?'), findsOneWidget);
+    expect(find.text('DELETE ALL NOTIFICATIONS?'), findsOneWidget);
     expect(
-      find.text(
-        'All your communications and notifications from this gym will be deleted.',
-      ),
+      find.text('Notifications from this gym will be deleted from your inbox.'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
     await tester.pumpAndSettle();
 
     expect(repository.clearCalls, 1);
+    expect(repository.clearedCategory, 'notification');
     expect(find.text('No personal notifications yet.'), findsOneWidget);
+    await tester.tap(find.text('COMMUNICATIONS'));
+    await tester.pump();
+    expect(find.text('Horario especial'), findsOneWidget);
     expect(refreshes, greaterThanOrEqualTo(2));
+  });
+
+  testWidgets('clearing communications preserves personal notifications', (
+    tester,
+  ) async {
+    final repository = _FakeNotificationsRepository();
+    await tester.pumpWidget(
+      MaterialApp(home: NotificationsScreen(repository: repository)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('messages-clear-action')));
+    await tester.pumpAndSettle();
+    expect(find.text('DELETE ALL COMMUNICATIONS?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
+    await tester.pumpAndSettle();
+    expect(repository.clearedCategory, 'communication');
+    expect(find.text('No gym communications yet.'), findsOneWidget);
+    await tester.tap(find.text('NOTIFICATIONS'));
+    await tester.pump();
+    expect(find.text('Clase actualizada'), findsOneWidget);
   });
 
   testWidgets('messages remains overflow-free at 320 px', (tester) async {
@@ -176,6 +241,15 @@ void main() {
       ),
     );
     expect(detailIcon.color, const Color(0xFF159ED1));
+    expect(
+      find.byKey(const ValueKey('communication-reactions')),
+      findsOneWidget,
+    );
+    expect(find.text('👍 1'), findsOneWidget);
+    expect(find.text('❤️ 2'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('reaction-thumbs-up')));
+    await tester.pumpAndSettle();
+    expect(find.text('👍 2'), findsOneWidget);
   });
 
   testWidgets('membership request opens the administrative destination', (
@@ -244,6 +318,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppMessageDetailSheet), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('communication-reactions')),
+        findsNothing,
+      );
       final icon = tester.widget<Icon>(find.byIcon(entry.value));
       expect(icon.color, const Color(0xFF159ED1));
     });

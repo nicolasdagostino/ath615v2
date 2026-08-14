@@ -8,6 +8,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../data/class_coach_repository.dart';
 import '../../domain/class_coach.dart';
 import '../booking_colors.dart';
@@ -23,12 +24,9 @@ Future<void> showEditClassSheet({
   ClassCoachRepository? coachRepository,
   Future<List<Map<String, dynamic>>> Function()? programsLoader,
 }) async {
-  await showGeneralDialog(
+  await showAppLargeFormSheet(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) => _EditClassSheet(
+    builder: (_) => _EditClassSheet(
       client: client,
       gymId: gymId,
       klass: klass,

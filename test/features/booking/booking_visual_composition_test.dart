@@ -166,6 +166,12 @@ void main() {
       find.byKey(const ValueKey('booking-classes-chip')),
     );
     expect(classesChip.selected, isTrue);
+    final eventsChip = tester.widget<AppSectionChip>(
+      find.byKey(const ValueKey('booking-events-chip')),
+    );
+    expect(eventsChip.selected, isFalse);
+    expect(eventsChip.enabled, isFalse);
+    expect(eventsChip.onTap, isNull);
     expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
     expect(find.byType(BookingCreateClassButton), findsOneWidget);
 
@@ -218,6 +224,7 @@ void main() {
     await localeController.setLanguage('es');
     await pumpAt(tester, const Size(390, 844));
     expect(find.text('CLASES'), findsOneWidget);
+    expect(find.text('EVENTOS'), findsOneWidget);
     expect(find.text('LUNES, 12 AGOSTO 2030'), findsOneWidget);
     expect(find.byType(AppSelectedDateLabel), findsOneWidget);
 
@@ -225,6 +232,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await pumpAt(tester, const Size(390, 844));
     expect(find.text('CLASSES'), findsOneWidget);
+    expect(find.text('EVENTS'), findsOneWidget);
     expect(find.text('MONDAY, 12 AUGUST 2030'), findsOneWidget);
   });
 

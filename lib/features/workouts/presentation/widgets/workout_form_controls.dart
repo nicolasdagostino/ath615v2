@@ -204,6 +204,7 @@ class WorkoutFormFields extends StatelessWidget {
     required this.onImageTap,
     required this.descriptionController,
     this.imagePreview,
+    this.onRemoveImage,
   });
 
   final bool loadingPrograms;
@@ -217,6 +218,7 @@ class WorkoutFormFields extends StatelessWidget {
   final VoidCallback onImageTap;
   final TextEditingController descriptionController;
   final Widget? imagePreview;
+  final VoidCallback? onRemoveImage;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -271,7 +273,7 @@ class WorkoutFormFields extends StatelessWidget {
         onTap: onDateTap,
       ),
       const SizedBox(height: AppSpacing.lg),
-      const WorkoutFormSectionLabel(label: 'IMAGEN'),
+      WorkoutFormSectionLabel(label: appStrings.workoutImage.toUpperCase()),
       const SizedBox(height: AppSpacing.xs),
       WorkoutFormActionRow(
         key: const ValueKey('workout-image-field'),
@@ -286,6 +288,24 @@ class WorkoutFormFields extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.input),
           child: imagePreview!,
         ),
+        if (onRemoveImage != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const ValueKey('workout-remove-image'),
+              onPressed: onRemoveImage,
+              icon: const Icon(Icons.delete_outline_rounded, size: 19),
+              label: Text(appStrings.removeImage.toUpperCase()),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                textStyle: AppTypography.buttonLabel(context),
+                minimumSize: const Size(
+                  AppSizes.minimumTouchTarget,
+                  AppSizes.minimumTouchTarget,
+                ),
+              ),
+            ),
+          ),
       ],
       const SizedBox(height: AppSpacing.lg),
       WorkoutFormSectionLabel(

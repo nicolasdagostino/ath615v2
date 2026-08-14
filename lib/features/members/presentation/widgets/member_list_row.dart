@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
 import '../../domain/member_coach_capability.dart';
 
 class MemberListRow extends StatelessWidget {
@@ -125,10 +124,10 @@ class MemberListRow extends StatelessWidget {
                                     text: capability,
                                     style: TextStyle(
                                       color: capability == appStrings.coach
-                                          ? AppColors.accent
+                                          ? AppColors.primary
                                           : AppColors.textSecondary(context),
                                       fontWeight: capability == appStrings.coach
-                                          ? FontWeight.w700
+                                          ? FontWeight.w600
                                           : FontWeight.w500,
                                     ),
                                   ),
@@ -145,17 +144,11 @@ class MemberListRow extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
+              AppOutlinedAdminButton(
                 tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
-                constraints: const BoxConstraints(
-                  minWidth: AppSizes.minimumTouchTarget,
-                  minHeight: AppSizes.minimumTouchTarget,
-                ),
+                icon: Icons.edit_outlined,
+                accentColor: AppColors.primary,
                 onPressed: onMore,
-                icon: Icon(
-                  Icons.more_horiz_rounded,
-                  color: AppColors.textSecondary(context),
-                ),
               ),
             ],
           ),
@@ -190,11 +183,9 @@ class _MemberListAvatar extends StatelessWidget {
               )
             : Text(
                 name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.accent,
-                  height: 1,
+                style: AppTypography.itemTitle(context).copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
       ),

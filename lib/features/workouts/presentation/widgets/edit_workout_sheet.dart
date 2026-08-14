@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import 'workout_form_controls.dart';
 
@@ -19,12 +20,9 @@ Future<void> showEditWorkoutSheet({
   String? currentImageUrl,
   required Future<void> Function() onUpdated,
 }) async {
-  await showGeneralDialog(
+  await showAppLargeFormSheet(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) => _EditWorkoutSheet(
+    builder: (_) => _EditWorkoutSheet(
       client: client,
       workoutId: workoutId,
       gymId: gymId,
@@ -219,6 +217,12 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                   : appStrings.noImage),
         onImageTap: _pickImage,
         imagePreview: _imagePreview,
+        onRemoveImage: _imagePreview == null
+            ? null
+            : () => setState(() {
+                _image = null;
+                _imageUrl = null;
+              }),
         descriptionController: _description,
       ),
     ],

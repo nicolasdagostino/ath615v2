@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -14,8 +13,11 @@ import '../../../../core/theme/app_control_styles.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
-import '../../../../core/widgets/app_context_action_sheet.dart';
+import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -24,6 +26,7 @@ import '../../../members/domain/member_coach_capability.dart';
 import '../../../members/presentation/widgets/member_role_capability_section.dart';
 import '../../../members/presentation/widgets/member_list_row.dart';
 import '../../../members/presentation/widgets/member_filter_chip.dart';
+import '../../../profile/presentation/screens/membership_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -46,6 +49,27 @@ class DashboardScreen extends StatefulWidget {
 enum _DashboardTab { overview, members, plans }
 
 enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
+
+bool adminMemberHasActivePlan(Map<String, dynamic> member) =>
+    (member['membership_name']?.toString().trim() ?? '').isNotEmpty;
+
+bool adminMemberIsWithoutActivePlan(Map<String, dynamic> member) =>
+    member['role'] == 'athlete' &&
+    member['is_active'] == true &&
+    !adminMemberHasActivePlan(member);
+
+String adminAccessRequestDisplayName(
+  Map<String, dynamic>? profile, {
+  required String fallback,
+}) {
+  final fullName = profile?['full_name']?.toString().trim() ?? '';
+  if (fullName.isNotEmpty) return fullName;
+  final email = profile?['email']?.toString().trim() ?? '';
+  return email.isNotEmpty ? email : fallback;
+}
+
+DateTime? adminGymMemberCreatedAt(Map<String, dynamic> member) =>
+    DateTime.tryParse(member['gym_member_created_at']?.toString() ?? '');
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
@@ -72,6 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _todayCapacity = 0;
   List<int> _weeklyBookings = List<int>.filled(7, 0);
   List<Map<String, dynamic>> _recentActivity = [];
+  List<Map<String, dynamic>> _todayClassRows = [];
 
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
@@ -80,12 +105,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   int get _adminsCount => _members.where((m) => m['role'] == 'admin').length;
 
-  List<Map<String, dynamic>> get _membersWithoutPlan => _members.where((m) {
-    final membershipName = m['membership_name']?.toString().trim() ?? '';
-    return m['role'] == 'athlete' &&
-        m['is_active'] == true &&
-        membershipName.isEmpty;
-  }).toList();
+  List<Map<String, dynamic>> get _membersWithoutPlan =>
+      _members.where(adminMemberIsWithoutActivePlan).toList();
 
   List<Map<String, dynamic>> get _membershipsExpiringSoon {
     final now = DateTime.now();
@@ -204,7 +225,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _CommunicationSheet(),
+      builder: (_) => const FractionallySizedBox(
+        heightFactor: .9,
+        child: _CommunicationSheet(),
+      ),
     );
   }
 
@@ -265,7 +289,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final classes = await Supabase.instance.client
           .from('classes')
-          .select('id, capacity')
+          .select('id, title, starts_at, capacity, programs(name)')
           .eq('gym_id', gymId)
           .gte('starts_at', dayStart.toUtc().toIso8601String())
           .lt('starts_at', dayEnd.toUtc().toIso8601String());
@@ -324,6 +348,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _todayClasses = classRows.length;
         _todayBookings = bookingsCount;
         _todayCapacity = capacityCount;
+        _todayClassRows = classRows;
         _weeklyBookings = weeklyCounts;
       });
     } catch (_) {
@@ -332,6 +357,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _todayClasses = 0;
         _todayBookings = 0;
         _todayCapacity = 0;
+        _todayClassRows = [];
         _weeklyBookings = List<int>.filled(7, 0);
       });
     }
@@ -426,7 +452,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return {
           ...row,
-          'member_name': profile?['full_name']?.toString() ?? appStrings.member,
+          'member_name': _requesterName(profile),
           'member_email': profile?['email']?.toString(),
           'member_phone': profile?['phone']?.toString(),
           'member_birth_date': profile?['birth_date']?.toString(),
@@ -440,6 +466,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       setState(() => _gymJoinRequests = []);
     }
+  }
+
+  String _requesterName(Map<String, dynamic>? profile) {
+    return adminAccessRequestDisplayName(profile, fallback: appStrings.member);
   }
 
   Future<void> _loadRecentActivity() async {
@@ -678,16 +708,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _deletePendingMember(Map<String, dynamic> member) async {
-    final name = (member['full_name'] ?? member['email'] ?? 'this member')
+    final name = (member['full_name'] ?? member['email'] ?? appStrings.member)
         .toString();
 
     final confirmed = await showAppConfirmationDialog(
       context: context,
-      title: 'Delete invitation?',
-      message:
-          'This will permanently remove $name from your members list. Only pending invitations can be deleted.',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
+      title: appStrings.deleteInvitationQuestion,
+      message: appStrings.deleteInvitationMessage(name),
+      confirmLabel: appStrings.delete,
+      cancelLabel: appStrings.cancel,
     );
 
     if (!confirmed) return;
@@ -702,7 +731,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Invitation deleted')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.invitationDeleted)));
 
       await _loadMembers();
     } catch (e) {
@@ -723,40 +752,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String role = 'athlete';
     var inviting = false;
 
-    await showModalBottomSheet<void>(
+    await showAppLargeFormSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Container(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
+            return Scaffold(
+              backgroundColor: AppColors.background(context),
+              appBar: PreferredSize(
+                preferredSize: const Size.fromHeight(58),
+                child: AppFormHeader(
+                  title: appStrings.inviteAthlete,
+                  onClose: () => Navigator.of(context).pop(),
+                  accentColor: AppColors.primary,
                 ),
-                border: Border.all(color: AppColors.border(context), width: 1),
-                boxShadow: AppShadows.card(context),
               ),
-              child: SingleChildScrollView(
+              body: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: AppSpacing.screenX,
+                  right: AppSpacing.screenX,
+                  top: AppSpacing.md,
+                  bottom:
+                      MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appStrings.inviteAthlete.toUpperCase(),
-                      style: _DashText.section.copyWith(
-                        color: AppColors.textPrimary(context),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       appStrings.inviteAthleteDescription,
                       style: _DashText.subtle.copyWith(
@@ -766,42 +788,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 24),
                     TextField(
                       controller: fullName,
-                      style: _DashText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: _dashboardInviteInput(
+                      style: appFormValueStyle(context),
+                      decoration: appFormInput(
                         context,
-                        appStrings.fullName,
-                        Icons.person_outline,
+                        hintText: appStrings.fullName,
+                        icon: Icons.person_outline,
+                        accentColor: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: email,
                       keyboardType: TextInputType.emailAddress,
-                      style: _DashText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: _dashboardInviteInput(
+                      style: appFormValueStyle(context),
+                      decoration: appFormInput(
                         context,
-                        appStrings.athleteEmail,
-                        Icons.email_outlined,
+                        hintText: appStrings.athleteEmail,
+                        icon: Icons.email_outlined,
+                        accentColor: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: phone,
                       keyboardType: TextInputType.phone,
-                      style: _DashText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: _dashboardInviteInput(
+                      style: appFormValueStyle(context),
+                      decoration: appFormInput(
                         context,
-                        appStrings.phone,
-                        Icons.phone_outlined,
+                        hintText: appStrings.phone,
+                        icon: Icons.phone_outlined,
+                        accentColor: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -811,14 +827,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: IgnorePointer(
                         child: TextField(
                           controller: birthDate,
-                          style: _DashText.body.copyWith(
-                            color: AppColors.textPrimary(context),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          decoration: _dashboardInviteInput(
+                          style: appFormValueStyle(context),
+                          decoration: appFormInput(
                             context,
-                            appStrings.birthDate,
-                            Icons.cake_outlined,
+                            hintText: appStrings.birthDate,
+                            icon: Icons.cake_outlined,
+                            accentColor: AppColors.primary,
                           ),
                         ),
                       ),
@@ -826,45 +840,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: role,
-                      decoration: _dashboardInviteInput(
+                      decoration: appFormInput(
                         context,
-                        appStrings.role,
-                        Icons.shield_outlined,
+                        hintText: appStrings.role,
+                        icon: Icons.shield_outlined,
+                        accentColor: AppColors.primary,
                       ),
-                      style: _DashText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: appFormValueStyle(context),
                       dropdownColor: AppColors.surface(context),
                       items: [
                         DropdownMenuItem(
                           value: 'athlete',
                           child: Text(
                             appStrings.member,
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: appFormValueStyle(context),
                           ),
                         ),
                         DropdownMenuItem(
                           value: 'coach',
                           child: Text(
-                            appStrings.coach,
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                              fontWeight: FontWeight.w700,
-                            ),
+                            appStrings.coachRoleLabel,
+                            style: appFormValueStyle(context),
                           ),
                         ),
                         DropdownMenuItem(
                           value: 'admin',
                           child: Text(
-                            'Admin',
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textPrimary(context),
-                              fontWeight: FontWeight.w700,
-                            ),
+                            appStrings.adminRoleLabel,
+                            style: appFormValueStyle(context),
                           ),
                         ),
                       ],
@@ -878,28 +881,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                     ),
                     const SizedBox(height: 24),
-                    AppButton(
+                    AppFormSubmitButton(
                       label: appStrings.inviteAthlete,
                       loading: inviting,
-                      onPressed: inviting
-                          ? null
-                          : () async {
-                              setSheetState(() {
-                                inviting = true;
-                              });
+                      enabled: !inviting,
+                      accentColor: AppColors.primary,
+                      icon: Icons.add_rounded,
+                      onPressed: () async {
+                        setSheetState(() {
+                          inviting = true;
+                        });
 
-                              await _inviteAthlete(
-                                email: email.text,
-                                fullName: fullName.text,
-                                phone: phone.text,
-                                birthDate: birthDate.text,
-                                role: role,
-                              );
+                        await _inviteAthlete(
+                          email: email.text,
+                          fullName: fullName.text,
+                          phone: phone.text,
+                          birthDate: birthDate.text,
+                          role: role,
+                        );
 
-                              if (context.mounted) {
-                                context.pop();
-                              }
-                            },
+                        if (context.mounted) {
+                          context.pop();
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -942,10 +946,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return role == 'admin';
 
         case _MemberRoleFilter.withoutPlan:
-          final membershipName = m['membership_name']?.toString().trim() ?? '';
-          return role == 'athlete' &&
-              m['is_active'] == true &&
-              membershipName.isEmpty;
+          return adminMemberIsWithoutActivePlan(m);
 
         case _MemberRoleFilter.all:
           return true;
@@ -983,7 +984,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     controller.text = _dateInputValue(picked);
   }
 
-  Future<void> _openEditMemberSheet(Map<String, dynamic> member) async {
+  Future<void> openLegacyEditMemberSheet(Map<String, dynamic> member) async {
     final gymId = _gymId;
     final memberId = member['id']?.toString();
     final memberGymId = member['gym_id']?.toString();
@@ -1325,13 +1326,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Role updated')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.roleUpdated)));
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error updating role: $e')));
+      ).showSnackBar(SnackBar(content: Text(appStrings.roleUpdateError(e))));
     }
   }
 
@@ -1454,7 +1455,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               const Icon(
                                 Icons.info_outline_rounded,
-                                color: AppColors.accent,
+                                color: AppColors.primary,
                                 size: 22,
                               ),
                               const SizedBox(width: 12),
@@ -1488,126 +1489,122 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         )
                       else
-                        DropdownButtonFormField<String>(
-                          initialValue: selectedPlanId,
-                          dropdownColor: AppColors.surface(modalContext),
-                          iconEnabledColor: AppColors.textSecondary(
-                            modalContext,
-                          ),
-                          style: _DashText.body.copyWith(
-                            color: AppColors.textPrimary(modalContext),
-                            fontWeight: FontWeight.w700,
-                          ),
-                          hint: Text(
-                            appStrings.selectPlan,
-                            style: _DashText.body.copyWith(
-                              color: AppColors.textSecondary(modalContext),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          decoration: _dashInput(
-                            modalContext,
-                            appStrings.selectPlan,
-                            Icons.card_membership_outlined,
-                          ),
-                          selectedItemBuilder: (context) {
-                            return List<Map<String, dynamic>>.from(plans).map((
-                              plan,
-                            ) {
-                              final name =
-                                  plan['name']?.toString() ?? appStrings.plan;
-                              final credits = plan['credits'];
-
-                              final label = credits == null
-                                  ? '$name · ${appStrings.unlimited}'
-                                  : '$name · $credits ${appStrings.creditsLower}';
-
-                              return Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  label,
-                                  style: _DashText.body.copyWith(
-                                    color: AppColors.textPrimary(modalContext),
-                                    fontWeight: FontWeight.w700,
+                        ...List<Map<String, dynamic>>.from(plans).map((plan) {
+                          final id = plan['id'].toString();
+                          final selected = selectedPlanId == id;
+                          final name =
+                              plan['name']?.toString() ?? appStrings.plan;
+                          final credits = plan['credits'];
+                          final metadata = credits == null
+                              ? appStrings.unlimited
+                              : '$credits ${appStrings.creditsLower}';
+                          return Material(
+                            color: selected
+                                ? AppColors.primary.withValues(alpha: .1)
+                                : Colors.transparent,
+                            child: InkWell(
+                              onTap: saving
+                                  ? null
+                                  : () => setSheetState(
+                                      () => selectedPlanId = id,
+                                    ),
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  minHeight: 64,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.sm,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: AppColors.border(modalContext),
+                                      width: .7,
+                                    ),
                                   ),
                                 ),
-                              );
-                            }).toList();
-                          },
-                          items: List<Map<String, dynamic>>.from(plans).map((
-                            plan,
-                          ) {
-                            final name =
-                                plan['name']?.toString() ?? appStrings.plan;
-                            final credits = plan['credits'];
-
-                            final label = credits == null
-                                ? '$name · ${appStrings.unlimited}'
-                                : '$name · $credits ${appStrings.creditsLower}';
-
-                            return DropdownMenuItem<String>(
-                              value: plan['id'].toString(),
-                              child: Text(
-                                label,
-                                style: _DashText.body.copyWith(
-                                  color: AppColors.textPrimary(modalContext),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: saving
-                              ? null
-                              : (value) {
-                                  setSheetState(() {
-                                    selectedPlanId = value;
-                                  });
-                                },
-                        ),
-                      const SizedBox(height: 18),
-                      AppButton(
-                        label: appStrings.assign,
-                        loading: saving,
-                        onPressed: selectedPlanId == null || saving
-                            ? null
-                            : () async {
-                                setSheetState(() {
-                                  saving = true;
-                                });
-
-                                try {
-                                  await client.rpc(
-                                    'assign_membership_plan',
-                                    params: {
-                                      'p_user_id': userId,
-                                      'p_plan_id': selectedPlanId,
-                                    },
-                                  );
-
-                                  if (!modalContext.mounted) return;
-
-                                  Navigator.pop(modalContext, true);
-
-                                  if (!rootContext.mounted) return;
-                                } catch (e) {
-                                  if (!modalContext.mounted) return;
-
-                                  ScaffoldMessenger.of(
-                                    rootContext,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        appStrings.assignPlanError(e),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style:
+                                                AppTypography.body(
+                                                  modalContext,
+                                                ).copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          Text(
+                                            metadata,
+                                            style: AppTypography.bodySecondary(
+                                              modalContext,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  );
-                                } finally {
-                                  if (modalContext.mounted) {
-                                    setSheetState(() {
-                                      saving = false;
-                                    });
-                                  }
-                                }
+                                    Icon(
+                                      selected
+                                          ? Icons.check_circle_rounded
+                                          : Icons.circle_outlined,
+                                      color: selected
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary(
+                                              modalContext,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 18),
+                      AppFormSubmitButton(
+                        label: appStrings.assign,
+                        loading: saving,
+                        enabled: selectedPlanId != null && !saving,
+                        accentColor: AppColors.primary,
+                        onPressed: () async {
+                          setSheetState(() {
+                            saving = true;
+                          });
+
+                          try {
+                            await client.rpc(
+                              'assign_membership_plan',
+                              params: {
+                                'p_user_id': userId,
+                                'p_plan_id': selectedPlanId,
                               },
+                            );
+
+                            if (!modalContext.mounted) return;
+
+                            Navigator.pop(modalContext, true);
+
+                            if (!rootContext.mounted) return;
+                          } catch (e) {
+                            if (!modalContext.mounted) return;
+
+                            ScaffoldMessenger.of(rootContext).showSnackBar(
+                              SnackBar(
+                                content: Text(appStrings.assignPlanError(e)),
+                              ),
+                            );
+                          } finally {
+                            if (modalContext.mounted) {
+                              setSheetState(() {
+                                saving = false;
+                              });
+                            }
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -1673,7 +1670,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'replaced':
         return AppColors.textSecondary(context);
       default:
-        return AppColors.accent;
+        return AppColors.primary;
     }
   }
 
@@ -1936,6 +1933,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openMember(Map<String, dynamic> member) {
     String historyFilter = 'all';
     var updatingCoach = false;
+    var memberDirty = false;
+    var savingMember = false;
+    final memberName = TextEditingController(
+      text: member['full_name']?.toString() ?? '',
+    );
+    final memberPhone = TextEditingController(
+      text: member['phone']?.toString() ?? '',
+    );
+    final memberBirthDate = TextEditingController(
+      text: member['birth_date']?.toString() ?? '',
+    );
+    final memberEmail = TextEditingController(
+      text: member['email']?.toString() ?? '',
+    );
 
     Future<List<dynamic>> loadMemberData() {
       return Future.wait([
@@ -1957,10 +1968,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final email = (member['email'] ?? '-').toString();
             final name = (member['full_name'] ?? email).toString();
             String selectedRole = (member['role'] ?? 'athlete').toString();
-            final phone = member['phone']?.toString();
             final active = member['is_active'] == true;
-            final birthDate =
-                member['birth_date']?.toString() ?? appStrings.notSet;
             return FutureBuilder<List<dynamic>>(
               future: memberDataFuture,
               builder: (context, snapshot) {
@@ -2006,6 +2014,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final noShowsThisMonth =
                     stats['no_show_this_month'] as int? ?? 0;
                 final lastAttendance = stats['last_attendance']?.toString();
+                final gymMemberCreatedAt = adminGymMemberCreatedAt(member);
 
                 return Padding(
                   padding: EdgeInsets.only(
@@ -2073,7 +2082,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: active
-                                                ? AppColors.accent.withValues(
+                                                ? AppColors.primary.withValues(
                                                     alpha: 0.14,
                                                   )
                                                 : AppColors.surfaceAlt(context),
@@ -2082,9 +2091,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                             border: Border.all(
                                               color: active
-                                                  ? AppColors.accent.withValues(
-                                                      alpha: 0.45,
-                                                    )
+                                                  ? AppColors.primary
+                                                        .withValues(alpha: 0.45)
                                                   : AppColors.border(context),
                                             ),
                                           ),
@@ -2095,7 +2103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 .toUpperCase(),
                                             style: _DashText.subtle.copyWith(
                                               color: active
-                                                  ? AppColors.accent
+                                                  ? AppColors.primary
                                                   : AppColors.textSecondary(
                                                       context,
                                                     ),
@@ -2107,17 +2115,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      selectedRole == 'admin'
-                                          ? appStrings.adminRole
+                                      (selectedRole == 'admin'
+                                          ? appStrings.adminRoleLabel
                                           : selectedRole == 'coach'
-                                          ? appStrings.coach
-                                          : appStrings.athleteRole,
+                                          ? appStrings.coachRoleLabel
+                                          : appStrings.member),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: _DashText.subtle.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                                    if (gymMemberCreatedAt != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${appStrings.memberSince.toUpperCase()} · '
+                                        '${_formatDate(gymMemberCreatedAt.toIso8601String())}',
+                                        key: const ValueKey(
+                                          'member-since-label',
+                                        ),
+                                        style: AppTypography.helper(context),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -2146,19 +2165,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 14),
-                                _MemberDetailInfoRow(
-                                  label: 'Email',
-                                  value: email,
+                                TextField(
+                                  controller: memberName,
+                                  textCapitalization: TextCapitalization.words,
+                                  style: appFormValueStyle(context),
+                                  decoration: _dashInput(
+                                    context,
+                                    appStrings.fullName,
+                                    Icons.person_outline_rounded,
+                                  ),
+                                  onChanged: (_) =>
+                                      setSheetState(() => memberDirty = true),
                                 ),
-                                _MemberDetailInfoRow(
-                                  label: appStrings.phone,
-                                  value: (phone == null || phone.trim().isEmpty)
-                                      ? appStrings.notSet
-                                      : phone,
+                                const SizedBox(height: AppSpacing.sm),
+                                TextField(
+                                  controller: memberEmail,
+                                  readOnly: true,
+                                  style: appFormValueStyle(context),
+                                  decoration: _dashInput(
+                                    context,
+                                    'Email',
+                                    Icons.email_outlined,
+                                  ),
                                 ),
-                                _MemberDetailInfoRow(
-                                  label: appStrings.birthDate,
-                                  value: birthDate,
+                                const SizedBox(height: AppSpacing.sm),
+                                TextField(
+                                  controller: memberPhone,
+                                  keyboardType: TextInputType.phone,
+                                  style: appFormValueStyle(context),
+                                  decoration: _dashInput(
+                                    context,
+                                    appStrings.phone,
+                                    Icons.phone_outlined,
+                                  ),
+                                  onChanged: (_) =>
+                                      setSheetState(() => memberDirty = true),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                TextField(
+                                  controller: memberBirthDate,
+                                  readOnly: true,
+                                  style: appFormValueStyle(context),
+                                  decoration: _dashInput(
+                                    context,
+                                    appStrings.birthDate,
+                                    Icons.calendar_month_outlined,
+                                  ),
+                                  onTap: () async {
+                                    await _pickBirthDate(memberBirthDate);
+                                    setSheetState(() => memberDirty = true);
+                                  },
                                 ),
                                 const SizedBox(height: 4),
                                 Divider(
@@ -2190,12 +2246,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                AppButton(
-                                  label: appStrings.editMember,
+                                AppFormSubmitButton(
+                                  label: appStrings.saveChanges,
+                                  loading: savingMember,
+                                  enabled: memberDirty && !savingMember,
+                                  accentColor: AppColors.primary,
                                   onPressed: () async {
-                                    await _openEditMemberSheet(member);
-                                    if (!context.mounted) return;
-                                    setSheetState(() {});
+                                    setSheetState(() => savingMember = true);
+                                    try {
+                                      final updated = await Supabase
+                                          .instance
+                                          .client
+                                          .rpc(
+                                            'update_gym_member_profile',
+                                            params: {
+                                              'p_member_id': member['id'],
+                                              'p_full_name': memberName.text
+                                                  .trim(),
+                                              'p_phone': memberPhone.text
+                                                  .trim(),
+                                              'p_birth_date':
+                                                  memberBirthDate.text
+                                                      .trim()
+                                                      .isEmpty
+                                                  ? null
+                                                  : memberBirthDate.text.trim(),
+                                            },
+                                          )
+                                          .single();
+                                      member.addAll(
+                                        Map<String, dynamic>.from(updated),
+                                      );
+                                      if (!context.mounted) return;
+                                      setSheetState(() => memberDirty = false);
+                                      setState(() {});
+                                    } finally {
+                                      if (context.mounted) {
+                                        setSheetState(
+                                          () => savingMember = false,
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                               ],
@@ -2230,7 +2321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           width: 44,
                                           height: 44,
                                           decoration: BoxDecoration(
-                                            color: AppColors.accent.withValues(
+                                            color: AppColors.primary.withValues(
                                               alpha: 0.12,
                                             ),
                                             borderRadius: BorderRadius.circular(
@@ -2239,7 +2330,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                           child: const Icon(
                                             Icons.card_membership_outlined,
-                                            color: AppColors.accent,
+                                            color: AppColors.primary,
                                             size: 22,
                                           ),
                                         ),
@@ -2287,7 +2378,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             width: 46,
                                             height: 46,
                                             decoration: BoxDecoration(
-                                              color: AppColors.accent
+                                              color: AppColors.primary
                                                   .withValues(alpha: 0.12),
                                               borderRadius:
                                                   BorderRadius.circular(14),
@@ -2297,7 +2388,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   ? Icons.schedule_rounded
                                                   : Icons
                                                         .check_circle_outline_rounded,
-                                              color: AppColors.accent,
+                                              color: AppColors.primary,
                                               size: 23,
                                             ),
                                           ),
@@ -2327,7 +2418,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                             .toUpperCase(),
                                                   style: _DashText.section
                                                       .copyWith(
-                                                        color: AppColors.accent,
+                                                        color:
+                                                            AppColors.primary,
                                                       ),
                                                 ),
                                                 const SizedBox(height: 10),
@@ -2381,14 +2473,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       style: _DashText.section
                                                           .copyWith(
                                                             color: AppColors
-                                                                .accent,
+                                                                .primary,
                                                           ),
                                                     ),
                                                     const SizedBox(width: 4),
                                                     const Icon(
                                                       Icons
                                                           .chevron_right_rounded,
-                                                      color: AppColors.accent,
+                                                      color: AppColors.primary,
                                                       size: 19,
                                                     ),
                                                   ],
@@ -2401,8 +2493,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ),
                                 const SizedBox(height: 18),
-                                AppButton(
+                                AppFormSubmitButton(
                                   label: appStrings.assignPlan,
+                                  loading: false,
+                                  enabled: true,
+                                  accentColor: AppColors.primary,
+                                  icon: Icons.add_card_rounded,
                                   onPressed: () async {
                                     final assigned = await _openAssignPlan(
                                       member['id'].toString(),
@@ -2414,6 +2510,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       memberDataFuture = loadMemberData();
                                     });
                                   },
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                MemberMembershipsSection(
+                                  memberId: member['id'].toString(),
+                                  includeActive: false,
                                 ),
                               ],
                             ),
@@ -2470,7 +2571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               padding: EdgeInsets.symmetric(vertical: 20),
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFFB59B6A),
+                                  color: AppColors.primary,
                                 ),
                               ),
                             )
@@ -2575,9 +2676,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   if (_selectedTab == _DashboardTab.overview) ...[
                     if (_loadingMembers)
-                      AppAsyncState.loading(
-                        message: appStrings.dashboardOverviewLoading,
-                      )
+                      const AppCenteredLoadingIndicator()
                     else if (_membersError case final error?)
                       AppAsyncState.error(
                         message: error,
@@ -2593,6 +2692,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         todayBookings: _todayBookings,
                         todayCapacity: _todayCapacity,
                         todayClasses: _todayClasses,
+                        todayClassRows: _todayClassRows,
                         joinRequests: _gymJoinRequests,
                         membershipRequests: _membershipRequests,
                         membersWithoutPlan: _membersWithoutPlan,
@@ -2647,10 +2747,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: FilledButton(
                                 onPressed: _openInviteMemberSheet,
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.textPrimary(
-                                    context,
-                                  ),
-                                  foregroundColor: AppColors.surface(context),
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.sm,
                                   ),
@@ -2666,7 +2764,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     const Icon(
                                       Icons.add_rounded,
                                       size: 19,
-                                      color: AppColors.accent,
+                                      color: Colors.white,
                                     ),
                                     const SizedBox(width: AppSpacing.xs),
                                     Flexible(
@@ -2674,12 +2772,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         appStrings.inviteAthlete.toUpperCase(),
                                         maxLines: 2,
                                         textAlign: TextAlign.center,
-                                        style:
-                                            AppTypography.buttonLabel(
-                                              context,
-                                            ).copyWith(
-                                              color: AppColors.surface(context),
-                                            ),
+                                        style: AppTypography.buttonLabel(
+                                          context,
+                                        ).copyWith(color: Colors.white),
                                       ),
                                     ),
                                   ],
@@ -2698,12 +2793,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             hintText: appStrings.searchMembers,
                             prefixIcon: const Icon(
                               Icons.search,
-                              color: AppColors.accent,
-                              size: 20,
-                            ),
-                            suffixIcon: Icon(
-                              Icons.tune_rounded,
-                              color: AppColors.textSecondary(context),
+                              color: AppColors.primary,
                               size: 20,
                             ),
                           ),
@@ -2722,6 +2812,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onTap: () {
                                   setState(() {
                                     _roleFilter = _MemberRoleFilter.all;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label: appStrings.membersWithoutPlanCount(
+                                  _membersWithoutPlan.length,
+                                ),
+                                selected:
+                                    _roleFilter ==
+                                    _MemberRoleFilter.withoutPlan,
+                                onTap: () {
+                                  setState(() {
+                                    _roleFilter = _MemberRoleFilter.withoutPlan;
                                   });
                                 },
                               ),
@@ -2771,9 +2875,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: AppSpacing.sm),
 
                         if (_loadingMembers)
-                          AppAsyncState.loading(
-                            message: appStrings.loadingMembers,
-                          )
+                          const AppCenteredLoadingIndicator()
                         else if (_membersError case final error?)
                           AppAsyncState.error(
                             message: error,
@@ -2819,6 +2921,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       activeValue: _activeMembershipValueLabel,
                       mostUsedPlan: _mostUsedPlanName,
                       onManagePlans: _openPlans,
+                      requests: _membershipRequests,
+                      processingRequestId: _processingMembershipRequestId,
+                      onApproveRequest: _approveMembershipRequest,
+                      onRejectRequest: _rejectMembershipRequest,
                     ),
                   ],
                 ],
@@ -2839,6 +2945,10 @@ class _MembershipOverview extends StatelessWidget {
     required this.activeValue,
     required this.mostUsedPlan,
     required this.onManagePlans,
+    required this.requests,
+    required this.processingRequestId,
+    required this.onApproveRequest,
+    required this.onRejectRequest,
   });
 
   final int activeMemberships;
@@ -2847,6 +2957,10 @@ class _MembershipOverview extends StatelessWidget {
   final String activeValue;
   final String mostUsedPlan;
   final VoidCallback onManagePlans;
+  final List<Map<String, dynamic>> requests;
+  final String? processingRequestId;
+  final Future<void> Function(Map<String, dynamic>) onApproveRequest;
+  final Future<void> Function(Map<String, dynamic>) onRejectRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -2882,7 +2996,7 @@ class _MembershipOverview extends StatelessWidget {
                 icon: const Icon(
                   Icons.add_rounded,
                   size: 18,
-                  color: AppColors.accent,
+                  color: Colors.white,
                 ),
                 label: Text(
                   appStrings.managePlans.toUpperCase(),
@@ -2891,7 +3005,7 @@ class _MembershipOverview extends StatelessWidget {
                   ).copyWith(color: Colors.white),
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.textPrimary(context),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadii.input),
@@ -2945,6 +3059,30 @@ class _MembershipOverview extends StatelessWidget {
           label: appStrings.mostUsedPlan,
           value: mostUsedPlan,
         ),
+        if (requests.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            appStrings.membershipRequests.toUpperCase(),
+            style: AppTypography.sectionTitle(context),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          ...requests.map((request) {
+            final processing = processingRequestId == request['id']?.toString();
+            final planName =
+                request['plan_name']?.toString() ?? appStrings.plan;
+            return _ActionRequestRow(
+              name: request['member_name']?.toString() ?? appStrings.member,
+              subtitle: planName,
+              icon: Icons.card_membership_outlined,
+              isProcessing: processing,
+              isApproveProcessing: processing,
+              isRejectProcessing: processing,
+              disabled: processing,
+              onApprove: () => onApproveRequest(request),
+              onReject: () => onRejectRequest(request),
+            );
+          }),
+        ],
       ],
     );
   }
@@ -2959,6 +3097,10 @@ Widget buildMembershipOverviewForTest() {
     activeValue: '420,00',
     mostUsedPlan: 'Beach',
     onManagePlans: () {},
+    requests: const [],
+    processingRequestId: null,
+    onApproveRequest: (_) async {},
+    onRejectRequest: (_) async {},
   );
 }
 
@@ -3033,7 +3175,7 @@ class _MembershipInsightRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.accent, size: 20),
+          Icon(icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -3074,19 +3216,19 @@ Future<void> _openMemberActionsSheet({
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      return AppContextActionSheet(
-        title: appStrings.memberOptions,
+      return AppAdminActionSheet(
+        accentColor: AppColors.primary,
+        onClose: () => Navigator.pop(sheetContext),
         actions: [
           if (!isDisabled)
-            AppContextActionRow(
+            AppAdminAction(
               icon: Icons.card_membership_outlined,
               label: appStrings.assignPlan,
               onTap: () async {
-                Navigator.pop(sheetContext);
                 await onAssignPlan();
               },
             ),
-          AppContextActionRow(
+          AppAdminAction(
             icon: active
                 ? Icons.person_off_outlined
                 : Icons.person_add_alt_1_outlined,
@@ -3095,26 +3237,23 @@ Future<void> _openMemberActionsSheet({
                 : appStrings.activateMember,
             destructive: active,
             onTap: () async {
-              Navigator.pop(sheetContext);
               await onToggleActive();
             },
           ),
           if (isPending)
-            AppContextActionRow(
+            AppAdminAction(
               icon: Icons.mail_outline_rounded,
               label: appStrings.resendInvitation,
               onTap: () async {
-                Navigator.pop(sheetContext);
                 await onResendInvitation();
               },
             ),
           if (isPending)
-            AppContextActionRow(
+            AppAdminAction(
               icon: Icons.delete_outline_rounded,
-              label: 'Delete invitation',
+              label: appStrings.deleteInvitation,
               destructive: true,
               onTap: () async {
-                Navigator.pop(sheetContext);
                 await onDeletePendingMember();
               },
             ),
@@ -3140,7 +3279,7 @@ class _MemberAvatar extends StatelessWidget {
         width: 42,
         height: 42,
         alignment: Alignment.center,
-        color: const Color(0xFFF7F3EA),
+        color: AppColors.surfaceAlt(context),
         child: hasAvatar
             ? Image.network(
                 avatarUrl!,
@@ -3150,11 +3289,9 @@ class _MemberAvatar extends StatelessWidget {
               )
             : Text(
                 name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFFB59B6A),
-                  height: 1,
+                style: AppTypography.itemTitle(context).copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
       ),
@@ -3166,116 +3303,51 @@ InputDecoration _dashboardInviteInput(
   BuildContext context,
   String hint,
   IconData icon,
-) {
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.textSecondary(context),
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.2,
-    ),
-    labelStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.textSecondary(context),
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.2,
-    ),
-    floatingLabelStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.accent,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-    ),
-    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
-    filled: true,
-    fillColor: AppColors.surfaceAlt(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
-}
+) => appFormInput(
+  context,
+  icon: icon,
+  accentColor: AppColors.primary,
+  hintText: hint,
+);
 
-InputDecoration _dashInput(BuildContext context, String hint, IconData icon) {
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.textSecondary(context),
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.2,
-    ),
-    labelStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.textSecondary(context),
-      fontSize: 15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.2,
-    ),
-    floatingLabelStyle: GoogleFonts.barlowCondensed(
-      color: AppColors.accent,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-    ),
-    prefixIcon: Icon(icon, color: AppColors.accent, size: 20),
-    filled: true,
-    fillColor: AppColors.surfaceAlt(context),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.input),
-      borderSide: BorderSide(color: AppColors.border(context), width: 1),
-    ),
-  );
-}
+InputDecoration _dashInput(BuildContext context, String hint, IconData icon) =>
+    appFormInput(
+      context,
+      icon: icon,
+      accentColor: AppColors.primary,
+      hintText: hint,
+    );
 
 class _DashText {
   const _DashText._();
 
-  static TextStyle title = GoogleFonts.barlowCondensed(
+  static const TextStyle title = TextStyle(
     fontSize: 18,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w600,
     color: Colors.white,
     letterSpacing: -0.3,
     height: 1.0,
   );
 
-  static TextStyle section = GoogleFonts.barlowCondensed(
+  static const TextStyle section = TextStyle(
     fontSize: 13,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w600,
     color: Colors.white,
     letterSpacing: 0.8,
     height: 1.0,
   );
 
-  static TextStyle body = GoogleFonts.barlowCondensed(
-    color: const Color(0xFFE5E7EB),
+  static const TextStyle body = TextStyle(
+    color: Color(0xFFE5E7EB),
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.25,
   );
 
-  static TextStyle subtle = GoogleFonts.barlowCondensed(
+  static const TextStyle subtle = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF8F96A3),
+    color: Color(0xFF8F96A3),
     letterSpacing: 0.3,
     height: 1.0,
   );
@@ -3378,6 +3450,7 @@ class _DashboardOverview extends StatelessWidget {
     required this.todayBookings,
     required this.todayCapacity,
     required this.todayClasses,
+    required this.todayClassRows,
     required this.joinRequests,
     required this.membershipRequests,
     required this.membersWithoutPlan,
@@ -3400,6 +3473,7 @@ class _DashboardOverview extends StatelessWidget {
   final int todayBookings;
   final int todayCapacity;
   final int todayClasses;
+  final List<Map<String, dynamic>> todayClassRows;
   final List<Map<String, dynamic>> joinRequests;
   final List<Map<String, dynamic>> membershipRequests;
   final List<Map<String, dynamic>> membersWithoutPlan;
@@ -3441,33 +3515,6 @@ class _DashboardOverview extends StatelessWidget {
           style: AppTypography.bodySecondary(context),
         ),
         const SizedBox(height: AppSpacing.md),
-        Row(
-          key: const ValueKey('dashboard-kpis'),
-          children: [
-            Expanded(
-              child: _MetricCard(
-                label: appStrings.members,
-                value: '$membersCount',
-                icon: Icons.groups_outlined,
-              ),
-            ),
-            Expanded(
-              child: _MetricCard(
-                label: appStrings.active,
-                value: '$activeMembersCount',
-                icon: Icons.check_circle_outline_rounded,
-              ),
-            ),
-            Expanded(
-              child: _MetricCard(
-                label: appStrings.occupancyToday,
-                value: occupancy,
-                icon: Icons.pie_chart_outline_rounded,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
         if (hasAttention) ...[
           _ActionRequiredCard(
             joinRequests: joinRequests,
@@ -3485,10 +3532,48 @@ class _DashboardOverview extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
         ],
+        LayoutBuilder(
+          key: const ValueKey('dashboard-kpis'),
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
+            return Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                SizedBox(
+                  width: itemWidth,
+                  child: _MetricCard(
+                    label: appStrings.members,
+                    value: '$membersCount',
+                    icon: Icons.groups_outlined,
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: _MetricCard(
+                    label: appStrings.active,
+                    value: '$activeMembersCount',
+                    icon: Icons.check_circle_outline_rounded,
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: _MetricCard(
+                    label: appStrings.occupancyToday,
+                    value: occupancy,
+                    icon: Icons.pie_chart_outline_rounded,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
         _TodayClassesSummary(
           classes: todayClasses,
           bookings: todayBookings,
           capacity: todayCapacity,
+          classRows: todayClassRows,
         ),
         const SizedBox(height: AppSpacing.lg),
         _WeeklyBookingsCard(bookings: weeklyBookings),
@@ -3517,6 +3602,13 @@ Widget buildDashboardOverviewForTest({
     todayBookings: todayBookings,
     todayCapacity: todayCapacity,
     todayClasses: todayClasses,
+    todayClassRows: const [
+      {
+        'title': 'WOD',
+        'starts_at': '2026-08-14T18:30:00Z',
+        'programs': {'name': 'CrossFit'},
+      },
+    ],
     joinRequests: const [
       {'id': 'request-1', 'member_name': 'Alex Member'},
     ],
@@ -3634,7 +3726,7 @@ class _ActionRequiredCard extends StatelessWidget {
                   '$total',
                   style: AppTypography.itemTitle(
                     context,
-                  ).copyWith(color: AppColors.accent),
+                  ).copyWith(color: AppColors.primary),
                 ),
                 const SizedBox(width: AppSpacing.xxs),
                 Icon(
@@ -3688,7 +3780,7 @@ class _AttentionRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.accent, size: 18),
+          Icon(icon, color: AppColors.primary, size: 18),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(label, style: AppTypography.body(context))),
         ],
@@ -3776,11 +3868,21 @@ class _ActionRequiredSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               ...joinRequests.map((request) {
+                final email = request['member_email']?.toString().trim() ?? '';
+                final createdAt = DateTime.tryParse(
+                  request['created_at']?.toString() ?? '',
+                )?.toLocal();
+                final dateLabel = createdAt == null
+                    ? ''
+                    : DateFormat.yMMMd(
+                        Localizations.localeOf(context).languageCode,
+                      ).format(createdAt);
                 return _ActionRequestRow(
                   name: request['member_name']?.toString() ?? appStrings.member,
-                  subtitle: (request['member_email']?.toString() ?? '').isEmpty
-                      ? appStrings.joinRequests
-                      : request['member_email'].toString(),
+                  subtitle: [
+                    if (email.isNotEmpty) email,
+                    if (dateLabel.isNotEmpty) dateLabel,
+                  ].join(' · '),
                   avatarUrl: request['member_avatar_url']?.toString(),
                   isProcessing: false,
                   isApproveProcessing: false,
@@ -3909,7 +4011,7 @@ class _ActionInfoRow extends StatelessWidget {
                   color: AppColors.surface(context),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Icon(icon, color: AppColors.accent, size: 19),
+                child: Icon(icon, color: AppColors.primary, size: 19),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -3920,7 +4022,7 @@ class _ActionInfoRow extends StatelessWidget {
                       title,
                       style: _DashText.body.copyWith(
                         color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -3955,7 +4057,7 @@ class _ActionSectionLabel extends StatelessWidget {
             label.toUpperCase(),
             style: _DashText.subtle.copyWith(
               color: AppColors.textPrimary(context),
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               letterSpacing: 0.8,
             ),
           ),
@@ -3963,8 +4065,8 @@ class _ActionSectionLabel extends StatelessWidget {
         Text(
           '$count',
           style: _DashText.subtle.copyWith(
-            color: AppColors.accent,
-            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -3997,6 +4099,30 @@ class _ActionRequestRow extends StatelessWidget {
   final VoidCallback onApprove;
   final VoidCallback onReject;
 
+  Future<void> _openActions(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => AppAdminActionSheet(
+        accentColor: AppColors.primary,
+        onClose: () => Navigator.pop(sheetContext),
+        actions: [
+          AppAdminAction(
+            icon: Icons.check_circle_outline_rounded,
+            label: appStrings.approve,
+            onTap: onApprove,
+          ),
+          AppAdminAction(
+            icon: Icons.cancel_outlined,
+            label: appStrings.reject,
+            destructive: true,
+            onTap: onReject,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -4007,110 +4133,58 @@ class _ActionRequestRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border(context), width: 1),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              if (icon == null)
-                _MemberAvatar(name: name, avatarUrl: avatarUrl)
-              else
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface(context),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Icon(icon, color: AppColors.accent, size: 19),
-                ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _DashText.body.copyWith(
-                        color: AppColors.textPrimary(context),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _DashText.subtle,
-                    ),
-                  ],
-                ),
+          if (icon == null)
+            _MemberAvatar(name: name, avatarUrl: avatarUrl)
+          else
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(999),
               ),
-            ],
+              child: Icon(icon, color: AppColors.primary, size: 19),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _DashText.body.copyWith(
+                    color: AppColors.textPrimary(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _DashText.subtle,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: disabled ? null : onReject,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary(context),
-                    side: BorderSide(color: AppColors.border(context)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isRejectProcessing
-                      ? SizedBox(
-                          width: 17,
-                          height: 17,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.textSecondary(context),
-                          ),
-                        )
-                      : Text(
-                          appStrings.reject.toUpperCase(),
-                          style: _DashText.body.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton(
-                  onPressed: disabled ? null : onApprove,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isApproveProcessing
-                      ? const SizedBox(
-                          width: 17,
-                          height: 17,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          appStrings.approve.toUpperCase(),
-                          style: _DashText.body.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
+          const SizedBox(width: AppSpacing.xs),
+          if (isProcessing || isApproveProcessing || isRejectProcessing)
+            const SizedBox.square(
+              dimension: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            AppOutlinedAdminButton(
+              icon: Icons.edit_outlined,
+              tooltip: appStrings.memberOptions,
+              onPressed: disabled ? () {} : () => _openActions(context),
+              accentColor: AppColors.primary,
+            ),
         ],
       ),
     );
@@ -4132,23 +4206,22 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 86),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(color: AppColors.border(context), width: 0.8),
-        ),
+        color: AppColors.surface(context),
+        border: Border.all(color: AppColors.border(context), width: 0.8),
+        borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 17, color: AppColors.accent),
+          Icon(icon, size: 17, color: AppColors.primary),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             value,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary(context),
               height: 1,
             ),
@@ -4159,8 +4232,7 @@ class _MetricCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.helper(context).copyWith(
-              fontFamily: GoogleFonts.barlowCondensed().fontFamily,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               letterSpacing: 0.4,
               height: 1,
             ),
@@ -4176,11 +4248,13 @@ class _TodayClassesSummary extends StatelessWidget {
     required this.classes,
     required this.bookings,
     required this.capacity,
+    required this.classRows,
   });
 
   final int classes;
   final int bookings;
   final int capacity;
+  final List<Map<String, dynamic>> classRows;
 
   @override
   Widget build(BuildContext context) {
@@ -4208,10 +4282,9 @@ class _TodayClassesSummary extends StatelessWidget {
                 width: 56,
                 child: Text(
                   '$classes',
-                  style: GoogleFonts.barlowCondensed(
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: AppColors.textPrimary(context),
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -4234,12 +4307,69 @@ class _TodayClassesSummary extends StatelessWidget {
               ),
               const Icon(
                 Icons.fitness_center_rounded,
-                color: AppColors.accent,
+                color: AppColors.primary,
                 size: 19,
               ),
             ],
           ),
         ),
+        if (classRows.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          ...classRows.map((klass) {
+            final rawProgram = klass['programs'];
+            final program = rawProgram is Map
+                ? rawProgram['name']?.toString().trim()
+                : null;
+            final startsAt = DateTime.tryParse(
+              klass['starts_at']?.toString() ?? '',
+            )?.toLocal();
+            return Container(
+              constraints: const BoxConstraints(
+                minHeight: AppSizes.minimumTouchTarget,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.border(context),
+                    width: .7,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 52,
+                    child: Text(
+                      startsAt == null
+                          ? '—'
+                          : DateFormat('HH:mm').format(startsAt),
+                      style: AppTypography.body(context),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (program?.isNotEmpty == true)
+                          Text(
+                            program!.toUpperCase(),
+                            key: ValueKey('today-class-program-$program'),
+                            style: AppTypography.sectionTitle(context),
+                          ),
+                        Text(
+                          klass['title']?.toString() ??
+                              appStrings.classFallback,
+                          style: AppTypography.bodySecondary(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
@@ -4293,8 +4423,8 @@ class _WeeklyBookingsCard extends StatelessWidget {
                 Text(
                   appStrings.weeklyBookingsTotal(total),
                   style: _DashText.subtle.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
@@ -4325,10 +4455,10 @@ class _WeeklyBookingsCard extends StatelessWidget {
                             '$value',
                             style: _DashText.subtle.copyWith(
                               color: highlighted
-                                  ? AppColors.accent
+                                  ? AppColors.primary
                                   : AppColors.textSecondary(context),
                               fontWeight: highlighted
-                                  ? FontWeight.w800
+                                  ? FontWeight.w600
                                   : FontWeight.w600,
                             ),
                           ),
@@ -4338,16 +4468,18 @@ class _WeeklyBookingsCard extends StatelessWidget {
                               alignment: Alignment.bottomCenter,
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 220),
-                                width: double.infinity,
+                                width: 10,
                                 height: height,
                                 decoration: BoxDecoration(
                                   color: highlighted
-                                      ? AppColors.accent
+                                      ? AppColors.primary
                                       : AppColors.surfaceAlt(context),
-                                  borderRadius: BorderRadius.circular(999),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.xxs,
+                                  ),
                                   border: Border.all(
                                     color: highlighted
-                                        ? AppColors.accent
+                                        ? AppColors.primary
                                         : AppColors.border(context),
                                     width: 1,
                                   ),
@@ -4360,7 +4492,7 @@ class _WeeklyBookingsCard extends StatelessWidget {
                             labels[index],
                             style: _DashText.subtle.copyWith(
                               color: AppColors.textSecondary(context),
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -4410,50 +4542,26 @@ class _CommunicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appStrings.communicationTitle.toUpperCase(),
-                style: AppTypography.sectionTitle(context),
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                appStrings.communicationSubtitle,
-                style: AppTypography.bodySecondary(context),
-              ),
-            ],
-          ),
+        Text(
+          appStrings.communicationTitle.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
         ),
-        const SizedBox(width: AppSpacing.md),
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: AppSizes.minimumTouchTarget,
-          ),
-          child: FilledButton.icon(
-            onPressed: onSendNotification,
-            icon: const Icon(
-              Icons.campaign_outlined,
-              size: 18,
-              color: AppColors.accent,
-            ),
-            label: Text(
-              appStrings.sendNotification.toUpperCase(),
-              style: AppTypography.buttonLabel(
-                context,
-              ).copyWith(color: Colors.white),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.textPrimary(context),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.input),
-              ),
-            ),
-          ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          appStrings.communicationSubtitle,
+          style: AppTypography.bodySecondary(context),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppFormSubmitButton(
+          label: appStrings.sendCommunication,
+          loading: false,
+          enabled: true,
+          onPressed: onSendNotification,
+          accentColor: AppColors.primary,
+          icon: Icons.campaign_outlined,
         ),
       ],
     );
@@ -4525,19 +4633,13 @@ class _CommunicationSheetState extends State<_CommunicationSheet> {
   }
 
   InputDecoration _decoration(BuildContext context, String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: _DashText.subtle,
-      filled: true,
-      fillColor: AppColors.surfaceAlt(context),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.border(context)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.accent),
-      ),
+    return appFormInput(
+      context,
+      icon: label == appStrings.notificationTitleLabel
+          ? Icons.title_rounded
+          : Icons.notes_rounded,
+      accentColor: AppColors.primary,
+      hintText: label,
     );
   }
 
@@ -4546,108 +4648,118 @@ class _CommunicationSheetState extends State<_CommunicationSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(18, 0, 18, bottom + 18),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.border(context)),
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Material(
+        color: AppColors.surface(context),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadii.sheet),
         ),
+        clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border(context),
-                    borderRadius: BorderRadius.circular(999),
+              AppFormHeader(
+                title: appStrings.sendCommunication,
+                onClose: Navigator.of(context).pop,
+                accentColor: AppColors.primary,
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenX,
+                    AppSpacing.md,
+                    AppSpacing.screenX,
+                    AppSpacing.lg,
                   ),
+                  children: [
+                    AppFormSectionLabel(
+                      label: appStrings.notificationTitleLabel.toUpperCase(),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    TextField(
+                      controller: _title,
+                      style: appFormValueStyle(context),
+                      decoration: _decoration(
+                        context,
+                        appStrings.notificationTitleLabel,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppFormSectionLabel(
+                      label: appStrings.notificationMessageLabel.toUpperCase(),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    TextField(
+                      controller: _message,
+                      minLines: 6,
+                      maxLines: 10,
+                      style: appFormValueStyle(context),
+                      decoration: _decoration(
+                        context,
+                        appStrings.notificationMessageLabel,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      appStrings.notificationRecipientsLabel.toUpperCase(),
+                      style: AppTypography.sectionTitle(context),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children:
+                          [
+                            ('all', appStrings.notificationAllMembers),
+                            ('athlete', appStrings.notificationAthletes),
+                            ('coach', appStrings.notificationCoaches),
+                            ('admin', appStrings.notificationAdmins),
+                          ].map((option) {
+                            final selected = _recipients == option.$1;
+                            return ChoiceChip(
+                              label: Text(option.$2),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() => _recipients = option.$1);
+                              },
+                              selectedColor: AppColors.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              backgroundColor: AppColors.surfaceAlt(context),
+                              side: BorderSide(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.border(context),
+                              ),
+                              labelStyle: _DashText.body.copyWith(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary(context),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                appStrings.sendNotification.toUpperCase(),
-                style: _DashText.section,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _title,
-                style: _DashText.body.copyWith(
-                  color: AppColors.textPrimary(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenX,
+                  AppSpacing.sm,
+                  AppSpacing.screenX,
+                  AppSpacing.md,
                 ),
-                decoration: _decoration(
-                  context,
-                  appStrings.notificationTitleLabel,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _message,
-                minLines: 3,
-                maxLines: 5,
-                style: _DashText.body.copyWith(
-                  color: AppColors.textPrimary(context),
-                ),
-                decoration: _decoration(
-                  context,
-                  appStrings.notificationMessageLabel,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                appStrings.notificationRecipientsLabel.toUpperCase(),
-                style: _DashText.subtle,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    [
-                      ('all', appStrings.notificationAllMembers),
-                      ('athlete', appStrings.notificationAthletes),
-                      ('coach', appStrings.notificationCoaches),
-                      ('admin', appStrings.notificationAdmins),
-                    ].map((option) {
-                      final selected = _recipients == option.$1;
-                      return ChoiceChip(
-                        label: Text(option.$2),
-                        selected: selected,
-                        onSelected: (_) {
-                          setState(() => _recipients = option.$1);
-                        },
-                        selectedColor: AppColors.accent.withValues(alpha: 0.18),
-                        backgroundColor: AppColors.surfaceAlt(context),
-                        side: BorderSide(
-                          color: selected
-                              ? AppColors.accent
-                              : AppColors.border(context),
-                        ),
-                        labelStyle: _DashText.body.copyWith(
-                          color: selected
-                              ? AppColors.accent
-                              : AppColors.textPrimary(context),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      );
-                    }).toList(),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  label: _sending
-                      ? appStrings.sendingNotification
-                      : appStrings.sendNotification,
-                  onPressed: _sending ? null : _sendNotification,
+                child: AppFormSubmitButton(
+                  label: appStrings.sendCommunication,
+                  loading: _sending,
+                  enabled: !_sending,
+                  onPressed: _sendNotification,
+                  accentColor: AppColors.primary,
+                  icon: Icons.send_outlined,
                 ),
               ),
             ],
@@ -4657,6 +4769,10 @@ class _CommunicationSheetState extends State<_CommunicationSheet> {
     );
   }
 }
+
+@visibleForTesting
+Widget buildAdminCommunicationSheetForTest() =>
+    const FractionallySizedBox(heightFactor: .9, child: _CommunicationSheet());
 
 class _RecentActivityCard extends StatelessWidget {
   const _RecentActivityCard({required this.activity});
@@ -4741,7 +4857,7 @@ class _RecentActivityCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(_statusIcon(row), size: 18, color: AppColors.accent),
+                  Icon(_statusIcon(row), size: 18, color: AppColors.primary),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
@@ -4934,8 +5050,8 @@ class _MemberMilestoneCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 9,
-              backgroundColor: const Color(0xFFE8EAF0),
-              color: const Color(0xFFB59B6A),
+              backgroundColor: AppColors.surfaceAlt(context),
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -5006,7 +5122,7 @@ class _MemberFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF0E0E11) : AppColors.surfaceAlt(context),
+      color: selected ? AppColors.primary : AppColors.surfaceAlt(context),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -5016,9 +5132,8 @@ class _MemberFilterChip extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.barlowCondensed(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+              style: AppTypography.helper(context).copyWith(
+                fontWeight: FontWeight.w600,
                 color: selected
                     ? Colors.white
                     : AppColors.textSecondary(context),

@@ -4,7 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_design_tokens.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 import '../../data/auth_repository.dart';
 import '../widgets/auth_form_scaffold.dart';
 
@@ -70,9 +71,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppButton(
+          AppFormSubmitButton(
             label: appStrings.authSendResetLink,
             loading: _loading,
+            enabled: !_loading,
+            accentColor: AppColors.primary,
             onPressed: _submit,
           ),
         ],

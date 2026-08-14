@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import 'workout_form_controls.dart';
 
@@ -15,12 +16,9 @@ Future<void> showCreateWorkoutSheet({
   required Future<void> Function() onCreated,
   DateTime? initialDate,
 }) async {
-  await showGeneralDialog(
+  await showAppLargeFormSheet(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) => _CreateWorkoutSheet(
+    builder: (_) => _CreateWorkoutSheet(
       client: client,
       gymId: gymId,
       onCreated: onCreated,
@@ -203,6 +201,9 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
                   width: double.infinity,
                   fit: BoxFit.cover,
                 ),
+          onRemoveImage: _image == null
+              ? null
+              : () => setState(() => _image = null),
           descriptionController: _description,
         ),
       ],

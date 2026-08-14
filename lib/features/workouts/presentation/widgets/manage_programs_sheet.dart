@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_admin_actions.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../workout_colors.dart';
 
@@ -17,12 +18,9 @@ Future<void> showManageProgramsSheet({
   required SupabaseClient client,
   required String gymId,
 }) async {
-  await showGeneralDialog<void>(
+  await showAppLargeFormSheet<void>(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (_, _, _) => ManageProgramsView(client: client, gymId: gymId),
+    builder: (_) => ManageProgramsView(client: client, gymId: gymId),
   );
 }
 
@@ -72,12 +70,9 @@ class _ManageProgramsViewState extends State<ManageProgramsView> {
   }
 
   Future<void> _openForm([Map<String, dynamic>? program]) async {
-    final changed = await showGeneralDialog<bool>(
+    final changed = await showAppLargeFormSheet<bool>(
       context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.42),
-      transitionDuration: const Duration(milliseconds: 180),
-      pageBuilder: (_, _, _) => ProgramFormView(
+      builder: (_) => ProgramFormView(
         client: widget.client,
         gymId: widget.gymId,
         program: program,

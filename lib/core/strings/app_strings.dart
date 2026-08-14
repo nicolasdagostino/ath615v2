@@ -23,6 +23,7 @@ class AppStrings {
   }
 
   String get defaultGymName => 'Athlete 615';
+  String get gymIdentityLabel => pick('GYM', 'CENTRO');
 
   String get appBrand => pick('ATHLETE 615', 'ATHLETE 615');
   String get profileHeaderTitle => pick('PROFILE', 'PERFIL');
@@ -41,6 +42,9 @@ class AppStrings {
   String get noWaitlistYet =>
       pick('No one is waiting yet.', 'Aún no hay nadie en espera.');
   String get member => pick('Member', 'Miembro');
+  String get coachRoleLabel => pick('Coach', 'Coach');
+  String get adminRoleLabel => pick('Admin', 'Admin');
+  String get memberSince => pick('Member since', 'Miembro desde');
   String get memberOptions => pick('Member options', 'Opciones de miembro');
   String get workoutOptions => pick('WORKOUT OPTIONS', 'OPCIONES DEL WOD');
   String get athleteInvitationSent =>
@@ -90,6 +94,7 @@ class AppStrings {
   String get bookingTitle => pick('Booking', 'Reservas');
   String get loadingClasses => pick('Loading classes…', 'Cargando clases…');
   String get bookingClasses => pick('Classes', 'Clases');
+  String get bookingEvents => pick('Events', 'Eventos');
   String get bookingBook => pick('Book', 'Reservar');
   String get bookingCancel => pick('Cancel', 'Cancelar');
   String get bookingBooked => pick('Booked', 'Reservada');
@@ -172,6 +177,8 @@ class AppStrings {
     'No hay clases programadas. Aprovecha para recuperar.',
   );
   String get imageSelected => pick('Image selected', 'Imagen seleccionada');
+  String get workoutImage => pick('Image', 'Imagen');
+  String get removeImage => pick('Remove image', 'Eliminar imagen');
   String get changeImage => pick('Change image', 'Cambiar imagen');
   String get newImageSelected =>
       pick('New image selected', 'Nueva imagen seleccionada');
@@ -259,6 +266,18 @@ class AppStrings {
   String get notificationsClearMessage => pick(
     'All your communications and notifications from this gym will be deleted.',
     'Se eliminarán todas tus comunicaciones y notificaciones de este gimnasio.',
+  );
+  String get communicationsClearTitle =>
+      pick('Delete all communications?', '¿Eliminar todas las comunicaciones?');
+  String get communicationsClearMessage => pick(
+    'Communications from this gym will be deleted from your inbox.',
+    'Se eliminarán las comunicaciones de este gimnasio de tu bandeja.',
+  );
+  String get personalNotificationsClearTitle =>
+      pick('Delete all notifications?', '¿Eliminar todas las notificaciones?');
+  String get personalNotificationsClearMessage => pick(
+    'Notifications from this gym will be deleted from your inbox.',
+    'Se eliminarán las notificaciones de este gimnasio de tu bandeja.',
   );
   String get clear => pick('Clear', 'Vaciar');
   String get close => pick('Close', 'Cerrar');
@@ -539,6 +558,21 @@ class AppStrings {
       pick('Keep your members informed.', 'Mantén informados a tus miembros.');
   String get sendNotification =>
       pick('Send notification', 'Enviar notificación');
+  String get sendCommunication =>
+      pick('Send communication', 'Enviar comunicación');
+  String get deleteInvitation =>
+      pick('Delete invitation', 'Eliminar invitación');
+  String get deleteInvitationQuestion =>
+      pick('Delete invitation?', '¿Eliminar invitación?');
+  String deleteInvitationMessage(String name) => pick(
+    'This will permanently remove $name from your members list. Only pending invitations can be deleted.',
+    'Esto eliminará permanentemente a $name de tu lista. Solo se pueden eliminar invitaciones pendientes.',
+  );
+  String get invitationDeleted =>
+      pick('Invitation deleted.', 'Invitación eliminada.');
+  String get roleUpdated => pick('Role updated.', 'Rol actualizado.');
+  String roleUpdateError(Object error) =>
+      pick('Role update error: $error', 'Error al actualizar el rol: $error');
   String get sendingNotification => pick('Sending...', 'Enviando...');
   String get comingSoon => pick('Coming soon', 'Próximamente');
   String get notificationTitleLabel => pick('Title', 'Título');

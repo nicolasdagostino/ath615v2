@@ -175,6 +175,7 @@ class AppFormSubmitButton extends StatelessWidget {
     required this.enabled,
     required this.onPressed,
     required this.accentColor,
+    this.icon,
   });
 
   final String label;
@@ -182,6 +183,7 @@ class AppFormSubmitButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onPressed;
   final Color accentColor;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -206,13 +208,33 @@ class AppFormSubmitButton extends StatelessWidget {
                 color: Colors.white,
               ),
             )
-          : Text(
-              label.toUpperCase(),
-              style: AppTypography.buttonLabel(context).copyWith(
-                color: enabled
-                    ? Colors.white
-                    : AppColors.textSecondary(context),
-              ),
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: enabled
+                        ? Colors.white
+                        : AppColors.textSecondary(context),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
+                Flexible(
+                  child: Text(
+                    label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.buttonLabel(context).copyWith(
+                      color: enabled
+                          ? Colors.white
+                          : AppColors.textSecondary(context),
+                    ),
+                  ),
+                ),
+              ],
             ),
     ),
   );

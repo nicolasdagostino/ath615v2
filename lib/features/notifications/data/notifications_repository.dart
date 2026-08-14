@@ -3,6 +3,30 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef NotificationRecord = Map<String, dynamic>;
 
+class CommunicationReactionSummary {
+  const CommunicationReactionSummary({
+    required this.thumbsUpCount,
+    required this.heartCount,
+    required this.myReaction,
+  });
+
+  final int thumbsUpCount;
+  final int heartCount;
+  final String? myReaction;
+
+  factory CommunicationReactionSummary.fromRpc(dynamic data) {
+    final rows = data is List ? data : const [];
+    final row = rows.isNotEmpty
+        ? Map<String, dynamic>.from(rows.first as Map)
+        : const <String, dynamic>{};
+    return CommunicationReactionSummary(
+      thumbsUpCount: (row['thumbs_up_count'] as num?)?.toInt() ?? 0,
+      heartCount: (row['heart_count'] as num?)?.toInt() ?? 0,
+      myReaction: row['my_reaction']?.toString(),
+    );
+  }
+}
+
 class NotificationsInboxEvents extends ChangeNotifier {
   void refresh() => notifyListeners();
 }
@@ -14,7 +38,14 @@ abstract interface class NotificationsRepository {
   Future<int> unreadCount();
   Future<bool> markRead(String notificationId);
   Future<int> markAllRead();
-  Future<int> clearOwn();
+  Future<int> clearCategory(String category);
+  Future<CommunicationReactionSummary> loadCommunicationReactions(
+    String notificationId,
+  );
+  Future<CommunicationReactionSummary> setCommunicationReaction(
+    String notificationId,
+    String? reaction,
+  );
 }
 
 class SupabaseNotificationsRepository implements NotificationsRepository {
@@ -56,10 +87,34 @@ class SupabaseNotificationsRepository implements NotificationsRepository {
   }
 
   @override
-  Future<int> clearOwn() async {
-    final data = await _client.rpc('clear_effective_notifications');
+  Future<int> clearCategory(String category) async {
+    final data = await _client.rpc(
+      'clear_effective_notifications_by_category',
+      params: {'p_category': category},
+    );
     return _parseCount(data, 'Unexpected notification mutation response.');
   }
+
+  @override
+  Future<CommunicationReactionSummary> loadCommunicationReactions(
+    String notificationId,
+  ) async => CommunicationReactionSummary.fromRpc(
+    await _client.rpc(
+      'get_communication_reactions',
+      params: {'p_notification_id': notificationId},
+    ),
+  );
+
+  @override
+  Future<CommunicationReactionSummary> setCommunicationReaction(
+    String notificationId,
+    String? reaction,
+  ) async => CommunicationReactionSummary.fromRpc(
+    await _client.rpc(
+      'set_communication_reaction',
+      params: {'p_notification_id': notificationId, 'p_reaction': reaction},
+    ),
+  );
 
   int _parseCount(dynamic data, String message) {
     final count = data is num ? data.toInt() : int.tryParse(data.toString());

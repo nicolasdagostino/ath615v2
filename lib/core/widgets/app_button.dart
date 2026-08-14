@@ -24,7 +24,7 @@ class AppButton extends StatelessWidget {
       child: FilledButton(
         onPressed: loading ? null : onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
           disabledBackgroundColor: AppColors.surfaceAlt(context),
           foregroundColor: Colors.white,
           disabledForegroundColor: AppColors.textSecondary(context),
@@ -36,7 +36,10 @@ class AppButton extends StatelessWidget {
             ? const SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Text(
                 label.toUpperCase(),

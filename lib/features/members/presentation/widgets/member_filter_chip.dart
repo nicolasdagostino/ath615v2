@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class MemberFilterChip extends StatelessWidget {
   const MemberFilterChip({
@@ -22,18 +21,17 @@ class MemberFilterChip extends StatelessWidget {
       selected: selected,
       label: Text(
         label.toUpperCase(),
-        style: GoogleFonts.barlowCondensed(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+        style: AppTypography.helper(context).copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.35,
           color: selected ? Colors.white : AppColors.textSecondary(context),
           height: 1,
         ),
       ),
-      selectedColor: AppColors.textPrimary(context),
+      selectedColor: AppColors.primary,
       backgroundColor: AppColors.surfaceAlt(context),
       side: selected
-          ? const BorderSide(color: AppColors.accent, width: 0.8)
+          ? const BorderSide(color: AppColors.primary, width: 0.8)
           : BorderSide.none,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.input),

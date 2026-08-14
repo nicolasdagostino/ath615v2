@@ -12,6 +12,7 @@ Future<void> showAppMessageDetailSheet({
   required IconData icon,
   String? actionLabel,
   VoidCallback? onAction,
+  Widget? footer,
   required String closeLabel,
 }) => showModalBottomSheet<void>(
   context: context,
@@ -25,6 +26,7 @@ Future<void> showAppMessageDetailSheet({
     icon: icon,
     actionLabel: actionLabel,
     onAction: onAction,
+    footer: footer,
     closeLabel: closeLabel,
   ),
 );
@@ -39,6 +41,7 @@ class AppMessageDetailSheet extends StatelessWidget {
     required this.closeLabel,
     this.actionLabel,
     this.onAction,
+    this.footer,
   });
 
   final String title;
@@ -48,6 +51,7 @@ class AppMessageDetailSheet extends StatelessWidget {
   final String closeLabel;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +124,10 @@ class AppMessageDetailSheet extends StatelessWidget {
                             height: 1.45,
                           ),
                         ),
+                      ],
+                      if (footer != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        footer!,
                       ],
                       if (actionLabel != null && onAction != null) ...[
                         const SizedBox(height: AppSpacing.lg),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_control_styles.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_form_visuals.dart';
 
 class AuthFormScaffold extends StatelessWidget {
   const AuthFormScaffold({
@@ -44,7 +44,6 @@ class AuthFormScaffold extends StatelessWidget {
                       onPressed: onBack,
                       icon: const Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.accent,
                         size: 20,
                       ),
                     ),
@@ -72,23 +71,13 @@ class AuthFormScaffold extends StatelessWidget {
                     title.toUpperCase(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(subtitle, style: AppTypography.bodySecondary(context)),
                   const SizedBox(height: AppSpacing.xl),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface(context),
-                      borderRadius: BorderRadius.circular(AppRadii.card),
-                      border: Border.all(color: AppColors.border(context)),
-                      boxShadow: AppShadows.card(context),
-                    ),
-                    child: child,
-                  ),
+                  child,
                 ],
               ),
             ),
@@ -104,19 +93,19 @@ InputDecoration authFormInput(
   required String label,
   required IconData icon,
 }) {
-  return AppControlStyles.input(
+  return appFormInput(
     context,
+    icon: icon,
+    accentColor: AppColors.primary,
     hintText: label,
-    prefixIcon: Icon(icon, color: AppColors.textSecondary(context), size: 20),
-  ).copyWith(labelText: label, fillColor: AppColors.surfaceAlt(context));
+  );
 }
 
 TextStyle authSectionStyle(BuildContext context) =>
-    AppTypography.sectionTitle(context).copyWith(fontSize: 18);
+    AppTypography.sectionTitle(context).copyWith(fontWeight: FontWeight.w600);
 
-TextStyle authInputStyle(BuildContext context) =>
-    AppTypography.body(context).copyWith(fontSize: 16);
+TextStyle authInputStyle(BuildContext context) => appFormValueStyle(context);
 
-TextStyle authLinkStyle(BuildContext context) => AppTypography.buttonLabel(
+TextStyle authLinkStyle(BuildContext context) => AppTypography.body(
   context,
-).copyWith(color: AppColors.accent, fontSize: 16);
+).copyWith(color: AppColors.primary, fontWeight: FontWeight.w500);

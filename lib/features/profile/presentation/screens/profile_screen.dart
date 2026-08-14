@@ -620,21 +620,40 @@ class _GymIdentity extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     key: const ValueKey('profile-gym-identity'),
     width: double.infinity,
-    constraints: const BoxConstraints(minHeight: 48),
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    constraints: const BoxConstraints(minHeight: 64),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xs,
+    ),
     alignment: Alignment.center,
     decoration: BoxDecoration(
       color: AppColors.surface(context),
       borderRadius: BorderRadius.circular(AppRadii.card),
       border: Border.all(color: AppColors.border(context)),
     ),
-    child: Text(
-      name.toUpperCase(),
-      key: const ValueKey('profile-gym-name'),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: AppTypography.itemTitle(context),
+    child: Column(
+      key: const ValueKey('profile-gym-content'),
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          appStrings.gymIdentityLabel,
+          key: const ValueKey('profile-gym-label'),
+          style: AppTypography.helper(context).copyWith(
+            color: AppColors.textSecondary(context),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          name.toUpperCase(),
+          key: const ValueKey('profile-gym-name'),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: AppTypography.itemTitle(context),
+        ),
+      ],
     ),
   );
 }

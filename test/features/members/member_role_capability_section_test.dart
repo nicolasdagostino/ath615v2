@@ -29,7 +29,7 @@ void main() {
     expect(tile.onChanged, isNotNull);
 
     final athlete = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Athlete'),
+      find.widgetWithText(ChoiceChip, 'ATHLETE'),
     );
     expect(athlete.selected, isTrue);
   });
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpWidget(_subject(role: 'admin', isCoach: true));
 
     final admin = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Admin'),
+      find.widgetWithText(ChoiceChip, 'ADMIN'),
     );
     final tile = tester.widget<SwitchListTile>(
       find.byKey(const Key('member-coach-capability-switch')),

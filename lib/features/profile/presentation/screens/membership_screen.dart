@@ -37,11 +37,13 @@ bool isFinalMembershipUsage(
     booking['status']?.toString() != 'cancelled';
 
 class SupabaseUserMembershipsDataSource implements UserMembershipsDataSource {
-  SupabaseUserMembershipsDataSource(this.client);
+  SupabaseUserMembershipsDataSource(this.client, {String? userId})
+    : _requestedUserId = userId;
 
   final SupabaseClient client;
+  final String? _requestedUserId;
 
-  String? get _userId => client.auth.currentUser?.id;
+  String? get _userId => _requestedUserId ?? client.auth.currentUser?.id;
 
   static const _membershipSelect =
       'id, credits_remaining, starts_at, expires_at, ends_at, status, '
@@ -624,6 +626,147 @@ class _PendingRequestRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+class MemberMembershipsSection extends StatefulWidget {
+  const MemberMembershipsSection({
+    super.key,
+    required this.memberId,
+    this.dataSource,
+    this.includeActive = true,
+  });
+
+  final String memberId;
+  final UserMembershipsDataSource? dataSource;
+  final bool includeActive;
+
+  @override
+  State<MemberMembershipsSection> createState() =>
+      _MemberMembershipsSectionState();
+}
+
+class _MemberMembershipsSectionState extends State<MemberMembershipsSection> {
+  late final UserMembershipsDataSource _source =
+      widget.dataSource ??
+      SupabaseUserMembershipsDataSource(
+        Supabase.instance.client,
+        userId: widget.memberId,
+      );
+  final List<Map<String, dynamic>> _history = [];
+  List<Map<String, dynamic>> _active = const [];
+  List<Map<String, dynamic>> _scheduled = const [];
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    final results = await Future.wait([
+      _source.loadCurrentAndScheduled(),
+      _source.loadHistory(offset: 0, limit: membershipHistoryPageSize),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _active = results[0].where((row) => row['status'] == 'active').toList();
+      _scheduled = results[0]
+          .where((row) => row['status'] == 'scheduled')
+          .toList();
+      _history
+        ..clear()
+        ..addAll(results[1]);
+      _hasMore = results[1].length == membershipHistoryPageSize;
+      _loading = false;
+    });
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    final rows = await _source.loadHistory(
+      offset: _history.length,
+      limit: membershipHistoryPageSize,
+    );
+    if (!mounted) return;
+    setState(() {
+      _history.addAll(rows);
+      _hasMore = rows.length == membershipHistoryPageSize;
+      _loadingMore = false;
+    });
+  }
+
+  Future<void> _openDetail(Map<String, dynamic> membership) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black.withValues(alpha: .55),
+        builder: (_) => FractionallySizedBox(
+          heightFactor: .92,
+          child: MembershipDetailSheet(
+            membership: membership,
+            dataSource: _source,
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+    final children = <Widget>[];
+    void addSection(String label, List<Map<String, dynamic>> rows) {
+      if (rows.isEmpty) return;
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: AppSpacing.lg));
+      }
+      children.add(_SectionTitle(label: label));
+      children.add(const SizedBox(height: AppSpacing.xs));
+      children.addAll(
+        rows.map(
+          (membership) => _MembershipRow(
+            membership: membership,
+            onTap: () => _openDetail(membership),
+          ),
+        ),
+      );
+    }
+
+    if (widget.includeActive) {
+      addSection(appStrings.currentMembership.toUpperCase(), _active);
+    }
+    addSection(appStrings.pick('UPCOMING', 'PRÓXIMAS'), _scheduled);
+    addSection(appStrings.pick('HISTORY', 'HISTORIAL'), _history);
+    if (children.isEmpty) {
+      return _EmptyMessage(message: appStrings.noActivePlan);
+    }
+    if (_hasMore) {
+      children.add(const SizedBox(height: AppSpacing.sm));
+      children.add(
+        OutlinedButton(
+          key: const ValueKey('admin-memberships-load-more'),
+          onPressed: _loadingMore ? null : _loadMore,
+          child: Text(appStrings.showMore.toUpperCase()),
+        ),
+      );
+    }
+    return Column(
+      key: const ValueKey('admin-member-memberships'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
+  }
 }
 
 class MembershipDetailSheet extends StatefulWidget {

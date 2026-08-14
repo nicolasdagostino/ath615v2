@@ -41,7 +41,7 @@ class AppControlStyles {
       disabledBorder: border,
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.input),
-        borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
       ),
     );
   }

@@ -90,7 +90,7 @@ class _ScanGymQrScreenState extends State<ScanGymQrScreen> {
                       appStrings.scanGymQr.toUpperCase(),
                       style: GoogleFonts.barlowCondensed(
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary(context),
                       ),
                     ),

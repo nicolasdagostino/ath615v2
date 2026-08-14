@@ -45,13 +45,28 @@ class BookingClassesChip extends StatelessWidget {
   const BookingClassesChip({super.key});
 
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: AppSectionChip(
-      key: const ValueKey('booking-classes-chip'),
-      label: appStrings.bookingClasses,
-      selected: true,
-    ),
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: AppSectionChip(
+          key: const ValueKey('booking-classes-chip'),
+          label: appStrings.bookingClasses,
+          selected: true,
+        ),
+      ),
+      const SizedBox(width: AppSpacing.sm),
+      Expanded(
+        child: Tooltip(
+          message: appStrings.comingSoon,
+          child: AppSectionChip(
+            key: const ValueKey('booking-events-chip'),
+            label: appStrings.bookingEvents,
+            selected: false,
+            enabled: false,
+          ),
+        ),
+      ),
+    ],
   );
 }
 

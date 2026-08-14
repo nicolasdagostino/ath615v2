@@ -1,4 +1,6 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
+import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/auth/presentation/widgets/auth_form_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +30,7 @@ void main() {
                 builder: (context) => Column(
                   children: [
                     TextField(
+                      style: authInputStyle(context),
                       decoration: authFormInput(
                         context,
                         label: 'Email',
@@ -50,6 +53,10 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('ACCESO'), findsOneWidget);
         expect(find.text('Email'), findsWidgets);
+        final field = tester.widget<TextField>(find.byType(TextField));
+        final context = tester.element(find.byType(TextField));
+        expect(field.style, appFormValueStyle(context));
+        expect(authLinkStyle(context).color, AppColors.primary);
       },
     );
   }
