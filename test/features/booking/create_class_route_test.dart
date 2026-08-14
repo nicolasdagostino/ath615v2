@@ -49,6 +49,7 @@ Widget _routeHarness(Brightness brightness, {required bool edit}) {
                   klass: {
                     'id': 'class-1',
                     'title': 'Preloaded Class Name',
+                    'programs': {'name': _programs.first['name']},
                     'starts_at': '2030-08-22T07:30:00',
                     'duration_minutes': 75,
                     'capacity': 18,
@@ -105,7 +106,8 @@ void main() {
 
       expect(find.byType(BookingClassFormScaffold), findsOneWidget);
       expect(find.text('CREATE CLASS'), findsNWidgets(2));
-      expect(find.text('NOMBRE DE LA CLASE'), findsOneWidget);
+      expect(find.text('DESCRIPTION'), findsOneWidget);
+      expect(find.text('Optional · add a brief description'), findsOneWidget);
       expect(find.byType(ClassCoachSelector), findsOneWidget);
       expect(find.text('No Coach'), findsOneWidget);
       final submit = tester.widget<FilledButton>(

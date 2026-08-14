@@ -22,6 +22,23 @@ import '../widgets/create_class_sheet.dart';
 import '../widgets/edit_class_sheet.dart';
 import '../booking_colors.dart';
 
+Future<bool> completeClassDeletion({
+  required Future<void> Function() delete,
+  required VoidCallback closeDetail,
+  required Future<void> Function() refreshSelectedDate,
+  required void Function(Object error) onError,
+}) async {
+  try {
+    await delete();
+    closeDetail();
+    await refreshSelectedDate();
+    return true;
+  } catch (error) {
+    onError(error);
+    return false;
+  }
+}
+
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
     super.key,
@@ -511,8 +528,21 @@ class _BookingScreenState extends State<BookingScreen> {
     );
     if (!confirmed) return;
 
-    await _client.from('classes').delete().eq('id', klass['id']);
-    await _load(showLoading: false);
+    await completeClassDeletion(
+      delete: () async {
+        await _client.from('classes').delete().eq('id', klass['id']);
+      },
+      closeDetail: () {
+        if (mounted) Navigator.of(context).pop();
+      },
+      refreshSelectedDate: () => _load(showLoading: false),
+      onError: (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appStrings.deleteClassError(error))),
+        );
+      },
+    );
   }
 
   Future<void> _deleteFutureClasses(Map<String, dynamic> klass) async {
@@ -522,12 +552,25 @@ class _BookingScreenState extends State<BookingScreen> {
     );
     if (!confirmed) return;
 
-    await _client
-        .from('classes')
-        .delete()
-        .eq('recurring_id', klass['recurring_id'])
-        .gte('starts_at', klass['starts_at']);
-    await _load(showLoading: false);
+    await completeClassDeletion(
+      delete: () async {
+        await _client
+            .from('classes')
+            .delete()
+            .eq('recurring_id', klass['recurring_id'])
+            .gte('starts_at', klass['starts_at']);
+      },
+      closeDetail: () {
+        if (mounted) Navigator.of(context).pop();
+      },
+      refreshSelectedDate: () => _load(showLoading: false),
+      onError: (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appStrings.deleteClassError(error))),
+        );
+      },
+    );
   }
 
   Future<void> _openClassSheet(

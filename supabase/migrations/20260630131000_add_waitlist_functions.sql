@@ -220,7 +220,7 @@ begin
       format(
         'A spot opened up for %s at %s.',
         v_class.title,
-        to_char(v_class.starts_at at time zone ''UTC'', 'HH24:MI')
+        to_char(v_class.starts_at at time zone 'UTC', 'HH24:MI')
       ),
       'waitlist_promoted',
       jsonb_build_object('classId', p_class_id),

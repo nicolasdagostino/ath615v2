@@ -61,7 +61,7 @@ class _EditClassSheet extends StatefulWidget {
 class _EditClassSheetState extends State<_EditClassSheet> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  late final TextEditingController _title;
+  late final TextEditingController _description;
   late final TextEditingController _duration;
   late final TextEditingController _capacity;
 
@@ -87,8 +87,11 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
     _selectedDate = DateTime(startsAt.year, startsAt.month, startsAt.day);
     _selectedTime = TimeOfDay.fromDateTime(startsAt);
-    _title = TextEditingController(
-      text: widget.klass['title']?.toString() ?? '',
+    final program = widget.klass['programs'];
+    final programName = program is Map ? program['name']?.toString() : null;
+    final storedTitle = widget.klass['title']?.toString() ?? '';
+    _description = TextEditingController(
+      text: storedTitle == programName ? '' : storedTitle,
     );
     _duration = TextEditingController(
       text: (widget.klass['duration_minutes'] ?? 60).toString(),
@@ -107,7 +110,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
   @override
   void dispose() {
-    _title.dispose();
+    _description.dispose();
     _duration.dispose();
     _capacity.dispose();
     super.dispose();
@@ -213,12 +216,15 @@ class _EditClassSheetState extends State<_EditClassSheet> {
 
       final programName =
           program['name']?.toString() ?? appStrings.classFallback;
-      final customTitle = _title.text.trim();
-      final classTitle = customTitle.isEmpty ? programName : customTitle;
+      final description = _description.text.trim();
+      final classTitle = description.isEmpty ? programName : description;
 
       if (classTitle.length > 100) {
         throw Exception(
-          'El nombre de la clase no puede superar 100 caracteres.',
+          appStrings.pick(
+            'The description cannot exceed 100 characters.',
+            'La descripción no puede superar 100 caracteres.',
+          ),
         );
       }
 
@@ -293,10 +299,12 @@ class _EditClassSheetState extends State<_EditClassSheet> {
         onPressed: _save,
       ),
       children: [
-        const BookingClassSectionLabel(label: 'NOMBRE DE LA CLASE'),
+        BookingClassSectionLabel(
+          label: appStrings.classDescriptionLabel.toUpperCase(),
+        ),
         const SizedBox(height: AppSpacing.xs),
         TextField(
-          controller: _title,
+          controller: _description,
           maxLength: 100,
           textCapitalization: TextCapitalization.sentences,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -304,7 +312,7 @@ class _EditClassSheetState extends State<_EditClassSheet> {
           decoration: bookingClassInput(
             context,
             icon: Icons.edit_outlined,
-            hintText: 'Opcional · usa el programa si queda vacío',
+            hintText: appStrings.classDescriptionHint,
           ).copyWith(counterText: ''),
         ),
         const SizedBox(height: AppSpacing.lg),

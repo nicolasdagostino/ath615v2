@@ -16,6 +16,9 @@ void main() {
       expect(source, contains('onTap: () => _deleteClass(klass)'));
       expect(source, contains('final confirmed = await _confirmDeleteClass'));
       expect(source, contains('if (!confirmed) return;'));
+      expect(source, contains('completeClassDeletion('));
+      expect(source, contains('Navigator.of(context).pop()'));
+      expect(source, contains('refreshSelectedDate: () => _load'));
       expect(source, contains("from('classes').delete()"));
       expect(source, contains("if (klass['recurring_id'] != null)"));
       expect(source, contains('onTap: () => _deleteFutureClasses(klass)'));

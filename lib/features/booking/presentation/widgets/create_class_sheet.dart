@@ -62,7 +62,7 @@ class _CreateClassSheet extends StatefulWidget {
 class _CreateClassSheetState extends State<_CreateClassSheet> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  final _title = TextEditingController();
+  final _description = TextEditingController();
   final _duration = TextEditingController(text: '60');
   final _capacity = TextEditingController(text: '12');
 
@@ -89,7 +89,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
   @override
   void dispose() {
-    _title.dispose();
+    _description.dispose();
     _duration.dispose();
     _capacity.dispose();
     super.dispose();
@@ -193,12 +193,15 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
 
       final programName =
           program['name']?.toString() ?? appStrings.classFallback;
-      final customTitle = _title.text.trim();
-      final classTitle = customTitle.isEmpty ? programName : customTitle;
+      final description = _description.text.trim();
+      final classTitle = description.isEmpty ? programName : description;
 
       if (classTitle.length > 100) {
         throw Exception(
-          'El nombre de la clase no puede superar 100 caracteres.',
+          appStrings.pick(
+            'The description cannot exceed 100 characters.',
+            'La descripción no puede superar 100 caracteres.',
+          ),
         );
       }
 
@@ -312,10 +315,12 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
         onPressed: _save,
       ),
       children: [
-        const BookingClassSectionLabel(label: 'NOMBRE DE LA CLASE'),
+        BookingClassSectionLabel(
+          label: appStrings.classDescriptionLabel.toUpperCase(),
+        ),
         const SizedBox(height: AppSpacing.xs),
         TextField(
-          controller: _title,
+          controller: _description,
           maxLength: 100,
           textCapitalization: TextCapitalization.sentences,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -323,7 +328,7 @@ class _CreateClassSheetState extends State<_CreateClassSheet> {
           decoration: bookingClassInput(
             context,
             icon: Icons.edit_outlined,
-            hintText: 'Opcional · usa el programa si queda vacío',
+            hintText: appStrings.classDescriptionHint,
           ).copyWith(counterText: ''),
         ),
         const SizedBox(height: AppSpacing.lg),

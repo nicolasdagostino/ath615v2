@@ -20,13 +20,13 @@ void main() {
     String? description = 'Technique and strength work.',
   }) => <String, dynamic>{
     'id': 'class-1',
-    'title': 'Fresh Start',
+    'title': description?.isNotEmpty == true ? description : 'Fresh Start',
+    'programs': {'name': 'Fresh Start'},
     'starts_at': '2030-08-22T07:00:00',
     'duration_minutes': 60,
     'capacity': 16,
     'coach_id': 'coach-1',
     'coach': coach ?? {'full_name': 'Jess Brown'},
-    'description': description,
   };
 
   final profiles = <String, Map<String, dynamic>>{

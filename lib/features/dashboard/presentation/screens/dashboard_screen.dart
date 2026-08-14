@@ -2247,6 +2247,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 AppFormSubmitButton(
+                                  key: const ValueKey(
+                                    'member-detail-assign-plan',
+                                  ),
                                   label: appStrings.saveChanges,
                                   loading: savingMember,
                                   enabled: memberDirty && !savingMember,
@@ -2987,30 +2990,16 @@ class _MembershipOverview extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: AppSizes.minimumTouchTarget,
-              ),
-              child: FilledButton.icon(
+            SizedBox(
+              width: 178,
+              child: AppFormSubmitButton(
+                key: const ValueKey('membership-manage-plans'),
+                label: appStrings.managePlans,
+                loading: false,
+                enabled: true,
                 onPressed: onManagePlans,
-                icon: const Icon(
-                  Icons.add_rounded,
-                  size: 18,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  appStrings.managePlans.toUpperCase(),
-                  style: AppTypography.buttonLabel(
-                    context,
-                  ).copyWith(color: Colors.white),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadii.input),
-                  ),
-                ),
+                accentColor: AppColors.primary,
+                icon: Icons.add_rounded,
               ),
             ),
           ],

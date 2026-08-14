@@ -16,6 +16,13 @@ void main() {
         .listSync()
         .whereType<File>()
         .where((file) => file.path.endsWith('.sql'))
+        // This migration defines the explicit admin/coach attendance RPCs.
+        // Their attended transition is the behavior this contract permits.
+        .where(
+          (file) => !file.path.endsWith(
+            '20260809160000_migrate_attendance_guests_to_effective_gym.sql',
+          ),
+        )
         .map((file) => file.readAsStringSync().toLowerCase())
         .join('\n');
 

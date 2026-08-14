@@ -422,6 +422,15 @@ class AppStrings {
     'This will permanently delete this class and all future repeated classes.',
     'Esto eliminará definitivamente esta clase y todas las clases repetidas futuras.',
   );
+  String get classDescriptionLabel => pick('Description', 'Descripción');
+  String get classDescriptionHint => pick(
+    'Optional · add a brief description',
+    'Opcional · añade una breve descripción',
+  );
+  String deleteClassError(Object error) => pick(
+    'Could not delete the class: $error',
+    'No se pudo eliminar la clase: $error',
+  );
 
   String get managePlans => pick('Manage plans', 'Gestionar planes');
   String get plan => pick('Plan', 'Plan');

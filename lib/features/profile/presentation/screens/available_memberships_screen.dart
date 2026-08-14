@@ -35,24 +35,14 @@ class SupabaseAvailableMembershipsService
   Future<List<Map<String, dynamic>>> loadPlans(String type) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return const [];
-    final profile = await client
-        .from('profiles')
-        .select('gym_id')
-        .eq('id', userId)
-        .single();
-    final gymId = profile['gym_id']?.toString();
-    if (gymId == null) return const [];
-
-    final query = client
-        .from('membership_plans')
-        .select(availableMembershipPlanColumns)
-        .eq('gym_id', gymId)
-        .eq('is_active', true);
-    final rows = await query
-        .inFilter('plan_type', const ['unlimited', 'class_pack'])
-        .order('created_at');
+    final response = await client.rpc(
+      'list_effective_available_membership_plans',
+    );
+    final rows = List<Map<String, dynamic>>.from(response).map((plan) {
+      return {...plan, 'id': plan['plan_id'], 'is_active': true};
+    });
     return classifyAvailableMembershipPlans(
-      List<Map<String, dynamic>>.from(rows)
+      rows
           .where((plan) => plan['name']?.toString().toLowerCase() != 'staff')
           .toList(),
       type,
@@ -63,28 +53,18 @@ class SupabaseAvailableMembershipsService
   Future<MembershipRequestResult> requestPlan(Map<String, dynamic> plan) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw StateError('Not authenticated');
-    final profile = await client
-        .from('profiles')
-        .select('gym_id')
-        .eq('id', userId)
-        .single();
-    final existing = await client
-        .from('membership_requests')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('plan_id', plan['id'])
-        .eq('status', 'pending')
-        .maybeSingle();
-    if (existing != null) return MembershipRequestResult.alreadyPending;
-    await client.from('membership_requests').insert({
-      'user_id': userId,
-      'gym_id': profile['gym_id'],
-      'plan_id': plan['id'],
-      'status': 'pending',
-      'payment_method': 'cash',
-      'payment_status': 'pending',
-    });
-    return MembershipRequestResult.sent;
+    try {
+      await client.rpc(
+        'create_cash_membership_request',
+        params: {'p_plan_id': plan['id']},
+      );
+      return MembershipRequestResult.sent;
+    } on PostgrestException catch (error) {
+      if (error.message.contains('request_pending')) {
+        return MembershipRequestResult.alreadyPending;
+      }
+      rethrow;
+    }
   }
 
   @override

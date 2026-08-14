@@ -1,3 +1,5 @@
+begin;
+
 do $$
 declare
   v_gym_a uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -15,10 +17,10 @@ begin
     (v_gym_a, 'Gym A'),
     (v_gym_b, 'Gym B');
 
-  insert into public.profiles(id, email, gym_id, is_active) values
-    (v_user_a, 'reaction-a@example.test', v_gym_a, true),
-    (v_user_b, 'reaction-b@example.test', v_gym_a, true),
-    (v_other, 'reaction-other@example.test', v_gym_b, true);
+  update public.profiles
+  set gym_id = case when id = v_other then v_gym_b else v_gym_a end,
+      is_active = true
+  where id in (v_user_a, v_user_b, v_other);
 
   insert into public.gym_members(gym_id, user_id, role, joined_at) values
     (v_gym_a, v_user_a, 'athlete', now()),
@@ -116,3 +118,5 @@ do $$ begin
     raise exception 'cross-gym reaction unexpectedly accepted';
   exception when insufficient_privilege then null; end;
 end $$;
+
+rollback;

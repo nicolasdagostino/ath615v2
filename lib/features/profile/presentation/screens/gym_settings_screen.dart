@@ -66,13 +66,10 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final profile = await Supabase.instance.client
-        .from('profiles')
-        .select('gym_id')
-        .eq('id', user.id)
-        .single();
-
-    _gymId = profile['gym_id']?.toString();
+    final effectiveGymId = await Supabase.instance.client.rpc(
+      'effective_gym_id',
+    );
+    _gymId = effectiveGymId?.toString();
 
     if (_gymId != null) {
       final gym = await Supabase.instance.client

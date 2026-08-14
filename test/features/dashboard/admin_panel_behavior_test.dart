@@ -105,6 +105,9 @@ void main() {
       isNot(contains("_formatDate(member['created_at']?.toString())")),
     );
     expect(source, contains('label: appStrings.assignPlan'));
+    expect(source, contains("'member-detail-assign-plan'"));
+    expect(source, contains("'membership-manage-plans'"));
+    expect(source, contains('AppFormSubmitButton('));
     expect(source, contains('backgroundColor: AppColors.primary'));
 
     final memberSource = File(

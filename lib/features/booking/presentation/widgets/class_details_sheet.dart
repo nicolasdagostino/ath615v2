@@ -255,12 +255,17 @@ class ClassDetailsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startsAt = DateTime.parse(klass['starts_at'].toString()).toLocal();
-    final title = klass['title']?.toString().trim().isNotEmpty == true
+    final storedTitle = klass['title']?.toString().trim().isNotEmpty == true
         ? klass['title'].toString().trim()
         : appStrings.classFallback;
+    final program = klass['programs'];
+    final programName = program is Map
+        ? program['name']?.toString().trim()
+        : null;
+    final title = programName?.isNotEmpty == true ? programName! : storedTitle;
     final duration = klass['duration_minutes'] as int? ?? 60;
     final capacity = klass['capacity'] as int? ?? 0;
-    final description = klass['description']?.toString().trim() ?? '';
+    final description = storedTitle == programName ? '' : storedTitle;
     final coach = klass['coach'];
     final coachMap = coach is Map ? Map<String, dynamic>.from(coach) : null;
     final coachId = klass['coach_id']?.toString();
@@ -333,9 +338,7 @@ class ClassDetailsView extends StatelessWidget {
                     style: AppTypography.bodySecondary(context),
                   ),
                 const _ClassDetailDivider(),
-                _ClassSectionTitle(
-                  label: appStrings.pick('Description', 'Descripción'),
-                ),
+                _ClassSectionTitle(label: appStrings.classDescriptionLabel),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   description.isEmpty
