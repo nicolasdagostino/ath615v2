@@ -249,12 +249,11 @@ void main() {
           children: [
             BookingDayChips(selectedDay: today, onSelected: (_) {}),
             WorkoutWeekCalendar(
-              weekStart: DateTime(2030, 8, 12),
               selectedDate: today,
+              today: today,
               locale: 'en',
               onSelected: (_) {},
-              onPreviousWeek: () {},
-              onNextWeek: () {},
+              onVisibleWeekChanged: (_) {},
             ),
           ],
         ),
@@ -495,4 +494,72 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('shared WOD editor remains usable with keyboard at 320px', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
+    final controller = TextEditingController(
+      text: List.generate(30, (index) => 'Long WOD line $index').join('\n'),
+    );
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 720),
+            viewInsets: EdgeInsets.only(bottom: 300),
+          ),
+          child: WorkoutFormScaffold(
+            title: 'Create WOD',
+            onClose: () {},
+            submit: WorkoutFormButton(
+              label: 'Create WOD',
+              loading: false,
+              enabled: true,
+              onPressed: () {},
+            ),
+            children: [
+              WorkoutFormFields(
+                loadingPrograms: false,
+                programs: const [
+                  {'id': 'crossfit', 'name': 'CrossFit'},
+                ],
+                programId: 'crossfit',
+                onProgramChanged: (_) {},
+                dateLabel: '17/08/2026',
+                onDateTap: () {},
+                imageTitle: 'Select image',
+                imageSubtitle: '',
+                onImageTap: () {},
+                descriptionController: controller,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('workout-content-field')),
+    );
+    await tester.pump();
+
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('workout-content-field')),
+    );
+    expect(field.minLines, 12);
+    expect(field.maxLines, 16);
+    expect(find.byKey(const ValueKey('workout-form-submit')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

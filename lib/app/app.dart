@@ -152,9 +152,6 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
 
   Future<void> _handlePushTap(RemoteMessage message) async {
     final type = message.data['type']?.toString();
-    final workoutId = message.data['workoutId'] ?? message.data['workout_id'];
-    final workoutDate =
-        message.data['workoutDate'] ?? message.data['workout_date'];
     final notificationId =
         message.data['notificationId'] ?? message.data['notification_id'];
 
@@ -166,13 +163,12 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
       ).markRead(notificationId.toString()).ignore();
     }
 
-    if ((workoutId != null && workoutId.toString().trim().isNotEmpty) ||
-        workoutDate != null) {
-      final date = await resolveWorkoutNotificationDate(
+    if (isWorkoutNotification(type: type, data: message.data)) {
+      final destination = await resolveWorkoutDestination(
         client: Supabase.instance.client,
         data: Map<String, dynamic>.from(message.data),
       );
-      _router.go(wodDestination(date ?? DateTime.now()));
+      _router.go(destination);
       return;
     }
 

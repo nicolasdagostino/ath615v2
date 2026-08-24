@@ -297,6 +297,40 @@ void main() {
     expect(find.byType(AppMessageDetailSheet), findsNothing);
   });
 
+  testWidgets('published workout uses embedded historical date directly', (
+    tester,
+  ) async {
+    DateTime? openedDate;
+    Map<String, dynamic>? resolvedData;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NotificationsScreen(
+          repository: _WorkoutNotificationsRepository(
+            type: 'workout_published',
+            data: const {
+              'workoutId': 'workout-modern',
+              'workoutDate': '2026-08-10',
+            },
+          ),
+          workoutDateResolver: (data) async {
+            resolvedData = data;
+            return DateTime.parse(data['workoutDate'].toString());
+          },
+          onOpenWorkoutDate: (date) => openedDate = date,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NOTIFICATIONS'));
+    await tester.pump();
+    await tester.tap(find.text('How did it go?'));
+    await tester.pumpAndSettle();
+
+    expect(resolvedData?['workoutDate'], '2026-08-10');
+    expect(openedDate, DateTime(2026, 8, 10));
+    expect(find.byType(AppMessageDetailSheet), findsNothing);
+  });
+
   for (final entry in <String, IconData>{
     'class_reminder': Icons.calendar_month_outlined,
     'birthday': Icons.cake_outlined,
@@ -346,14 +380,22 @@ class _MembershipRequestNotificationsRepository
 }
 
 class _WorkoutNotificationsRepository extends _FakeNotificationsRepository {
+  _WorkoutNotificationsRepository({
+    this.type = 'post_score_reminder',
+    this.data = const {'workoutId': 'workout-1'},
+  });
+
+  final String type;
+  final Map<String, dynamic> data;
+
   @override
   Future<List<NotificationRecord>> listOwn() async => [
     {
       'id': '10000000-0000-0000-0000-000000000088',
       'title': 'How did it go?',
       'body': 'Share your score.',
-      'type': 'post_score_reminder',
-      'data': <String, dynamic>{'workoutId': 'workout-1'},
+      'type': type,
+      'data': data,
       'scheduled_for': '2026-08-13T10:00:00Z',
       'sent_at': '2026-08-13T10:00:00Z',
       'read_at': null,

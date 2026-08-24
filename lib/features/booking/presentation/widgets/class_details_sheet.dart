@@ -356,7 +356,12 @@ class ClassDetailsView extends StatelessWidget {
                 const _ClassDetailDivider(),
                 _ClassAttendeesHeader(
                   label: appStrings.pick('Attendees', 'Asistentes'),
-                  count: '${bookings.length} / $capacity',
+                  count: capacity > 0
+                      ? appStrings.classOccupancySummary(
+                          bookings.length,
+                          capacity,
+                        )
+                      : bookings.length.toString(),
                   actions: attendeeActions,
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -655,7 +660,11 @@ class _ClassAttendeesHeader extends StatelessWidget {
     final titleAndCount = Row(
       children: [
         Expanded(child: _ClassSectionTitle(label: label)),
-        Text(count, style: AppTypography.helper(context)),
+        Text(
+          count,
+          textAlign: TextAlign.right,
+          style: AppTypography.helper(context),
+        ),
       ],
     );
     final attendeeActions = actions;

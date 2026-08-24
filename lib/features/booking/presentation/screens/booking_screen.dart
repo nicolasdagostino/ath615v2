@@ -286,6 +286,7 @@ class _BookingScreenState extends State<BookingScreen> {
       for (final c in classRows) {
         final classId = c['id'].toString();
         c['booked_count'] = bookedCountByClass[classId] ?? 0;
+        c['waitlist_count'] = waitlistCountByClass[classId] ?? 0;
       }
 
       if (!isCurrentLoad()) return;

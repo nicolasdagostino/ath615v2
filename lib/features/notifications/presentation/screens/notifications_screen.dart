@@ -177,11 +177,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
-    if (data is Map &&
-        (data['workoutId'] != null ||
-            data['workout_date'] != null ||
-            data['workoutDate'] != null)) {
-      final normalizedData = Map<String, dynamic>.from(data);
+    final normalizedData = data is Map
+        ? Map<String, dynamic>.from(data)
+        : <String, dynamic>{};
+    if (isWorkoutNotification(
+      type: notification['type'],
+      data: normalizedData,
+    )) {
       final date =
           await (widget.workoutDateResolver?.call(normalizedData) ??
               resolveWorkoutNotificationDate(

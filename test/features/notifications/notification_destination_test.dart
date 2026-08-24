@@ -13,4 +13,17 @@ void main() {
     expect(parseNotificationDate('13/08/2026'), isNull);
     expect(parseNotificationDate(null), isNull);
   });
+
+  test('only explicit workout notification types route to WOD', () {
+    for (final type in workoutNotificationTypes) {
+      expect(isWorkoutNotification(type: type, data: const {}), isTrue);
+    }
+    expect(
+      isWorkoutNotification(
+        type: 'class_reminder',
+        data: const {'workoutId': 'incidental-id'},
+      ),
+      isFalse,
+    );
+  });
 }

@@ -22,41 +22,8 @@ class BookingDayChips extends StatefulWidget {
 }
 
 class _BookingDayChipsState extends State<BookingDayChips> {
-  late final ScrollController _controller;
-
   static const int _pastDays = 14;
   static const int _futureDays = 14;
-  static const double _itemExtent = 52 + 8;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = ScrollController();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_controller.hasClients || !widget.canViewPastDays) return;
-      _controller.jumpTo(_pastDays * _itemExtent);
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant BookingDayChips oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (!oldWidget.canViewPastDays && widget.canViewPastDays) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_controller.hasClients) return;
-        _controller.jumpTo(_pastDays * _itemExtent);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   String _weekdayLabel(DateTime day) {
     const english = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     const spanish = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
@@ -83,8 +50,7 @@ class _BookingDayChipsState extends State<BookingDayChips> {
       weekdayLabel: _weekdayLabel,
       onSelected: widget.onSelected,
       accentColor: BookingColors.primary,
-      controller: _controller,
-      itemWidth: widget.canViewPastDays ? 52 : null,
+      today: today,
       itemSpacing: widget.canViewPastDays ? AppSpacing.xs : 0,
       selectedKey: const ValueKey('booking-selected-day'),
     );

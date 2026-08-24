@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../booking_colors.dart';
+import '../booking_occupancy.dart';
 
 class BookingClassCard extends StatelessWidget {
   const BookingClassCard({
@@ -61,7 +62,15 @@ class BookingClassCard extends StatelessWidget {
     final program = _programName();
     final primaryName = (program ?? title).toUpperCase();
     final showClassName = program != null && program != title;
-    final full = capacity > 0 && bookedCount >= capacity;
+    final occupancy = bookingOccupancy(
+      bookedCount: bookedCount,
+      capacity: capacity,
+    );
+    final occupancyLabel = switch (occupancy) {
+      BookingOccupancy.available => appStrings.bookingAvailable,
+      BookingOccupancy.almostFull => appStrings.bookingAlmostFull,
+      BookingOccupancy.full => appStrings.bookingFull,
+    };
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -119,12 +128,14 @@ class BookingClassCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
-                  '$bookedCount / $capacity ${appStrings.spots.toLowerCase()}',
+                  '$occupancyLabel · $bookedCount / $capacity ${appStrings.spots.toLowerCase()}',
                   style: AppTypography.bodySecondary(context).copyWith(
-                    color: full
+                    color: occupancy == BookingOccupancy.full
                         ? AppColors.textPrimary(context)
                         : AppColors.textSecondary(context),
-                    fontWeight: full ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: occupancy == BookingOccupancy.full
+                        ? FontWeight.w600
+                        : FontWeight.w500,
                   ),
                 ),
                 if (showClassName) ...[

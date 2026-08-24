@@ -127,45 +127,52 @@ class WorkoutFormScaffold extends StatelessWidget {
   final Widget submit;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.background(context),
-    body: Column(
-      children: [
-        WorkoutFormHeader(title: title, onClose: onClose),
-        Expanded(
-          child: ListView(
-            key: const ValueKey('workout-form-scroll'),
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+  Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return _WorkoutFormKeyboardState(
+      visible: keyboardVisible,
+      child: Scaffold(
+        backgroundColor: AppColors.background(context),
+        body: Column(
+          children: [
+            WorkoutFormHeader(title: title, onClose: onClose),
+            Expanded(
+              child: ListView(
+                key: const ValueKey('workout-form-scroll'),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screenX,
+                  AppSpacing.md,
+                  AppSpacing.screenX,
+                  keyboardVisible ? AppSpacing.md : AppSpacing.xl,
+                ),
+                children: children,
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.screenX,
-              AppSpacing.md,
+              keyboardVisible ? AppSpacing.xxs : AppSpacing.sm,
               AppSpacing.screenX,
-              AppSpacing.xl + MediaQuery.viewInsetsOf(context).bottom,
+              keyboardVisible ? AppSpacing.xs : AppSpacing.md,
             ),
-            children: children,
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
+              border: Border(
+                top: BorderSide(color: AppColors.border(context), width: 0.8),
+              ),
+            ),
+            child: submit,
           ),
         ),
-      ],
-    ),
-    bottomNavigationBar: SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenX,
-          AppSpacing.sm,
-          AppSpacing.screenX,
-          AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          border: Border(
-            top: BorderSide(color: AppColors.border(context), width: 0.8),
-          ),
-        ),
-        child: submit,
       ),
-    ),
-  );
+    );
+  }
 }
 
 class WorkoutFormHeader extends StatelessWidget {
@@ -221,110 +228,138 @@ class WorkoutFormFields extends StatelessWidget {
   final VoidCallback? onRemoveImage;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      WorkoutFormSectionLabel(label: appStrings.workoutProgram.toUpperCase()),
-      const SizedBox(height: AppSpacing.xs),
-      if (loadingPrograms)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Center(
-            child: CircularProgressIndicator(color: WorkoutColors.primary),
-          ),
-        )
-      else if (programs.isEmpty)
-        Text(appStrings.workoutNeedProgram, style: AppTypography.body(context))
-      else
-        DropdownButtonFormField<String>(
-          key: const ValueKey('workout-program-field'),
-          initialValue: programId,
-          isExpanded: true,
-          dropdownColor: AppColors.surface(context),
-          iconEnabledColor: AppColors.textSecondary(context),
-          style: appFormValueStyle(context),
-          decoration: workoutFormInput(
-            context,
-            hintText: appStrings.workoutProgram,
-            icon: Icons.fitness_center_outlined,
-          ),
-          items: programs
-              .map(
-                (program) => DropdownMenuItem<String>(
-                  value: program['id'].toString(),
-                  child: Text(
-                    program['name']?.toString() ?? appStrings.workoutProgram,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) {
+    final keyboardVisible = _WorkoutFormKeyboardState.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        WorkoutFormSectionLabel(label: appStrings.workoutProgram.toUpperCase()),
+        const SizedBox(height: AppSpacing.xs),
+        if (loadingPrograms)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: CircularProgressIndicator(color: WorkoutColors.primary),
+            ),
+          )
+        else if (programs.isEmpty)
+          Text(
+            appStrings.workoutNeedProgram,
+            style: AppTypography.body(context),
+          )
+        else
+          DropdownButtonFormField<String>(
+            key: const ValueKey('workout-program-field'),
+            initialValue: programId,
+            isExpanded: true,
+            dropdownColor: AppColors.surface(context),
+            iconEnabledColor: AppColors.textSecondary(context),
+            style: appFormValueStyle(context),
+            decoration: workoutFormInput(
+              context,
+              hintText: appStrings.workoutProgram,
+              icon: Icons.fitness_center_outlined,
+            ),
+            items: programs
+                .map(
+                  (program) => DropdownMenuItem<String>(
+                    value: program['id'].toString(),
+                    child: Text(
+                      program['name']?.toString() ?? appStrings.workoutProgram,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              )
-              .toList(),
-          onChanged: onProgramChanged,
+                )
+                .toList(),
+            onChanged: onProgramChanged,
+          ),
+        const SizedBox(height: AppSpacing.lg),
+        WorkoutFormSectionLabel(label: appStrings.workoutDate.toUpperCase()),
+        const SizedBox(height: AppSpacing.xs),
+        WorkoutFormActionRow(
+          key: const ValueKey('workout-date-field'),
+          icon: Icons.calendar_month_outlined,
+          title: dateLabel,
+          subtitle: '',
+          onTap: onDateTap,
         ),
-      const SizedBox(height: AppSpacing.lg),
-      WorkoutFormSectionLabel(label: appStrings.workoutDate.toUpperCase()),
-      const SizedBox(height: AppSpacing.xs),
-      WorkoutFormActionRow(
-        key: const ValueKey('workout-date-field'),
-        icon: Icons.calendar_month_outlined,
-        title: dateLabel,
-        subtitle: '',
-        onTap: onDateTap,
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      WorkoutFormSectionLabel(label: appStrings.workoutImage.toUpperCase()),
-      const SizedBox(height: AppSpacing.xs),
-      WorkoutFormActionRow(
-        key: const ValueKey('workout-image-field'),
-        icon: Icons.image_outlined,
-        title: imageTitle,
-        subtitle: imageSubtitle,
-        onTap: onImageTap,
-      ),
-      if (imagePreview != null) ...[
-        const SizedBox(height: AppSpacing.sm),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.input),
-          child: imagePreview!,
+        const SizedBox(height: AppSpacing.lg),
+        WorkoutFormSectionLabel(label: appStrings.workoutImage.toUpperCase()),
+        const SizedBox(height: AppSpacing.xs),
+        WorkoutFormActionRow(
+          key: const ValueKey('workout-image-field'),
+          icon: Icons.image_outlined,
+          title: imageTitle,
+          subtitle: imageSubtitle,
+          onTap: onImageTap,
         ),
-        if (onRemoveImage != null)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              key: const ValueKey('workout-remove-image'),
-              onPressed: onRemoveImage,
-              icon: const Icon(Icons.delete_outline_rounded, size: 19),
-              label: Text(appStrings.removeImage.toUpperCase()),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.danger,
-                textStyle: AppTypography.buttonLabel(context),
-                minimumSize: const Size(
-                  AppSizes.minimumTouchTarget,
-                  AppSizes.minimumTouchTarget,
+        if (imagePreview != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.input),
+            child: imagePreview!,
+          ),
+          if (onRemoveImage != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('workout-remove-image'),
+                onPressed: onRemoveImage,
+                icon: const Icon(Icons.delete_outline_rounded, size: 19),
+                label: Text(appStrings.removeImage.toUpperCase()),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  textStyle: AppTypography.buttonLabel(context),
+                  minimumSize: const Size(
+                    AppSizes.minimumTouchTarget,
+                    AppSizes.minimumTouchTarget,
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
-      const SizedBox(height: AppSpacing.lg),
-      WorkoutFormSectionLabel(
-        label: appStrings.workoutDescription.toUpperCase(),
-      ),
-      const SizedBox(height: AppSpacing.xs),
-      TextField(
-        key: const ValueKey('workout-content-field'),
-        controller: descriptionController,
-        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        minLines: 10,
-        maxLines: 18,
-        keyboardType: TextInputType.multiline,
-        style: appFormValueStyle(context),
-        decoration: workoutDescriptionInput(
-          context,
-          hintText: appStrings.workoutWriteWod,
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        WorkoutFormSectionLabel(
+          label: appStrings.workoutDescription.toUpperCase(),
         ),
-      ),
-    ],
-  );
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          key: const ValueKey('workout-content-field'),
+          controller: descriptionController,
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+          minLines: keyboardVisible ? 12 : 10,
+          maxLines: keyboardVisible ? 16 : 18,
+          scrollPadding: EdgeInsets.only(
+            bottom: keyboardVisible ? 76 : AppSpacing.xl,
+          ),
+          keyboardType: TextInputType.multiline,
+          style: appFormValueStyle(context),
+          decoration: workoutDescriptionInput(
+            context,
+            hintText: appStrings.workoutWriteWod,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WorkoutFormKeyboardState extends InheritedWidget {
+  const _WorkoutFormKeyboardState({
+    required this.visible,
+    required super.child,
+  });
+
+  final bool visible;
+
+  static bool of(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_WorkoutFormKeyboardState>()
+          ?.visible ??
+      false;
+
+  @override
+  bool updateShouldNotify(_WorkoutFormKeyboardState oldWidget) =>
+      oldWidget.visible != visible;
 }

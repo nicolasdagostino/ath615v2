@@ -1,5 +1,25 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const workoutNotificationTypes = <String>{
+  'workout_published',
+  'post_score_reminder',
+  'daily_workout',
+  'daily_workout_published',
+  'workout',
+};
+
+bool isWorkoutNotification({
+  required Object? type,
+  required Map<String, dynamic> data,
+}) {
+  final normalizedType = type?.toString().trim().toLowerCase();
+  if (normalizedType != null &&
+      workoutNotificationTypes.contains(normalizedType)) {
+    return true;
+  }
+  return data['source']?.toString() == 'post_score_reminder';
+}
+
 DateTime? parseNotificationDate(Object? raw) {
   final value = raw?.toString().trim();
   if (value == null || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
@@ -35,6 +55,15 @@ Future<DateTime?> resolveWorkoutNotificationDate({
   } catch (_) {
     return null;
   }
+}
+
+Future<String> resolveWorkoutDestination({
+  required SupabaseClient client,
+  required Map<String, dynamic> data,
+  DateTime? fallbackDate,
+}) async {
+  final date = await resolveWorkoutNotificationDate(client: client, data: data);
+  return wodDestination(date ?? fallbackDate ?? DateTime.now());
 }
 
 String _formatDate(DateTime date) =>

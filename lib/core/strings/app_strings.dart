@@ -674,6 +674,23 @@ class AppStrings {
       pick('Delete record error: $e', 'Error al eliminar record: $e');
   String get noClasses => pick('No classes', 'Sin clases');
   String get classFallback => pick('Class', 'Clase');
+  String get bookingAvailable => pick('Available', 'Disponible');
+  String get bookingAlmostFull => pick('Almost full', 'Casi completa');
+  String get classOccupancy => pick('Occupancy', 'Ocupación');
+  String classOccupancyBooked(int booked, int capacity) => pick(
+    '$booked of $capacity spots booked',
+    '$booked de $capacity plazas ocupadas',
+  );
+  String classOccupancyAvailable(int available) => available == 1
+      ? pick('1 spot available', '1 plaza disponible')
+      : pick('$available spots available', '$available plazas disponibles');
+  String classOccupancySummary(int booked, int capacity) {
+    final available = (capacity - booked).clamp(0, capacity);
+    return pick(
+      '$booked / $capacity\n$available available',
+      '$booked / $capacity\n$available disponibles',
+    );
+  }
 
   String get dashboardTitle => pick('Dashboard', 'Panel');
   String get dashboardSummary => pick('Today at a glance', 'Resumen de hoy');

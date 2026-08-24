@@ -17,6 +17,15 @@ import '../widgets/edit_workout_sheet.dart';
 import '../widgets/manage_programs_sheet.dart';
 import '../widgets/workout_card.dart';
 
+final List<DateTime> _workoutCalendarDays = List<DateTime>.unmodifiable(() {
+  final first = DateTime(2000, 1, 3);
+  final last = DateTime(2101, 1, 4);
+  return List.generate(
+    last.difference(first).inDays,
+    (index) => first.add(Duration(days: index)),
+  );
+}());
+
 class WorkoutsScreen extends StatefulWidget {
   const WorkoutsScreen({
     super.key,
@@ -140,10 +149,6 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
     if (selected != null) await _selectDate(selected);
   }
 
-  void _moveWeek(int offset) {
-    setState(() => _visibleWeek = _visibleWeek.add(Duration(days: offset * 7)));
-  }
-
   Future<void> _openPrograms() async {
     final gymId = _gymId;
     if (gymId == null) return;
@@ -220,12 +225,14 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
             height: AppSpacing.md,
           ),
           WorkoutWeekCalendar(
-            weekStart: _visibleWeek,
             selectedDate: _selectedDate,
+            today: _today,
             locale: appStrings.isEs ? 'es' : 'en',
             onSelected: _selectDate,
-            onPreviousWeek: () => _moveWeek(-1),
-            onNextWeek: () => _moveWeek(1),
+            onVisibleWeekChanged: (week) {
+              if (_visibleWeek == week) return;
+              setState(() => _visibleWeek = week);
+            },
           ),
           IconButton(
             key: const ValueKey('workout-open-month-calendar'),
@@ -442,41 +449,37 @@ class _WorkoutAdminIsland extends StatelessWidget {
 class WorkoutWeekCalendar extends StatelessWidget {
   const WorkoutWeekCalendar({
     super.key,
-    required this.weekStart,
     required this.selectedDate,
+    required this.today,
     required this.locale,
     required this.onSelected,
-    required this.onPreviousWeek,
-    required this.onNextWeek,
+    required this.onVisibleWeekChanged,
   });
 
-  final DateTime weekStart;
   final DateTime selectedDate;
+  final DateTime today;
   final String locale;
   final ValueChanged<DateTime> onSelected;
-  final VoidCallback onPreviousWeek;
-  final VoidCallback onNextWeek;
+  final ValueChanged<DateTime> onVisibleWeekChanged;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    key: const ValueKey('workout-week-calendar'),
-    onHorizontalDragEnd: (details) {
-      final velocity = details.primaryVelocity ?? 0;
-      if (velocity < -120) onNextWeek();
-      if (velocity > 120) onPreviousWeek();
-    },
-    child: AppWeekDateSelector(
-      days: List.generate(7, (index) => weekStart.add(Duration(days: index))),
-      selectedDay: selectedDate,
-      weekdayLabel: (date) =>
-          DateFormat('EEE', locale).format(date).toUpperCase(),
-      onSelected: onSelected,
-      accentColor: WorkoutColors.primary,
-      physics: const NeverScrollableScrollPhysics(),
-      itemKey: (date) =>
-          ValueKey('workout-day-${date.toIso8601String().substring(0, 10)}'),
-    ),
-  );
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: const ValueKey('workout-week-calendar'),
+      child: AppWeekDateSelector(
+        days: _workoutCalendarDays,
+        selectedDay: selectedDate,
+        today: today,
+        weekdayLabel: (date) =>
+            DateFormat('EEE', locale).format(date).toUpperCase(),
+        onSelected: onSelected,
+        accentColor: WorkoutColors.primary,
+        onVisibleWeekChanged: onVisibleWeekChanged,
+        itemKey: (date) =>
+            ValueKey('workout-day-${date.toIso8601String().substring(0, 10)}'),
+      ),
+    );
+  }
 }
 
 class _WorkoutEmptyState extends StatelessWidget {

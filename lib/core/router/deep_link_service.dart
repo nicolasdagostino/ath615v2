@@ -5,6 +5,8 @@ import 'package:app_links/app_links.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/notifications/navigation/notification_destination.dart';
+
 class DeepLinkService {
   DeepLinkService(this._router);
 
@@ -59,7 +61,11 @@ class DeepLinkService {
         lower.contains('workout') && workoutId != null && workoutId.isNotEmpty;
 
     if (isWorkoutLink) {
-      _router.push('/workout/$workoutId');
+      final destination = await resolveWorkoutDestination(
+        client: Supabase.instance.client,
+        data: {'workoutId': workoutId},
+      );
+      _router.go(destination);
       return;
     }
 
