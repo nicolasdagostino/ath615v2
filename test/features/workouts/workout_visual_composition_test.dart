@@ -515,6 +515,7 @@ void main() {
           offset: controller.text.length,
         );
         final descriptionFocusNode = FocusNode();
+        final formFieldsKey = GlobalKey();
         addTearDown(controller.dispose);
         addTearDown(descriptionFocusNode.dispose);
 
@@ -538,6 +539,7 @@ void main() {
                         ),
                         children: [
                           WorkoutFormFields(
+                            key: formFieldsKey,
                             loadingPrograms: false,
                             programs: const [
                               {'id': 'crossfit', 'name': 'CrossFit'},
@@ -566,13 +568,17 @@ void main() {
         await tester.pumpAndSettle();
 
         final fieldFinder = find.byKey(const ValueKey('workout-content-field'));
-        descriptionFocusNode.requestFocus();
+        await tester.ensureVisible(fieldFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(fieldFinder);
         await tester.pump();
-        controller.selection = TextSelection.collapsed(
-          offset: controller.text.length,
-        );
+        expect(descriptionFocusNode.hasFocus, isTrue);
+
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
         await tester.pumpAndSettle();
+        expect(descriptionFocusNode.hasFocus, isTrue);
+        await tester.enterText(fieldFinder, '${controller.text}\nBurpees');
+        await tester.pump();
 
         final submitFinder = find.byKey(const ValueKey('workout-form-submit'));
         final field = tester.widget<TextField>(fieldFinder);
@@ -587,7 +593,7 @@ void main() {
         expect(editorToSubmitGap, inInclusiveRange(0, 40));
         expect(submitRect.bottom, lessThanOrEqualTo(420));
         expect(descriptionFocusNode.hasFocus, isTrue);
-        expect(controller.selection.baseOffset, controller.text.length);
+        expect(controller.text, endsWith('Burpees'));
         expect(tester.takeException(), isNull);
       },
     );

@@ -4,12 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/locale/locale_controller.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -119,24 +117,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onGymSettings: () => context.push('/gym-settings'),
                       onNotifications: () =>
                           context.push('/notification-preferences'),
-                      onLanguage: () {
-                        final next =
-                            localeController.locale.languageCode == 'en'
-                            ? 'es'
-                            : 'en';
-                        localeController.setLanguage(next);
-                        setState(() {});
-                      },
-                      onAppearance: () async {
-                        await themeController.toggle();
-                        if (mounted) setState(() {});
-                      },
+                      onPreferences: () => context.push('/preferences'),
+                      onLegal: () => context.push('/legal'),
+                      onDocuments: () => context.push('/documents'),
+                      onPayments: () => context.push('/payments'),
                       onHelp: () => _openUrl('https://athlete615.com/support'),
-                      onPrivacy: () =>
-                          _openUrl('https://athlete615.com/privacy-policy'),
-                      onTerms: () => _openUrl(
-                        'https://athlete615.com/terms-and-conditions',
-                      ),
                       onLeaveGym: _leaveGym,
                       onLogout: _logout,
                     ),
@@ -181,11 +166,11 @@ class SettingsContent extends StatelessWidget {
     required this.onChangePassword,
     required this.onGymSettings,
     required this.onNotifications,
-    required this.onLanguage,
-    required this.onAppearance,
+    required this.onPreferences,
+    required this.onLegal,
+    required this.onDocuments,
+    required this.onPayments,
     required this.onHelp,
-    required this.onPrivacy,
-    required this.onTerms,
     required this.onLeaveGym,
     required this.onLogout,
   });
@@ -197,11 +182,11 @@ class SettingsContent extends StatelessWidget {
   final VoidCallback onChangePassword;
   final VoidCallback onGymSettings;
   final VoidCallback onNotifications;
-  final VoidCallback onLanguage;
-  final VoidCallback onAppearance;
+  final VoidCallback onPreferences;
+  final VoidCallback onLegal;
+  final VoidCallback onDocuments;
+  final VoidCallback onPayments;
   final VoidCallback onHelp;
-  final VoidCallback onPrivacy;
-  final VoidCallback onTerms;
   final VoidCallback onLeaveGym;
   final VoidCallback onLogout;
 
@@ -228,16 +213,10 @@ class SettingsContent extends StatelessWidget {
       ),
       const SizedBox(height: AppSpacing.md),
       _SettingsRow(
-        icon: Icons.language_outlined,
-        title:
-            '${appStrings.profileLanguage} · ${localeController.locale.languageCode.toUpperCase()}',
-        onTap: onLanguage,
-      ),
-      _SettingsRow(
-        icon: Icons.contrast_outlined,
-        title:
-            '${appStrings.appearance} · ${themeController.isDark ? appStrings.dark : appStrings.light}',
-        onTap: onAppearance,
+        key: const ValueKey('settings-preferences'),
+        icon: Icons.tune_rounded,
+        title: appStrings.preferences,
+        onTap: onPreferences,
       ),
       _SettingsRow(
         key: const ValueKey('settings-notifications'),
@@ -258,14 +237,22 @@ class SettingsContent extends StatelessWidget {
         onTap: onHelp,
       ),
       _SettingsRow(
-        icon: Icons.shield_outlined,
-        title: appStrings.profilePrivacyPolicy,
-        onTap: onPrivacy,
+        key: const ValueKey('settings-legal'),
+        icon: Icons.gavel_outlined,
+        title: appStrings.legal,
+        onTap: onLegal,
       ),
       _SettingsRow(
-        icon: Icons.description_outlined,
-        title: appStrings.profileTerms,
-        onTap: onTerms,
+        key: const ValueKey('settings-documents'),
+        icon: Icons.folder_outlined,
+        title: appStrings.documents,
+        onTap: onDocuments,
+      ),
+      _SettingsRow(
+        key: const ValueKey('settings-payments'),
+        icon: Icons.credit_card_outlined,
+        title: appStrings.payments,
+        onTap: onPayments,
       ),
       if (canLeaveGym) ...[
         const SizedBox(height: AppSpacing.md),

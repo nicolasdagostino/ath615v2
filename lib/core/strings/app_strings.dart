@@ -723,6 +723,20 @@ class AppStrings {
   String get classFallback => pick('Class', 'Clase');
   String get bookingAvailable => pick('Available', 'Disponible');
   String get bookingAlmostFull => pick('Almost full', 'Casi completa');
+  String classPlacesAvailable(int count) =>
+      pick('$count spots available', '$count plazas disponibles');
+  String viewReserved(int count) =>
+      pick('VIEW $count BOOKED', 'VER $count RESERVADOS');
+  String get classBriefing => pick('Class briefing', 'Información de clase');
+  String get firstClass => pick('First class', 'Primera clase');
+  String nextMilestone(int attended, int target) => pick(
+    '$attended CLASSES · NEXT $target',
+    '$attended CLASES · PRÓXIMA $target',
+  );
+  String lowCreditsRemaining(int count) =>
+      pick('$count CREDITS REMAINING', '$count CRÉDITOS RESTANTES');
+  String get membershipExpiresSoon =>
+      pick('Membership expires soon', 'Membresía vence pronto');
   String get classOccupancy => pick('Occupancy', 'Ocupación');
   String classOccupancyBooked(int booked, int capacity) => pick(
     '$booked of $capacity spots booked',
@@ -917,6 +931,54 @@ class AppStrings {
   String get appearance => pick('Appearance', 'Apariencia');
   String get dark => pick('Dark', 'Oscuro');
   String get light => pick('Light', 'Claro');
+  String get system => pick('System', 'Sistema');
+  String get preferences => pick('Preferences', 'Preferencias');
+  String get timeFormat => pick('Time format', 'Formato de hora');
+  String get twentyFourHours => pick('24 hours', '24 horas');
+  String get twelveHours => pick('12 hours', '12 horas');
+  String get units => pick('Units', 'Unidades');
+  String get metric => pick('Metric', 'Métrico');
+  String get imperial => pick('Imperial', 'Imperial');
+  String get syncCalendar => pick(
+    'Sync bookings with calendar',
+    'Sincronizar reservas con calendario',
+  );
+  String get legal => pick('Legal', 'Legal');
+  String get documents => pick('Documents', 'Documentos');
+  String get payments => pick('Payments', 'Pagos');
+  String get noDocuments => pick(
+    'You have no documents available.',
+    'No tienes documentos disponibles.',
+  );
+  String get paymentMethods => pick('Payment methods', 'Métodos de pago');
+  String get noPaymentMethods => pick(
+    'No reusable payment methods are available.',
+    'No hay métodos de pago reutilizables disponibles.',
+  );
+  String get invoicesAndHistory =>
+      pick('History and invoices', 'Historial y facturas');
+  String get noPaymentHistory => pick(
+    'No payment history or invoices are available.',
+    'No hay historial de pagos ni facturas disponibles.',
+  );
+  String get otherLegalDocuments =>
+      pick('Other legal documents', 'Otros documentos legales');
+  String get noOtherLegalDocuments => pick(
+    'No gym waiver or sales/refund documents are available yet.',
+    'Todavía no hay exenciones ni políticas de venta/devolución disponibles.',
+  );
+  String get myUpcomingBookings =>
+      pick('My upcoming bookings', 'Mis próximas reservas');
+  String get upcoming => pick('Upcoming', 'Próximas');
+  String get history => pick('History', 'Historial');
+  String get noUpcomingBookings =>
+      pick('You have no upcoming bookings.', 'No tienes próximas reservas.');
+  String get noBookingHistory => pick(
+    'You do not have any class history yet.',
+    'Aún no tienes historial de clases.',
+  );
+  String get reserved => pick('Reserved', 'Reservado');
+  String get loadMore => pick('Load more', 'Cargar más');
   String get currentMembership =>
       pick('Current membership', 'Membresía actual');
 

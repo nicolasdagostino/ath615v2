@@ -10,7 +10,7 @@ class LocaleController extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString(_key) ?? 'en';
+    final code = prefs.getString(_key) ?? 'es';
     _locale = Locale(code);
     notifyListeners();
   }

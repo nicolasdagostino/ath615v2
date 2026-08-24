@@ -67,6 +67,137 @@ void main() {
       find.byKey(const ValueKey('today-class-program-CrossFit')),
       findsOneWidget,
     );
+    expect(find.text('Available · 2/10'), findsOneWidget);
+    expect(find.text('8 spots available'), findsOneWidget);
+    expect(find.text('WAITLIST · 1'), findsOneWidget);
+    expect(find.text('Coach Alex'), findsOneWidget);
+  });
+
+  testWidgets('today classes share occupancy states and open class detail', (
+    tester,
+  ) async {
+    Map<String, dynamic>? opened;
+    List<Map<String, dynamic>> rows(int count) =>
+        List.generate(count, (index) => {'id': 'booking-$count-$index'});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: buildDashboardOverviewForTest(
+              todayClassRows: [
+                {
+                  'id': 'available',
+                  'title': 'Technique',
+                  'starts_at': '2026-08-14T17:00:00Z',
+                  'capacity': 10,
+                  'booking_rows': rows(4),
+                  'waitlist_rows': const [],
+                  'programs': {'name': 'CrossFit'},
+                },
+                {
+                  'id': 'almost',
+                  'title': 'Conditioning',
+                  'starts_at': '2026-08-14T18:00:00Z',
+                  'capacity': 10,
+                  'booking_rows': rows(8),
+                  'waitlist_rows': const [],
+                  'programs': {'name': 'WOD'},
+                },
+                {
+                  'id': 'full',
+                  'title': 'Strength',
+                  'starts_at': '2026-08-14T19:00:00Z',
+                  'capacity': 10,
+                  'booking_rows': rows(10),
+                  'waitlist_rows': const [],
+                  'programs': {'name': 'Weightlifting'},
+                },
+              ],
+              onOpenTodayClass: (klass) async => opened = klass,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Available · 4/10'), findsOneWidget);
+    expect(find.text('Almost full · 8/10'), findsOneWidget);
+    expect(find.text('Full · 10/10'), findsOneWidget);
+
+    await tester.tap(find.text('Technique'));
+    await tester.pump();
+    expect(opened?['id'], 'available');
+  });
+
+  testWidgets('class briefing prioritizes useful member context at 320 px', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Map<String, dynamic>? openedMember;
+    final members = <String, Map<String, dynamic>>{
+      'first': {'id': 'first', 'full_name': 'First Athlete'},
+      'milestone': {'id': 'milestone', 'full_name': 'Milestone Athlete'},
+      'low': {
+        'id': 'low',
+        'full_name': 'Low Credits',
+        'membership_type': 'class_pack',
+        'credits_remaining': 2,
+      },
+      'unlimited': {
+        'id': 'unlimited',
+        'full_name': 'Unlimited Athlete',
+        'membership_type': 'unlimited',
+        'credits_remaining': null,
+      },
+      'wait': {'id': 'wait', 'full_name': 'Waiting Athlete'},
+    };
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: buildTodayClassBriefingForTest(
+            klass: const {
+              'title': 'Technique',
+              'programs': {'name': 'CrossFit'},
+            },
+            bookings: const [
+              {'user_id': 'first'},
+              {'user_id': 'milestone'},
+              {'user_id': 'low'},
+              {'user_id': 'unlimited'},
+            ],
+            waitlist: const [
+              {'user_id': 'wait'},
+            ],
+            membersById: members,
+            attendedCounts: const {
+              'first': 0,
+              'milestone': 49,
+              'low': 12,
+              'unlimited': 12,
+            },
+            onOpenMember: (member) => openedMember = member,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('FIRST CLASS'), findsOneWidget);
+    expect(find.text('49 CLASSES · NEXT 50'), findsOneWidget);
+    expect(find.text('2 CREDITS REMAINING'), findsOneWidget);
+    expect(find.textContaining('CREDITS REMAINING'), findsOneWidget);
+    expect(find.text('WAITLIST'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('First Athlete'));
+    await tester.pump();
+    expect(openedMember?['id'], 'first');
   });
 
   testWidgets('communication uses shared form fields and primary submit CTA', (

@@ -33,11 +33,11 @@ void main() {
               onChangePassword: () {},
               onGymSettings: () {},
               onNotifications: () {},
-              onLanguage: () {},
-              onAppearance: () {},
+              onPreferences: () {},
+              onLegal: () {},
+              onDocuments: () {},
+              onPayments: () {},
               onHelp: () {},
-              onPrivacy: () {},
-              onTerms: () {},
               onLeaveGym: () {},
               onLogout: () {},
             ),
@@ -121,8 +121,7 @@ void main() {
       expect(find.text(appStrings.profileTraining), findsNothing);
       expect(find.text(appStrings.profileMembership), findsNothing);
       expect(find.text(appStrings.personalRecords), findsNothing);
-      expect(find.textContaining(appStrings.profileLanguage), findsOne);
-      expect(find.textContaining(appStrings.appearance), findsOne);
+      expect(find.byKey(const ValueKey('settings-preferences')), findsOne);
       expect(find.text(appStrings.gymInformation), findsOne);
       expect(find.byType(Divider), findsNothing);
       for (final label in [
@@ -146,8 +145,9 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text(appStrings.profileHelp), findsOne);
-      expect(find.text(appStrings.profilePrivacyPolicy), findsOne);
-      expect(find.text(appStrings.profileTerms), findsOne);
+      expect(find.byKey(const ValueKey('settings-legal')), findsOne);
+      expect(find.byKey(const ValueKey('settings-documents')), findsOne);
+      expect(find.byKey(const ValueKey('settings-payments')), findsOne);
       expect(find.byKey(const ValueKey('settings-logout')), findsOne);
       final logout = tester.widget<Text>(
         find.text(appStrings.profileLogout.toUpperCase()),

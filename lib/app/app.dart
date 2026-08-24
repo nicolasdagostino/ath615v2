@@ -12,6 +12,7 @@ import '../core/strings/app_strings.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
+import '../core/preferences/app_preferences_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/notifications/data/notifications_repository.dart';
 import '../features/notifications/navigation/notification_destination.dart';
@@ -275,7 +276,11 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([localeController, themeController]),
+      animation: Listenable.merge([
+        localeController,
+        themeController,
+        appPreferencesController,
+      ]),
       builder: (context, _) {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,

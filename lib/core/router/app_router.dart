@@ -20,6 +20,8 @@ import '../../features/profile/presentation/screens/training_screen.dart';
 import '../../features/profile/presentation/screens/membership_screen.dart';
 import '../../features/profile/presentation/screens/available_memberships_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
+import '../../features/profile/presentation/screens/preferences_screen.dart';
+import '../../features/profile/presentation/screens/settings_resource_screens.dart';
 import '../../features/profile/presentation/screens/gym_settings_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
@@ -99,6 +101,26 @@ class AppRouter {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/preferences',
+          builder: (context, state) => const PreferencesScreen(),
+        ),
+        GoRoute(
+          path: '/legal',
+          builder: (context, state) =>
+              const SettingsResourceScreen(type: SettingsResourceType.legal),
+        ),
+        GoRoute(
+          path: '/documents',
+          builder: (context, state) => const SettingsResourceScreen(
+            type: SettingsResourceType.documents,
+          ),
+        ),
+        GoRoute(
+          path: '/payments',
+          builder: (context, state) =>
+              const SettingsResourceScreen(type: SettingsResourceType.payments),
         ),
         GoRoute(
           path: '/gym-settings',

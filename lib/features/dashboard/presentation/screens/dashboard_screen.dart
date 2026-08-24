@@ -21,6 +21,8 @@ import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../booking/presentation/booking_occupancy.dart';
+import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
 import '../../../members/presentation/widgets/member_role_capability_section.dart';
@@ -70,6 +72,15 @@ String adminAccessRequestDisplayName(
 
 DateTime? adminGymMemberCreatedAt(Map<String, dynamic> member) =>
     DateTime.tryParse(member['gym_member_created_at']?.toString() ?? '');
+
+const int adminLowCreditsThreshold = 2;
+
+int? nextAdminAttendanceMilestone(int attendedCount) {
+  for (final target in const [50, 100, 200, 500]) {
+    if (attendedCount < target) return target;
+  }
+  return null;
+}
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
@@ -232,6 +243,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _openTodayClass(Map<String, dynamic> klass) async {
+    await showClassDetailsSheet(
+      context: context,
+      client: Supabase.instance.client,
+      klass: klass,
+      actionLabel: '',
+      onAction: null,
+    );
+  }
+
+  Future<void> _openTodayClassBriefing(Map<String, dynamic> klass) async {
+    final bookings = List<Map<String, dynamic>>.from(
+      klass['booking_rows'] as List? ?? const [],
+    );
+    final waitlist = List<Map<String, dynamic>>.from(
+      klass['waitlist_rows'] as List? ?? const [],
+    );
+    final userIds = <String>{
+      ...bookings.map((row) => row['user_id']?.toString()).whereType<String>(),
+      ...waitlist.map((row) => row['user_id']?.toString()).whereType<String>(),
+    }.toList();
+    final startsAt = DateTime.tryParse(
+      klass['starts_at']?.toString() ?? '',
+    )?.toUtc();
+    final attendedCounts = <String, int>{};
+    var attendanceCountsLoaded = userIds.isEmpty;
+
+    if (userIds.isNotEmpty && startsAt != null) {
+      try {
+        final attended = await Supabase.instance.client
+            .from('class_bookings')
+            .select('user_id, classes!inner(gym_id, starts_at)')
+            .inFilter('user_id', userIds)
+            .eq('status', 'attended')
+            .eq('classes.gym_id', _gymId!)
+            .lt('classes.starts_at', startsAt.toIso8601String());
+        for (final row in List<Map<String, dynamic>>.from(attended)) {
+          final userId = row['user_id']?.toString();
+          if (userId != null) {
+            attendedCounts[userId] = (attendedCounts[userId] ?? 0) + 1;
+          }
+        }
+        attendanceCountsLoaded = true;
+      } catch (_) {
+        attendanceCountsLoaded = false;
+      }
+    }
+
+    if (!mounted) return;
+    final membersById = {
+      for (final member in _members) member['id'].toString(): member,
+    };
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _TodayClassBriefingSheet(
+        klass: klass,
+        bookings: bookings,
+        waitlist: waitlist,
+        membersById: membersById,
+        attendedCounts: attendedCounts,
+        attendanceCountsLoaded: attendanceCountsLoaded,
+        onOpenMember: (member) {
+          Navigator.of(sheetContext).pop();
+          _openMember(member);
+        },
+      ),
+    );
+  }
+
   Future<void> _loadMembers() async {
     setState(() {
       _loadingMembers = true;
@@ -289,27 +372,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final classes = await Supabase.instance.client
           .from('classes')
-          .select('id, title, starts_at, capacity, programs(name)')
+          .select(
+            'id, title, starts_at, duration_minutes, capacity, recurring_id, '
+            'program_id, coach_id, programs(name, image_url), '
+            'coach:profiles!classes_coach_id_fkey(full_name, avatar_url)',
+          )
           .eq('gym_id', gymId)
           .gte('starts_at', dayStart.toUtc().toIso8601String())
-          .lt('starts_at', dayEnd.toUtc().toIso8601String());
+          .lt('starts_at', dayEnd.toUtc().toIso8601String())
+          .order('starts_at', ascending: true);
 
       final classRows = List<Map<String, dynamic>>.from(classes);
       final capacityCount = classRows.fold<int>(
         0,
         (sum, klass) => sum + ((klass['capacity'] as int?) ?? 0),
       );
-      var bookingsCount = 0;
+      final todayClassIds = classRows.map((row) => row['id']).toList();
+      final todayBookingRows = todayClassIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await Supabase.instance.client
+                  .from('class_bookings')
+                  .select(
+                    'id, class_id, user_id, guest_name, is_guest, status, created_at',
+                  )
+                  .inFilter('class_id', todayClassIds)
+                  .neq('status', 'cancelled'),
+            );
+      final todayWaitlistRows = todayClassIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await Supabase.instance.client
+                  .from('class_waitlist')
+                  .select('class_id, user_id, created_at')
+                  .inFilter('class_id', todayClassIds)
+                  .order('created_at', ascending: true),
+            );
+      final bookingsCount = todayBookingRows.length;
 
       for (final klass in classRows) {
-        final count = await Supabase.instance.client
-            .from('class_bookings')
-            .select('id')
-            .eq('class_id', klass['id'])
-            .neq('status', 'cancelled')
-            .count(CountOption.exact);
-
-        bookingsCount += count.count;
+        final classId = klass['id']?.toString();
+        klass['booking_rows'] = todayBookingRows
+            .where((row) => row['class_id']?.toString() == classId)
+            .toList();
+        klass['waitlist_rows'] = todayWaitlistRows
+            .where((row) => row['class_id']?.toString() == classId)
+            .toList();
       }
 
       final weekStart = dayStart.subtract(const Duration(days: 6));
@@ -323,6 +431,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final weeklyRows = List<Map<String, dynamic>>.from(weekClasses);
       final weeklyCounts = List<int>.filled(7, 0);
 
+      final weeklyClassIds = weeklyRows.map((row) => row['id']).toList();
+      final weeklyBookingRows = weeklyClassIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await Supabase.instance.client
+                  .from('class_bookings')
+                  .select('class_id')
+                  .inFilter('class_id', weeklyClassIds)
+                  .neq('status', 'cancelled'),
+            );
+      final weeklyCountByClass = <String, int>{};
+      for (final booking in weeklyBookingRows) {
+        final classId = booking['class_id']?.toString();
+        if (classId != null) {
+          weeklyCountByClass[classId] = (weeklyCountByClass[classId] ?? 0) + 1;
+        }
+      }
+
       for (final klass in weeklyRows) {
         final startsAt = DateTime.tryParse(
           klass['starts_at']?.toString() ?? '',
@@ -333,14 +459,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final index = startsAt.difference(weekStart).inDays;
         if (index < 0 || index > 6) continue;
 
-        final count = await Supabase.instance.client
-            .from('class_bookings')
-            .select('id')
-            .eq('class_id', klass['id'])
-            .neq('status', 'cancelled')
-            .count(CountOption.exact);
-
-        weeklyCounts[index] += count.count;
+        weeklyCounts[index] += weeklyCountByClass[klass['id']?.toString()] ?? 0;
       }
 
       if (!mounted) return;
@@ -2717,6 +2836,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _search.clear();
                           });
                         },
+                        onOpenTodayClass: _openTodayClass,
+                        onOpenTodayClassBriefing: _openTodayClassBriefing,
                         onSendNotification: _openCommunicationSheet,
                       ),
                   ],
@@ -3454,6 +3575,8 @@ class _DashboardOverview extends StatelessWidget {
     required this.onApproveMembership,
     required this.onRejectMembership,
     required this.onOpenWithoutPlan,
+    required this.onOpenTodayClass,
+    required this.onOpenTodayClassBriefing,
     required this.onSendNotification,
   });
 
@@ -3477,6 +3600,8 @@ class _DashboardOverview extends StatelessWidget {
   final Future<void> Function(Map<String, dynamic>) onApproveMembership;
   final Future<void> Function(Map<String, dynamic>) onRejectMembership;
   final VoidCallback onOpenWithoutPlan;
+  final Future<void> Function(Map<String, dynamic>) onOpenTodayClass;
+  final Future<void> Function(Map<String, dynamic>) onOpenTodayClassBriefing;
   final VoidCallback onSendNotification;
 
   @override
@@ -3563,6 +3688,8 @@ class _DashboardOverview extends StatelessWidget {
           bookings: todayBookings,
           capacity: todayCapacity,
           classRows: todayClassRows,
+          onOpenClass: onOpenTodayClass,
+          onOpenBriefing: onOpenTodayClassBriefing,
         ),
         const SizedBox(height: AppSpacing.lg),
         _WeeklyBookingsCard(bookings: weeklyBookings),
@@ -3582,6 +3709,9 @@ Widget buildDashboardOverviewForTest({
   int todayBookings = 8,
   int todayCapacity = 12,
   int todayClasses = 4,
+  List<Map<String, dynamic>>? todayClassRows,
+  Future<void> Function(Map<String, dynamic>)? onOpenTodayClass,
+  Future<void> Function(Map<String, dynamic>)? onOpenTodayClassBriefing,
 }) {
   Future<void> noAction(Map<String, dynamic> _) async {}
 
@@ -3591,13 +3721,25 @@ Widget buildDashboardOverviewForTest({
     todayBookings: todayBookings,
     todayCapacity: todayCapacity,
     todayClasses: todayClasses,
-    todayClassRows: const [
-      {
-        'title': 'WOD',
-        'starts_at': '2026-08-14T18:30:00Z',
-        'programs': {'name': 'CrossFit'},
-      },
-    ],
+    todayClassRows:
+        todayClassRows ??
+        const [
+          {
+            'id': 'class-1',
+            'title': 'WOD',
+            'starts_at': '2026-08-14T18:30:00Z',
+            'capacity': 10,
+            'booking_rows': [
+              {'id': 'booking-1', 'user_id': 'member-1'},
+              {'id': 'booking-2', 'user_id': 'member-2'},
+            ],
+            'waitlist_rows': [
+              {'user_id': 'member-3'},
+            ],
+            'programs': {'name': 'CrossFit'},
+            'coach': {'full_name': 'Coach Alex'},
+          },
+        ],
     joinRequests: const [
       {'id': 'request-1', 'member_name': 'Alex Member'},
     ],
@@ -3627,9 +3769,28 @@ Widget buildDashboardOverviewForTest({
     onApproveMembership: noAction,
     onRejectMembership: noAction,
     onOpenWithoutPlan: () {},
+    onOpenTodayClass: onOpenTodayClass ?? noAction,
+    onOpenTodayClassBriefing: onOpenTodayClassBriefing ?? noAction,
     onSendNotification: () {},
   );
 }
+
+@visibleForTesting
+Widget buildTodayClassBriefingForTest({
+  required Map<String, dynamic> klass,
+  required List<Map<String, dynamic>> bookings,
+  required List<Map<String, dynamic>> waitlist,
+  required Map<String, Map<String, dynamic>> membersById,
+  required Map<String, int> attendedCounts,
+  ValueChanged<Map<String, dynamic>>? onOpenMember,
+}) => _TodayClassBriefingSheet(
+  klass: klass,
+  bookings: bookings,
+  waitlist: waitlist,
+  membersById: membersById,
+  attendedCounts: attendedCounts,
+  onOpenMember: onOpenMember ?? (_) {},
+);
 
 class _ActionRequiredCard extends StatelessWidget {
   const _ActionRequiredCard({
@@ -4238,12 +4399,16 @@ class _TodayClassesSummary extends StatelessWidget {
     required this.bookings,
     required this.capacity,
     required this.classRows,
+    required this.onOpenClass,
+    required this.onOpenBriefing,
   });
 
   final int classes;
   final int bookings;
   final int capacity;
   final List<Map<String, dynamic>> classRows;
+  final Future<void> Function(Map<String, dynamic>) onOpenClass;
+  final Future<void> Function(Map<String, dynamic>) onOpenBriefing;
 
   @override
   Widget build(BuildContext context) {
@@ -4302,7 +4467,16 @@ class _TodayClassesSummary extends StatelessWidget {
             ],
           ),
         ),
-        if (classRows.isNotEmpty) ...[
+        if (classRows.isEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            appStrings.pick(
+              'There are no classes scheduled today.',
+              'No hay clases programadas hoy.',
+            ),
+            style: AppTypography.bodySecondary(context),
+          ),
+        ] else ...[
           const SizedBox(height: AppSpacing.xs),
           ...classRows.map((klass) {
             final rawProgram = klass['programs'];
@@ -4312,49 +4486,135 @@ class _TodayClassesSummary extends StatelessWidget {
             final startsAt = DateTime.tryParse(
               klass['starts_at']?.toString() ?? '',
             )?.toLocal();
-            return Container(
-              constraints: const BoxConstraints(
-                minHeight: AppSizes.minimumTouchTarget,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.border(context),
-                    width: .7,
+            final coach = klass['coach'];
+            final coachName = coach is Map
+                ? coach['full_name']?.toString().trim()
+                : null;
+            final bookingCount = (klass['booking_rows'] as List?)?.length ?? 0;
+            final waitlistCount =
+                (klass['waitlist_rows'] as List?)?.length ?? 0;
+            final capacity = klass['capacity'] as int? ?? 0;
+            final occupancy = bookingOccupancy(
+              bookedCount: bookingCount,
+              capacity: capacity,
+            );
+            final occupancyLabel = switch (occupancy) {
+              BookingOccupancy.available => appStrings.bookingAvailable,
+              BookingOccupancy.almostFull => appStrings.bookingAlmostFull,
+              BookingOccupancy.full => appStrings.bookingFull,
+            };
+            final available = capacity > 0
+                ? (capacity - bookingCount).clamp(0, capacity)
+                : null;
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onOpenClass(klass),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: AppSizes.minimumTouchTarget,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: AppColors.border(context),
+                        width: .7,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 52,
+                        child: Text(
+                          startsAt == null
+                              ? '—'
+                              : DateFormat('HH:mm').format(startsAt),
+                          style: AppTypography.body(context),
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (program?.isNotEmpty == true)
+                              Text(
+                                program!.toUpperCase(),
+                                key: ValueKey('today-class-program-$program'),
+                                style: AppTypography.sectionTitle(context),
+                              ),
+                            Text(
+                              klass['title']?.toString() ??
+                                  appStrings.classFallback,
+                              style: AppTypography.bodySecondary(context),
+                            ),
+                            if (coachName?.isNotEmpty == true)
+                              Text(
+                                coachName!,
+                                style: AppTypography.helper(context),
+                              ),
+                            const SizedBox(height: AppSpacing.xxs),
+                            Wrap(
+                              spacing: AppSpacing.xs,
+                              runSpacing: AppSpacing.xxs,
+                              children: [
+                                Text(
+                                  capacity > 0
+                                      ? '$occupancyLabel · $bookingCount/$capacity'
+                                      : occupancyLabel,
+                                  key: ValueKey(
+                                    'today-class-occupancy-${klass['id']}',
+                                  ),
+                                  style: AppTypography.helper(context).copyWith(
+                                    color: occupancy == BookingOccupancy.full
+                                        ? AppColors.danger
+                                        : AppColors.textSecondary(context),
+                                  ),
+                                ),
+                                if (available != null && available > 0)
+                                  Text(
+                                    appStrings.classPlacesAvailable(available),
+                                    style: AppTypography.helper(context),
+                                  ),
+                                if (waitlistCount > 0)
+                                  Text(
+                                    '${appStrings.waitlist} · $waitlistCount',
+                                    style: AppTypography.helper(context),
+                                  ),
+                              ],
+                            ),
+                            if (bookingCount > 0 || waitlistCount > 0)
+                              TextButton(
+                                key: ValueKey(
+                                  'today-class-briefing-${klass['id']}',
+                                ),
+                                onPressed: () => onOpenBriefing(klass),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(0, 36),
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  appStrings.viewReserved(bookingCount),
+                                  style: AppTypography.buttonLabel(
+                                    context,
+                                  ).copyWith(color: AppColors.primary),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 52,
-                    child: Text(
-                      startsAt == null
-                          ? '—'
-                          : DateFormat('HH:mm').format(startsAt),
-                      style: AppTypography.body(context),
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (program?.isNotEmpty == true)
-                          Text(
-                            program!.toUpperCase(),
-                            key: ValueKey('today-class-program-$program'),
-                            style: AppTypography.sectionTitle(context),
-                          ),
-                        Text(
-                          klass['title']?.toString() ??
-                              appStrings.classFallback,
-                          style: AppTypography.bodySecondary(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             );
           }),
@@ -4362,6 +4622,325 @@ class _TodayClassesSummary extends StatelessWidget {
       ],
     );
   }
+}
+
+class _TodayClassBriefingSheet extends StatelessWidget {
+  const _TodayClassBriefingSheet({
+    required this.klass,
+    required this.bookings,
+    required this.waitlist,
+    required this.membersById,
+    required this.attendedCounts,
+    this.attendanceCountsLoaded = true,
+    required this.onOpenMember,
+  });
+
+  final Map<String, dynamic> klass;
+  final List<Map<String, dynamic>> bookings;
+  final List<Map<String, dynamic>> waitlist;
+  final Map<String, Map<String, dynamic>> membersById;
+  final Map<String, int> attendedCounts;
+  final bool attendanceCountsLoaded;
+  final ValueChanged<Map<String, dynamic>> onOpenMember;
+
+  String? _insight(Map<String, dynamic> member, int attendedCount) {
+    if (attendanceCountsLoaded && attendedCount == 0) {
+      return appStrings.firstClass.toUpperCase();
+    }
+
+    final milestone = attendanceCountsLoaded
+        ? nextAdminAttendanceMilestone(attendedCount)
+        : null;
+    if (milestone != null && milestone - attendedCount == 1) {
+      return appStrings.nextMilestone(attendedCount, milestone);
+    }
+
+    final membershipType = member['membership_type']?.toString();
+    final credits = member['credits_remaining'];
+    if (membershipType != 'unlimited' &&
+        credits is num &&
+        credits >= 0 &&
+        credits <= adminLowCreditsThreshold) {
+      return appStrings.lowCreditsRemaining(credits.toInt());
+    }
+
+    final expiry = DateTime.tryParse(
+      member['membership_expires_at']?.toString() ?? '',
+    )?.toLocal();
+    if (expiry != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
+      final days = expiryDay.difference(today).inDays;
+      if (days >= 0 && days <= 7) {
+        return appStrings.membershipExpiresSoon.toUpperCase();
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final program = klass['programs'];
+    final programName = program is Map
+        ? program['name']?.toString().trim()
+        : null;
+    final title = programName?.isNotEmpty == true
+        ? programName!
+        : appStrings.classFallback;
+
+    return FractionallySizedBox(
+      heightFactor: .88,
+      child: Material(
+        color: AppColors.background(context),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadii.sheet),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.screenX,
+                AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    color: AppColors.textPrimary(context),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          appStrings.classBriefing.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: AppTypography.sectionTitle(context),
+                        ),
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.helper(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.minimumTouchTarget),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: AppColors.border(context)),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenX,
+                  AppSpacing.md,
+                  AppSpacing.screenX,
+                  AppSpacing.xl,
+                ),
+                children: [
+                  _ClassSectionLabel(
+                    label: appStrings.pick('Booked', 'Reservados'),
+                    count: bookings.length,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  if (bookings.isEmpty)
+                    _BriefingEmpty(label: appStrings.noBookingsYet)
+                  else
+                    ...bookings.map((booking) {
+                      final userId = booking['user_id']?.toString();
+                      final member = userId == null
+                          ? null
+                          : membersById[userId];
+                      final rawName = booking['is_guest'] == true
+                          ? booking['guest_name']?.toString()
+                          : member?['full_name']?.toString();
+                      return _BriefingPersonRow(
+                        name: rawName?.trim().isNotEmpty == true
+                            ? rawName!.trim()
+                            : appStrings.member,
+                        avatarUrl: member?['avatar_url']?.toString(),
+                        insight: member == null
+                            ? null
+                            : _insight(member, attendedCounts[userId] ?? 0),
+                        onTap: member == null
+                            ? null
+                            : () => onOpenMember(member),
+                      );
+                    }),
+                  if (waitlist.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _ClassSectionLabel(
+                      label: appStrings.waitlist,
+                      count: waitlist.length,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    ...waitlist.asMap().entries.map((entry) {
+                      final userId = entry.value['user_id']?.toString();
+                      final member = userId == null
+                          ? null
+                          : membersById[userId];
+                      return _BriefingPersonRow(
+                        name:
+                            member?['full_name']
+                                    ?.toString()
+                                    .trim()
+                                    .isNotEmpty ==
+                                true
+                            ? member!['full_name'].toString().trim()
+                            : appStrings.member,
+                        avatarUrl: member?['avatar_url']?.toString(),
+                        leading: '${entry.key + 1}',
+                        onTap: member == null
+                            ? null
+                            : () => onOpenMember(member),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClassSectionLabel extends StatelessWidget {
+  const _ClassSectionLabel({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          label.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
+        ),
+      ),
+      Text('$count', style: AppTypography.helper(context)),
+    ],
+  );
+}
+
+class _BriefingEmpty extends StatelessWidget {
+  const _BriefingEmpty({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+    child: Text(label, style: AppTypography.bodySecondary(context)),
+  );
+}
+
+class _BriefingPersonRow extends StatelessWidget {
+  const _BriefingPersonRow({
+    required this.name,
+    this.avatarUrl,
+    this.insight,
+    this.leading,
+    this.onTap,
+  });
+
+  final String name;
+  final String? avatarUrl;
+  final String? insight;
+  final String? leading;
+  final VoidCallback? onTap;
+
+  String get _initials {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    return parts
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0])
+        .join()
+        .toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 58),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppColors.border(context), width: .7),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (leading != null) ...[
+              SizedBox(
+                width: 24,
+                child: Text(leading!, style: AppTypography.helper(context)),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            CircleAvatar(
+              radius: 18,
+              foregroundImage: avatarUrl?.trim().isNotEmpty == true
+                  ? NetworkImage(avatarUrl!)
+                  : null,
+              backgroundColor: AppColors.surfaceAlt(context),
+              child: avatarUrl?.trim().isNotEmpty == true
+                  ? null
+                  : Text(
+                      _initials.isEmpty ? 'M' : _initials,
+                      style: AppTypography.buttonLabel(
+                        context,
+                      ).copyWith(color: AppColors.primary),
+                    ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(context),
+                  ),
+                  if (insight != null)
+                    Text(
+                      insight!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.helper(
+                        context,
+                      ).copyWith(color: AppColors.primary),
+                    ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary(context),
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _WeeklyBookingsCard extends StatelessWidget {

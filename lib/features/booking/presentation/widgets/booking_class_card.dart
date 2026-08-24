@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/preferences/app_preferences_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -33,7 +34,10 @@ class BookingClassCard extends StatelessWidget {
 
   String _timeLabel(String raw) {
     final dt = DateTime.parse(raw).toLocal();
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return appPreferencesController.formatTime(
+      dt,
+      locale: appStrings.isEs ? 'es' : 'en',
+    );
   }
 
   String? _programName() {

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
+import '../../../../core/preferences/app_preferences_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -249,8 +250,10 @@ class ClassDetailsView extends StatelessWidget {
     return DateFormat('EEE, d MMMM', locale).format(date);
   }
 
-  String _time(DateTime date) =>
-      '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  String _time(DateTime date) => appPreferencesController.formatTime(
+    date,
+    locale: appStrings.isEs ? 'es' : 'en',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -428,7 +431,8 @@ class ClassDetailsView extends StatelessWidget {
               ],
             ),
           ),
-          _ClassDetailBottomAction(label: actionLabel, onPressed: onAction),
+          if (onAction != null && actionLabel.trim().isNotEmpty)
+            _ClassDetailBottomAction(label: actionLabel, onPressed: onAction),
         ],
       ),
     );

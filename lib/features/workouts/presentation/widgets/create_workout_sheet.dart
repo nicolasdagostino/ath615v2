@@ -54,6 +54,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   late DateTime _date;
   final _description = TextEditingController();
   final _descriptionFocusNode = FocusNode();
+  final _formFieldsKey = GlobalKey();
   File? _image;
 
   @override
@@ -177,6 +178,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
       ),
       children: [
         WorkoutFormFields(
+          key: _formFieldsKey,
           loadingPrograms: _loadingPrograms,
           programs: _programs,
           programId: _programId,

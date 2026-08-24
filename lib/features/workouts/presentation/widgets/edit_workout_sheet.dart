@@ -68,6 +68,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
   late DateTime _date;
   late final TextEditingController _description;
   final _descriptionFocusNode = FocusNode();
+  final _formFieldsKey = GlobalKey();
   File? _image;
   String? _imageUrl;
 
@@ -195,6 +196,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
     ),
     children: [
       WorkoutFormFields(
+        key: _formFieldsKey,
         loadingPrograms: _loadingPrograms,
         programs: _programs,
         programId: _programId,

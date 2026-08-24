@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
@@ -20,6 +21,7 @@ import '../widgets/booking_day_chips.dart';
 import '../widgets/booking_header.dart';
 import '../widgets/create_class_sheet.dart';
 import '../widgets/edit_class_sheet.dart';
+import 'my_reservations_screen.dart';
 import '../booking_colors.dart';
 import '../../data/class_cancellation_service.dart';
 
@@ -733,7 +735,35 @@ class _BookingScreenState extends State<BookingScreen> {
                   padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenX),
                   child: BookingClassesChip(),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.sm),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenX,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const ValueKey('booking-my-reservations'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MyReservationsScreen(),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.event_available_outlined,
+                        size: 19,
+                      ),
+                      label: Text(
+                        appStrings.myUpcomingBookings.toUpperCase(),
+                        style: AppTypography.body(context).copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenX,
