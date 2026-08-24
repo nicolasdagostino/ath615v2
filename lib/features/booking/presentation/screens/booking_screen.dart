@@ -21,6 +21,7 @@ import '../widgets/booking_header.dart';
 import '../widgets/create_class_sheet.dart';
 import '../widgets/edit_class_sheet.dart';
 import '../booking_colors.dart';
+import '../../data/class_cancellation_service.dart';
 
 Future<bool> completeClassDeletion({
   required Future<void> Function() delete,
@@ -510,28 +511,56 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<bool> _confirmDeleteClass({
-    required String title,
-    required String message,
+    required Map<String, dynamic> klass,
+    required ClassCancellationScope scope,
+    required String fallbackMessage,
   }) async {
+    final impact = await ClassCancellationService(
+      _client,
+    ).loadImpact(classId: klass['id'].toString(), scope: scope);
+    if (!mounted) return false;
+    final message = impact.hasAffectedMembers
+        ? appStrings.classCancellationImpact(
+            classes: impact.classesCount,
+            bookings: impact.bookingsCount,
+            waitlist: impact.waitlistCount,
+            credits: impact.creditsToRefund,
+            future: scope == ClassCancellationScope.future,
+          )
+        : fallbackMessage;
     return showAppConfirmationDialog(
       context: context,
-      title: title,
+      title: appStrings.cancelClassTitle,
       message: message,
-      confirmLabel: appStrings.delete,
-      cancelLabel: appStrings.cancel,
+      confirmLabel: appStrings.confirmCancelClass,
+      cancelLabel: appStrings.doNotCancelClass,
     );
   }
 
   Future<void> _deleteClass(Map<String, dynamic> klass) async {
-    final confirmed = await _confirmDeleteClass(
-      title: appStrings.deleteClassTitle,
-      message: appStrings.deleteOnlyThisClassMessage,
-    );
+    bool confirmed;
+    try {
+      confirmed = await _confirmDeleteClass(
+        klass: klass,
+        scope: ClassCancellationScope.single,
+        fallbackMessage: appStrings.deleteOnlyThisClassMessage,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appStrings.deleteClassError(error))),
+        );
+      }
+      return;
+    }
     if (!confirmed) return;
 
     await completeClassDeletion(
       delete: () async {
-        await _client.from('classes').delete().eq('id', klass['id']);
+        await ClassCancellationService(_client).cancel(
+          classId: klass['id'].toString(),
+          scope: ClassCancellationScope.single,
+        );
       },
       closeDetail: () {
         if (mounted) Navigator.of(context).pop();
@@ -547,19 +576,29 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _deleteFutureClasses(Map<String, dynamic> klass) async {
-    final confirmed = await _confirmDeleteClass(
-      title: appStrings.deleteFutureClassesTitle,
-      message: appStrings.deleteThisAndFutureMessage,
-    );
+    bool confirmed;
+    try {
+      confirmed = await _confirmDeleteClass(
+        klass: klass,
+        scope: ClassCancellationScope.future,
+        fallbackMessage: appStrings.deleteThisAndFutureMessage,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appStrings.deleteClassError(error))),
+        );
+      }
+      return;
+    }
     if (!confirmed) return;
 
     await completeClassDeletion(
       delete: () async {
-        await _client
-            .from('classes')
-            .delete()
-            .eq('recurring_id', klass['recurring_id'])
-            .gte('starts_at', klass['starts_at']);
+        await ClassCancellationService(_client).cancel(
+          classId: klass['id'].toString(),
+          scope: ClassCancellationScope.future,
+        );
       },
       closeDetail: () {
         if (mounted) Navigator.of(context).pop();

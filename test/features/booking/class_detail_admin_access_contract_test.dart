@@ -14,12 +14,16 @@ void main() {
       expect(source, contains('adminActions: _canManageAttendance'));
       expect(source, contains('attendeeActions: _canManageAttendance'));
       expect(source, contains('onTap: () => _deleteClass(klass)'));
-      expect(source, contains('final confirmed = await _confirmDeleteClass'));
+      expect(source, contains('confirmed = await _confirmDeleteClass'));
       expect(source, contains('if (!confirmed) return;'));
       expect(source, contains('completeClassDeletion('));
       expect(source, contains('Navigator.of(context).pop()'));
       expect(source, contains('refreshSelectedDate: () => _load'));
-      expect(source, contains("from('classes').delete()"));
+      expect(source, contains('.loadImpact('));
+      expect(source, contains('ClassCancellationScope.single'));
+      expect(source, contains('ClassCancellationScope.future'));
+      expect(source, contains('ClassCancellationService(_client).cancel'));
+      expect(source, isNot(contains("from('classes').delete()")));
       expect(source, contains("if (klass['recurring_id'] != null)"));
       expect(source, contains('onTap: () => _deleteFutureClasses(klass)'));
       expect(source, contains('showAttendanceAddMember'));

@@ -431,6 +431,53 @@ class AppStrings {
     'Could not delete the class: $error',
     'No se pudo eliminar la clase: $error',
   );
+  String get cancelClassTitle => pick('Cancel class', 'Cancelar clase');
+  String get doNotCancelClass => pick('Do not cancel', 'No cancelar');
+  String get confirmCancelClass =>
+      pick('Yes, cancel class', 'Sí, cancelar clase');
+  String classCancellationImpact({
+    required int classes,
+    required int bookings,
+    required int waitlist,
+    required int credits,
+    required bool future,
+  }) {
+    final classLine = future
+        ? pick(
+            'This action will cancel $classes future classes.',
+            'Esta acción cancelará $classes clases futuras.',
+          )
+        : '';
+    final bookingsLine = bookings == 1
+        ? pick('1 booking will be affected.', 'Afectará 1 reserva.')
+        : pick(
+            '$bookings bookings will be affected.',
+            'Afectará $bookings reservas.',
+          );
+    final waitlistLine = waitlist == 1
+        ? pick(
+            '1 person is on the waitlist.',
+            '1 persona está en lista de espera.',
+          )
+        : pick(
+            '$waitlist people are on the waitlist.',
+            '$waitlist personas están en lista de espera.',
+          );
+    final creditsLine = credits == 0
+        ? ''
+        : credits == 1
+        ? pick('1 credit will be refunded.', 'Se devolverá 1 crédito.')
+        : pick(
+            '$credits credits will be refunded.',
+            'Se devolverán $credits créditos.',
+          );
+    return [
+      classLine,
+      bookingsLine,
+      waitlistLine,
+      creditsLine,
+    ].where((line) => line.isNotEmpty).join('\n');
+  }
 
   String get managePlans => pick('Manage plans', 'Gestionar planes');
   String get plan => pick('Plan', 'Plan');

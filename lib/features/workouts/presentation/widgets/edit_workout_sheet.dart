@@ -67,6 +67,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
   late String _programId;
   late DateTime _date;
   late final TextEditingController _description;
+  final _descriptionFocusNode = FocusNode();
   File? _image;
   String? _imageUrl;
 
@@ -88,6 +89,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
   @override
   void dispose() {
     _description.dispose();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
@@ -224,6 +226,7 @@ class _EditWorkoutSheetState extends State<_EditWorkoutSheet> {
                 _imageUrl = null;
               }),
         descriptionController: _description,
+        descriptionFocusNode: _descriptionFocusNode,
       ),
     ],
   );

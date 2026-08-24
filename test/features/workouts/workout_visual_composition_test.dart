@@ -9,6 +9,7 @@ import 'package:ath615v2/features/workouts/presentation/widgets/workout_card.dar
 import 'package:ath615v2/features/workouts/presentation/widgets/workout_form_controls.dart';
 import 'package:ath615v2/features/workouts/presentation/widgets/workouts_header.dart';
 import 'package:ath615v2/core/widgets/app_detail_header.dart';
+import 'package:ath615v2/core/widgets/app_large_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -495,71 +496,100 @@ void main() {
     });
   }
 
-  testWidgets('shared WOD editor remains usable with keyboard at 320px', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 720);
-    tester.view.devicePixelRatio = 1;
-    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
-    final controller = TextEditingController(
-      text: List.generate(30, (index) => 'Long WOD line $index').join('\n'),
-    );
-    controller.selection = TextSelection.collapsed(
-      offset: controller.text.length,
-    );
-    addTearDown(controller.dispose);
+  for (final scenario in const [
+    (title: 'Create WOD', submit: 'Create WOD'),
+    (title: 'Edit WOD', submit: 'Save changes'),
+  ]) {
+    testWidgets(
+      '${scenario.title} uses the keyboard viewport without a CTA gap at 320px',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 720);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
+        final controller = TextEditingController(
+          text: List.generate(30, (index) => 'Long WOD line $index').join('\n'),
+        );
+        controller.selection = TextSelection.collapsed(
+          offset: controller.text.length,
+        );
+        final descriptionFocusNode = FocusNode();
+        addTearDown(controller.dispose);
+        addTearDown(descriptionFocusNode.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        home: MediaQuery(
-          data: const MediaQueryData(
-            size: Size(320, 720),
-            viewInsets: EdgeInsets.only(bottom: 300),
-          ),
-          child: WorkoutFormScaffold(
-            title: 'Create WOD',
-            onClose: () {},
-            submit: WorkoutFormButton(
-              label: 'Create WOD',
-              loading: false,
-              enabled: true,
-              onPressed: () {},
-            ),
-            children: [
-              WorkoutFormFields(
-                loadingPrograms: false,
-                programs: const [
-                  {'id': 'crossfit', 'name': 'CrossFit'},
-                ],
-                programId: 'crossfit',
-                onProgramChanged: (_) {},
-                dateLabel: '17/08/2026',
-                onDateTap: () {},
-                imageTitle: 'Select image',
-                imageSubtitle: '',
-                onImageTap: () {},
-                descriptionController: controller,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: FilledButton(
+                    onPressed: () => showAppLargeFormSheet<void>(
+                      context: context,
+                      builder: (sheetContext) => WorkoutFormScaffold(
+                        title: scenario.title,
+                        onClose: () => Navigator.of(sheetContext).pop(),
+                        submit: WorkoutFormButton(
+                          label: scenario.submit,
+                          loading: false,
+                          enabled: true,
+                          onPressed: () {},
+                        ),
+                        children: [
+                          WorkoutFormFields(
+                            loadingPrograms: false,
+                            programs: const [
+                              {'id': 'crossfit', 'name': 'CrossFit'},
+                            ],
+                            programId: 'crossfit',
+                            onProgramChanged: (_) {},
+                            dateLabel: '17/08/2026',
+                            onDateTap: () {},
+                            imageTitle: 'Select image',
+                            imageSubtitle: '',
+                            onImageTap: () {},
+                            descriptionController: controller,
+                            descriptionFocusNode: descriptionFocusNode,
+                          ),
+                        ],
+                      ),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('workout-content-field')),
-    );
-    await tester.pump();
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-    final field = tester.widget<TextField>(
-      find.byKey(const ValueKey('workout-content-field')),
+        final fieldFinder = find.byKey(const ValueKey('workout-content-field'));
+        descriptionFocusNode.requestFocus();
+        await tester.pump();
+        controller.selection = TextSelection.collapsed(
+          offset: controller.text.length,
+        );
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+
+        final submitFinder = find.byKey(const ValueKey('workout-form-submit'));
+        final field = tester.widget<TextField>(fieldFinder);
+        final fieldRect = tester.getRect(fieldFinder);
+        final submitRect = tester.getRect(submitFinder);
+        final editorToSubmitGap = submitRect.top - fieldRect.bottom;
+
+        expect(field.expands, isTrue);
+        expect(field.minLines, isNull);
+        expect(field.maxLines, isNull);
+        expect(fieldRect.height, greaterThan(100));
+        expect(editorToSubmitGap, inInclusiveRange(0, 40));
+        expect(submitRect.bottom, lessThanOrEqualTo(420));
+        expect(descriptionFocusNode.hasFocus, isTrue);
+        expect(controller.selection.baseOffset, controller.text.length);
+        expect(tester.takeException(), isNull);
+      },
     );
-    expect(field.minLines, 12);
-    expect(field.maxLines, 16);
-    expect(find.byKey(const ValueKey('workout-form-submit')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+  }
 }

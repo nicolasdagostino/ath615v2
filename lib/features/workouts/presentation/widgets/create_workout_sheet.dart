@@ -53,6 +53,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
 
   late DateTime _date;
   final _description = TextEditingController();
+  final _descriptionFocusNode = FocusNode();
   File? _image;
 
   @override
@@ -66,6 +67,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
   @override
   void dispose() {
     _description.dispose();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
@@ -205,6 +207,7 @@ class _CreateWorkoutSheetState extends State<_CreateWorkoutSheet> {
               ? null
               : () => setState(() => _image = null),
           descriptionController: _description,
+          descriptionFocusNode: _descriptionFocusNode,
         ),
       ],
     );
