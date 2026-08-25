@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 
+bool shouldAuthGateRedirect(String currentPath) => currentPath == '/';
+
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -27,7 +29,7 @@ class _AuthGateState extends State<AuthGate> {
       context,
     ).routeInformationProvider.value.uri.path;
 
-    if (currentPath == '/reset-password') return;
+    if (!shouldAuthGateRedirect(currentPath)) return;
 
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
