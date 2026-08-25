@@ -29,6 +29,8 @@ import '../../../members/presentation/widgets/member_role_capability_section.dar
 import '../../../members/presentation/widgets/member_list_row.dart';
 import '../../../members/presentation/widgets/member_filter_chip.dart';
 import '../../../profile/presentation/screens/membership_screen.dart';
+import '../../data/member_staff_notes_repository.dart';
+import '../widgets/member_staff_notes_section.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -104,6 +106,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
   late final MemberCoachRepository _memberCoachRepository =
       SupabaseMemberCoachRepository(Supabase.instance.client);
+  late final MemberStaffNotesRepository _memberStaffNotesRepository =
+      SupabaseMemberStaffNotesRepository(Supabase.instance.client);
 
   bool _loadingMembers = true;
   String? _membersError;
@@ -286,6 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       klass['starts_at']?.toString() ?? '',
     )?.toUtc();
     final attendedCounts = <String, int>{};
+    Map<String, String> pinnedNotesByMember = const {};
     var attendanceCountsLoaded = userIds.isEmpty;
 
     if (userIds.isNotEmpty && startsAt != null) {
@@ -309,6 +314,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
 
+    if (userIds.isNotEmpty) {
+      try {
+        pinnedNotesByMember = await loadBriefingPinnedNotes(
+          _memberStaffNotesRepository,
+          userIds,
+        );
+      } catch (_) {
+        pinnedNotesByMember = const {};
+      }
+    }
+
     if (!mounted) return;
     final membersById = {
       for (final member in _members) member['id'].toString(): member,
@@ -324,6 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         waitlist: waitlist,
         membersById: membersById,
         attendedCounts: attendedCounts,
+        pinnedNotesByMember: pinnedNotesByMember,
         attendanceCountsLoaded: attendanceCountsLoaded,
         onOpenMember: (member) {
           Navigator.of(sheetContext).pop();
@@ -2326,6 +2343,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _MemberMilestoneCard(attendedCount: attendedCount),
                           const SizedBox(height: 18),
                           _MemberDetailCard(
+                            child: MemberStaffNotesSection(
+                              memberUserId: member['id'].toString(),
+                              repository: _memberStaffNotesRepository,
+                              canManage: true,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          _MemberDetailCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -3841,6 +3866,7 @@ Widget buildTodayClassBriefingForTest({
   required List<Map<String, dynamic>> waitlist,
   required Map<String, Map<String, dynamic>> membersById,
   required Map<String, int> attendedCounts,
+  Map<String, String> pinnedNotesByMember = const {},
   ValueChanged<Map<String, dynamic>>? onOpenMember,
 }) => _TodayClassBriefingSheet(
   klass: klass,
@@ -3848,6 +3874,7 @@ Widget buildTodayClassBriefingForTest({
   waitlist: waitlist,
   membersById: membersById,
   attendedCounts: attendedCounts,
+  pinnedNotesByMember: pinnedNotesByMember,
   onOpenMember: onOpenMember ?? (_) {},
 );
 
@@ -4697,6 +4724,7 @@ class _TodayClassBriefingSheet extends StatelessWidget {
     required this.waitlist,
     required this.membersById,
     required this.attendedCounts,
+    this.pinnedNotesByMember = const {},
     this.attendanceCountsLoaded = true,
     required this.onOpenMember,
   });
@@ -4706,6 +4734,7 @@ class _TodayClassBriefingSheet extends StatelessWidget {
   final List<Map<String, dynamic>> waitlist;
   final Map<String, Map<String, dynamic>> membersById;
   final Map<String, int> attendedCounts;
+  final Map<String, String> pinnedNotesByMember;
   final bool attendanceCountsLoaded;
   final ValueChanged<Map<String, dynamic>> onOpenMember;
 
@@ -4835,6 +4864,9 @@ class _TodayClassBriefingSheet extends StatelessWidget {
                         insight: member == null
                             ? null
                             : _insight(member, attendedCounts[userId] ?? 0),
+                        staffNote: userId == null
+                            ? null
+                            : pinnedNotesByMember[userId],
                         onTap: member == null
                             ? null
                             : () => onOpenMember(member),
@@ -4863,6 +4895,9 @@ class _TodayClassBriefingSheet extends StatelessWidget {
                             : appStrings.member,
                         avatarUrl: member?['avatar_url']?.toString(),
                         leading: '${entry.key + 1}',
+                        staffNote: userId == null
+                            ? null
+                            : pinnedNotesByMember[userId],
                         onTap: member == null
                             ? null
                             : () => onOpenMember(member),
@@ -4916,6 +4951,7 @@ class _BriefingPersonRow extends StatelessWidget {
     required this.name,
     this.avatarUrl,
     this.insight,
+    this.staffNote,
     this.leading,
     this.onTap,
   });
@@ -4923,6 +4959,7 @@ class _BriefingPersonRow extends StatelessWidget {
   final String name;
   final String? avatarUrl;
   final String? insight;
+  final String? staffNote;
   final String? leading;
   final VoidCallback? onTap;
 
@@ -4993,6 +5030,28 @@ class _BriefingPersonRow extends StatelessWidget {
                         context,
                       ).copyWith(color: AppColors.primary),
                     ),
+                  if (staffNote != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.flag_rounded,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            staffNote!,
+                            key: ValueKey('briefing-pinned-note-$name'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.helper(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

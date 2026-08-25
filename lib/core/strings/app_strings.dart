@@ -967,6 +967,33 @@ class AppStrings {
   String get saveChanges => pick('Save changes', 'Guardar cambios');
 
   String get save => pick('Save', 'Guardar');
+  String get internalNotes => pick('Internal notes', 'Notas internas');
+  String get addNote => pick('Add note', 'Añadir nota');
+  String get editNote => pick('Edit note', 'Editar nota');
+  String get markAsImportant =>
+      pick('Mark as important', 'Marcar como importante');
+  String get removeFromImportant =>
+      pick('Remove from important', 'Quitar de importantes');
+  String get noInternalNotes =>
+      pick('No internal notes', 'No hay notas internas');
+  String get deleteInternalNote => pick('Delete note', 'Eliminar nota');
+  String get deleteInternalNoteConfirmation => pick(
+    'This internal note will be permanently deleted.',
+    'Esta nota interna se eliminará permanentemente.',
+  );
+  String get internalNotesStaffOnly => pick(
+    'Only authorized staff can see these notes.',
+    'Esta nota solo es visible para el staff autorizado.',
+  );
+  String get internalNoteHint => pick(
+    'Add useful operational context for the staff',
+    'Añadí contexto operativo útil para el staff',
+  );
+  String get internalNoteSaveError => pick(
+    'The internal note could not be saved.',
+    'No se pudo guardar la nota interna.',
+  );
+  String get actions => pick('Actions', 'Acciones');
   String get deleteProgramWarning => pick(
     'This will permanently delete this program and all associated workouts. This action cannot be undone.',
     'Esto eliminará permanentemente este programa y todos sus workouts asociados. Esta acción no se puede deshacer.',
