@@ -6,6 +6,28 @@ type WebhookEvent = Stripe.Event;
 
 const stripeCryptoProvider = Stripe.createSubtleCryptoProvider();
 
+export type StripeCheckoutEventAction =
+  | "complete"
+  | "pending"
+  | "expire"
+  | "fail"
+  | "ignore";
+
+export function stripeCheckoutEventAction(
+  eventType: string,
+  paymentStatus?: string | null,
+): StripeCheckoutEventAction {
+  if (eventType === "checkout.session.expired") return "expire";
+  if (eventType === "checkout.session.async_payment_failed") return "fail";
+  if (
+    eventType === "checkout.session.completed" ||
+    eventType === "checkout.session.async_payment_succeeded"
+  ) {
+    return paymentStatus === "paid" ? "complete" : "pending";
+  }
+  return "ignore";
+}
+
 export async function constructStripeWebhookEvent(
   body: string,
   signature: string | null,
@@ -105,10 +127,11 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
       return jsonResponse({ ok: true, duplicate: true });
     }
 
-    if (
-      event.type !== "checkout.session.completed" &&
-      event.type !== "checkout.session.expired"
-    ) {
+    const action = stripeCheckoutEventAction(
+      event.type,
+      (event.data.object as Stripe.Checkout.Session).payment_status,
+    );
+    if (action === "ignore") {
       const { error } = await adminClient.rpc(
         "complete_stripe_webhook_event",
         {
@@ -126,27 +149,36 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
     const session = event.data.object as Stripe.Checkout.Session;
     if (!session.id) throw new Error("missing_checkout_session");
 
-    if (event.type === "checkout.session.completed") {
-      if (session.payment_status !== "paid") {
-        throw new Error("checkout_not_paid");
+    if (action === "complete" || action === "pending") {
+      // An unpaid completed Checkout is not financial confirmation. It remains
+      // pending for a possible async success/failure event or expiry.
+      if (action === "complete") {
+        const { error } = await adminClient.rpc(
+          "complete_card_membership_request",
+          {
+            p_checkout_session_id: session.id,
+            p_payment_intent_id: typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null,
+            p_amount_total: session.amount_total ?? null,
+            p_currency: session.currency ?? null,
+            p_stripe_account_id: stripeAccountId,
+          },
+        );
+        if (error) throw error;
       }
-
+    } else if (action === "expire") {
       const { error } = await adminClient.rpc(
-        "complete_card_membership_request",
+        "cancel_expired_card_membership_request",
         {
           p_checkout_session_id: session.id,
-          p_payment_intent_id: typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : session.payment_intent?.id ?? null,
-          p_amount_total: session.amount_total ?? null,
-          p_currency: session.currency ?? null,
           p_stripe_account_id: stripeAccountId,
         },
       );
       if (error) throw error;
     } else {
       const { error } = await adminClient.rpc(
-        "cancel_expired_card_membership_request",
+        "fail_card_membership_request",
         {
           p_checkout_session_id: session.id,
           p_stripe_account_id: stripeAccountId,

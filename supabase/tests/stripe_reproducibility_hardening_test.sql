@@ -200,7 +200,7 @@ begin
     );
     raise exception 'wrong Stripe account unexpectedly completed request';
   exception when raise_exception then
-    if sqlerrm <> 'Stripe account does not match gym' then raise; end if;
+    if sqlerrm <> 'stripe_account_mismatch' then raise; end if;
   end;
 
   perform public.complete_card_membership_request(

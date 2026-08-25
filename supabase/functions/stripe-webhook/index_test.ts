@@ -3,7 +3,10 @@ import {
   assertRejects,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import Stripe from "npm:stripe@22.5.0";
-import { constructStripeWebhookEvent } from "./index.ts";
+import {
+  constructStripeWebhookEvent,
+  stripeCheckoutEventAction,
+} from "./index.ts";
 
 const secret = "whsec_test_secret";
 const payload = JSON.stringify({
@@ -70,4 +73,33 @@ Deno.test("official Stripe verifier accepts any valid v1 signature", async () =>
   const combined = `t=${timestamp},v1=invalid,v1=${v1}`;
   const event = await constructStripeWebhookEvent(payload, combined, secret);
   assertEquals(event.id, "evt_test");
+});
+
+Deno.test("checkout lifecycle never treats unpaid completion as success", () => {
+  assertEquals(
+    stripeCheckoutEventAction("checkout.session.completed", "unpaid"),
+    "pending",
+  );
+  assertEquals(
+    stripeCheckoutEventAction("checkout.session.completed", "paid"),
+    "complete",
+  );
+  assertEquals(
+    stripeCheckoutEventAction(
+      "checkout.session.async_payment_succeeded",
+      "paid",
+    ),
+    "complete",
+  );
+  assertEquals(
+    stripeCheckoutEventAction(
+      "checkout.session.async_payment_failed",
+      "unpaid",
+    ),
+    "fail",
+  );
+  assertEquals(
+    stripeCheckoutEventAction("checkout.session.expired", "unpaid"),
+    "expire",
+  );
 });

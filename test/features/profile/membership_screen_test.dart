@@ -121,6 +121,7 @@ void main() {
       {
         'id': 'request-1',
         'status': 'pending',
+        'payment_method': 'cash',
         'membership_plans': {
           'name': 'Pending Pack',
           'plan_type': 'class_pack',
@@ -150,6 +151,7 @@ void main() {
       150,
     );
     expect(find.text('REQUESTED'), findsOne);
+    expect(find.text('Request pending · In-person payment'), findsOne);
     expect(
       find.byKey(const ValueKey('membership-request-request-1')),
       findsOne,

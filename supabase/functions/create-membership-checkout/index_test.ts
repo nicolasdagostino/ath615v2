@@ -46,6 +46,7 @@ Deno.test("checkout amount and gym metadata come from server context", () => {
   assertEquals(params.get("metadata[plan_id]"), "plan-a");
   assertEquals(params.get("metadata[user_id]"), "user-a");
   assertEquals(params.get("metadata[request_id]"), "request-1");
+  assertEquals(params.get("payment_method_types[0]"), "card");
 });
 
 Deno.test("invalid server-side plan price is rejected", () => {

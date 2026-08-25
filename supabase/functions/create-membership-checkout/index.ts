@@ -38,6 +38,9 @@ export function buildCheckoutSessionParams(
 
   const params = new URLSearchParams();
   params.set("mode", "payment");
+  // v2 lifecycle is intentionally card-only. This keeps completion synchronous;
+  // Checkout cannot silently add an asynchronous payment method.
+  params.set("payment_method_types[0]", "card");
   params.set("expires_at", expiresAt.toString());
   params.set("success_url", "https://athlete615.com/?checkout=success");
   params.set("cancel_url", "https://athlete615.com/?checkout=cancel");

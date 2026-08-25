@@ -73,6 +73,24 @@ String adminAccessRequestDisplayName(
 DateTime? adminGymMemberCreatedAt(Map<String, dynamic> member) =>
     DateTime.tryParse(member['gym_member_created_at']?.toString() ?? '');
 
+String adminMembershipRequestPriceLabel(Map<String, dynamic> request) {
+  final rawAmount = request['amount_total'];
+  final rawPrice = request['plan_price'];
+  final amount = rawAmount is num
+      ? rawAmount.toDouble() / 100
+      : rawPrice is num
+      ? rawPrice.toDouble()
+      : double.tryParse(rawPrice?.toString() ?? '');
+  if (amount == null) return '';
+  final currency = request['currency']?.toString().toUpperCase() ?? '';
+  return '${amount.toStringAsFixed(2)} $currency'.trim();
+}
+
+bool adminMembershipRequestNeedsAction(Map<String, dynamic> request) =>
+    request['status'] == 'pending' &&
+    request['payment_method'] == 'cash' &&
+    request['payment_status'] == 'pending';
+
 const int adminLowCreditsThreshold = 2;
 
 int? nextAdminAttendanceMilestone(int attendedCount) {
@@ -489,42 +507,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final requests = await Supabase.instance.client
           .from('membership_requests')
-          .select('id, user_id, plan_id, status, created_at')
+          .select(
+            'id, user_id, plan_id, status, payment_method, payment_status, '
+            'amount_total, currency, created_at',
+          )
           .eq('gym_id', gymId)
           .eq('status', 'pending')
+          .eq('payment_method', 'cash')
+          .eq('payment_status', 'pending')
           .order('created_at', ascending: false);
 
       final plans = await Supabase.instance.client
           .from('membership_plans')
-          .select('id, name, plan_type, credits')
+          .select('id, name, plan_type, credits, price, currency')
           .eq('gym_id', gymId);
 
       final planRows = List<Map<String, dynamic>>.from(plans);
-      final requestRows = List<Map<String, dynamic>>.from(requests).map((row) {
-        final userId = row['user_id']?.toString();
-        final planId = row['plan_id']?.toString();
+      final requestRows = List<Map<String, dynamic>>.from(requests)
+          .where(adminMembershipRequestNeedsAction)
+          .map((row) {
+            final userId = row['user_id']?.toString();
+            final planId = row['plan_id']?.toString();
 
-        final member = _members.firstWhere(
-          (m) => m['id']?.toString() == userId,
-          orElse: () => const {},
-        );
+            final member = _members.firstWhere(
+              (m) => m['id']?.toString() == userId,
+              orElse: () => const {},
+            );
 
-        final plan = planRows.firstWhere(
-          (p) => p['id']?.toString() == planId,
-          orElse: () => const {},
-        );
+            final plan = planRows.firstWhere(
+              (p) => p['id']?.toString() == planId,
+              orElse: () => const {},
+            );
 
-        return {
-          ...row,
-          'member_name':
-              member['full_name']?.toString() ??
-              member['email']?.toString() ??
-              appStrings.member,
-          'plan_name': plan['name']?.toString() ?? appStrings.plan,
-          'plan_type': plan['plan_type']?.toString(),
-          'credits': plan['credits'],
-        };
-      }).toList();
+            return {
+              ...row,
+              'member_name':
+                  member['full_name']?.toString() ??
+                  member['email']?.toString() ??
+                  appStrings.member,
+              'plan_name': plan['name']?.toString() ?? appStrings.plan,
+              'plan_type': plan['plan_type']?.toString(),
+              'credits': plan['credits'],
+              'plan_price': plan['price'],
+              'currency': row['currency'] ?? plan['currency'],
+            };
+          })
+          .toList();
 
       if (!mounted) return;
       setState(() => _membershipRequests = requestRows);
@@ -716,12 +744,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (requestId == null) return;
 
+    final method = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => AppAdminActionSheet(
+        accentColor: AppColors.primary,
+        // Each action returns its value; AppAdminActionSheet invokes onClose
+        // before onTap, so this callback must not pop twice.
+        onClose: () {},
+        actions: [
+          AppAdminAction(
+            icon: Icons.payments_outlined,
+            label: appStrings.cash,
+            onTap: () => Navigator.pop(sheetContext, 'cash'),
+          ),
+          AppAdminAction(
+            icon: Icons.phone_iphone_rounded,
+            label: appStrings.bizum,
+            onTap: () => Navigator.pop(sheetContext, 'bizum'),
+          ),
+        ],
+      ),
+    );
+    if (method == null || !mounted) return;
+
     setState(() => _processingMembershipRequestId = requestId);
 
     try {
       await Supabase.instance.client.rpc(
-        'approve_cash_membership_request',
-        params: {'p_request_id': requestId},
+        'confirm_in_person_membership_payment',
+        params: {'p_request_id': requestId, 'p_manual_payment_method': method},
       );
 
       await Supabase.instance.client.functions.invoke('send-notifications');
@@ -750,10 +802,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _processingMembershipRequestId = requestId);
 
     try {
-      await Supabase.instance.client
-          .from('membership_requests')
-          .update({'status': 'rejected'})
-          .eq('id', requestId);
+      await Supabase.instance.client.rpc(
+        'reject_membership_request',
+        params: {'p_request_id': requestId},
+      );
 
       await _loadDashboardData();
     } catch (e) {
@@ -3182,8 +3234,13 @@ class _MembershipOverview extends StatelessWidget {
                 request['plan_name']?.toString() ?? appStrings.plan;
             return _ActionRequestRow(
               name: request['member_name']?.toString() ?? appStrings.member,
-              subtitle: planName,
+              subtitle: [
+                planName,
+                adminMembershipRequestPriceLabel(request),
+                appStrings.inPersonPayment,
+              ].where((value) => value.isNotEmpty).join(' · '),
               icon: Icons.card_membership_outlined,
+              approveLabel: appStrings.confirmPaymentAndActivate,
               isProcessing: processing,
               isApproveProcessing: processing,
               isRejectProcessing: processing,
@@ -3199,7 +3256,9 @@ class _MembershipOverview extends StatelessWidget {
 }
 
 @visibleForTesting
-Widget buildMembershipOverviewForTest() {
+Widget buildMembershipOverviewForTest({
+  List<Map<String, dynamic>> requests = const [],
+}) {
   return _MembershipOverview(
     activeMemberships: 12,
     membersWithoutPlan: 3,
@@ -3207,7 +3266,7 @@ Widget buildMembershipOverviewForTest() {
     activeValue: '420,00',
     mostUsedPlan: 'Beach',
     onManagePlans: () {},
-    requests: const [],
+    requests: requests,
     processingRequestId: null,
     onApproveRequest: (_) async {},
     onRejectRequest: (_) async {},
@@ -4059,8 +4118,13 @@ class _ActionRequiredSheet extends StatelessWidget {
               ...membershipRequests.map((request) {
                 return _ActionRequestRow(
                   name: request['member_name']?.toString() ?? appStrings.member,
-                  subtitle: _planLabel(request),
+                  subtitle: [
+                    _planLabel(request),
+                    adminMembershipRequestPriceLabel(request),
+                    appStrings.inPersonPayment,
+                  ].where((value) => value.isNotEmpty).join(' · '),
                   icon: Icons.card_membership_outlined,
+                  approveLabel: appStrings.confirmPaymentAndActivate,
                   isProcessing: false,
                   isApproveProcessing: false,
                   isRejectProcessing: false,
@@ -4236,6 +4300,7 @@ class _ActionRequestRow extends StatelessWidget {
     required this.onReject,
     this.avatarUrl,
     this.icon,
+    this.approveLabel,
   });
 
   final String name;
@@ -4248,6 +4313,7 @@ class _ActionRequestRow extends StatelessWidget {
   final bool disabled;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final String? approveLabel;
 
   Future<void> _openActions(BuildContext context) async {
     await showModalBottomSheet<void>(
@@ -4259,7 +4325,7 @@ class _ActionRequestRow extends StatelessWidget {
         actions: [
           AppAdminAction(
             icon: Icons.check_circle_outline_rounded,
-            label: appStrings.approve,
+            label: approveLabel ?? appStrings.approve,
             onTap: onApprove,
           ),
           AppAdminAction(

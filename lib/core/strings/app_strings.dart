@@ -859,6 +859,12 @@ class AppStrings {
       ? pick('1 pending approval', '1 pendiente de aprobación')
       : pick('$count pending approvals', '$count pendientes de aprobación');
   String get approve => pick('Approve', 'Aprobar');
+  String get confirmPaymentAndActivate =>
+      pick('Confirm payment and activate', 'Confirmar pago y activar');
+  String get inPersonPayment => pick('In-person payment', 'Pago en persona');
+  String get cash => pick('Cash', 'Efectivo');
+  String get bizum => 'Bizum';
+  String get cardPaymentPending => pick('Payment pending', 'Pago pendiente');
   String get reject => pick('Reject', 'Rechazar');
   String get profileTraining => pick('Training', 'Entrenamiento');
   String get profileMembership => pick('Membership', 'Membresía');

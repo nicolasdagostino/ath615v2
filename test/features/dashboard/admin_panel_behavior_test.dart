@@ -258,4 +258,59 @@ void main() {
     expect(joined, DateTime.utc(2026, 8, 13));
     expect(adminGymMemberCreatedAt({'created_at': '2024-01-10'}), isNull);
   });
+
+  test('only pending in-person requests require admin action', () {
+    expect(
+      adminMembershipRequestNeedsAction(const {
+        'status': 'pending',
+        'payment_method': 'cash',
+        'payment_status': 'pending',
+      }),
+      isTrue,
+    );
+    expect(
+      adminMembershipRequestNeedsAction(const {
+        'status': 'pending',
+        'payment_method': 'card',
+        'payment_status': 'pending',
+      }),
+      isFalse,
+    );
+    expect(
+      adminMembershipRequestPriceLabel(const {
+        'amount_total': 3500,
+        'currency': 'eur',
+      }),
+      '35.00 EUR',
+    );
+  });
+
+  testWidgets('manual request offers explicit payment confirmation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: buildMembershipOverviewForTest(
+            requests: const [
+              {
+                'id': 'request-1',
+                'member_name': 'Laia Member',
+                'plan_name': '5 Classes',
+                'amount_total': 3500,
+                'currency': 'eur',
+              },
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('In-person payment'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('CONFIRM PAYMENT AND ACTIVATE'), findsOneWidget);
+    expect(find.text('REJECT'), findsOneWidget);
+  });
 }

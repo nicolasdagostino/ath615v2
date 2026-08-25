@@ -70,7 +70,7 @@ class SupabaseUserMembershipsDataSource implements UserMembershipsDataSource {
     final rows = await client
         .from('membership_requests')
         .select(
-          'id, status, payment_status, created_at, '
+          'id, status, payment_method, payment_status, created_at, '
           'membership_plans(name, plan_type, credits, price, currency)',
         )
         .eq('user_id', userId)
@@ -616,7 +616,9 @@ class _PendingRequestRow extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                appStrings.pick('Request pending', 'Solicitud pendiente'),
+                request['payment_method'] == 'card'
+                    ? appStrings.cardPaymentPending
+                    : '${appStrings.pick('Request pending', 'Solicitud pendiente')} · ${appStrings.inPersonPayment}',
                 style: AppTypography.bodySecondary(context),
               ),
             ],
