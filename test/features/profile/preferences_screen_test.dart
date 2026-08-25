@@ -90,7 +90,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
-          home: SettingsResourceScreen(type: type),
+          home: SettingsResourceScreen(
+            type: type,
+            paymentsHistoryLoader: () async => const [],
+          ),
         ),
       );
       if (type == SettingsResourceType.legal) {
@@ -99,6 +102,7 @@ void main() {
       } else if (type == SettingsResourceType.documents) {
         expect(find.byKey(const ValueKey('documents-empty')), findsOne);
       } else {
+        await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('payments-methods-empty')), findsOne);
         expect(find.byKey(const ValueKey('payments-history-empty')), findsOne);
         expect(find.byIcon(Icons.credit_card), findsNothing);

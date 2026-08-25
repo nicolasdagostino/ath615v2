@@ -62,6 +62,15 @@ begin
       'Pack A', 'class_pack', 5, 49.95, 'EUR', 30, true),
     ('30000000-0000-0000-0000-000000000002', v_gym_b,
       'Pack B', 'class_pack', 5, 1.00, 'USD', 30, true);
+  insert into public.membership_legal_acceptances(
+    user_id, gym_id, plan_id, document_id, document_type,
+    document_version, document_url
+  )
+  select v_athlete_a, v_gym_a,
+    '30000000-0000-0000-0000-000000000001'::uuid,
+    d.id, d.document_type, d.version, d.url
+  from public.membership_legal_documents d
+  where d.is_active and d.is_required;
 end;
 $$;
 

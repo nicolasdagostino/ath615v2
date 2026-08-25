@@ -832,6 +832,45 @@ class AppStrings {
 
   String get requestMembershipTitle =>
       pick('Request membership?', '¿Solicitar membresía?');
+  String get obtainMembership => pick('Get membership', 'Obtener membresía');
+  String get startDate => pick('Start date', 'Fecha de inicio');
+  String get startsWhenActivated => pick(
+    'Starts when the membership is activated.',
+    'Comienza cuando se activa la membresía.',
+  );
+  String get paymentMethod => pick('Payment method', 'Forma de pago');
+  String get card => pick('Card', 'Tarjeta');
+  String get payInPerson => pick('Pay in person', 'Pagar en persona');
+  String get secureStripePayment => pick(
+    'Secure payment with Stripe. Your card details are never stored by ATHLETE615.',
+    'Pago seguro con Stripe. ATHLETE615 nunca almacena los datos de tu tarjeta.',
+  );
+  String get inPersonCheckoutExplanation => pick(
+    'You will send a request to the gym. The membership will be activated when an administrator confirms the payment.',
+    'Enviarás una solicitud al centro. La membresía se activará cuando un administrador confirme el pago.',
+  );
+  String get continueWithStripe =>
+      pick('Continue with Stripe', 'Continuar con Stripe');
+  String get requestMembership =>
+      pick('Request membership', 'Solicitar membresía');
+  String get cardPaymentsComingSoon => pick(
+    'Card payments are not available yet.',
+    'Los pagos con tarjeta todavía no están disponibles.',
+  );
+  String get acceptTerms => pick(
+    'I accept the terms and conditions.',
+    'Acepto los términos y condiciones.',
+  );
+  String get acceptWaiver => pick(
+    'I have read and accept the waiver and assumption of risk.',
+    'He leído y acepto la exención de responsabilidad y asunción de riesgos.',
+  );
+  String get acceptSalesRefund => pick(
+    'I accept the sales and refund policy.',
+    'Acepto la política de venta y devolución.',
+  );
+  String documentVersion(String version) =>
+      pick('Version $version', 'Versión $version');
   String get requestMembershipConfirm => pick(
     'We will notify the gym so they can activate this plan for you.',
     'Avisaremos al gym para que puedan activar este plan.',
@@ -963,9 +1002,11 @@ class AppStrings {
   );
   String get invoicesAndHistory =>
       pick('History and invoices', 'Historial y facturas');
+  String get recentPayments => pick('Recent payments', 'Pagos recientes');
+  String get paymentConfirmed => pick('Payment confirmed', 'Pago confirmado');
   String get noPaymentHistory => pick(
-    'No payment history or invoices are available.',
-    'No hay historial de pagos ni facturas disponibles.',
+    'No payment history is available.',
+    'No hay historial de pagos disponible.',
   );
   String get otherLegalDocuments =>
       pick('Other legal documents', 'Otros documentos legales');

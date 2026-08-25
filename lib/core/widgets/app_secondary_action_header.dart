@@ -9,11 +9,13 @@ class AppSecondaryActionHeader extends StatelessWidget {
     required this.onBack,
     this.action,
     this.title,
+    this.leadingIcon = Icons.arrow_back_ios_new_rounded,
   });
 
   final VoidCallback onBack;
   final Widget? action;
   final String? title;
+  final IconData leadingIcon;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -33,7 +35,7 @@ class AppSecondaryActionHeader extends StatelessWidget {
                 ),
                 onPressed: onBack,
                 icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
+                  leadingIcon,
                   size: 19,
                   color: AppColors.textPrimary(context),
                 ),

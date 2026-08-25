@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
@@ -9,10 +10,17 @@ import '../../../../core/widgets/app_secondary_action_header.dart';
 
 enum SettingsResourceType { legal, documents, payments }
 
+typedef PaymentsHistoryLoader = Future<List<Map<String, dynamic>>> Function();
+
 class SettingsResourceScreen extends StatelessWidget {
-  const SettingsResourceScreen({super.key, required this.type});
+  const SettingsResourceScreen({
+    super.key,
+    required this.type,
+    this.paymentsHistoryLoader,
+  });
 
   final SettingsResourceType type;
+  final PaymentsHistoryLoader? paymentsHistoryLoader;
 
   Future<void> _open(BuildContext context, String url) async {
     if (await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
@@ -91,18 +99,119 @@ class SettingsResourceScreen extends StatelessWidget {
                       message: appStrings.noPaymentMethods,
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    _EmptyBlock(
-                      key: const ValueKey('payments-history-empty'),
-                      icon: Icons.receipt_long_outlined,
-                      title: appStrings.invoicesAndHistory,
-                      message: appStrings.noPaymentHistory,
-                    ),
+                    _RecentPayments(loader: paymentsHistoryLoader),
                   ],
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RecentPayments extends StatefulWidget {
+  const _RecentPayments({this.loader});
+  final PaymentsHistoryLoader? loader;
+
+  @override
+  State<_RecentPayments> createState() => _RecentPaymentsState();
+}
+
+class _RecentPaymentsState extends State<_RecentPayments> {
+  late final Future<List<Map<String, dynamic>>> _rows =
+      widget.loader?.call() ?? _load();
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final response = await Supabase.instance.client.rpc(
+      'list_effective_membership_requests',
+      params: {'p_own': true, 'p_limit': 25},
+    );
+    return List<Map<String, dynamic>>.from(response).where((row) {
+      return row['payment_status'] == 'paid';
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FutureBuilder<List<Map<String, dynamic>>>(
+        future: _rows,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          final rows = snapshot.data ?? const [];
+          if (snapshot.hasError || rows.isEmpty) {
+            return _EmptyBlock(
+              key: const ValueKey('payments-history-empty'),
+              icon: Icons.receipt_long_outlined,
+              title: appStrings.recentPayments,
+              message: appStrings.noPaymentHistory,
+            );
+          }
+          return Column(
+            key: const ValueKey('payments-history-real'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appStrings.recentPayments.toUpperCase(),
+                style: AppTypography.body(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              for (final row in rows) _PaymentRow(row: row),
+            ],
+          );
+        },
+      );
+}
+
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({required this.row});
+  final Map<String, dynamic> row;
+
+  @override
+  Widget build(BuildContext context) {
+    final price = row['plan_price'];
+    final currency = row['currency']?.toString().toUpperCase() ?? '';
+    final amount = price == null
+        ? ''
+        : '${currency == 'EUR' ? '€' : '$currency '}$price';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            color: AppColors.primary,
+            size: 20,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row['plan_name']?.toString() ?? appStrings.plan,
+                  style: AppTypography.body(context),
+                ),
+                Text(
+                  appStrings.paymentConfirmed,
+                  style: AppTypography.bodySecondary(context),
+                ),
+              ],
+            ),
+          ),
+          if (amount.isNotEmpty)
+            Text(amount, style: AppTypography.body(context)),
+        ],
       ),
     );
   }

@@ -25,6 +25,12 @@ export function checkoutIdempotencyKey(requestId: string) {
   return `membership-checkout:${requestId}`;
 }
 
+export function checkoutDocumentIds(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+}
+
 export function buildCheckoutSessionParams(
   context: CheckoutContext,
   userId: string,
@@ -114,6 +120,13 @@ export async function handleCreateMembershipCheckout(
     const body = await req.json();
     const planId = String(body.planId ?? "").trim();
     if (!planId) throw new Error("missing_plan_id");
+    const documentIds = checkoutDocumentIds(body.documentIds);
+
+    const { error: consentError } = await userClient.rpc(
+      "accept_membership_checkout_documents",
+      { p_plan_id: planId, p_document_ids: documentIds },
+    );
+    if (consentError) throw consentError;
 
     const prepare = async (): Promise<CheckoutContext> => {
       const { data, error } = await userClient.rpc(

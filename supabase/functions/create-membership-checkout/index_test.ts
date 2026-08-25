@@ -5,6 +5,7 @@ import {
 import {
   buildCheckoutSessionParams,
   type CheckoutContext,
+  checkoutDocumentIds,
   checkoutIdempotencyKey,
 } from "./index.ts";
 
@@ -47,6 +48,14 @@ Deno.test("checkout amount and gym metadata come from server context", () => {
   assertEquals(params.get("metadata[user_id]"), "user-a");
   assertEquals(params.get("metadata[request_id]"), "request-1");
   assertEquals(params.get("payment_method_types[0]"), "card");
+});
+
+Deno.test("checkout normalizes document ids for server-side acceptance", () => {
+  assertEquals(checkoutDocumentIds([" terms-id ", "", "waiver-id"]), [
+    "terms-id",
+    "waiver-id",
+  ]);
+  assertEquals(checkoutDocumentIds("terms-id"), []);
 });
 
 Deno.test("invalid server-side plan price is rejected", () => {

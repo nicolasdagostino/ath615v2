@@ -8,6 +8,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 
 const bool stripeMembershipPaymentsEnabled = false;
@@ -17,12 +18,38 @@ const availableMembershipPlanColumns =
 
 enum MembershipRequestResult { sent, alreadyPending }
 
+enum MembershipPaymentChoice { card, inPerson }
+
+class MembershipCheckoutContext {
+  const MembershipCheckoutContext({required this.gym, required this.documents});
+
+  final Map<String, dynamic> gym;
+  final List<Map<String, dynamic>> documents;
+
+  factory MembershipCheckoutContext.fromJson(Map<String, dynamic> json) =>
+      MembershipCheckoutContext(
+        gym: Map<String, dynamic>.from(json['gym'] as Map? ?? const {}),
+        documents: List<Map<String, dynamic>>.from(
+          (json['documents'] as List? ?? const []).map(
+            (item) => Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      );
+}
+
 abstract class AvailableMembershipsService {
   Future<List<Map<String, dynamic>>> loadPlans(String type);
 
-  Future<MembershipRequestResult> requestPlan(Map<String, dynamic> plan);
+  Future<MembershipRequestResult> requestPlan(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+  );
 
-  Future<void> payByCard(Map<String, dynamic> plan);
+  Future<void> payByCard(Map<String, dynamic> plan, List<String> documentIds);
+
+  Future<MembershipCheckoutContext> loadCheckoutContext(
+    Map<String, dynamic> plan,
+  );
 }
 
 class SupabaseAvailableMembershipsService
@@ -50,13 +77,16 @@ class SupabaseAvailableMembershipsService
   }
 
   @override
-  Future<MembershipRequestResult> requestPlan(Map<String, dynamic> plan) async {
+  Future<MembershipRequestResult> requestPlan(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+  ) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw StateError('Not authenticated');
     try {
       await client.rpc(
-        'create_cash_membership_request',
-        params: {'p_plan_id': plan['id']},
+        'create_consented_cash_membership_request',
+        params: {'p_plan_id': plan['id'], 'p_document_ids': documentIds},
       );
       return MembershipRequestResult.sent;
     } on PostgrestException catch (error) {
@@ -68,10 +98,13 @@ class SupabaseAvailableMembershipsService
   }
 
   @override
-  Future<void> payByCard(Map<String, dynamic> plan) async {
+  Future<void> payByCard(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+  ) async {
     final response = await client.functions.invoke(
       'create-membership-checkout',
-      body: {'planId': plan['id']},
+      body: {'planId': plan['id'], 'documentIds': documentIds},
     );
     final data = response.data;
     final url = data is Map ? data['url']?.toString() : null;
@@ -83,6 +116,19 @@ class SupabaseAvailableMembershipsService
       mode: LaunchMode.externalApplication,
     );
     if (!opened) throw StateError('Could not open Stripe Checkout');
+  }
+
+  @override
+  Future<MembershipCheckoutContext> loadCheckoutContext(
+    Map<String, dynamic> plan,
+  ) async {
+    final data = await client.rpc(
+      'get_membership_checkout_context',
+      params: {'p_plan_id': plan['id']},
+    );
+    return MembershipCheckoutContext.fromJson(
+      Map<String, dynamic>.from(data as Map),
+    );
   }
 }
 
@@ -163,11 +209,8 @@ class _AvailableMembershipsScreenState
   }
 
   Future<void> _openPlan(Map<String, dynamic> plan) async {
-    final completed = await showModalBottomSheet<bool>(
+    final completed = await showAppLargeFormSheet<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: .55),
       builder: (sheetContext) => _MembershipRequestSheet(
         plan: plan,
         isSubscription: _isSubscription,
@@ -307,7 +350,44 @@ class _MembershipRequestSheet extends StatefulWidget {
 
 class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
   bool _loading = false;
+  bool _loadingContext = true;
   String? _error;
+  MembershipCheckoutContext? _checkout;
+  MembershipPaymentChoice _payment = MembershipPaymentChoice.inPerson;
+  final Set<String> _acceptedDocumentIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContext();
+  }
+
+  Future<void> _loadContext() async {
+    try {
+      final checkout = await widget.service.loadCheckoutContext(widget.plan);
+      if (!mounted) return;
+      setState(() {
+        _checkout = checkout;
+        _loadingContext = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingContext = false;
+        _error = appStrings.membershipRequestError(error);
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> get _requiredDocuments =>
+      _checkout?.documents
+          .where((document) => document['required'] == true)
+          .toList() ??
+      const [];
+
+  bool get _hasRequiredConsent => _requiredDocuments.every(
+    (document) => _acceptedDocumentIds.contains(document['id']?.toString()),
+  );
 
   Future<void> _request() async {
     setState(() {
@@ -315,7 +395,22 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
       _error = null;
     });
     try {
-      final result = await widget.service.requestPlan(widget.plan);
+      final documentIds = _acceptedDocumentIds.toList(growable: false);
+      if (_payment == MembershipPaymentChoice.card) {
+        if (!stripeMembershipPaymentsEnabled) {
+          if (!mounted) return;
+          setState(() {
+            _loading = false;
+            _error = appStrings.cardPaymentsComingSoon;
+          });
+          return;
+        }
+        await widget.service.payByCard(widget.plan, documentIds);
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
+        return;
+      }
+      final result = await widget.service.requestPlan(widget.plan, documentIds);
       if (!mounted) return;
       final message = result == MembershipRequestResult.alreadyPending
           ? appStrings.membershipRequestAlreadySent
@@ -336,91 +431,273 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
   @override
   Widget build(BuildContext context) => SafeArea(
     top: false,
-    child: Material(
+    child: Column(
       key: const ValueKey('membership-request-sheet'),
-      color: AppColors.surface(context),
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(AppRadii.sheet),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenX,
-          AppSpacing.lg,
-          AppSpacing.screenX,
-          AppSpacing.lg,
+      children: [
+        AppSecondaryActionHeader(
+          title: appStrings.obtainMembership,
+          leadingIcon: Icons.close_rounded,
+          onBack: Navigator.of(context).pop,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    appStrings.requestMembershipTitle.toUpperCase(),
-                    style: AppTypography.itemTitle(context),
+        Expanded(
+          child: _loadingContext
+              ? const AppCenteredLoadingIndicator(color: AppColors.primary)
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenX,
+                    AppSpacing.sm,
+                    AppSpacing.screenX,
+                    AppSpacing.lg,
                   ),
+                  children: [
+                    AppFormSectionLabel(label: appStrings.plan.toUpperCase()),
+                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      (widget.plan['name']?.toString() ?? appStrings.plan)
+                          .toUpperCase(),
+                      style: AppTypography.itemTitle(
+                        context,
+                      ).copyWith(fontSize: 22),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _planAccess(widget.plan),
+                      style: AppTypography.body(context),
+                    ),
+                    if (widget.plan['duration_days'] != null) ...[
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        appStrings.planDays(
+                          widget.plan['duration_days'] as int,
+                        ),
+                        style: AppTypography.bodySecondary(context),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _planPrice(widget.plan),
+                      style: AppTypography.itemTitle(
+                        context,
+                      ).copyWith(color: AppColors.primary),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppFormSectionLabel(
+                      label: appStrings.startDate.toUpperCase(),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      appStrings.startsWhenActivated,
+                      style: AppTypography.body(context),
+                    ),
+                    if (_checkout != null) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(label: appStrings.gymIdentityLabel),
+                      const SizedBox(height: AppSpacing.xs),
+                      _GymBusinessDetails(gym: _checkout!.gym),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(
+                        label: appStrings.paymentMethod.toUpperCase(),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _PaymentChoiceRow(
+                        value: _payment,
+                        onChanged: (value) => setState(() => _payment = value),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        _payment == MembershipPaymentChoice.card
+                            ? appStrings.secureStripePayment
+                            : appStrings.inPersonCheckoutExplanation,
+                        style: AppTypography.bodySecondary(context),
+                      ),
+                      if (_checkout!.documents.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        AppFormSectionLabel(
+                          label: appStrings.legal.toUpperCase(),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        for (final document in _checkout!.documents)
+                          _CheckoutDocumentRow(
+                            document: document,
+                            accepted: _acceptedDocumentIds.contains(
+                              document['id']?.toString(),
+                            ),
+                            onChanged: document['required'] == true
+                                ? (selected) => setState(() {
+                                    final id = document['id'].toString();
+                                    if (selected) {
+                                      _acceptedDocumentIds.add(id);
+                                    } else {
+                                      _acceptedDocumentIds.remove(id);
+                                    }
+                                  })
+                                : null,
+                          ),
+                      ],
+                    ],
+                    if (_error != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(_error!, style: AppTypography.error(context)),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    AppFormSubmitButton(
+                      label: _payment == MembershipPaymentChoice.card
+                          ? appStrings.continueWithStripe
+                          : appStrings.requestMembership,
+                      loading: _loading,
+                      enabled: !_loadingContext && _hasRequiredConsent,
+                      onPressed: _request,
+                      accentColor: AppColors.primary,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  onPressed: Navigator.of(context).pop,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              (widget.plan['name']?.toString() ?? appStrings.plan)
-                  .toUpperCase(),
-              style: AppTypography.itemTitle(context).copyWith(fontSize: 22),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(_planAccess(widget.plan), style: AppTypography.body(context)),
-            if (widget.plan['duration_days'] != null) ...[
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                appStrings.planDays(widget.plan['duration_days'] as int),
-                style: AppTypography.bodySecondary(context),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              _planPrice(widget.plan),
-              style: AppTypography.itemTitle(
-                context,
-              ).copyWith(color: AppColors.primary),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              appStrings.requestMembershipConfirm,
-              style: AppTypography.bodySecondary(context),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(_error!, style: AppTypography.error(context)),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            AppFormSubmitButton(
-              label: widget.isSubscription
-                  ? appStrings.requestSubscription
-                  : appStrings.requestDropIn,
-              loading: _loading,
-              enabled: true,
-              onPressed: _request,
-              accentColor: AppColors.primary,
-            ),
-            if (stripeMembershipPaymentsEnabled) ...[
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton(
-                onPressed: () => widget.service.payByCard(widget.plan),
-                child: Text(appStrings.payByCard.toUpperCase()),
-              ),
-            ],
-          ],
         ),
-      ),
+      ],
     ),
   );
+}
+
+class _GymBusinessDetails extends StatelessWidget {
+  const _GymBusinessDetails({required this.gym});
+  final Map<String, dynamic> gym;
+
+  @override
+  Widget build(BuildContext context) {
+    final values =
+        [
+              gym['businessName'],
+              gym['address'],
+              gym['email'],
+              gym['phone'],
+              gym['website'],
+            ]
+            .map((value) => value?.toString().trim())
+            .whereType<String>()
+            .where((value) => value.isNotEmpty);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          (gym['name'] ?? appStrings.gymIdentityLabel).toString(),
+          style: AppTypography.itemTitle(context),
+        ),
+        for (final value in values) ...[
+          const SizedBox(height: AppSpacing.xxs),
+          Text(value, style: AppTypography.bodySecondary(context)),
+        ],
+      ],
+    );
+  }
+}
+
+class _PaymentChoiceRow extends StatelessWidget {
+  const _PaymentChoiceRow({required this.value, required this.onChanged});
+  final MembershipPaymentChoice value;
+  final ValueChanged<MembershipPaymentChoice> onChanged;
+
+  @override
+  Widget build(BuildContext context) =>
+      SegmentedButton<MembershipPaymentChoice>(
+        key: const ValueKey('membership-payment-choice'),
+        segments: [
+          ButtonSegment(
+            value: MembershipPaymentChoice.card,
+            label: Text(appStrings.card),
+            icon: const Icon(Icons.credit_card_outlined),
+          ),
+          ButtonSegment(
+            value: MembershipPaymentChoice.inPerson,
+            label: Text(appStrings.payInPerson),
+            icon: const Icon(Icons.storefront_outlined),
+          ),
+        ],
+        selected: {value},
+        showSelectedIcon: false,
+        style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? Colors.white
+                : AppColors.textPrimary(context),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? AppColors.primary
+                : AppColors.surface(context),
+          ),
+        ),
+        onSelectionChanged: (selected) => onChanged(selected.single),
+      );
+}
+
+class _CheckoutDocumentRow extends StatelessWidget {
+  const _CheckoutDocumentRow({
+    required this.document,
+    required this.accepted,
+    required this.onChanged,
+  });
+  final Map<String, dynamic> document;
+  final bool accepted;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final required = document['required'] == true;
+    final type = document['type']?.toString();
+    final title = switch (type) {
+      'terms' => appStrings.acceptTerms,
+      'waiver' => appStrings.acceptWaiver,
+      'sales_refund' => appStrings.acceptSalesRefund,
+      _ => appStrings.profilePrivacyPolicy,
+    };
+    return Padding(
+      key: ValueKey('checkout-document-$type'),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (required)
+            Checkbox(
+              key: ValueKey('checkout-document-toggle-$type'),
+              value: accepted,
+              activeColor: AppColors.primary,
+              onChanged: (value) => onChanged?.call(value ?? false),
+            )
+          else
+            const SizedBox(width: 48),
+          Expanded(
+            child: InkWell(
+              onTap: () => launchUrl(
+                Uri.parse(document['url'].toString()),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.body(
+                        context,
+                      ).copyWith(color: AppColors.primary),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      appStrings.documentVersion(
+                        document['version']?.toString() ?? '',
+                      ),
+                      style: AppTypography.bodySecondary(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MembershipLoadError extends StatelessWidget {

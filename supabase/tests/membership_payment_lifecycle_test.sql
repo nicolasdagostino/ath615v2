@@ -36,6 +36,14 @@ begin
     ('53000000-0000-0000-0000-000000000001', v_gym, 'Manual Pack', 'class_pack', 5, 35, 'EUR', 30, true),
     ('53000000-0000-0000-0000-000000000002', v_gym, 'Card Pack', 'class_pack', 10, 50, 'EUR', 30, true),
     ('53000000-0000-0000-0000-000000000003', v_gym, 'Direct Pack', 'class_pack', 3, 20, 'EUR', 30, true);
+  insert into public.membership_legal_acceptances(
+    user_id, gym_id, plan_id, document_id, document_type,
+    document_version, document_url
+  )
+  select v_member, v_gym, mp.id, d.id, d.document_type, d.version, d.url
+  from public.membership_plans mp
+  cross join public.membership_legal_documents d
+  where mp.gym_id = v_gym and d.is_active and d.is_required;
 end;
 $$;
 

@@ -24,6 +24,31 @@ class _FakeAvailableService implements AvailableMembershipsService {
   final Completer<List<Map<String, dynamic>>>? loadCompleter;
   final List<String> loadedTypes = [];
   final List<String> requestedPlans = [];
+  final List<String> paidPlans = [];
+  final List<List<String>> acceptedDocuments = [];
+
+  @override
+  Future<MembershipCheckoutContext> loadCheckoutContext(
+    Map<String, dynamic> plan,
+  ) async => const MembershipCheckoutContext(
+    gym: {'name': 'ATHLETE 615', 'businessName': 'ATHLETE 615 SL'},
+    documents: [
+      {
+        'id': 'terms-v1',
+        'type': 'terms',
+        'version': '2026-08-25',
+        'url': 'https://athlete615.com/terms-and-conditions',
+        'required': true,
+      },
+      {
+        'id': 'privacy-v1',
+        'type': 'privacy',
+        'version': '2026-08-25',
+        'url': 'https://athlete615.com/privacy-policy',
+        'required': false,
+      },
+    ],
+  );
 
   @override
   Future<List<Map<String, dynamic>>> loadPlans(String type) async {
@@ -34,11 +59,20 @@ class _FakeAvailableService implements AvailableMembershipsService {
   }
 
   @override
-  Future<void> payByCard(Map<String, dynamic> plan) async {}
+  Future<void> payByCard(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+  ) async {
+    paidPlans.add(plan['id'].toString());
+  }
 
   @override
-  Future<MembershipRequestResult> requestPlan(Map<String, dynamic> plan) async {
+  Future<MembershipRequestResult> requestPlan(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+  ) async {
     requestedPlans.add(plan['id'].toString());
+    acceptedDocuments.add(documentIds);
     if (failRequest) throw StateError('request failed');
     return MembershipRequestResult.sent;
   }
@@ -118,7 +152,7 @@ void main() {
     });
   }
 
-  testWidgets('drop-in shares selection sheet and shared submit CTA', (
+  testWidgets('drop-in checkout requires consent and requests in person', (
     tester,
   ) async {
     final service = _FakeAvailableService(plans: [plan(unlimited: false)]);
@@ -129,11 +163,53 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('available-plan-dropin')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('membership-request-sheet')), findsOne);
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('membership-request-sheet')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(
+      tester
+          .widget<AppFormSubmitButton>(find.byType(AppFormSubmitButton))
+          .enabled,
+      isFalse,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('checkout-document-terms')),
+      -180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('membership-request-sheet')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('checkout-document-toggle-terms')),
+    );
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('membership-request-sheet')),
+        matching: find.byType(Scrollable),
+      ),
+    );
     expect(find.byType(AppFormSubmitButton), findsOne);
-    expect(find.text('REQUEST DROP-IN'), findsOne);
-    await tester.tap(find.text('REQUEST DROP-IN'));
+    expect(
+      tester
+          .widget<AppFormSubmitButton>(find.byType(AppFormSubmitButton))
+          .enabled,
+      isTrue,
+    );
+    await tester.tap(find.text('REQUEST MEMBERSHIP'));
     await tester.pumpAndSettle();
     expect(service.requestedPlans, ['dropin']);
+    expect(service.acceptedDocuments, [
+      ['terms-v1'],
+    ]);
   });
 
   testWidgets('request errors remain in the shared sheet', (tester) async {
@@ -144,11 +220,73 @@ void main() {
     await _pumpFlow(tester, type: 'subscription', service: service);
     await tester.tap(find.byKey(const ValueKey('available-plan-unlimited')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('REQUEST SUBSCRIPTION'));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('checkout-document-terms')),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('membership-request-sheet')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('checkout-document-toggle-terms')),
+    );
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('membership-request-sheet')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('REQUEST MEMBERSHIP'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('membership-request-sheet')), findsOne);
     expect(find.textContaining('request failed'), findsOne);
   });
+
+  testWidgets(
+    'card is selectable but cannot create Checkout while flag is off',
+    (tester) async {
+      final service = _FakeAvailableService(plans: [plan(unlimited: true)]);
+      await _pumpFlow(tester, type: 'subscription', service: service);
+      await tester.tap(find.byKey(const ValueKey('available-plan-unlimited')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Card'),
+        180,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('membership-request-sheet')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.tap(find.text('Card'));
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('checkout-document-terms')),
+        180,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('membership-request-sheet')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('checkout-document-toggle-terms')),
+      );
+      await tester.scrollUntilVisible(
+        find.byType(AppFormSubmitButton),
+        180,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('membership-request-sheet')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(find.text('CONTINUE WITH STRIPE'), findsOne);
+      await tester.tap(find.text('CONTINUE WITH STRIPE'));
+      await tester.pumpAndSettle();
+      expect(service.requestedPlans, isEmpty);
+      expect(service.paidPlans, isEmpty);
+    },
+  );
 
   testWidgets('loading, empty and error remain distinct states', (
     tester,
