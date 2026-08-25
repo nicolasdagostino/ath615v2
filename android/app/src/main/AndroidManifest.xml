@@ -35,6 +35,17 @@
                     android:scheme="athletelab"
                     android:host="reset-password" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="athletelab"
+                    android:host="checkout" />
+            </intent-filter>
         </activity>
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"

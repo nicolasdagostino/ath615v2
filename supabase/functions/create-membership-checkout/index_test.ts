@@ -48,6 +48,14 @@ Deno.test("checkout amount and gym metadata come from server context", () => {
   assertEquals(params.get("metadata[user_id]"), "user-a");
   assertEquals(params.get("metadata[request_id]"), "request-1");
   assertEquals(params.get("payment_method_types[0]"), "card");
+  assertEquals(
+    params.get("success_url"),
+    "athletelab://checkout?status=success&session_id={CHECKOUT_SESSION_ID}",
+  );
+  assertEquals(
+    params.get("cancel_url"),
+    "athletelab://checkout?status=cancel",
+  );
 });
 
 Deno.test("checkout normalizes document ids for server-side acceptance", () => {

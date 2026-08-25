@@ -48,8 +48,11 @@ export function buildCheckoutSessionParams(
   // Checkout cannot silently add an asynchronous payment method.
   params.set("payment_method_types[0]", "card");
   params.set("expires_at", expiresAt.toString());
-  params.set("success_url", "https://athlete615.com/?checkout=success");
-  params.set("cancel_url", "https://athlete615.com/?checkout=cancel");
+  params.set(
+    "success_url",
+    "athletelab://checkout?status=success&session_id={CHECKOUT_SESSION_ID}",
+  );
+  params.set("cancel_url", "athletelab://checkout?status=cancel");
   params.set("line_items[0][quantity]", "1");
   params.set("line_items[0][price_data][currency]", context.currency);
   params.set(

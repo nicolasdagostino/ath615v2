@@ -7,6 +7,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/notifications/navigation/notification_destination.dart';
 
+String? checkoutReturnDestination(Uri uri) {
+  if (uri.scheme.toLowerCase() != 'athletelab' ||
+      uri.host.toLowerCase() != 'checkout') {
+    return null;
+  }
+  final status = uri.queryParameters['status'] == 'success'
+      ? 'success'
+      : 'cancel';
+  return '/membership?checkout=$status';
+}
+
 class DeepLinkService {
   DeepLinkService(this._router);
 
@@ -41,6 +52,12 @@ class DeepLinkService {
     final lower = raw.toLowerCase();
 
     debugPrint('ATH615 DEEPLINK RAW => $raw');
+
+    final checkoutDestination = checkoutReturnDestination(uri);
+    if (checkoutDestination != null) {
+      _router.go(checkoutDestination);
+      return;
+    }
 
     final isAuthLink =
         lower.contains('reset-password') ||
