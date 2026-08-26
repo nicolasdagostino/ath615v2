@@ -40,12 +40,14 @@ class DashboardScreen extends StatefulWidget {
     required this.unreadNotifications,
     required this.onOpenNotifications,
     this.initialSection,
+    this.initialMemberId,
   });
 
   final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
   final String? initialSection;
+  final String? initialMemberId;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -131,6 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<int> _weeklyBookings = List<int>.filled(7, 0);
   List<Map<String, dynamic>> _recentActivity = [];
   List<Map<String, dynamic>> _todayClassRows = [];
+  bool _initialMemberHandled = false;
 
   int get _athletesCount =>
       _members.where((m) => m['role'] == 'athlete').length;
@@ -246,6 +249,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadDashboardData() async {
     await _loadMembers();
 
+    final initialMemberId = widget.initialMemberId;
+    if (!_initialMemberHandled && initialMemberId != null && mounted) {
+      _initialMemberHandled = true;
+      final member = _members.where(
+        (candidate) => candidate['id']?.toString() == initialMemberId,
+      );
+      if (member.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _openMember(member.first);
+        });
+      }
+    }
+
     await Future.wait([
       _loadGymJoinRequests(),
       _loadMembershipRequests(),
@@ -273,6 +289,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       klass: klass,
       actionLabel: '',
       onAction: null,
+      onMemberTap: (memberId) {
+        final member = _members.where(
+          (candidate) => candidate['id']?.toString() == memberId,
+        );
+        if (member.isNotEmpty) _openMember(member.first);
+      },
     );
   }
 

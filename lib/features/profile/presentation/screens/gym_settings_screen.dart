@@ -15,6 +15,29 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 bool _stripePaymentsEnabled = false;
 
+enum GymStripeConnectState {
+  disconnected,
+  setupPending,
+  chargesDisabled,
+  paymentsEnabled,
+}
+
+GymStripeConnectState gymStripeConnectState({
+  required String? accountId,
+  required bool onboardingComplete,
+  required bool chargesEnabled,
+  required bool payoutsEnabled,
+}) {
+  if (accountId == null || accountId.trim().isEmpty) {
+    return GymStripeConnectState.disconnected;
+  }
+  if (!onboardingComplete || !payoutsEnabled) {
+    return GymStripeConnectState.setupPending;
+  }
+  if (!chargesEnabled) return GymStripeConnectState.chargesDisabled;
+  return GymStripeConnectState.paymentsEnabled;
+}
+
 class GymSettingsScreen extends StatefulWidget {
   const GymSettingsScreen({super.key, this.gymLoaderForTesting});
 
@@ -38,7 +61,10 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   bool _saving = false;
   bool _uploadingLogo = false;
   bool _connectingStripe = false;
+  String? _stripeAccountId;
+  bool _stripeOnboardingComplete = false;
   bool _stripeChargesEnabled = false;
+  bool _stripePayoutsEnabled = false;
   String? _logoUrl;
 
   @override
@@ -75,7 +101,9 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
       final gym = await Supabase.instance.client
           .from('gyms')
           .select(
-            'business_name,phone,email,website,address,name,logo_url,gym_code,stripe_charges_enabled',
+            'business_name,phone,email,website,address,name,logo_url,gym_code,'
+            'stripe_account_id,stripe_onboarding_complete,'
+            'stripe_charges_enabled,stripe_payouts_enabled',
           )
           .eq('id', _gymId!)
           .single();
@@ -97,7 +125,10 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
     _address.text = (gym['address'] ?? '').toString();
     _logoUrl = gym['logo_url']?.toString();
     _gymCode = gym['gym_code']?.toString();
+    _stripeAccountId = gym['stripe_account_id']?.toString();
+    _stripeOnboardingComplete = gym['stripe_onboarding_complete'] == true;
     _stripeChargesEnabled = gym['stripe_charges_enabled'] == true;
+    _stripePayoutsEnabled = gym['stripe_payouts_enabled'] == true;
   }
 
   Future<void> _uploadLogo() async {
@@ -365,20 +396,32 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                         onPressed: _saveGym,
                         accentColor: AppColors.primary,
                       ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(
+                        label: appStrings.gymPayments.toUpperCase(),
+                      ),
                       const SizedBox(height: AppSpacing.sm),
-                      OutlinedButton(
-                        onPressed:
-                            _stripePaymentsEnabled && !_stripeChargesEnabled
-                            ? _connectStripe
-                            : null,
-                        child: Text(
-                          _stripePaymentsEnabled
-                              ? _stripeChargesEnabled
-                                    ? appStrings.stripeConnected
-                                    : appStrings.connectStripe
-                              : appStrings.comingSoon,
+                      _GymStripeStatus(
+                        state: gymStripeConnectState(
+                          accountId: _stripeAccountId,
+                          onboardingComplete: _stripeOnboardingComplete,
+                          chargesEnabled: _stripeChargesEnabled,
+                          payoutsEnabled: _stripePayoutsEnabled,
                         ),
                       ),
+                      if (_stripePaymentsEnabled) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        OutlinedButton(
+                          onPressed: _stripeChargesEnabled
+                              ? _refreshStripeStatus
+                              : _connectStripe,
+                          child: Text(
+                            _stripeChargesEnabled
+                                ? appStrings.stripeConnected
+                                : appStrings.connectStripe,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
           ),
@@ -386,6 +429,45 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
       ),
     ),
   );
+}
+
+class _GymStripeStatus extends StatelessWidget {
+  const _GymStripeStatus({required this.state});
+
+  final GymStripeConnectState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (state) {
+      GymStripeConnectState.disconnected => appStrings.stripeNotConnected,
+      GymStripeConnectState.setupPending => appStrings.stripeSetupPending,
+      GymStripeConnectState.chargesDisabled => appStrings.stripeChargesDisabled,
+      GymStripeConnectState.paymentsEnabled => appStrings.stripePaymentsEnabled,
+    };
+    final enabled = state == GymStripeConnectState.paymentsEnabled;
+
+    return Container(
+      key: const ValueKey('gym-stripe-status'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadii.input),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            enabled ? Icons.check_circle_outline : Icons.info_outline_rounded,
+            color: enabled
+                ? AppColors.primary
+                : AppColors.textSecondary(context),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(label, style: AppTypography.body(context))),
+        ],
+      ),
+    );
+  }
 }
 
 class _GymInfoField extends StatelessWidget {

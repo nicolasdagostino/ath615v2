@@ -8,24 +8,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test(
-    'fresh installation defaults to Spanish, light, 24h and metric',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final locale = LocaleController();
-      final theme = ThemeController();
-      final preferences = AppPreferencesController();
+  test('fresh installation defaults to Spanish, light and 24h', () async {
+    SharedPreferences.setMockInitialValues({});
+    final locale = LocaleController();
+    final theme = ThemeController();
+    final preferences = AppPreferencesController();
 
-      await locale.load();
-      await theme.load();
-      await preferences.load();
+    await locale.load();
+    await theme.load();
+    await preferences.load();
 
-      expect(locale.locale.languageCode, 'es');
-      expect(theme.themeMode, ThemeMode.light);
-      expect(preferences.timeFormat, AppTimeFormat.twentyFourHour);
-      expect(preferences.unitSystem, AppUnitSystem.metric);
-    },
-  );
+    expect(locale.locale.languageCode, 'es');
+    expect(theme.themeMode, ThemeMode.light);
+    expect(preferences.timeFormat, AppTimeFormat.twentyFourHour);
+  });
 
   test(
     'saved English, dark and user preferences are never overwritten',
@@ -34,7 +30,6 @@ void main() {
         'app_language': 'en',
         'app_theme_mode': 'dark',
         'app_time_format': 'twelveHour',
-        'app_unit_system': 'imperial',
       });
       final locale = LocaleController();
       final theme = ThemeController();
@@ -47,7 +42,6 @@ void main() {
       expect(locale.locale.languageCode, 'en');
       expect(theme.themeMode, ThemeMode.dark);
       expect(preferences.timeFormat, AppTimeFormat.twelveHour);
-      expect(preferences.unitSystem, AppUnitSystem.imperial);
     },
   );
 

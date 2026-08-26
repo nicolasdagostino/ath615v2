@@ -48,6 +48,7 @@ void main() {
     VoidCallback? action,
     List<ClassDetailAdminAction> adminActions = const [],
     ClassDetailAttendeeActions? attendeeActions,
+    ValueChanged<String>? onMemberTap,
   }) {
     final roster =
         bookings ??
@@ -86,6 +87,7 @@ void main() {
                 onBack: () {},
                 adminActions: adminActions,
                 attendeeActions: attendeeActions,
+                onMemberTap: onMemberTap,
               ),
             ),
           ),
@@ -206,6 +208,34 @@ void main() {
     await tester.pump();
 
     expect(tapped, isTrue);
+  });
+
+  testWidgets('admin member rows navigate while guests remain inert', (
+    tester,
+  ) async {
+    String? openedMemberId;
+    await pumpAt(
+      tester,
+      child: details(onMemberTap: (memberId) => openedMemberId = memberId),
+    );
+
+    await tester.tap(find.text('Alex Duarte'));
+    await tester.pump();
+    expect(openedMemberId, 'athlete-1');
+
+    openedMemberId = null;
+    await tester.tap(find.text('Guest Athlete'));
+    await tester.pump();
+    expect(openedMemberId, isNull);
+
+    await tester.scrollUntilVisible(
+      find.text('Matías Ruiz'),
+      220,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(find.text('Matías Ruiz'));
+    await tester.pump();
+    expect(openedMemberId, 'wait-1');
   });
 
   testWidgets('admin pencil opens the real contextual actions', (tester) async {

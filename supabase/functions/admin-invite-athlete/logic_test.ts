@@ -53,3 +53,26 @@ Deno.test("coach capability remains explicit", () => {
     true,
   );
 });
+
+Deno.test("all supported visible roles map to the existing backend contract", () => {
+  assertEquals(invitedMemberRole("athlete"), "athlete");
+  assertEquals(invitedMemberRole("coach"), "coach");
+  assertEquals(invitedMemberRole("admin"), "admin");
+  assertEquals(invitedMemberRole("unexpected"), "athlete");
+});
+
+Deno.test("a repeated relation remains active without changing its identity", () => {
+  const relation = gymMemberRelation({
+    gymId: "gym-a",
+    userId: "athlete-a",
+    role: "admin",
+    invitedBy: "owner-a",
+    joinedAt: "2026-08-25T00:00:00.000Z",
+  });
+  assertEquals(relation.gym_id, "gym-a");
+  assertEquals(relation.user_id, "athlete-a");
+  assertEquals(relation.role, "admin");
+  assertEquals(relation.is_active, true);
+  assertEquals(relation.is_coach, false);
+  assertEquals(relation.joined_at, "2026-08-25T00:00:00.000Z");
+});

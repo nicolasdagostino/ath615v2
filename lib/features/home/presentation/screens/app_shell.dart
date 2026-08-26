@@ -46,6 +46,7 @@ class _AppShellState extends State<AppShell> {
   bool _initialSectionResolved = false;
   String? _gymName;
   String? _dashboardSection;
+  String? _dashboardMemberId;
   int _unreadNotifications = 0;
   RealtimeChannel? _notificationsChannel;
 
@@ -171,6 +172,15 @@ class _AppShellState extends State<AppShell> {
     });
   }
 
+  void _openAdminMember(String memberId) {
+    if (_role != 'admin' && _role != 'owner') return;
+    setState(() {
+      _dashboardSection = 'members';
+      _dashboardMemberId = memberId;
+      _index = 4;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_role == null) {
@@ -194,6 +204,7 @@ class _AppShellState extends State<AppShell> {
               gymName: _gymName,
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
+              onOpenAdminMember: canSeeDashboard ? _openAdminMember : null,
             ),
             NotificationsScreen(
               gymName: _gymName,
@@ -208,11 +219,15 @@ class _AppShellState extends State<AppShell> {
             ),
             if (canSeeDashboard)
               DashboardScreen(
-                key: ValueKey('dashboard-${_dashboardSection ?? 'panel'}'),
+                key: ValueKey(
+                  'dashboard-${_dashboardSection ?? 'panel'}-'
+                  '${_dashboardMemberId ?? ''}',
+                ),
                 gymName: _gymName,
                 unreadNotifications: _unreadNotifications,
                 onOpenNotifications: _openNotifications,
                 initialSection: _dashboardSection,
+                initialMemberId: _dashboardMemberId,
               ),
           ]
         : <Widget>[

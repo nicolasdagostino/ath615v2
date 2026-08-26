@@ -32,11 +32,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _units(AppUnitSystem value) async {
-    await appPreferencesController.setUnitSystem(value);
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
@@ -115,27 +110,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                           appPreferencesController.timeFormat ==
                           AppTimeFormat.twelveHour,
                       onTap: () => _time(AppTimeFormat.twelveHour),
-                    ),
-                  ],
-                ),
-                _PreferenceSection(
-                  title: appStrings.units,
-                  children: [
-                    _ChoiceRow(
-                      key: const ValueKey('preference-units-metric'),
-                      label: appStrings.metric,
-                      selected:
-                          appPreferencesController.unitSystem ==
-                          AppUnitSystem.metric,
-                      onTap: () => _units(AppUnitSystem.metric),
-                    ),
-                    _ChoiceRow(
-                      key: const ValueKey('preference-units-imperial'),
-                      label: appStrings.imperial,
-                      selected:
-                          appPreferencesController.unitSystem ==
-                          AppUnitSystem.imperial,
-                      onTap: () => _units(AppUnitSystem.imperial),
                     ),
                   ],
                 ),

@@ -48,11 +48,13 @@ class BookingScreen extends StatefulWidget {
     required this.gymName,
     required this.unreadNotifications,
     required this.onOpenNotifications,
+    this.onOpenAdminMember,
   });
 
   final String? gymName;
   final int unreadNotifications;
   final VoidCallback onOpenNotifications;
+  final ValueChanged<String>? onOpenAdminMember;
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -676,6 +678,7 @@ class _BookingScreenState extends State<BookingScreen> {
               canMarkAttendance: _classState(klass) != 'upcoming',
             )
           : null,
+      onMemberTap: _canManageAttendance ? widget.onOpenAdminMember : null,
     );
   }
 

@@ -11,6 +11,7 @@ import 'package:ath615v2/features/workouts/presentation/widgets/workouts_header.
 import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/core/widgets/app_large_form_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -648,5 +649,125 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  }
+
+  for (final scenario in const ['Create WOD', 'Edit WOD']) {
+    testWidgets('$scenario places the cursor at the physical tap position', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(402, 874);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = TextEditingController(
+        text:
+            'Clean technique and conditioning\n'
+            'Second long line near the right edge\n'
+            'Final line for cursor testing',
+      );
+      final focusNode = FocusNode();
+      addTearDown(controller.dispose);
+      addTearDown(focusNode.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => showAppLargeFormSheet<void>(
+                    context: context,
+                    builder: (sheetContext) => WorkoutFormScaffold(
+                      title: scenario,
+                      onClose: () => Navigator.of(sheetContext).pop(),
+                      submit: WorkoutFormButton(
+                        label: scenario == 'Create WOD'
+                            ? 'Create WOD'
+                            : 'Save changes',
+                        loading: false,
+                        enabled: true,
+                        onPressed: () {},
+                      ),
+                      children: [
+                        WorkoutFormFields(
+                          loadingPrograms: false,
+                          programs: const [
+                            {'id': 'crossfit', 'name': 'CrossFit'},
+                          ],
+                          programId: 'crossfit',
+                          onProgramChanged: (_) {},
+                          dateLabel: '26/08/2026',
+                          onDateTap: () {},
+                          imageTitle: 'Select image',
+                          imageSubtitle: '',
+                          onImageTap: () {},
+                          descriptionController: controller,
+                          descriptionFocusNode: focusNode,
+                        ),
+                      ],
+                    ),
+                  ),
+                  child: const Text('OPEN CURSOR TEST'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('OPEN CURSOR TEST'));
+      await tester.pumpAndSettle();
+
+      final field = find.byKey(const ValueKey('workout-content-field'));
+      await tester.ensureVisible(field);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: field, matching: find.byType(EditableText)),
+        findsOneWidget,
+      );
+      final renderEditable = tester.allRenderObjects
+          .whereType<RenderEditable>()
+          .single;
+
+      for (final offset in [2, 8, 15, 20]) {
+        final caret = renderEditable.getLocalRectForCaret(
+          TextPosition(offset: offset),
+        );
+        final tapPosition = renderEditable.localToGlobal(
+          Offset(caret.left + 0.5, caret.center.dy),
+        );
+        final nativePosition = renderEditable
+            .getPositionForPoint(tapPosition)
+            .offset;
+        await tester.tapAt(tapPosition);
+        await tester.pump();
+        expect(focusNode.hasFocus, isTrue);
+        expect(
+          (controller.selection.baseOffset - nativePosition).abs(),
+          lessThanOrEqualTo(2),
+        );
+      }
+
+      final fieldRect = tester.getRect(field);
+      final lowerCaret = renderEditable.getLocalRectForCaret(
+        const TextPosition(offset: 20),
+      );
+      final rightEdgeTap = Offset(
+        fieldRect.right - 8,
+        renderEditable.localToGlobal(lowerCaret.center).dy,
+      );
+      final expectedAtRightEdge = renderEditable
+          .getPositionForPoint(rightEdgeTap)
+          .offset;
+      await tester.tapAt(rightEdgeTap);
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isTrue);
+      expect(
+        (controller.selection.baseOffset - expectedAtRightEdge).abs(),
+        lessThanOrEqualTo(2),
+      );
+      expect(tester.takeException(), isNull);
+    });
   }
 }

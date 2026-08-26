@@ -199,7 +199,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                                   Text(
                                     appStrings.attended.toUpperCase(),
                                     style: _TrainingText.subtle.copyWith(
-                                      color: AppColors.accent,
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.7,
                                     ),
@@ -310,7 +310,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         children: [
                           const Icon(
                             Icons.fitness_center_rounded,
-                            color: AppColors.accent,
+                            color: AppColors.primary,
                             size: 22,
                           ),
                           const SizedBox(width: 10),
@@ -363,7 +363,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        cursorColor: AppColors.accent,
+                        cursorColor: AppColors.primary,
                         style: _TrainingText.input.copyWith(
                           color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
@@ -378,7 +378,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         controller: notes,
                         minLines: 2,
                         maxLines: 3,
-                        cursorColor: AppColors.accent,
+                        cursorColor: AppColors.primary,
                         style: _TrainingText.input.copyWith(
                           color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
@@ -488,7 +488,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
             _TrainingMenuSection(
               children: [
                 if (_loading)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
                 else if (widget.recordsOnly)
                   _TrainingRecordsHubCard(
                     recordExercises: _recordExercises,
@@ -535,7 +537,7 @@ InputDecoration _inputDecoration(BuildContext context, String hint) {
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+      borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
@@ -676,7 +678,7 @@ class _TrainingMilestoneCard extends StatelessWidget {
               value: progress,
               minHeight: 9,
               backgroundColor: AppColors.surface(context),
-              color: AppColors.accent,
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -757,7 +759,7 @@ class _TrainingRecordsHubCard extends StatelessWidget {
                         Text(
                           '$weight kg · $date',
                           style: _TrainingText.subtle.copyWith(
-                            color: AppColors.accent,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -809,12 +811,12 @@ class _TrainingClassHistoryCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surfaceAlt(context),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.accent, width: 1),
+                border: Border.all(color: AppColors.primary, width: 1),
               ),
               child: Text(
                 '${appStrings.attended.toUpperCase()} ${history.length}',
                 style: _TrainingText.subtle.copyWith(
-                  color: AppColors.accent,
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.7,
                 ),

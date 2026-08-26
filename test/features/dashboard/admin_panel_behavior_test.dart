@@ -171,6 +171,11 @@ void main() {
               {'user_id': 'milestone'},
               {'user_id': 'low'},
               {'user_id': 'unlimited'},
+              {
+                'user_id': null,
+                'is_guest': true,
+                'guest_name': 'Guest Athlete',
+              },
             ],
             waitlist: const [
               {'user_id': 'wait'},
@@ -198,6 +203,11 @@ void main() {
     await tester.tap(find.text('First Athlete'));
     await tester.pump();
     expect(openedMember?['id'], 'first');
+
+    openedMember = null;
+    await tester.tap(find.text('Guest Athlete'));
+    await tester.pump();
+    expect(openedMember, isNull);
   });
 
   testWidgets('communication uses shared form fields and primary submit CTA', (

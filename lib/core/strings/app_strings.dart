@@ -1008,9 +1008,6 @@ class AppStrings {
   String get timeFormat => pick('Time format', 'Formato de hora');
   String get twentyFourHours => pick('24 hours', '24 horas');
   String get twelveHours => pick('12 hours', '12 horas');
-  String get units => pick('Units', 'Unidades');
-  String get metric => pick('Metric', 'Métrico');
-  String get imperial => pick('Imperial', 'Imperial');
   String get syncCalendar => pick(
     'Sync bookings with calendar',
     'Sincronizar reservas con calendario',
@@ -1104,6 +1101,15 @@ class AppStrings {
       pick('Leave gym error: $e', 'Error al salir del gym: $e');
   String get connectStripe => pick('Connect Stripe', 'Conectar Stripe');
   String get stripeConnected => pick('Stripe connected', 'Stripe conectado');
+  String get gymPayments => pick('Gym payments', 'Pagos del centro');
+  String get stripeNotConnected =>
+      pick('Stripe not connected', 'Stripe no conectado');
+  String get stripeSetupPending =>
+      pick('Stripe setup pending', 'Configuración de Stripe pendiente');
+  String get stripeChargesDisabled =>
+      pick('Charges not enabled', 'Cobros no habilitados');
+  String get stripePaymentsEnabled =>
+      pick('Payments enabled', 'Pagos habilitados');
   String connectStripeError(Object e) =>
       pick('Could not connect Stripe: $e', 'No se pudo conectar Stripe: $e');
 

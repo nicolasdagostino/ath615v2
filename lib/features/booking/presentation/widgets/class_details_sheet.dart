@@ -48,6 +48,7 @@ Future<void> showClassDetailsSheet({
   required VoidCallback? onAction,
   List<ClassDetailAdminAction> adminActions = const [],
   ClassDetailAttendeeActions? attendeeActions,
+  ValueChanged<String>? onMemberTap,
 }) async {
   final classId = klass['id'].toString();
 
@@ -198,6 +199,12 @@ Future<void> showClassDetailsSheet({
                     onChanged: attendeeActions.onChanged,
                     canMarkAttendance: attendeeActions.canMarkAttendance,
                   ),
+            onMemberTap: onMemberTap == null
+                ? null
+                : (memberId) {
+                    Navigator.pop(sheetContext);
+                    onMemberTap(memberId);
+                  },
             onAttendeeStatusChanged: updateAttendeeStatus,
             onAttendeeRemoved: removeAttendee,
             onAction: onAction == null
@@ -229,6 +236,7 @@ class ClassDetailsView extends StatelessWidget {
     this.myWaitlistPosition,
     this.onAttendeeStatusChanged,
     this.onAttendeeRemoved,
+    this.onMemberTap,
   });
 
   final Map<String, dynamic> klass;
@@ -244,6 +252,7 @@ class ClassDetailsView extends StatelessWidget {
   final Future<void> Function(Map<String, dynamic>, String)?
   onAttendeeStatusChanged;
   final Future<void> Function(Map<String, dynamic>, String)? onAttendeeRemoved;
+  final ValueChanged<String>? onMemberTap;
 
   String _formatDate(DateTime date) {
     final locale = appStrings.isEs ? 'es' : 'en';
@@ -334,6 +343,9 @@ class ClassDetailsView extends StatelessWidget {
                     name: coachName,
                     avatarUrl: coachAvatar,
                     showDivider: false,
+                    onTap: coachId == null || onMemberTap == null
+                        ? null
+                        : () => onMemberTap!(coachId),
                   )
                 else
                   Text(
@@ -389,6 +401,9 @@ class ClassDetailsView extends StatelessWidget {
                           ? null
                           : profile?['avatar_url']?.toString(),
                       status: _attendeeStatus(booking['status']?.toString()),
+                      onTap: isGuest || userId == null || onMemberTap == null
+                          ? null
+                          : () => onMemberTap!(userId),
                       actionKey: ValueKey('class-attendee-${booking['id']}'),
                       onAction: attendeeActions == null
                           ? null
@@ -425,6 +440,10 @@ class ClassDetailsView extends StatelessWidget {
                           : rawName.trim(),
                       avatarUrl: profile?['avatar_url']?.toString(),
                       position: entry.key + 1,
+                      onTap: profile == null || onMemberTap == null
+                          ? null
+                          : () =>
+                                onMemberTap!(entry.value['user_id'].toString()),
                     );
                   }),
                 ],
@@ -741,6 +760,7 @@ class ClassPersonRow extends StatelessWidget {
     this.status,
     this.onAction,
     this.actionKey,
+    this.onTap,
   });
 
   final String name;
@@ -750,6 +770,7 @@ class ClassPersonRow extends StatelessWidget {
   final String? status;
   final VoidCallback? onAction;
   final Key? actionKey;
+  final VoidCallback? onTap;
 
   String get _initials {
     final parts = name
@@ -762,71 +783,75 @@ class ClassPersonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 54),
-      decoration: showDivider
-          ? BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.border(context),
-                  width: 0.6,
-                ),
-              ),
-            )
-          : null,
-      child: Row(
-        children: [
-          if (position != null) ...[
-            SizedBox(
-              width: 24,
-              child: Text('$position', style: AppTypography.helper(context)),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-          ],
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: AppColors.surfaceAlt(context),
-            foregroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
-            child: hasAvatar
-                ? null
-                : Text(
-                    _initials.isEmpty ? 'M' : _initials,
-                    style: AppTypography.buttonLabel(
-                      context,
-                    ).copyWith(color: BookingColors.primary),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.input),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 54),
+        decoration: showDivider
+            ? BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.border(context),
+                    width: 0.6,
                   ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(
-                    context,
-                  ).copyWith(fontWeight: FontWeight.w600),
                 ),
-                if (status != null)
-                  Text(status!, style: AppTypography.helper(context)),
-              ],
+              )
+            : null,
+        child: Row(
+          children: [
+            if (position != null) ...[
+              SizedBox(
+                width: 24,
+                child: Text('$position', style: AppTypography.helper(context)),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.surfaceAlt(context),
+              foregroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+              child: hasAvatar
+                  ? null
+                  : Text(
+                      _initials.isEmpty ? 'M' : _initials,
+                      style: AppTypography.buttonLabel(
+                        context,
+                      ).copyWith(color: BookingColors.primary),
+                    ),
             ),
-          ),
-          if (onAction != null)
-            IconButton(
-              key: actionKey,
-              tooltip: appStrings.memberOptions,
-              onPressed: onAction,
-              icon: Icon(
-                Icons.edit_outlined,
-                size: 19,
-                color: BookingColors.primary,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  if (status != null)
+                    Text(status!, style: AppTypography.helper(context)),
+                ],
               ),
             ),
-        ],
+            if (onAction != null)
+              IconButton(
+                key: actionKey,
+                tooltip: appStrings.memberOptions,
+                onPressed: onAction,
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 19,
+                  color: BookingColors.primary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

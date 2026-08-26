@@ -32,7 +32,7 @@ void main() {
     );
   }
 
-  testWidgets('preferences persist theme, language, time and units', (
+  testWidgets('preferences persist theme, language and time without units', (
     tester,
   ) async {
     await resetPreferences();
@@ -48,19 +48,18 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     await tester.tap(find.byKey(const ValueKey('preference-time-12')));
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('preference-units-imperial')),
-      180,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.tap(find.byKey(const ValueKey('preference-units-imperial')));
     await tester.pump();
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('app_theme_mode'), 'dark');
     expect(prefs.getString('app_language'), 'en');
     expect(prefs.getString('app_time_format'), 'twelveHour');
-    expect(prefs.getString('app_unit_system'), 'imperial');
+    expect(prefs.containsKey('app_unit_system'), isFalse);
+    expect(find.byKey(const ValueKey('preference-units-metric')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('preference-units-imperial')),
+      findsNothing,
+    );
     expect(themeController.themeMode, ThemeMode.dark);
     expect(localeController.locale.languageCode, 'en');
     expect(tester.takeException(), isNull);
