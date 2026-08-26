@@ -141,7 +141,7 @@ class WorkoutFormScaffold extends StatelessWidget {
           children: [
             WorkoutFormHeader(title: title, onClose: onClose),
             Expanded(
-              child: keyboardVisible && children.length == 1
+              child: children.length == 1
                   ? Padding(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.screenX,
@@ -247,44 +247,28 @@ class WorkoutFormFields extends StatelessWidget {
   Widget build(BuildContext context) {
     final keyboardVisible = _WorkoutFormKeyboardState.of(context);
     final upperFields = _buildUpperFields(context);
-
-    if (keyboardVisible) {
-      return Column(
-        key: const ValueKey('workout-form-keyboard-layout'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Flexible(
-            flex: 1,
-            child: ListView(
-              key: const ValueKey('workout-form-scroll'),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.zero,
-              children: upperFields,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final editorHeight = keyboardVisible
+            ? (constraints.maxHeight * .56).clamp(150.0, 300.0)
+            : 250.0;
+        return ListView(
+          key: const ValueKey('workout-form-scroll'),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.zero,
+          children: [
+            ...upperFields,
+            SizedBox(height: keyboardVisible ? AppSpacing.sm : AppSpacing.lg),
+            SizedBox(
+              height: editorHeight,
+              child: _WorkoutDescriptionEditor(
+                controller: descriptionController,
+                focusNode: descriptionFocusNode,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Expanded(
-            flex: 3,
-            child: _WorkoutDescriptionEditor(
-              controller: descriptionController,
-              focusNode: descriptionFocusNode,
-              expanded: true,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ...upperFields,
-        const SizedBox(height: AppSpacing.lg),
-        _WorkoutDescriptionEditor(
-          controller: descriptionController,
-          focusNode: descriptionFocusNode,
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -376,15 +360,10 @@ class WorkoutFormFields extends StatelessWidget {
 }
 
 class _WorkoutDescriptionEditor extends StatelessWidget {
-  const _WorkoutDescriptionEditor({
-    required this.controller,
-    this.focusNode,
-    this.expanded = false,
-  });
+  const _WorkoutDescriptionEditor({required this.controller, this.focusNode});
 
   final TextEditingController controller;
   final FocusNode? focusNode;
-  final bool expanded;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -394,7 +373,7 @@ class _WorkoutDescriptionEditor extends StatelessWidget {
         label: appStrings.workoutDescription.toUpperCase(),
       ),
       const SizedBox(height: AppSpacing.xs),
-      if (expanded) Expanded(child: _field(context)) else _field(context),
+      Expanded(child: _field(context)),
     ],
   );
 
@@ -403,9 +382,9 @@ class _WorkoutDescriptionEditor extends StatelessWidget {
     controller: controller,
     focusNode: focusNode,
     onTapOutside: (_) => FocusScope.of(context).unfocus(),
-    expands: expanded,
-    minLines: expanded ? null : 10,
-    maxLines: expanded ? null : 18,
+    expands: true,
+    minLines: null,
+    maxLines: null,
     scrollPadding: const EdgeInsets.only(bottom: AppSpacing.md),
     keyboardType: TextInputType.multiline,
     textAlignVertical: TextAlignVertical.top,

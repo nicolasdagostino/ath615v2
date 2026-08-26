@@ -265,10 +265,12 @@ class _MemberStaffNoteEditorState extends State<_MemberStaffNoteEditor> {
   );
   late bool _isPinned = widget.note?.isPinned ?? false;
   bool _saving = false;
+  final _focusNode = FocusNode();
 
   @override
   void dispose() {
     _body.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -310,55 +312,65 @@ class _MemberStaffNoteEditorState extends State<_MemberStaffNoteEditor> {
           accentColor: AppColors.primary,
         ),
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
+      resizeToAvoidBottomInset: false,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenX,
           AppSpacing.md,
           AppSpacing.screenX,
-          MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
+          AppSpacing.sm,
         ),
-        children: [
-          AppFormSectionLabel(label: appStrings.internalNotes),
-          const SizedBox(height: AppSpacing.xs),
-          TextField(
-            key: const ValueKey('member-staff-note-body'),
-            controller: _body,
-            minLines: 5,
-            maxLines: 10,
-            maxLength: 2000,
-            textCapitalization: TextCapitalization.sentences,
-            style: appFormValueStyle(context),
-            decoration: appFormInput(
-              context,
-              icon: Icons.sticky_note_2_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppFormSectionLabel(label: appStrings.internalNotes),
+            const SizedBox(height: AppSpacing.xs),
+            Expanded(
+              child: TextField(
+                key: const ValueKey('member-staff-note-body'),
+                controller: _body,
+                focusNode: _focusNode,
+                expands: true,
+                minLines: null,
+                maxLines: null,
+                maxLength: 2000,
+                textAlignVertical: TextAlignVertical.top,
+                textCapitalization: TextCapitalization.sentences,
+                keyboardType: TextInputType.multiline,
+                style: appFormValueStyle(context),
+                decoration: appFormInput(
+                  context,
+                  icon: Icons.sticky_note_2_outlined,
+                  accentColor: AppColors.primary,
+                  hintText: appStrings.internalNoteHint,
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            SwitchListTile.adaptive(
+              key: const ValueKey('member-staff-note-pinned'),
+              contentPadding: EdgeInsets.zero,
+              value: _isPinned,
+              activeTrackColor: AppColors.primary,
+              title: Text(
+                _isPinned
+                    ? appStrings.removeFromImportant
+                    : appStrings.markAsImportant,
+                style: AppTypography.body(context),
+              ),
+              onChanged: (value) => setState(() => _isPinned = value),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppFormSubmitButton(
+              key: const ValueKey('save-member-staff-note'),
+              label: appStrings.save,
+              loading: _saving,
+              enabled: valid,
+              onPressed: _save,
               accentColor: AppColors.primary,
-              hintText: appStrings.internalNoteHint,
             ),
-            onChanged: (_) => setState(() {}),
-          ),
-          SwitchListTile.adaptive(
-            key: const ValueKey('member-staff-note-pinned'),
-            contentPadding: EdgeInsets.zero,
-            value: _isPinned,
-            activeTrackColor: AppColors.primary,
-            title: Text(
-              _isPinned
-                  ? appStrings.removeFromImportant
-                  : appStrings.markAsImportant,
-              style: AppTypography.body(context),
-            ),
-            onChanged: (value) => setState(() => _isPinned = value),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppFormSubmitButton(
-            key: const ValueKey('save-member-staff-note'),
-            label: appStrings.save,
-            loading: _saving,
-            enabled: valid,
-            onPressed: _save,
-            accentColor: AppColors.primary,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

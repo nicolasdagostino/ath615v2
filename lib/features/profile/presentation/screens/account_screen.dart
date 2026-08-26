@@ -10,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
+import '../../../../core/widgets/app_keyboard_dismissible.dart';
 import '../../../../core/widgets/app_pickers.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -198,32 +199,36 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
-    body: SafeArea(
-      child: Column(
-        children: [
-          _AccountHeader(onBack: () => Navigator.of(context).maybePop()),
-          Expanded(
-            child: _profile == null
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  )
-                : AccountFormContent(
-                    fullName: _fullName,
-                    birthDateLabel: _dateLabel(_birthDate.text),
-                    email:
-                        _profile?['email']?.toString() ??
-                        Supabase.instance.client.auth.currentUser?.email ??
-                        '-',
-                    avatarUrl: _profile?['avatar_url']?.toString(),
-                    uploadingAvatar: _uploadingAvatar,
-                    loading: _loading,
-                    onAvatarTap: _uploadAvatar,
-                    onBirthDateTap: _pickBirthDate,
-                    onSave: _save,
-                    onDelete: _deleteAccount,
-                  ),
-          ),
-        ],
+    body: AppKeyboardDismissible(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _AccountHeader(onBack: () => Navigator.of(context).maybePop()),
+            Expanded(
+              child: _profile == null
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : AccountFormContent(
+                      fullName: _fullName,
+                      birthDateLabel: _dateLabel(_birthDate.text),
+                      email:
+                          _profile?['email']?.toString() ??
+                          Supabase.instance.client.auth.currentUser?.email ??
+                          '-',
+                      avatarUrl: _profile?['avatar_url']?.toString(),
+                      uploadingAvatar: _uploadingAvatar,
+                      loading: _loading,
+                      onAvatarTap: _uploadAvatar,
+                      onBirthDateTap: _pickBirthDate,
+                      onSave: _save,
+                      onDelete: _deleteAccount,
+                    ),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -281,6 +286,7 @@ class AccountFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     key: const ValueKey('account-scroll'),
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(
       AppSpacing.screenX,
       AppSpacing.md,

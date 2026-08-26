@@ -1175,6 +1175,12 @@ class AppStrings {
     'Todas las reservas pendientes se marcarán como Asistió.',
   );
   String get finish => pick('Finish', 'Finalizar');
+  String get markAllPresent =>
+      pick('Mark all present', 'Marcar todos presentes');
+  String markAllPresentConfirmation(int count) => pick(
+    'Mark $count ${count == 1 ? 'person' : 'people'} as present?',
+    '¿Marcar ${count == 1 ? '1 persona' : '$count personas'} como presentes?',
+  );
 
   String workoutDetailError(Object e) =>
       pick('Workout detail error: $e', 'Error detalle WOD: $e');

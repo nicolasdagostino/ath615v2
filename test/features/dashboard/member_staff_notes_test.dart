@@ -29,6 +29,15 @@ void main() {
       find.byKey(const ValueKey('member-staff-note-body')),
       'Preparing HYROX in October',
     );
+    final noteField = tester.widget<TextField>(
+      find.byKey(const ValueKey('member-staff-note-body')),
+    );
+    expect(noteField.focusNode?.hasFocus, isTrue);
+    await tester.tap(find.byType(AppFormSectionLabel));
+    await tester.pump();
+    expect(noteField.focusNode?.hasFocus, isFalse);
+    await tester.tap(find.byKey(const ValueKey('member-staff-note-body')));
+    await tester.pump();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('member-staff-note-pinned')));
     await tester.pumpAndSettle();
@@ -85,6 +94,35 @@ void main() {
     expect(find.text('Operational context'), findsOneWidget);
     expect(find.byKey(const ValueKey('add-member-staff-note')), findsNothing);
     expect(find.byTooltip('Actions'), findsNothing);
+  });
+
+  testWidgets('note editor uses the keyboard viewport at 320px', (
+    tester,
+  ) async {
+    final repository = _FakeNotesRepository();
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
+
+    await tester.pumpWidget(_app(repository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-member-staff-note')));
+    await tester.pumpAndSettle();
+    final body = find.byKey(const ValueKey('member-staff-note-body'));
+    await tester.tap(body);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+
+    final bodyRect = tester.getRect(body);
+    final saveRect = tester.getRect(
+      find.byKey(const ValueKey('save-member-staff-note')),
+    );
+    expect(bodyRect.height, greaterThan(100));
+    expect(saveRect.bottom, lessThanOrEqualTo(420));
+    expect(saveRect.top - bodyRect.bottom, lessThan(100));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('briefing combines automatic insight with only pinned note', (

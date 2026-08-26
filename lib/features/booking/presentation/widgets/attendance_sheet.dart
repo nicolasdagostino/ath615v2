@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../booking_colors.dart';
 import 'attendance_add_booking_sheets.dart';
+import 'attendance_admin_actions.dart';
 
 Future<void> showAttendanceSheet({
   required BuildContext context,
@@ -45,10 +46,7 @@ Future<void> showAttendanceSheet({
 
   final profileById = {for (final p in profiles) p['id'].toString(): p};
   final startsAt = DateTime.parse(klass['starts_at']).toLocal();
-  final durationMinutes = klass['duration_minutes'] as int? ?? 60;
-  final classFinished = DateTime.now().isAfter(
-    startsAt.add(Duration(minutes: durationMinutes)),
-  );
+  final classStarted = !DateTime.now().isBefore(startsAt);
 
   if (!context.mounted) return;
 
@@ -282,7 +280,11 @@ Future<void> showAttendanceSheet({
 
           Future<void> finishAttendance() async {
             final pendingCount = bookingRows
-                .where((b) => b['status'].toString() == 'booked')
+                .where(
+                  (b) =>
+                      b['status'].toString() == 'booked' &&
+                      b['is_guest'] != true,
+                )
                 .length;
 
             if (pendingCount == 0) return;
@@ -316,14 +318,13 @@ Future<void> showAttendanceSheet({
                             children: [
                               const Icon(
                                 Icons.fact_check_rounded,
-                                color: AppColors.accent,
+                                color: AppColors.primary,
                                 size: 24,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  appStrings.finishAttendanceTitle
-                                      .toUpperCase(),
+                                  appStrings.markAllPresent.toUpperCase(),
                                   style: _AttendanceText.title.copyWith(
                                     color: AppColors.textPrimary(dialogContext),
                                     fontSize: 22,
@@ -334,7 +335,7 @@ Future<void> showAttendanceSheet({
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            appStrings.finishAttendanceMsg,
+                            appStrings.markAllPresentConfirmation(pendingCount),
                             style: _AttendanceText.subtle.copyWith(
                               color: AppColors.textSecondary(dialogContext),
                             ),
@@ -352,7 +353,7 @@ Future<void> showAttendanceSheet({
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _AttendanceSheetPrimaryButton(
-                                  label: appStrings.finish,
+                                  label: appStrings.markAllPresent,
                                   onTap: () =>
                                       Navigator.of(dialogContext).pop(true),
                                 ),
@@ -370,14 +371,11 @@ Future<void> showAttendanceSheet({
             if (confirmed != true) return;
 
             try {
-              await client
-                  .from('class_bookings')
-                  .update({'status': 'attended'})
-                  .eq('class_id', classId)
-                  .eq('status', 'booked');
+              await markAllClassAttended(client: client, classId: classId);
 
               for (final booking in bookingRows) {
-                if (booking['status'].toString() == 'booked') {
+                if (booking['status'].toString() == 'booked' &&
+                    booking['is_guest'] != true) {
                   booking['status'] = 'attended';
                 }
               }
@@ -514,9 +512,11 @@ Future<void> showAttendanceSheet({
                           onRemove: () => removeBooking(booking, name),
                         );
                       }),
-                    if (classFinished &&
+                    if (classStarted &&
                         bookingRows.any(
-                          (b) => b['status'].toString() == 'booked',
+                          (b) =>
+                              b['status'].toString() == 'booked' &&
+                              b['is_guest'] != true,
                         )) ...[
                       const SizedBox(height: 10),
                       _AttendanceFinishButton(onTap: finishAttendance),
@@ -718,7 +718,7 @@ class _AttendanceAddMemberSheetState extends State<_AttendanceAddMemberSheet> {
                 controller: _searchController,
                 autofocus: true,
                 onChanged: _onSearchChanged,
-                cursorColor: AppColors.accent,
+                cursorColor: AppColors.primary,
                 style: _AttendanceText.rowTitle.copyWith(
                   color: AppColors.textPrimary(context),
                 ),
@@ -735,7 +735,7 @@ class _AttendanceAddMemberSheetState extends State<_AttendanceAddMemberSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.accent),
+                    borderSide: const BorderSide(color: AppColors.primary),
                   ),
                 ),
               ),
@@ -754,7 +754,7 @@ class _AttendanceAddMemberSheetState extends State<_AttendanceAddMemberSheet> {
                 child: _loading
                     ? const Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.accent,
+                          color: AppColors.primary,
                         ),
                       )
                     : _members.isEmpty
@@ -844,13 +844,13 @@ class _AttendanceAddMemberSheetState extends State<_AttendanceAddMemberSheet> {
                                         height: 22,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.accent,
+                                          color: AppColors.primary,
                                         ),
                                       )
                                     else
                                       const Icon(
                                         Icons.add_circle_rounded,
-                                        color: AppColors.accent,
+                                        color: AppColors.primary,
                                         size: 24,
                                       ),
                                   ],
@@ -1000,11 +1000,11 @@ class _AttendanceMemberCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
       decoration: BoxDecoration(
         color: attended
-            ? AppColors.accent.withValues(alpha: 0.08)
+            ? AppColors.primary.withValues(alpha: 0.08)
             : AppColors.surfaceAlt(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: attended ? AppColors.accent : AppColors.border(context),
+          color: attended ? AppColors.primary : AppColors.border(context),
           width: 1,
         ),
       ),
@@ -1067,7 +1067,7 @@ class _AttendanceAvatar extends StatelessWidget {
             : Text(
                 name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
                 style: _AttendanceText.rowTitle.copyWith(
-                  color: AppColors.accent,
+                  color: AppColors.primary,
                 ),
               ),
       ),
@@ -1092,7 +1092,7 @@ class _AttendanceIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = onTap == null;
     final background = selected
-        ? AppColors.accent
+        ? AppColors.primary
         : danger
         ? AppColors.surface(context)
         : AppColors.surface(context);
@@ -1115,7 +1115,7 @@ class _AttendanceIconButton extends StatelessWidget {
           foregroundColor: foreground,
           disabledForegroundColor: AppColors.textSecondary(context),
           side: BorderSide(
-            color: selected ? AppColors.accent : AppColors.border(context),
+            color: selected ? AppColors.primary : AppColors.border(context),
             width: 1,
           ),
           padding: EdgeInsets.zero,
@@ -1203,10 +1203,10 @@ class _AttendanceFinishButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.fact_check_rounded, size: 18),
-        label: Text(appStrings.finishAttendance.toUpperCase()),
+        label: Text(appStrings.markAllPresent.toUpperCase()),
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.background(context),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -1232,17 +1232,15 @@ class _AttendanceSheetPrimaryButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onTap,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.background(context),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
           label.toUpperCase(),
-          style: _AttendanceText.rowTitle.copyWith(
-            color: AppColors.background(context),
-          ),
+          style: _AttendanceText.rowTitle.copyWith(color: Colors.white),
         ),
       ),
     );

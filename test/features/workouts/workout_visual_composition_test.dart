@@ -573,10 +573,12 @@ void main() {
         await tester.tap(fieldFinder);
         await tester.pump();
         expect(descriptionFocusNode.hasFocus, isTrue);
+        final fieldElementBeforeKeyboard = tester.element(fieldFinder);
 
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
         await tester.pumpAndSettle();
         expect(descriptionFocusNode.hasFocus, isTrue);
+        expect(tester.element(fieldFinder), same(fieldElementBeforeKeyboard));
         await tester.enterText(fieldFinder, '${controller.text}\nBurpees');
         await tester.pump();
 

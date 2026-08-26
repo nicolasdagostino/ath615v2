@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_design_tokens.dart';
+import 'app_keyboard_dismissible.dart';
 
 const double appLargeFormSheetHeightFactor = 0.92;
 
@@ -41,7 +42,7 @@ Future<T?> showAppLargeFormSheet<T>({
                 child: MediaQuery.removePadding(
                   context: sheetContext,
                   removeTop: true,
-                  child: builder(sheetContext),
+                  child: AppKeyboardDismissible(child: builder(sheetContext)),
                 ),
               ),
             ),

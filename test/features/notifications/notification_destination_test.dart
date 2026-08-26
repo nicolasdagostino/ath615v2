@@ -20,6 +20,13 @@ void main() {
     }
     expect(
       isWorkoutNotification(
+        type: 'legacy',
+        data: const {'source': 'DAILY_WORKOUT_PUBLISHED'},
+      ),
+      isTrue,
+    );
+    expect(
+      isWorkoutNotification(
         type: 'class_reminder',
         data: const {'workoutId': 'incidental-id'},
       ),

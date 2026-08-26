@@ -19,9 +19,13 @@ void main() {
         // This migration defines the explicit admin/coach attendance RPCs.
         // Their attended transition is the behavior this contract permits.
         .where(
-          (file) => !file.path.endsWith(
-            '20260809160000_migrate_attendance_guests_to_effective_gym.sql',
-          ),
+          (file) =>
+              !file.path.endsWith(
+                '20260809160000_migrate_attendance_guests_to_effective_gym.sql',
+              ) &&
+              !file.path.endsWith(
+                '20260826120000_fix_class_notification_timezone_and_batch_attendance.sql',
+              ),
         )
         .map((file) => file.readAsStringSync().toLowerCase())
         .join('\n');
@@ -31,6 +35,22 @@ void main() {
       isNot(contains("set status = 'attended'")),
       reason: 'Attendance must remain an explicit admin/coach action.',
     );
+  });
+
+  test('mark-all attendance is server-side, scoped and explicit', () {
+    final migration = File(
+      'supabase/migrations/20260826120000_fix_class_notification_timezone_and_batch_attendance.sql',
+    ).readAsStringSync();
+    expect(migration, contains('admin_mark_all_class_attended'));
+    expect(migration, contains("cb.status = 'booked'"));
+    expect(migration, contains('not coalesce(cb.is_guest, false)'));
+    expect(migration, contains("message = 'class_not_started'"));
+    expect(migration, contains('public.effective_gym_id()'));
+    final sheet = File(
+      'lib/features/booking/presentation/widgets/attendance_sheet.dart',
+    ).readAsStringSync();
+    expect(sheet, contains('markAllClassAttended('));
+    expect(sheet, isNot(contains(".update({'status': 'attended'})")));
   });
 
   test('Class Detail exposes only the existing attendance statuses', () {

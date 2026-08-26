@@ -101,5 +101,31 @@ void main() {
       find.byKey(const ValueKey('account-title')),
     );
     expect(title.style?.fontWeight, FontWeight.w600);
+
+    await tester.tap(find.byKey(const ValueKey('account-full-name')));
+    await tester.pump();
+    final editable = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('account-full-name')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(editable.focusNode.hasFocus, isTrue);
+    await tester.tap(
+      find.byKey(const ValueKey('account-title')),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    expect(editable.focusNode.hasFocus, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('account-full-name')));
+    await tester.pump();
+    expect(editable.focusNode.hasFocus, isTrue);
+    await tester.drag(
+      find.byKey(const ValueKey('account-scroll')),
+      const Offset(0, -120),
+    );
+    await tester.pump();
+    expect(editable.focusNode.hasFocus, isFalse);
   });
 }

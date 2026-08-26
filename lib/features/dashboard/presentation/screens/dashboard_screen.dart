@@ -18,6 +18,7 @@ import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_large_form_sheet.dart';
+import '../../../../core/widgets/app_keyboard_dismissible.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -2204,11 +2205,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final lastAttendance = stats['last_attendance']?.toString();
                 final gymMemberCreatedAt = adminGymMemberCreatedAt(member);
 
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: SafeArea(
+                return AppKeyboardDismissible(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: SafeArea(
                     child: Container(
                       constraints: BoxConstraints(
                         maxHeight: MediaQuery.of(context).size.height * 0.86,
@@ -2794,6 +2796,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             }),
                         ],
                       ),
+                    ),
                     ),
                   ),
                 );

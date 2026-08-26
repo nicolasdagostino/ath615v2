@@ -17,7 +17,8 @@ bool isWorkoutNotification({
       workoutNotificationTypes.contains(normalizedType)) {
     return true;
   }
-  return data['source']?.toString() == 'post_score_reminder';
+  final source = data['source']?.toString().trim().toLowerCase();
+  return source != null && workoutNotificationTypes.contains(source);
 }
 
 DateTime? parseNotificationDate(Object? raw) {

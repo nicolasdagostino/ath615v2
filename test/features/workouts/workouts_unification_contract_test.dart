@@ -140,6 +140,8 @@ void main() {
     expect(detail, contains("from('workout_comments')"));
     expect(detail, contains('CircleAvatar('));
     expect(detail, contains('_commentFocus'));
+    expect(detail, contains("ValueKey('workout-social-composer')"));
+    expect(detail, contains('color: AppColors.primary'));
     expect(detail, contains('AppSecondaryActionHeader('));
     expect(detail, isNot(contains('title: programName')));
     expect(detail, isNot(contains('0xFFB59B6A')));

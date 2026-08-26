@@ -567,6 +567,19 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                         hintText: appStrings.workoutCommentHint,
                         filled: true,
                         fillColor: AppColors.surfaceAlt(context),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.input),
+                          borderSide: BorderSide(
+                            color: AppColors.border(context),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.input),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.2,
+                          ),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadii.input),
                           borderSide: BorderSide(
@@ -1015,7 +1028,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                   _currentAvatarUrl!.isEmpty
                                               ? Icon(
                                                   Icons.person_outline_rounded,
-                                                  color: WorkoutColors.primary,
+                                                  color: AppColors.primary,
                                                   size: 18,
                                                 )
                                               : null,
