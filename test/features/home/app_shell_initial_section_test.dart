@@ -96,6 +96,7 @@ void main() {
     expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
     expect(find.byIcon(Icons.calendar_month), findsOneWidget);
     expect(find.byKey(const ValueKey('screen-dashboard')), findsNothing);
+    expect(find.text('ANALYTICS'), findsNothing);
   });
 
   testWidgets(

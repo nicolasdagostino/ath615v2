@@ -28,6 +28,7 @@ void main() {
     expect(find.text('DASHBOARD'), findsOneWidget);
     expect(find.text('MEMBERS'), findsAtLeastNWidgets(1));
     expect(find.text('MEMBERSHIPS'), findsOneWidget);
+    expect(find.text('ANALYTICS'), findsOneWidget);
     expect(find.byIcon(Icons.notifications), findsNothing);
     expect(find.byKey(const ValueKey('dashboard-kpis')), findsOneWidget);
     expect(find.byKey(const ValueKey('dashboard-attention')), findsOneWidget);

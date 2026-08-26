@@ -754,6 +754,59 @@ class AppStrings {
   }
 
   String get dashboardTitle => pick('Dashboard', 'Panel');
+  String get analyticsTitle => pick('Analytics', 'Analytics');
+  String get analyticsOverview => pick('Overview', 'Resumen');
+  String get analyticsAttendance => pick('Attendance', 'Asistencia');
+  String get analyticsSevenDays => pick('7 days', '7 días');
+  String get analyticsThirtyDays => pick('30 days', '30 días');
+  String get analyticsThisMonth => pick('This month', 'Este mes');
+  String get analyticsPreviousMonth => pick('Previous month', 'Mes anterior');
+  String get analyticsThreeMonths => pick('3 months', '3 meses');
+  String get analyticsActiveMembers =>
+      pick('Active members', 'Miembros activos');
+  String get analyticsBookings => pick('Bookings', 'Reservas');
+  String get analyticsAttendances => pick('Attendances', 'Asistencias');
+  String get analyticsNoShows => pick('No-shows', 'No-show');
+  String get analyticsOccupancy => pick('Occupancy', 'Ocupación');
+  String get analyticsAverageOccupancy =>
+      pick('Average per class', 'Media por clase');
+  String get analyticsNewMembers => pick('New members', 'Altas nuevas');
+  String get analyticsDeliveredClasses =>
+      pick('Classes delivered', 'Clases impartidas');
+  String get analyticsPeriodActivity =>
+      pick('Period activity', 'Actividad del periodo');
+  String get analyticsNoComparable =>
+      pick('No comparable period', 'Sin periodo comparable');
+  String analyticsComparedUp(String value) =>
+      pick('↑ $value vs previous period', '↑ $value vs periodo anterior');
+  String analyticsComparedDown(String value) =>
+      pick('↓ $value vs previous period', '↓ $value vs periodo anterior');
+  String get analyticsComparedSame =>
+      pick('No change vs previous period', 'Sin cambios vs periodo anterior');
+  String get analyticsLoading =>
+      pick('Loading analytics…', 'Cargando analytics…');
+  String get analyticsLoadError => pick(
+    'Analytics could not be loaded.',
+    'No se pudieron cargar los analytics.',
+  );
+  String get analyticsNoActivity => pick(
+    'There is no activity in this period.',
+    'No hay actividad en este periodo.',
+  );
+  String get analyticsTrend => pick('Trend', 'Tendencia');
+  String get analyticsPrograms => pick('Programs', 'Programas');
+  String get analyticsDays => pick('Days', 'Días');
+  String get analyticsHours => pick('Time slots', 'Horarios');
+  String get analyticsMostOccupied =>
+      pick('Highest occupancy', 'Mayor ocupación');
+  String get analyticsLeastOccupied =>
+      pick('Lowest occupancy', 'Menor ocupación');
+  String analyticsBookingsAndAttendances(int bookings, int attendances) => pick(
+    '$bookings bookings · $attendances attendances',
+    '$bookings reservas · $attendances asistencias',
+  );
+  String analyticsClassCapacity(int bookings, int capacity) =>
+      pick('$bookings of $capacity spots', '$bookings de $capacity plazas');
   String get dashboardSummary => pick('Today at a glance', 'Resumen de hoy');
   String get dashboardToday => pick('Today', 'Hoy');
   String get dashboardOverviewLoading =>

@@ -22,6 +22,7 @@ import '../../../../core/widgets/app_keyboard_dismissible.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../analytics/presentation/analytics_view.dart';
 import '../../../booking/presentation/booking_occupancy.dart';
 import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
@@ -53,7 +54,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-enum _DashboardTab { overview, members, plans }
+enum _DashboardTab { overview, members, plans, analytics }
 
 enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
 
@@ -118,6 +119,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ? _DashboardTab.plans
       : widget.initialSection == 'members'
       ? _DashboardTab.members
+      : widget.initialSection == 'analytics'
+      ? _DashboardTab.analytics
       : _DashboardTab.overview;
   _MemberRoleFilter _roleFilter = _MemberRoleFilter.all;
   List<Map<String, dynamic>> _members = [];
@@ -2886,6 +2889,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenX,
+              AppSpacing.xs,
+              AppSpacing.screenX,
+              0,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: _DashboardTabChip(
+                label: appStrings.analyticsTitle,
+                selected: _selectedTab == _DashboardTab.analytics,
+                onTap: () {
+                  setState(() => _selectedTab = _DashboardTab.analytics);
+                },
+              ),
+            ),
+          ),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.primary,
@@ -2942,6 +2963,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onOpenTodayClassBriefing: _openTodayClassBriefing,
                         onSendNotification: _openCommunicationSheet,
                       ),
+                  ],
+
+                  if (_selectedTab == _DashboardTab.analytics) ...[
+                    const AnalyticsView(),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[
@@ -3627,6 +3652,22 @@ Widget buildDashboardCompositionForTest() {
                   ),
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.md,
+              0,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: _DashboardTabChip(
+                label: appStrings.analyticsTitle,
+                selected: false,
+                onTap: () {},
+              ),
             ),
           ),
           Expanded(
