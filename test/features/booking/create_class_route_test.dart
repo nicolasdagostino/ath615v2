@@ -199,6 +199,53 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('create class follows the shared keyboard sheet trajectory', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      brightness: Brightness.light,
+      edit: false,
+      size: const Size(430, 800),
+    );
+    addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
+
+    final input = find.byType(TextField).first;
+    await tester.tap(input);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus, isNotNull);
+    final inputElement = tester.element(input);
+    final editableState = tester.state<EditableTextState>(
+      find.descendant(of: input, matching: find.byType(EditableText)),
+    );
+    final sheet = find.byKey(const ValueKey('app-large-form-sheet'));
+    final positions = <Rect>[tester.getRect(sheet)];
+
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pump();
+    for (var elapsed = 0; elapsed < 180; elapsed += 30) {
+      await tester.pump(const Duration(milliseconds: 30));
+      positions.add(tester.getRect(sheet));
+    }
+
+    for (var index = 1; index < positions.length; index++) {
+      expect(positions[index].top, lessThanOrEqualTo(positions[index - 1].top));
+      expect(
+        positions[index].bottom,
+        lessThanOrEqualTo(positions[index - 1].bottom),
+      );
+    }
+    expect(tester.element(input), same(inputElement));
+    expect(
+      tester.state<EditableTextState>(
+        find.descendant(of: input, matching: find.byType(EditableText)),
+      ),
+      same(editableState),
+    );
+    expect(FocusManager.instance.primaryFocus, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('edit uses shared form and keeps preloaded values', (
     tester,
   ) async {

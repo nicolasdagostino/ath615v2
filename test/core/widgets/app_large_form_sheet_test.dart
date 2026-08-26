@@ -58,4 +58,93 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'keyboard inset moves and resizes the sheet through one coherent trajectory',
+    (tester) async {
+      tester.view.physicalSize = const Size(402, 874);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(() => tester.view.viewInsets = FakeViewPadding.zero);
+      final focusNode = FocusNode();
+      final controller = TextEditingController(text: 'Existing description');
+      addTearDown(focusNode.dispose);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => showAppLargeFormSheet<void>(
+                    context: context,
+                    builder: (_) => Scaffold(
+                      resizeToAvoidBottomInset: false,
+                      body: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: TextField(
+                          key: const ValueKey('large-sheet-input'),
+                          controller: controller,
+                          focusNode: focusNode,
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: const Text('OPEN'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('OPEN'));
+      await tester.pumpAndSettle();
+      final sheet = find.byKey(const ValueKey('app-large-form-sheet'));
+      final input = find.byKey(const ValueKey('large-sheet-input'));
+      await tester.tap(input);
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+      final inputElement = tester.element(input);
+      final editableState = tester.state<EditableTextState>(
+        find.descendant(of: input, matching: find.byType(EditableText)),
+      );
+
+      final positions = <Rect>[tester.getRect(sheet)];
+      tester.view.viewInsets = const FakeViewPadding(bottom: 336);
+      await tester.pump();
+      for (var elapsed = 0; elapsed < 180; elapsed += 30) {
+        await tester.pump(const Duration(milliseconds: 30));
+        positions.add(tester.getRect(sheet));
+      }
+
+      for (var index = 1; index < positions.length; index++) {
+        expect(
+          positions[index].top,
+          lessThanOrEqualTo(positions[index - 1].top),
+        );
+        expect(
+          positions[index].bottom,
+          lessThanOrEqualTo(positions[index - 1].bottom),
+        );
+      }
+      expect(
+        positions.map((rect) => rect.top).reduce((a, b) => a > b ? a : b),
+        lessThan(100),
+      );
+      expect(positions.last.bottom, closeTo(874 - 336, 1));
+      expect(focusNode.hasFocus, isTrue);
+      expect(tester.element(input), same(inputElement));
+      expect(
+        tester.state<EditableTextState>(
+          find.descendant(of: input, matching: find.byType(EditableText)),
+        ),
+        same(editableState),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

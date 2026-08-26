@@ -574,13 +574,62 @@ void main() {
         await tester.pump();
         expect(descriptionFocusNode.hasFocus, isTrue);
         final fieldElementBeforeKeyboard = tester.element(fieldFinder);
+        final editableStateBeforeKeyboard = tester.state<EditableTextState>(
+          find.descendant(of: fieldFinder, matching: find.byType(EditableText)),
+        );
+        final scrollable = tester.state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byKey(const ValueKey('workout-form-scroll')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        final initialScrollOffset = scrollable.position.pixels;
+        final sheetFinder = find.byKey(const ValueKey('app-large-form-sheet'));
+        final sheetRects = <Rect>[tester.getRect(sheetFinder)];
+        final fieldRects = <Rect>[tester.getRect(fieldFinder)];
 
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pump();
+        for (var elapsed = 0; elapsed < 180; elapsed += 30) {
+          await tester.pump(const Duration(milliseconds: 30));
+          sheetRects.add(tester.getRect(sheetFinder));
+          fieldRects.add(tester.getRect(fieldFinder));
+        }
+        final transitionScrollOffset = scrollable.position.pixels;
+        for (var index = 1; index < sheetRects.length; index++) {
+          expect(
+            sheetRects[index].top,
+            lessThanOrEqualTo(sheetRects[index - 1].top),
+          );
+          expect(
+            sheetRects[index].bottom,
+            lessThanOrEqualTo(sheetRects[index - 1].bottom),
+          );
+          expect(
+            fieldRects[index].top,
+            lessThanOrEqualTo(fieldRects[index - 1].top),
+          );
+        }
+        for (var index = 0; index < sheetRects.length; index++) {
+          expect(fieldRects[index].top, lessThan(sheetRects[index].bottom));
+        }
+        expect(transitionScrollOffset - initialScrollOffset, lessThan(80));
         await tester.pumpAndSettle();
         expect(descriptionFocusNode.hasFocus, isTrue);
         expect(tester.element(fieldFinder), same(fieldElementBeforeKeyboard));
+        expect(
+          tester.state<EditableTextState>(
+            find.descendant(
+              of: fieldFinder,
+              matching: find.byType(EditableText),
+            ),
+          ),
+          same(editableStateBeforeKeyboard),
+        );
         await tester.enterText(fieldFinder, '${controller.text}\nBurpees');
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         final submitFinder = find.byKey(const ValueKey('workout-form-submit'));
         final field = tester.widget<TextField>(fieldFinder);

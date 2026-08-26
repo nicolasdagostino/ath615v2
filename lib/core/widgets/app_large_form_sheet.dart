@@ -5,6 +5,9 @@ import '../theme/app_design_tokens.dart';
 import 'app_keyboard_dismissible.dart';
 
 const double appLargeFormSheetHeightFactor = 0.92;
+const Duration appLargeFormSheetKeyboardAnimationDuration = Duration(
+  milliseconds: 180,
+);
 
 Future<T?> showAppLargeFormSheet<T>({
   required BuildContext context,
@@ -21,33 +24,44 @@ Future<T?> showAppLargeFormSheet<T>({
     barrierColor: Colors.black.withValues(alpha: 0.52),
     builder: (sheetContext) {
       final media = MediaQuery.of(sheetContext);
-      final availableHeight = media.size.height - media.viewInsets.bottom;
+      final targetKeyboardInset = media.viewInsets.bottom;
 
-      return AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
+      return TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: targetKeyboardInset),
+        duration: appLargeFormSheetKeyboardAnimationDuration,
         curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: SizedBox(
-            height: availableHeight * appLargeFormSheetHeightFactor,
-            width: double.infinity,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadii.sheet),
-              ),
-              child: Material(
-                key: const ValueKey('app-large-form-sheet'),
-                color: AppColors.background(sheetContext),
-                child: MediaQuery.removePadding(
-                  context: sheetContext,
-                  removeTop: true,
-                  child: AppKeyboardDismissible(child: builder(sheetContext)),
+        builder: (context, keyboardInsetAnimated, _) {
+          final availableHeight = (media.size.height - keyboardInsetAnimated)
+              .clamp(0.0, media.size.height)
+              .toDouble();
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: keyboardInsetAnimated),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: availableHeight * appLargeFormSheetHeightFactor,
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadii.sheet),
+                  ),
+                  child: Material(
+                    key: const ValueKey('app-large-form-sheet'),
+                    color: AppColors.background(sheetContext),
+                    child: MediaQuery.removePadding(
+                      context: sheetContext,
+                      removeTop: true,
+                      child: AppKeyboardDismissible(
+                        child: builder(sheetContext),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
     },
   );
