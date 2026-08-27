@@ -5,6 +5,8 @@ import '../domain/analytics_models.dart';
 abstract interface class AnalyticsRepository {
   Future<AnalyticsOverview> loadOverview(AnalyticsPeriod period);
   Future<AttendanceAnalytics> loadAttendance(AnalyticsPeriod period);
+  Future<MembershipAnalytics> loadMemberships(AnalyticsPeriod period);
+  Future<RevenueAnalytics> loadRevenue(AnalyticsPeriod period);
 }
 
 class SupabaseAnalyticsRepository implements AnalyticsRepository {
@@ -30,6 +32,28 @@ class SupabaseAnalyticsRepository implements AnalyticsRepository {
       params: {'p_period': period.apiValue},
     );
     return AttendanceAnalytics.fromJson(
+      Map<String, dynamic>.from(response as Map),
+    );
+  }
+
+  @override
+  Future<MembershipAnalytics> loadMemberships(AnalyticsPeriod period) async {
+    final response = await _client.rpc(
+      'get_effective_membership_analytics',
+      params: {'p_period': period.apiValue},
+    );
+    return MembershipAnalytics.fromJson(
+      Map<String, dynamic>.from(response as Map),
+    );
+  }
+
+  @override
+  Future<RevenueAnalytics> loadRevenue(AnalyticsPeriod period) async {
+    final response = await _client.rpc(
+      'get_effective_revenue_analytics',
+      params: {'p_period': period.apiValue},
+    );
+    return RevenueAnalytics.fromJson(
       Map<String, dynamic>.from(response as Map),
     );
   }

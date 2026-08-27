@@ -13,7 +13,7 @@ import '../../../core/widgets/app_section_chip.dart';
 import '../data/analytics_repository.dart';
 import '../domain/analytics_models.dart';
 
-enum AnalyticsSection { overview, attendance }
+enum AnalyticsSection { overview, attendance, memberships, revenue }
 
 class AnalyticsView extends StatefulWidget {
   const AnalyticsView({super.key, this.repository});
@@ -33,6 +33,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
   AnalyticsPeriod _period = AnalyticsPeriod.thirtyDays;
   AnalyticsOverview? _overview;
   AttendanceAnalytics? _attendance;
+  MembershipAnalytics? _memberships;
+  RevenueAnalytics? _revenue;
   Object? _error;
   bool _loading = true;
 
@@ -48,14 +50,23 @@ class _AnalyticsViewState extends State<AnalyticsView> {
       _error = null;
     });
     try {
-      if (_section == AnalyticsSection.overview) {
-        final result = await _repository.loadOverview(_period);
-        if (!mounted) return;
-        setState(() => _overview = result);
-      } else {
-        final result = await _repository.loadAttendance(_period);
-        if (!mounted) return;
-        setState(() => _attendance = result);
+      switch (_section) {
+        case AnalyticsSection.overview:
+          final result = await _repository.loadOverview(_period);
+          if (!mounted) return;
+          setState(() => _overview = result);
+        case AnalyticsSection.attendance:
+          final result = await _repository.loadAttendance(_period);
+          if (!mounted) return;
+          setState(() => _attendance = result);
+        case AnalyticsSection.memberships:
+          final result = await _repository.loadMemberships(_period);
+          if (!mounted) return;
+          setState(() => _memberships = result);
+        case AnalyticsSection.revenue:
+          final result = await _repository.loadRevenue(_period);
+          if (!mounted) return;
+          setState(() => _revenue = result);
       }
     } catch (error) {
       if (!mounted) return;
@@ -86,24 +97,27 @@ class _AnalyticsViewState extends State<AnalyticsView> {
         style: AppTypography.sectionTitle(context),
       ),
       const SizedBox(height: AppSpacing.sm),
-      Row(
-        children: [
-          Expanded(
-            child: AppSectionChip(
-              label: appStrings.analyticsOverview.toUpperCase(),
-              selected: _section == AnalyticsSection.overview,
-              onTap: () => _selectSection(AnalyticsSection.overview),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: AppSectionChip(
-              label: appStrings.analyticsAttendance.toUpperCase(),
-              selected: _section == AnalyticsSection.attendance,
-              onTap: () => _selectSection(AnalyticsSection.attendance),
-            ),
-          ),
-        ],
+      SingleChildScrollView(
+        key: const ValueKey('analytics-section-selector'),
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: AnalyticsSection.values.map((section) {
+            final label = switch (section) {
+              AnalyticsSection.overview => appStrings.analyticsOverview,
+              AnalyticsSection.attendance => appStrings.analyticsAttendance,
+              AnalyticsSection.memberships => appStrings.analyticsMemberships,
+              AnalyticsSection.revenue => appStrings.analyticsRevenue,
+            };
+            return Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.xs),
+              child: AppSectionChip(
+                label: label.toUpperCase(),
+                selected: _section == section,
+                onTap: () => _selectSection(section),
+              ),
+            );
+          }).toList(),
+        ),
       ),
       const SizedBox(height: AppSpacing.md),
       _PeriodSelector(selected: _period, onSelected: _selectPeriod),
@@ -119,7 +133,11 @@ class _AnalyticsViewState extends State<AnalyticsView> {
       else if (_section == AnalyticsSection.overview && _overview != null)
         AnalyticsOverviewContent(data: _overview!)
       else if (_section == AnalyticsSection.attendance && _attendance != null)
-        AnalyticsAttendanceContent(data: _attendance!),
+        AnalyticsAttendanceContent(data: _attendance!)
+      else if (_section == AnalyticsSection.memberships && _memberships != null)
+        AnalyticsMembershipContent(data: _memberships!)
+      else if (_section == AnalyticsSection.revenue && _revenue != null)
+        AnalyticsRevenueContent(data: _revenue!),
     ],
   );
 }
@@ -291,6 +309,198 @@ class AnalyticsAttendanceContent extends StatelessWidget {
   }
 }
 
+class AnalyticsMembershipContent extends StatelessWidget {
+  const AnalyticsMembershipContent({super.key, required this.data});
+
+  final MembershipAnalytics data;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return AppAsyncState.empty(
+        message: appStrings.analyticsNoMemberships,
+        icon: Icons.card_membership_outlined,
+      );
+    }
+    final snapshot = data.snapshot;
+    final credits = data.credits;
+    return Column(
+      key: const ValueKey('analytics-memberships-content'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GridView(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisExtent: 180,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+          ),
+          children: [
+            _KpiTile(
+              label: appStrings.activeMemberships,
+              value: '${snapshot.active}',
+            ),
+            _KpiTile(
+              label: appStrings.analyticsActivePacks,
+              value: '${snapshot.activePacks}',
+            ),
+            _KpiTile(
+              label: appStrings.analyticsActiveUnlimited,
+              value: '${snapshot.activeUnlimited}',
+            ),
+            _KpiTile(
+              label: appStrings.analyticsNewMemberships,
+              value: '${data.created}',
+              comparison: _countComparison(data.created, data.previousCreated),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionLabel(appStrings.analyticsCurrentStatus),
+        _CompactMetrics(
+          rows: [
+            (appStrings.analyticsScheduled, snapshot.scheduled.toString()),
+            (appStrings.analyticsExhausted, snapshot.exhausted.toString()),
+            (appStrings.analyticsExpired, snapshot.expired.toString()),
+            (appStrings.analyticsCancelled, snapshot.cancelled.toString()),
+            (appStrings.analyticsReplaced, snapshot.replaced.toString()),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionLabel(appStrings.analyticsPacksVsUnlimited),
+        _DistributionBars(
+          rows: [
+            (appStrings.analyticsPacks, snapshot.activePacks),
+            (appStrings.analyticsUnlimited, snapshot.activeUnlimited),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionLabel(appStrings.analyticsPlans),
+        _MembershipPlanRanking(rows: data.plans),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionLabel(appStrings.analyticsCredits),
+        _CompactMetrics(
+          rows: [
+            (
+              appStrings.analyticsCreditsPurchased,
+              '${credits.purchasedGranted}',
+            ),
+            (appStrings.analyticsCreditsAssigned, '${credits.assignedGranted}'),
+            (appStrings.analyticsCreditsConsumed, '${credits.consumed}'),
+            (appStrings.analyticsCreditsRefunded, '${credits.refunded}'),
+            (appStrings.analyticsNetConsumption, '${credits.netConsumed}'),
+            (
+              appStrings.analyticsCreditsRemaining,
+              '${credits.currentRemaining}',
+            ),
+            (
+              appStrings.analyticsCreditsExpiredUnused,
+              '${credits.expiredUnused}',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class AnalyticsRevenueContent extends StatelessWidget {
+  const AnalyticsRevenueContent({super.key, required this.data});
+
+  final RevenueAnalytics data;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return AppAsyncState.empty(
+        message: appStrings.analyticsNoConfirmedPayments,
+        icon: Icons.payments_outlined,
+      );
+    }
+    return Column(
+      key: const ValueKey('analytics-revenue-content'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ...data.currencies.map((currency) {
+          final methods = data.methods
+              .where((row) => row.currency == currency.currency)
+              .toList();
+          final plans = data.plans
+              .where((row) => row.currency == currency.currency)
+              .toList();
+          final trend = data.trend
+              .where((row) => row.currency == currency.currency)
+              .toList();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (data.currencies.length > 1)
+                  _SectionLabel(currency.currency),
+                GridView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                  mainAxisExtent: 185,
+                    crossAxisSpacing: AppSpacing.sm,
+                    mainAxisSpacing: AppSpacing.sm,
+                  ),
+                  children: [
+                    _KpiTile(
+                      label: appStrings.analyticsCollected,
+                      value: _money(currency.totalMinor, currency.currency),
+                      comparison: _moneyComparison(
+                        currency.totalMinor,
+                        currency.previousTotalMinor,
+                      ),
+                    ),
+                    _KpiTile(
+                      label: appStrings.analyticsConfirmedPayments,
+                      value: '${currency.paymentCount}',
+                      comparison: _countComparison(
+                        currency.paymentCount,
+                        currency.previousPaymentCount,
+                      ),
+                    ),
+                    _KpiTile(
+                      label: appStrings.analyticsAverageTicket,
+                      value: _money(currency.averageMinor, currency.currency),
+                      comparison: currency.previousAverageMinor == null
+                          ? _Comparison(appStrings.analyticsNoComparable, 0)
+                          : _moneyComparison(
+                              currency.averageMinor,
+                              currency.previousAverageMinor!,
+                            ),
+                    ),
+                    _KpiTile(
+                      label: appStrings.analyticsTopRevenuePlan,
+                      value: plans.isEmpty ? '—' : plans.first.name,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _SectionLabel(appStrings.analyticsRevenueTrend),
+                _RevenueTrendChart(points: trend),
+                const SizedBox(height: AppSpacing.lg),
+                _SectionLabel(appStrings.analyticsPaymentMethod),
+                _RevenueMethodBars(rows: methods, currency: currency.currency),
+                const SizedBox(height: AppSpacing.lg),
+                _SectionLabel(appStrings.analyticsRevenueByPlan),
+                _RevenuePlanRanking(rows: plans),
+              ],
+            ),
+          );
+        }),
+        _RevenueStates(data: data),
+      ],
+    );
+  }
+}
+
 class _KpiTile extends StatelessWidget {
   const _KpiTile({required this.label, required this.value, this.comparison});
 
@@ -388,6 +598,337 @@ class _SectionLabel extends StatelessWidget {
       style: AppTypography.sectionTitle(context),
     ),
   );
+}
+
+class _CompactMetrics extends StatelessWidget {
+  const _CompactMetrics({required this.rows});
+  final List<(String, String)> rows;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: rows
+        .map(
+          (row) => Container(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: AppColors.border(context)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(row.$1, style: AppTypography.body(context)),
+                ),
+                Text(
+                  row.$2,
+                  style: AppTypography.body(
+                    context,
+                  ).copyWith(color: AppColors.primary),
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList(),
+  );
+}
+
+class _DistributionBars extends StatelessWidget {
+  const _DistributionBars({required this.rows});
+  final List<(String, int)> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = rows.fold<int>(0, (sum, row) => sum + row.$2);
+    if (total == 0) {
+      return Text(
+        appStrings.analyticsNoMemberships,
+        style: AppTypography.bodySecondary(context),
+      );
+    }
+    return Column(
+      children: rows.map((row) {
+        final percentage = 100 * row.$2 / total;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(row.$1, style: AppTypography.body(context)),
+                  ),
+                  Text(
+                    '${row.$2} · ${percentage.toStringAsFixed(0)}%',
+                    style: AppTypography.helper(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: row.$2 / total,
+                  child: Container(
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _MembershipPlanRanking extends StatelessWidget {
+  const _MembershipPlanRanking({required this.rows});
+  final List<MembershipPlanAnalytics> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) {
+      return Text(
+        appStrings.analyticsNoMemberships,
+        style: AppTypography.bodySecondary(context),
+      );
+    }
+    return Column(
+      children: rows
+          .take(8)
+          .map(
+            (row) => Container(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border(context)),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(row.name, style: AppTypography.body(context)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    appStrings.analyticsPlanMembershipSummary(
+                      row.membershipsCreated,
+                      row.paidSales,
+                      row.directAssignments,
+                    ),
+                    textAlign: TextAlign.end,
+                    style: AppTypography.helper(context),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _RevenueMethodBars extends StatelessWidget {
+  const _RevenueMethodBars({required this.rows, required this.currency});
+  final List<RevenueMethodAnalytics> rows;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) {
+      return Text(
+        appStrings.analyticsNoClassifiedMethods,
+        style: AppTypography.bodySecondary(context),
+      );
+    }
+    final maxValue = rows.fold<int>(
+      1,
+      (value, row) => math.max(value, row.totalMinor),
+    );
+    return Column(
+      children: rows
+          .map(
+            (row) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _paymentMethodLabel(row.method),
+                          style: AppTypography.body(context),
+                        ),
+                      ),
+                      Text(
+                        '${_money(row.totalMinor, currency)} · ${row.paymentCount}',
+                        style: AppTypography.helper(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  FractionallySizedBox(
+                    widthFactor: row.totalMinor / maxValue,
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _RevenuePlanRanking extends StatelessWidget {
+  const _RevenuePlanRanking({required this.rows});
+  final List<RevenuePlanAnalytics> rows;
+
+  @override
+  Widget build(BuildContext context) => rows.isEmpty
+      ? Text(
+          appStrings.analyticsNoConfirmedPayments,
+          style: AppTypography.bodySecondary(context),
+        )
+      : Column(
+          children: rows
+              .take(8)
+              .map(
+                (row) => Container(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border(context)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(row.name, style: AppTypography.body(context)),
+                            Text(
+                              appStrings.analyticsPaymentCount(
+                                row.paymentCount,
+                              ),
+                              style: AppTypography.helper(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _money(row.revenueMinor, row.currency),
+                            style: AppTypography.body(
+                              context,
+                            ).copyWith(color: AppColors.primary),
+                          ),
+                          Text(
+                            '${row.revenueShare?.toStringAsFixed(1) ?? '—'}%',
+                            style: AppTypography.helper(context),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+        );
+}
+
+class _RevenueStates extends StatelessWidget {
+  const _RevenueStates({required this.data});
+  final RevenueAnalytics data;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _SectionLabel(appStrings.analyticsPaymentStates),
+      _CompactMetrics(
+        rows: [
+          (appStrings.analyticsPaid, '${data.states.paid}'),
+          (appStrings.analyticsPending, '${data.states.pending}'),
+          (appStrings.analyticsFailed, '${data.states.failed}'),
+          (appStrings.analyticsCancelled, '${data.states.cancelled}'),
+        ],
+      ),
+    ],
+  );
+}
+
+class _RevenueTrendChart extends StatelessWidget {
+  const _RevenueTrendChart({required this.points});
+  final List<RevenueTrendPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    if (points.isEmpty) {
+      return Text(
+        appStrings.analyticsNoConfirmedPayments,
+        style: AppTypography.bodySecondary(context),
+      );
+    }
+    final maxValue = points.fold<int>(
+      1,
+      (value, point) => math.max(value, point.totalMinor),
+    );
+    return Container(
+      key: const ValueKey('analytics-revenue-chart'),
+      height: 170,
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border.all(color: AppColors.border(context)),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: points
+            .map(
+              (point) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Tooltip(
+                    message:
+                        '${DateFormat.MMMd(appStrings.isEs ? 'es' : 'en').format(point.date)} · ${_money(point.totalMinor, point.currency)}',
+                    child: FractionallySizedBox(
+                      heightFactor: math.max(0.04, point.totalMinor / maxValue),
+                      alignment: Alignment.bottomCenter,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
 }
 
 class _BreakdownList extends StatelessWidget {
@@ -693,6 +1234,28 @@ _Comparison _occupancyComparison(double? current, double? previous) {
     change > 0 ? 1 : -1,
   );
 }
+
+_Comparison _moneyComparison(int current, int previous) =>
+    _countComparison(current, previous);
+
+String _money(int minor, String currency) {
+  final locale = appStrings.isEs ? 'es_ES' : 'en_US';
+  try {
+    return NumberFormat.simpleCurrency(
+      name: currency,
+      locale: locale,
+    ).format(minor / 100);
+  } catch (_) {
+    return '$currency ${(minor / 100).toStringAsFixed(2)}';
+  }
+}
+
+String _paymentMethodLabel(String method) => switch (method) {
+  'card' => appStrings.analyticsCard,
+  'cash' => appStrings.cash,
+  'bizum' => appStrings.bizum,
+  _ => method,
+};
 
 String _percent(double? value) =>
     value == null ? '—' : '${value.toStringAsFixed(1)}%';

@@ -757,6 +757,8 @@ class AppStrings {
   String get analyticsTitle => pick('Analytics', 'Analytics');
   String get analyticsOverview => pick('Overview', 'Resumen');
   String get analyticsAttendance => pick('Attendance', 'Asistencia');
+  String get analyticsMemberships => pick('Memberships', 'Membresías');
+  String get analyticsRevenue => pick('Revenue', 'Ingresos');
   String get analyticsSevenDays => pick('7 days', '7 días');
   String get analyticsThirtyDays => pick('30 days', '30 días');
   String get analyticsThisMonth => pick('This month', 'Este mes');
@@ -807,6 +809,71 @@ class AppStrings {
   );
   String analyticsClassCapacity(int bookings, int capacity) =>
       pick('$bookings of $capacity spots', '$bookings de $capacity plazas');
+  String get analyticsActivePacks => pick('Active packs', 'Packs activos');
+  String get analyticsActiveUnlimited =>
+      pick('Active unlimited', 'Unlimited activas');
+  String get analyticsNewMemberships =>
+      pick('New memberships', 'Membresías nuevas');
+  String get analyticsCurrentStatus => pick('Current status', 'Estado actual');
+  String get analyticsScheduled => pick('Scheduled', 'Programadas');
+  String get analyticsExhausted => pick('Exhausted', 'Agotadas');
+  String get analyticsExpired => pick('Expired', 'Expiradas');
+  String get analyticsCancelled => pick('Cancelled', 'Canceladas');
+  String get analyticsReplaced => pick('Replaced', 'Reemplazadas');
+  String get analyticsPacksVsUnlimited =>
+      pick('Packs vs unlimited', 'Packs vs unlimited');
+  String get analyticsPacks => 'Packs';
+  String get analyticsUnlimited => 'Unlimited';
+  String get analyticsPlans => pick('Plans', 'Planes');
+  String get analyticsCredits => pick('Credits', 'Créditos');
+  String get analyticsCreditsPurchased =>
+      pick('Granted by purchase', 'Concedidos por compra');
+  String get analyticsCreditsAssigned =>
+      pick('Granted by assignment', 'Concedidos por asignación');
+  String get analyticsCreditsConsumed => pick('Consumed', 'Consumidos');
+  String get analyticsCreditsRefunded => pick('Returned', 'Devueltos');
+  String get analyticsNetConsumption => pick('Net consumption', 'Consumo neto');
+  String get analyticsCreditsRemaining =>
+      pick('Current remaining', 'Restantes actuales');
+  String get analyticsCreditsExpiredUnused =>
+      pick('Expired unused', 'Expirados sin usar');
+  String analyticsPlanMembershipSummary(int created, int sold, int assigned) =>
+      pick(
+        '$created created\n$sold sold · $assigned assigned',
+        '$created creadas\n$sold vendidas · $assigned asignadas',
+      );
+  String get analyticsNoMemberships => pick(
+    'There are no memberships to analyze.',
+    'No hay membresías para analizar.',
+  );
+  String get analyticsCollected => pick('Total collected', 'Total cobrado');
+  String get analyticsConfirmedPayments =>
+      pick('Confirmed payments', 'Pagos confirmados');
+  String get analyticsAverageTicket => pick('Average ticket', 'Ticket medio');
+  String get analyticsTopRevenuePlan =>
+      pick('Top revenue plan', 'Plan con más ingresos');
+  String get analyticsRevenueTrend =>
+      pick('Revenue trend', 'Tendencia de ingresos');
+  String get analyticsPaymentMethod => pick('Payment method', 'Método de pago');
+  String get analyticsRevenueByPlan =>
+      pick('Revenue by plan', 'Ingresos por plan');
+  String get analyticsPaymentStates =>
+      pick('Payment states', 'Estados de pago');
+  String get analyticsPaid => pick('Paid', 'Pagados');
+  String get analyticsPending => pick('Pending', 'Pendientes');
+  String get analyticsFailed => pick('Failed', 'Fallidos');
+  String get analyticsCard => pick('Card', 'Tarjeta');
+  String get analyticsNoConfirmedPayments => pick(
+    'There are no confirmed payments in this period.',
+    'No hay pagos confirmados en este periodo.',
+  );
+  String get analyticsNoClassifiedMethods => pick(
+    'There are no classified payment methods.',
+    'No hay métodos de pago clasificados.',
+  );
+  String analyticsPaymentCount(int count) => count == 1
+      ? pick('1 payment', '1 pago')
+      : pick('$count payments', '$count pagos');
   String get dashboardSummary => pick('Today at a glance', 'Resumen de hoy');
   String get dashboardToday => pick('Today', 'Hoy');
   String get dashboardOverviewLoading =>

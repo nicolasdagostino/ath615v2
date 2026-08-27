@@ -217,32 +217,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return entries.first.key;
   }
 
-  String get _activeMembershipValueLabel {
-    var total = 0.0;
-    var hasValue = false;
-
-    for (final member in _activeMembershipMembers) {
-      final rawPrice = member['membership_price'];
-      final price = rawPrice is num
-          ? rawPrice.toDouble()
-          : double.tryParse(rawPrice?.toString() ?? '');
-
-      if (price == null) continue;
-
-      total += price;
-      hasValue = true;
-    }
-
-    if (!hasValue) return '-';
-
-    final amount = total.toStringAsFixed(2);
-    final useEuroSuffix = Localizations.localeOf(
-      context,
-    ).languageCode.startsWith('es');
-
-    return useEuroSuffix ? amount.replaceAll('.', ',') : amount;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -3169,7 +3143,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       activeMemberships: _activeMembershipMembers.length,
                       membersWithoutPlan: _membersWithoutPlan.length,
                       expiringSoon: _membershipsExpiringSoon.length,
-                      activeValue: _activeMembershipValueLabel,
                       mostUsedPlan: _mostUsedPlanName,
                       onManagePlans: _openPlans,
                       requests: _membershipRequests,
@@ -3193,7 +3166,6 @@ class _MembershipOverview extends StatelessWidget {
     required this.activeMemberships,
     required this.membersWithoutPlan,
     required this.expiringSoon,
-    required this.activeValue,
     required this.mostUsedPlan,
     required this.onManagePlans,
     required this.requests,
@@ -3205,7 +3177,6 @@ class _MembershipOverview extends StatelessWidget {
   final int activeMemberships;
   final int membersWithoutPlan;
   final int expiringSoon;
-  final String activeValue;
   final String mostUsedPlan;
   final VoidCallback onManagePlans;
   final List<Map<String, dynamic>> requests;
@@ -3272,23 +3243,10 @@ class _MembershipOverview extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _MetricCard(
-                label: appStrings.expiringSoon,
-                value: '$expiringSoon',
-                icon: Icons.event_busy_outlined,
-              ),
-            ),
-            Expanded(
-              child: _MetricCard(
-                label: appStrings.activeValue,
-                value: activeValue,
-                icon: Icons.euro_rounded,
-              ),
-            ),
-          ],
+        _MetricCard(
+          label: appStrings.expiringSoon,
+          value: '$expiringSoon',
+          icon: Icons.event_busy_outlined,
         ),
         const SizedBox(height: AppSpacing.lg),
         _MembershipInsightRow(
@@ -3338,7 +3296,6 @@ Widget buildMembershipOverviewForTest({
     activeMemberships: 12,
     membersWithoutPlan: 3,
     expiringSoon: 2,
-    activeValue: '420,00',
     mostUsedPlan: 'Beach',
     onManagePlans: () {},
     requests: requests,

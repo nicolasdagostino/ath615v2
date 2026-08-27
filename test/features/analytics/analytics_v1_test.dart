@@ -160,6 +160,14 @@ class _FakeAnalyticsRepository implements AnalyticsRepository {
     lastPeriod = period;
     return emptyAttendance ? _emptyAttendance : _attendance;
   }
+
+  @override
+  Future<MembershipAnalytics> loadMemberships(AnalyticsPeriod period) =>
+      throw UnimplementedError();
+
+  @override
+  Future<RevenueAnalytics> loadRevenue(AnalyticsPeriod period) =>
+      throw UnimplementedError();
 }
 
 final _overview = AnalyticsOverview(
