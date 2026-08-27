@@ -33,6 +33,7 @@ import '../../../members/presentation/widgets/member_filter_chip.dart';
 import '../../../profile/presentation/screens/membership_screen.dart';
 import '../../data/member_staff_notes_repository.dart';
 import '../widgets/member_staff_notes_section.dart';
+import '../../../profile/presentation/screens/gym_documents_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -2348,6 +2349,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               memberUserId: member['id'].toString(),
                               repository: _memberStaffNotesRepository,
                               canManage: true,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          _MemberDetailCard(
+                            child: MemberDocumentsSection(
+                              memberUserId: member['id'].toString(),
                             ),
                           ),
                           const SizedBox(height: 18),

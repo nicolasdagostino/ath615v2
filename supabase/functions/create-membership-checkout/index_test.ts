@@ -7,6 +7,7 @@ import {
   type CheckoutContext,
   checkoutDocumentIds,
   checkoutIdempotencyKey,
+  checkoutSafeErrorCode,
 } from "./index.ts";
 
 const context: CheckoutContext = {
@@ -64,6 +65,17 @@ Deno.test("checkout normalizes document ids for server-side acceptance", () => {
     "waiver-id",
   ]);
   assertEquals(checkoutDocumentIds("terms-id"), []);
+});
+
+Deno.test("stale gym document version returns a controlled refresh code", () => {
+  assertEquals(
+    checkoutSafeErrorCode(new Error("documents_changed")),
+    "documents_changed",
+  );
+  assertEquals(
+    checkoutSafeErrorCode(new Error("secret database detail")),
+    "checkout_unavailable",
+  );
 });
 
 Deno.test("invalid server-side plan price is rejected", () => {

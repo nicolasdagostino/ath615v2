@@ -69,15 +69,21 @@ begin
 end;
 $$;
 
-do $$ begin
-  begin
-    perform public.accept_membership_checkout_documents(
-      '63000000-0000-0000-0000-000000000001', '{}'::uuid[]
-    );
-    raise exception 'RPC accepted missing required document';
-  exception when sqlstate 'P0001' then
-    if sqlerrm <> 'required_consent_missing' then raise; end if;
-  end;
+do $$
+declare accepted_before timestamptz; accepted_after timestamptz;
+begin
+  select accepted_at into accepted_before from public.membership_legal_acceptances
+  where user_id=auth.uid() and plan_id='63000000-0000-0000-0000-000000000001'
+    and document_type='terms';
+  perform public.accept_membership_checkout_documents(
+    '63000000-0000-0000-0000-000000000001', '{}'::uuid[]
+  );
+  select accepted_at into accepted_after from public.membership_legal_acceptances
+  where user_id=auth.uid() and plan_id='63000000-0000-0000-0000-000000000001'
+    and document_type='terms';
+  if accepted_before<>accepted_after then
+    raise exception 'reused legal acceptance changed accepted_at';
+  end if;
 end $$;
 
 rollback;

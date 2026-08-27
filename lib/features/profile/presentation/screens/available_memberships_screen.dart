@@ -21,16 +21,26 @@ enum MembershipRequestResult { sent, alreadyPending }
 enum MembershipPaymentChoice { card, inPerson }
 
 class MembershipCheckoutContext {
-  const MembershipCheckoutContext({required this.gym, required this.documents});
+  const MembershipCheckoutContext({
+    required this.gym,
+    required this.documents,
+    required this.gymDocuments,
+  });
 
   final Map<String, dynamic> gym;
   final List<Map<String, dynamic>> documents;
+  final List<Map<String, dynamic>> gymDocuments;
 
   factory MembershipCheckoutContext.fromJson(Map<String, dynamic> json) =>
       MembershipCheckoutContext(
         gym: Map<String, dynamic>.from(json['gym'] as Map? ?? const {}),
         documents: List<Map<String, dynamic>>.from(
           (json['documents'] as List? ?? const []).map(
+            (item) => Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+        gymDocuments: List<Map<String, dynamic>>.from(
+          (json['gymDocuments'] as List? ?? const []).map(
             (item) => Map<String, dynamic>.from(item as Map),
           ),
         ),
@@ -43,9 +53,14 @@ abstract class AvailableMembershipsService {
   Future<MembershipRequestResult> requestPlan(
     Map<String, dynamic> plan,
     List<String> documentIds,
+    List<String> gymDocumentVersionIds,
   );
 
-  Future<void> payByCard(Map<String, dynamic> plan, List<String> documentIds);
+  Future<void> payByCard(
+    Map<String, dynamic> plan,
+    List<String> documentIds,
+    List<String> gymDocumentVersionIds,
+  );
 
   Future<MembershipCheckoutContext> loadCheckoutContext(
     Map<String, dynamic> plan,
@@ -80,13 +95,18 @@ class SupabaseAvailableMembershipsService
   Future<MembershipRequestResult> requestPlan(
     Map<String, dynamic> plan,
     List<String> documentIds,
+    List<String> gymDocumentVersionIds,
   ) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw StateError('Not authenticated');
     try {
       await client.rpc(
         'create_consented_cash_membership_request',
-        params: {'p_plan_id': plan['id'], 'p_document_ids': documentIds},
+        params: {
+          'p_plan_id': plan['id'],
+          'p_document_ids': documentIds,
+          'p_gym_document_version_ids': gymDocumentVersionIds,
+        },
       );
       return MembershipRequestResult.sent;
     } on PostgrestException catch (error) {
@@ -101,10 +121,15 @@ class SupabaseAvailableMembershipsService
   Future<void> payByCard(
     Map<String, dynamic> plan,
     List<String> documentIds,
+    List<String> gymDocumentVersionIds,
   ) async {
     final response = await client.functions.invoke(
       'create-membership-checkout',
-      body: {'planId': plan['id'], 'documentIds': documentIds},
+      body: {
+        'planId': plan['id'],
+        'documentIds': documentIds,
+        'gymDocumentVersionIds': gymDocumentVersionIds,
+      },
     );
     final data = response.data;
     final url = data is Map ? data['url']?.toString() : null;
@@ -355,6 +380,7 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
   MembershipCheckoutContext? _checkout;
   MembershipPaymentChoice _payment = MembershipPaymentChoice.inPerson;
   final Set<String> _acceptedDocumentIds = {};
+  final Set<String> _acceptedGymDocumentVersionIds = {};
 
   @override
   void initState() {
@@ -368,6 +394,16 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
       if (!mounted) return;
       setState(() {
         _checkout = checkout;
+        _acceptedDocumentIds.addAll(
+          checkout.documents
+              .where((document) => document['accepted'] == true)
+              .map((document) => document['id'].toString()),
+        );
+        _acceptedGymDocumentVersionIds.addAll(
+          checkout.gymDocuments
+              .where((document) => document['accepted'] == true)
+              .map((document) => document['versionId'].toString()),
+        );
         _loadingContext = false;
       });
     } catch (error) {
@@ -379,15 +415,26 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
     }
   }
 
+  bool _documentsChanged(Object error) =>
+      error.toString().contains('documents_changed');
+
   List<Map<String, dynamic>> get _requiredDocuments =>
       _checkout?.documents
           .where((document) => document['required'] == true)
           .toList() ??
       const [];
 
-  bool get _hasRequiredConsent => _requiredDocuments.every(
-    (document) => _acceptedDocumentIds.contains(document['id']?.toString()),
-  );
+  bool get _hasRequiredConsent =>
+      _requiredDocuments.every(
+        (document) => _acceptedDocumentIds.contains(document['id']?.toString()),
+      ) &&
+      (_checkout?.gymDocuments ?? const [])
+          .where((document) => document['acceptanceMode'] == 'required')
+          .every(
+            (document) => _acceptedGymDocumentVersionIds.contains(
+              document['versionId']?.toString(),
+            ),
+          );
 
   Future<void> _request() async {
     setState(() {
@@ -396,6 +443,9 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
     });
     try {
       final documentIds = _acceptedDocumentIds.toList(growable: false);
+      final gymDocumentVersionIds = _acceptedGymDocumentVersionIds.toList(
+        growable: false,
+      );
       if (_payment == MembershipPaymentChoice.card) {
         if (!stripeMembershipPaymentsEnabled) {
           if (!mounted) return;
@@ -405,12 +455,20 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
           });
           return;
         }
-        await widget.service.payByCard(widget.plan, documentIds);
+        await widget.service.payByCard(
+          widget.plan,
+          documentIds,
+          gymDocumentVersionIds,
+        );
         if (!mounted) return;
         Navigator.of(context).pop(true);
         return;
       }
-      final result = await widget.service.requestPlan(widget.plan, documentIds);
+      final result = await widget.service.requestPlan(
+        widget.plan,
+        documentIds,
+        gymDocumentVersionIds,
+      );
       if (!mounted) return;
       final message = result == MembershipRequestResult.alreadyPending
           ? appStrings.membershipRequestAlreadySent
@@ -421,6 +479,16 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
+      if (_documentsChanged(error)) {
+        setState(() {
+          _acceptedGymDocumentVersionIds.clear();
+          _loading = false;
+          _loadingContext = true;
+          _error = appStrings.documentsChangedRefresh;
+        });
+        await _loadContext();
+        return;
+      }
       setState(() {
         _loading = false;
         _error = appStrings.membershipRequestError(error);
@@ -530,6 +598,26 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
                                       _acceptedDocumentIds.add(id);
                                     } else {
                                       _acceptedDocumentIds.remove(id);
+                                    }
+                                  })
+                                : null,
+                          ),
+                      ],
+                      if (_checkout!.gymDocuments.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        for (final document in _checkout!.gymDocuments)
+                          _GymCheckoutDocumentRow(
+                            document: document,
+                            accepted: _acceptedGymDocumentVersionIds.contains(
+                              document['versionId']?.toString(),
+                            ),
+                            onChanged: document['acceptanceMode'] == 'required'
+                                ? (selected) => setState(() {
+                                    final id = document['versionId'].toString();
+                                    if (selected) {
+                                      _acceptedGymDocumentVersionIds.add(id);
+                                    } else {
+                                      _acceptedGymDocumentVersionIds.remove(id);
                                     }
                                   })
                                 : null,
@@ -692,6 +780,66 @@ class _CheckoutDocumentRow extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GymCheckoutDocumentRow extends StatelessWidget {
+  const _GymCheckoutDocumentRow({
+    required this.document,
+    required this.accepted,
+    required this.onChanged,
+  });
+  final Map<String, dynamic> document;
+  final bool accepted;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final required = document['acceptanceMode'] == 'required';
+    return Padding(
+      key: ValueKey('checkout-gym-document-${document['versionId']}'),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (required)
+            Checkbox(
+              value: accepted,
+              activeColor: AppColors.primary,
+              onChanged: document['accepted'] == true
+                  ? null
+                  : (value) => onChanged?.call(value ?? false),
+            )
+          else
+            const SizedBox(width: 48),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  document['title']?.toString() ?? appStrings.documents,
+                  style: AppTypography.body(
+                    context,
+                  ).copyWith(color: AppColors.primary),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  document['body']?.toString() ?? '',
+                  style: AppTypography.bodySecondary(context),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  appStrings.documentVersion(
+                    document['versionNumber']?.toString() ?? '',
+                  ),
+                  style: AppTypography.helper(context),
+                ),
+              ],
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -395,6 +396,25 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                         enabled: !_saving,
                         onPressed: _saveGym,
                         accentColor: AppColors.primary,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(
+                        label: appStrings.documents.toUpperCase(),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ListTile(
+                        key: const ValueKey('gym-documents-entry'),
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.description_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(
+                          appStrings.manageDocuments,
+                          style: AppTypography.body(context),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push('/gym-documents'),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       AppFormSectionLabel(

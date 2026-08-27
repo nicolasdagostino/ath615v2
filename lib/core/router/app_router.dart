@@ -23,6 +23,7 @@ import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/profile/presentation/screens/preferences_screen.dart';
 import '../../features/profile/presentation/screens/settings_resource_screens.dart';
 import '../../features/profile/presentation/screens/gym_settings_screen.dart';
+import '../../features/profile/presentation/screens/gym_documents_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
 class AppRouter {
@@ -113,9 +114,11 @@ class AppRouter {
         ),
         GoRoute(
           path: '/documents',
-          builder: (context, state) => const SettingsResourceScreen(
-            type: SettingsResourceType.documents,
-          ),
+          builder: (context, state) => const GymDocumentsScreen(),
+        ),
+        GoRoute(
+          path: '/gym-documents',
+          builder: (context, state) => const GymDocumentsScreen(admin: true),
         ),
         GoRoute(
           path: '/payments',

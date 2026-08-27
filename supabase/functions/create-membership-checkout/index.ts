@@ -31,6 +31,14 @@ export function checkoutDocumentIds(value: unknown): string[] {
     : [];
 }
 
+export function checkoutSafeErrorCode(error: unknown) {
+  return String(
+      (error as { message?: unknown })?.message ?? error ?? "",
+    ).includes("documents_changed")
+    ? "documents_changed"
+    : "checkout_unavailable";
+}
+
 export function buildCheckoutSessionParams(
   context: CheckoutContext,
   userId: string,
@@ -124,10 +132,17 @@ export async function handleCreateMembershipCheckout(
     const planId = String(body.planId ?? "").trim();
     if (!planId) throw new Error("missing_plan_id");
     const documentIds = checkoutDocumentIds(body.documentIds);
+    const gymDocumentVersionIds = checkoutDocumentIds(
+      body.gymDocumentVersionIds,
+    );
 
     const { error: consentError } = await userClient.rpc(
-      "accept_membership_checkout_documents",
-      { p_plan_id: planId, p_document_ids: documentIds },
+      "accept_membership_checkout_document_snapshot",
+      {
+        p_plan_id: planId,
+        p_document_ids: documentIds,
+        p_gym_document_version_ids: gymDocumentVersionIds,
+      },
     );
     if (consentError) throw consentError;
 
@@ -225,8 +240,12 @@ export async function handleCreateMembershipCheckout(
     }));
 
     return jsonResponse({ ok: true, url: session.url, sessionId: session.id });
-  } catch (_) {
-    return jsonResponse({ ok: false, error: "checkout_unavailable" }, 400);
+  } catch (error) {
+    const safeCode = checkoutSafeErrorCode(error);
+    return jsonResponse(
+      { ok: false, error: safeCode },
+      safeCode === "documents_changed" ? 409 : 400,
+    );
   }
 }
 

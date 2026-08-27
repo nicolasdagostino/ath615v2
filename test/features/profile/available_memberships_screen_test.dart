@@ -16,23 +16,8 @@ class _FakeAvailableService implements AvailableMembershipsService {
     this.failRequest = false,
     this.failLoad = false,
     this.loadCompleter,
-  });
-
-  final List<Map<String, dynamic>> plans;
-  final bool failRequest;
-  final bool failLoad;
-  final Completer<List<Map<String, dynamic>>>? loadCompleter;
-  final List<String> loadedTypes = [];
-  final List<String> requestedPlans = [];
-  final List<String> paidPlans = [];
-  final List<List<String>> acceptedDocuments = [];
-
-  @override
-  Future<MembershipCheckoutContext> loadCheckoutContext(
-    Map<String, dynamic> plan,
-  ) async => const MembershipCheckoutContext(
-    gym: {'name': 'ATHLETE 615', 'businessName': 'ATHLETE 615 SL'},
-    documents: [
+    this.gymDocuments = const [],
+    this.legalDocuments = const [
       {
         'id': 'terms-v1',
         'type': 'terms',
@@ -48,6 +33,27 @@ class _FakeAvailableService implements AvailableMembershipsService {
         'required': false,
       },
     ],
+  });
+
+  final List<Map<String, dynamic>> plans;
+  final bool failRequest;
+  final bool failLoad;
+  final Completer<List<Map<String, dynamic>>>? loadCompleter;
+  final List<Map<String, dynamic>> gymDocuments;
+  final List<Map<String, dynamic>> legalDocuments;
+  final List<String> loadedTypes = [];
+  final List<String> requestedPlans = [];
+  final List<String> paidPlans = [];
+  final List<List<String>> acceptedDocuments = [];
+  final List<List<String>> acceptedGymDocuments = [];
+
+  @override
+  Future<MembershipCheckoutContext> loadCheckoutContext(
+    Map<String, dynamic> plan,
+  ) async => MembershipCheckoutContext(
+    gym: const {'name': 'ATHLETE 615', 'businessName': 'ATHLETE 615 SL'},
+    documents: legalDocuments,
+    gymDocuments: gymDocuments,
   );
 
   @override
@@ -62,17 +68,21 @@ class _FakeAvailableService implements AvailableMembershipsService {
   Future<void> payByCard(
     Map<String, dynamic> plan,
     List<String> documentIds,
+    List<String> gymDocumentVersionIds,
   ) async {
     paidPlans.add(plan['id'].toString());
+    acceptedGymDocuments.add(gymDocumentVersionIds);
   }
 
   @override
   Future<MembershipRequestResult> requestPlan(
     Map<String, dynamic> plan,
     List<String> documentIds,
+    List<String> gymDocumentVersionIds,
   ) async {
     requestedPlans.add(plan['id'].toString());
     acceptedDocuments.add(documentIds);
+    acceptedGymDocuments.add(gymDocumentVersionIds);
     if (failRequest) throw StateError('request failed');
     return MembershipRequestResult.sent;
   }
@@ -179,7 +189,7 @@ void main() {
     );
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('checkout-document-terms')),
-      -180,
+      180,
       scrollable: find.descendant(
         of: find.byKey(const ValueKey('membership-request-sheet')),
         matching: find.byType(Scrollable),
@@ -345,6 +355,49 @@ void main() {
       ], 'dropin').map((row) => row['id']),
       ['dropin'],
     );
+  });
+
+  testWidgets('checkout requires current gym document and submits version id', (
+    tester,
+  ) async {
+    final service = _FakeAvailableService(
+      plans: [plan(unlimited: false)],
+      gymDocuments: const [
+        {
+          'documentId': 'gym-doc-1',
+          'versionId': 'gym-version-2',
+          'title': 'Gym waiver',
+          'body': 'Current immutable terms',
+          'versionNumber': 2,
+          'acceptanceMode': 'required',
+          'accepted': false,
+        },
+      ],
+      legalDocuments: const [],
+    );
+    await _pumpFlow(tester, type: 'dropin', service: service);
+    await tester.tap(find.text('SINGLE CLASS'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Gym waiver'),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Gym waiver'), findsOneWidget);
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    final submit = tester.widget<AppFormSubmitButton>(
+      find.byType(AppFormSubmitButton),
+    );
+    expect(submit.enabled, isTrue);
+    await tester.tap(find.text('REQUEST MEMBERSHIP'));
+    await tester.pumpAndSettle();
+    expect(service.acceptedGymDocuments.single, ['gym-version-2']);
   });
 
   test(

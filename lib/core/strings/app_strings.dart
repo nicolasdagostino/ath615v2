@@ -518,7 +518,6 @@ class AppStrings {
       pick('Loading programs…', 'Cargando programas…');
   String get active => pick('Active', 'Activo');
   String get inactive => pick('Inactive', 'Inactivo');
-  String get pending => pick('Pending', 'Pendiente');
   String get disabled => pick('Disabled', 'Desactivado');
   String get athleteRole => pick('Athlete', 'Miembro');
   String get adminRole => pick('Admin', 'Admin');
@@ -1219,6 +1218,67 @@ class AppStrings {
   String get noDocuments => pick(
     'You have no documents available.',
     'No tienes documentos disponibles.',
+  );
+  String get addDocument => pick('Add document', 'Añadir documento');
+  String get editDocument => pick('Edit document', 'Editar documento');
+  String get newVersion => pick('New version', 'Nueva versión');
+  String get archiveDocument => pick('Archive document', 'Archivar documento');
+  String get archiveDocumentWarning => pick(
+    'The document will stop being required for new actions. Published versions and acceptances will be preserved.',
+    'El documento dejará de exigirse para nuevas acciones. Las versiones publicadas y aceptaciones se conservarán.',
+  );
+  String get archived => pick('Archived', 'Archivado');
+  String get draft => pick('Draft', 'Borrador');
+  String get published => pick('Published', 'Publicado');
+  String get pending => pick('Pending', 'Pendiente');
+  String get accepted => pick('Accepted', 'Aceptado');
+  String get informational => pick('Informational', 'Informativo');
+  String get requiredDocument => pick('Required', 'Obligatorio');
+  String get documentAccepted =>
+      pick('Document accepted.', 'Documento aceptado.');
+  String documentAcceptedOn(String date) =>
+      pick('Accepted on $date', 'Aceptado el $date');
+  String get acceptDocument => pick('Accept', 'Aceptar');
+  String get documentTitle => pick('Document title', 'Título del documento');
+  String get documentContent => pick('Content', 'Contenido');
+  String get saveDraft => pick('Save draft', 'Guardar borrador');
+  String get deleteDraft => pick('Delete draft', 'Eliminar borrador');
+  String publishedOn(String value) =>
+      pick('Published $value', 'Publicado $value');
+  String get publish => pick('Publish', 'Publicar');
+  String get publishDocument => pick('Publish document', 'Publicar documento');
+  String get publishDocumentWarning => pick(
+    'Once published, this version cannot be modified.',
+    'Una vez publicada, esta versión no podrá modificarse.',
+  );
+  String get manageDocuments =>
+      pick('Manage gym documents', 'Gestionar documentos del gym');
+  String get documentsLoadError => pick(
+    'Documents could not be loaded.',
+    'No se pudieron cargar los documentos.',
+  );
+  String get documentFieldsRequired => pick(
+    'Title and content are required.',
+    'El título y el contenido son obligatorios.',
+  );
+  String get documentSaveError => pick(
+    'The document could not be saved.',
+    'No se pudo guardar el documento.',
+  );
+  String get newDocumentVersionPending =>
+      pick('New version pending', 'Nueva versión pendiente');
+  String outdatedDocumentAcceptance(int? version, String? date) {
+    final accepted = version == null
+        ? ''
+        : date == null
+        ? ' · ${documentVersion(version.toString())}'
+        : ' · ${documentVersion(version.toString())} · $date';
+    return '${pick('New version pending', 'Nueva versión pendiente')}$accepted';
+  }
+
+  String get documentsChangedRefresh => pick(
+    'The gym documents changed. Review and accept the current version before continuing.',
+    'Los documentos del gym cambiaron. Revisa y acepta la versión vigente antes de continuar.',
   );
   String get paymentMethods => pick('Payment methods', 'Métodos de pago');
   String get noPaymentMethods => pick(
