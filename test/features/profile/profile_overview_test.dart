@@ -15,6 +15,7 @@ void main() {
       ProfileOverviewData(
         profile: {
           'full_name': 'Nicolás D’Agostino With A Long Athlete Name',
+          'email': 'nicolas@example.com',
           'avatar_url': avatarUrl,
           'role': 'athlete',
           'gym_id': 'gym-1',
@@ -94,6 +95,8 @@ void main() {
       expect(find.byKey(const ValueKey('profile-avatar-fallback')), findsOne);
       expect(find.text('ND'), findsOne);
       expect(find.byKey(const ValueKey('profile-display-name')), findsOne);
+      expect(find.byKey(const ValueKey('profile-email')), findsOne);
+      expect(find.text('nicolas@example.com'), findsOne);
       expect(find.byKey(const ValueKey('profile-gym-identity')), findsOne);
       final gymNameFinder = find.byKey(const ValueKey('profile-gym-name'));
       final gymName = tester.widget<Text>(gymNameFinder);
@@ -107,12 +110,13 @@ void main() {
         closeTo(tester.getCenter(gymBlock).dy, 1),
       );
       expect(find.byKey(const ValueKey('profile-gym-label')), findsOneWidget);
+      expect(find.byKey(const ValueKey('profile-gym-role')), findsOneWidget);
       expect(find.byType(Image), findsNothing);
       expect(
         find.byKey(const ValueKey('profile-gym-logo-fallback')),
         findsNothing,
       );
-      expect(tester.getSize(gymBlock).height, lessThan(96));
+      expect(tester.getSize(gymBlock).height, lessThan(110));
       expect(find.byKey(const ValueKey('profile-milestone')), findsOne);
       expect(find.text('4 / 50'), findsOne);
       expect(

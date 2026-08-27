@@ -11,10 +11,25 @@ export function invitedMemberRole(
 }
 
 export function canReuseExistingProfile(
-  existingGymId: unknown,
-  effectiveGymId: string,
+  existingProfileId: unknown,
 ): boolean {
-  return existingGymId === effectiveGymId;
+  return typeof existingProfileId === "string" && existingProfileId.length > 0;
+}
+
+export function invitedProfilePatch(input: {
+  existingFullName: unknown;
+  invitedFullName: string;
+  phone: string;
+  birthDate: string;
+}) {
+  const patch: Record<string, string> = {};
+  if (
+    String(input.existingFullName ?? "").trim().length === 0 &&
+    input.invitedFullName.trim().length > 0
+  ) patch.full_name = input.invitedFullName.trim();
+  if (input.phone.trim()) patch.phone = input.phone.trim();
+  if (input.birthDate.trim()) patch.birth_date = input.birthDate.trim();
+  return patch;
 }
 
 export function gymMemberRelation(input: {

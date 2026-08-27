@@ -59,6 +59,16 @@ void main() {
     expect(find.byIcon(Icons.chat_bubble_rounded), findsOneWidget);
   });
 
+  testWidgets('communication deep link opens messages inside the shell', (
+    tester,
+  ) async {
+    await pumpShell(tester, 'admin', initialSection: 'messages');
+    expect(find.byKey(const ValueKey('screen-messages')), findsOneWidget);
+    expect(find.byIcon(Icons.chat_bubble_rounded), findsOneWidget);
+    expect(initialShellIndexForRole('admin', requestedSection: 'messages'), 2);
+    expect(find.byIcon(Icons.dashboard_outlined), findsOneWidget);
+  });
+
   testWidgets('messages badge is numeric and hidden at zero', (tester) async {
     await pumpShell(tester, 'athlete', unread: 8);
     expect(find.text('8'), findsOneWidget);
@@ -134,10 +144,8 @@ void main() {
         home: AppShell(
           initialRoleForTesting: 'admin',
           initialDashboardMemberIdForTesting: 'member-1',
-          screenBuilderForTesting: (section) => Text(
-            section,
-            key: ValueKey('screen-$section'),
-          ),
+          screenBuilderForTesting: (section) =>
+              Text(section, key: ValueKey('screen-$section')),
           dashboardScreenBuilderForTesting: (section, memberId) => Text(
             memberId == null ? 'DASHBOARD ROOT' : 'MEMBER $memberId',
             key: ValueKey('dashboard-${memberId ?? 'root'}'),

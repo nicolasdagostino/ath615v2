@@ -2824,16 +2824,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           _DashboardHeader(gymName: widget.gymName),
           Padding(
+            key: const ValueKey('dashboard-section-selector'),
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.screenX,
               AppSpacing.md,
               AppSpacing.screenX,
               0,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _DashboardTabChip(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _DashboardTabChip(
                     label: appStrings.dashboardTitle,
                     selected: _selectedTab == _DashboardTab.overview,
                     onTap: () {
@@ -2842,10 +2844,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                   ),
-                ),
                 const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: _DashboardTabChip(
+                  _DashboardTabChip(
                     label: appStrings.members,
                     selected: _selectedTab == _DashboardTab.members,
                     onTap: () {
@@ -2854,10 +2854,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                   ),
-                ),
                 const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: _DashboardTabChip(
+                  _DashboardTabChip(
                     label: appStrings.adminMemberships,
                     selected: _selectedTab == _DashboardTab.plans,
                     onTap: () {
@@ -2866,25 +2864,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenX,
-              AppSpacing.xs,
-              AppSpacing.screenX,
-              0,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: _DashboardTabChip(
-                label: appStrings.analyticsTitle,
-                selected: _selectedTab == _DashboardTab.analytics,
-                onTap: () {
-                  setState(() => _selectedTab = _DashboardTab.analytics);
-                },
+                  const SizedBox(width: AppSpacing.xs),
+                  _DashboardTabChip(
+                    label: appStrings.analyticsTitle,
+                    selected: _selectedTab == _DashboardTab.analytics,
+                    onTap: () {
+                      setState(() => _selectedTab = _DashboardTab.analytics);
+                    },
+                  ),
+                ],
               ),
             ),
           ),

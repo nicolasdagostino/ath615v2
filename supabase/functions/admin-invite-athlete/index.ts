@@ -6,6 +6,7 @@ import {
   canReuseExistingProfile,
   gymMemberRelation,
   invitedMemberRole,
+  invitedProfilePatch,
 } from "./logic.ts";
 
 serve(async (req) => {
@@ -58,7 +59,7 @@ serve(async (req) => {
       email,
       {
         data: {
-          full_name: fullName || email,
+          ...(fullName ? { full_name: fullName } : {}),
           phone: phone || null,
           birth_date: birthDate || null,
           role: invitedMemberRole(role),
@@ -71,13 +72,13 @@ serve(async (req) => {
     if (error) {
       const { data: existingProfile, error: existingError } = await adminClient
         .from("profiles")
-        .select("id, gym_id")
+        .select("id, gym_id, full_name")
         .eq("email", email)
         .maybeSingle();
       if (existingError) throw existingError;
       if (
         !existingProfile ||
-        !canReuseExistingProfile(existingProfile.gym_id, effectiveGymId)
+        !canReuseExistingProfile(existingProfile.id)
       ) {
         throw error;
       }
@@ -86,14 +87,24 @@ serve(async (req) => {
     }
 
     if (data.user?.id && (phone || birthDate || fullName)) {
-      await adminClient
-        .from("profiles")
-        .update({
-          full_name: fullName || email,
-          phone: phone || null,
-          birth_date: birthDate || null,
-        })
-        .eq("id", data.user.id);
+      const { data: currentProfile, error: currentProfileError } =
+        await adminClient.from("profiles").select("full_name").eq(
+          "id",
+          data.user.id,
+        ).single();
+      if (currentProfileError) throw currentProfileError;
+      const profilePatch = invitedProfilePatch({
+        existingFullName: currentProfile.full_name,
+        invitedFullName: fullName,
+        phone,
+        birthDate,
+      });
+      if (Object.keys(profilePatch).length > 0) {
+        await adminClient
+          .from("profiles")
+          .update(profilePatch)
+          .eq("id", data.user.id);
+      }
     }
 
     if (!data.user?.id) throw new Error("Invitation did not resolve a user");

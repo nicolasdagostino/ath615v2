@@ -4,6 +4,7 @@ import {
   canReuseExistingProfile,
   gymMemberRelation,
   invitedMemberRole,
+  invitedProfilePatch,
 } from "./logic.ts";
 
 Deno.test("only an effective owner or admin can invite", () => {
@@ -13,10 +14,30 @@ Deno.test("only an effective owner or admin can invite", () => {
   assertEquals(canInviteAthlete("athlete"), false);
 });
 
-Deno.test("an existing profile is reusable only inside the effective gym", () => {
-  assertEquals(canReuseExistingProfile("gym-a", "gym-a"), true);
-  assertEquals(canReuseExistingProfile("gym-b", "gym-a"), false);
-  assertEquals(canReuseExistingProfile(null, "gym-a"), false);
+Deno.test("an existing profile can receive a relationship in another effective gym", () => {
+  assertEquals(canReuseExistingProfile("user-a"), true);
+  assertEquals(canReuseExistingProfile(null), false);
+});
+
+Deno.test("invited name only fills a missing profile name", () => {
+  assertEquals(
+    invitedProfilePatch({
+      existingFullName: null,
+      invitedFullName: "Felipe D'Agostino",
+      phone: "",
+      birthDate: "",
+    }),
+    { full_name: "Felipe D'Agostino" },
+  );
+  assertEquals(
+    invitedProfilePatch({
+      existingFullName: "Existing Name",
+      invitedFullName: "Replacement",
+      phone: "",
+      birthDate: "",
+    }),
+    {},
+  );
 });
 
 Deno.test("the relation uses the server-resolved gym", () => {

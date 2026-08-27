@@ -2,6 +2,7 @@ import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() {
@@ -64,4 +65,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  test(
+    'Panel uses a horizontal selector so membership labels are complete',
+    () {
+      final source = File(
+        'lib/features/dashboard/presentation/screens/dashboard_screen.dart',
+      ).readAsStringSync();
+      expect(source, contains("ValueKey('dashboard-section-selector')"));
+      expect(source, contains('scrollDirection: Axis.horizontal'));
+    },
+  );
 }

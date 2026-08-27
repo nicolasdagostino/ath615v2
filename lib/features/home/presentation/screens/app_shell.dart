@@ -20,6 +20,7 @@ class AppShell extends StatefulWidget {
     this.initialRoleForTesting,
     this.screenBuilderForTesting,
     this.initialSection,
+    this.initialNotificationId,
     this.initialWorkoutDate,
     this.initialUnreadForTesting = 0,
     this.initialDashboardMemberIdForTesting,
@@ -27,6 +28,7 @@ class AppShell extends StatefulWidget {
   });
 
   final String? initialSection;
+  final String? initialNotificationId;
   final DateTime? initialWorkoutDate;
 
   @visibleForTesting
@@ -80,6 +82,16 @@ class _AppShellState extends State<AppShell> {
       _loadUnreadNotifications();
       _subscribeToNotifications();
       notificationsInboxEvents.addListener(_loadUnreadNotifications);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSection == 'messages' &&
+        (oldWidget.initialSection != widget.initialSection ||
+            oldWidget.initialNotificationId != widget.initialNotificationId)) {
+      setState(() => _index = 2);
     }
   }
 
@@ -195,7 +207,9 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     if (_role == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
@@ -217,6 +231,10 @@ class _AppShellState extends State<AppShell> {
               onOpenAdminMember: canSeeDashboard ? _openAdminMember : null,
             ),
             NotificationsScreen(
+              key: ValueKey(
+                'messages-${widget.initialNotificationId ?? 'inbox'}',
+              ),
+              initialNotificationId: widget.initialNotificationId,
               gymName: _gymName,
               onNotificationsRead: _loadUnreadNotifications,
               onOpenMembershipRequests: _openMembershipRequests,
@@ -312,6 +330,7 @@ class _AppShellState extends State<AppShell> {
 @visibleForTesting
 int initialShellIndexForRole(String? role, {String? requestedSection}) {
   if (requestedSection == 'wod') return 0;
+  if (requestedSection == 'messages') return 2;
   if (requestedSection == 'membership' &&
       (role == 'admin' || role == 'owner')) {
     return 4;

@@ -180,7 +180,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
 
     if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
       final encodedId = Uri.encodeQueryComponent(notificationId.toString());
-      _router.push('/notifications?notificationId=$encodedId');
+      _router.go('/app?section=messages&notificationId=$encodedId');
     }
   }
 

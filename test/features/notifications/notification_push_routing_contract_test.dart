@@ -13,6 +13,15 @@ void main() {
     expect(app, isNot(contains("_router.push('/workout/")));
   });
 
+  test('communication push opens messages inside AppShell', () {
+    final app = File('lib/app/app.dart').readAsStringSync();
+    expect(app, contains("_router.go('/app?section=messages&notificationId="));
+    expect(
+      app,
+      isNot(contains("_router.push('/notifications?notificationId=")),
+    );
+  });
+
   test('legacy workout app links resolve a WOD date instead of detail', () {
     final deepLinks = File(
       'lib/core/router/deep_link_service.dart',

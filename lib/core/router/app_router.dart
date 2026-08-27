@@ -62,6 +62,7 @@ class AppRouter {
           path: '/app',
           builder: (context, state) => AppShell(
             initialSection: state.uri.queryParameters['section'],
+            initialNotificationId: state.uri.queryParameters['notificationId'],
             initialWorkoutDate: parseNotificationDate(
               state.uri.queryParameters['date'],
             ),

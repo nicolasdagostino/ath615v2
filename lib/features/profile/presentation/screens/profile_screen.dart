@@ -247,8 +247,21 @@ class ProfileOverview extends StatelessWidget {
 
   String get _displayName {
     final name = data.profile?['full_name']?.toString().trim() ?? '';
-    return name.isEmpty ? 'ATHLETE615 Member' : name;
+    final email = data.profile?['email']?.toString().trim() ?? '';
+    return name.isEmpty ||
+            (email.isNotEmpty && name.toLowerCase() == email.toLowerCase())
+        ? appStrings.pick('Complete your name', 'Completa tu nombre')
+        : name;
   }
+
+  String get _email => data.profile?['email']?.toString().trim() ?? '';
+
+  String get _roleLabel => switch (data.profile?['role']?.toString()) {
+    'owner' => appStrings.pick('Owner', 'Propietario'),
+    'admin' => appStrings.pick('Administrator', 'Administrador'),
+    'coach' => 'Coach',
+    _ => appStrings.pick('Athlete', 'Atleta'),
+  };
 
   String get _gymName {
     final name = data.gym?['name']?.toString().trim() ?? '';
@@ -279,6 +292,7 @@ class ProfileOverview extends StatelessWidget {
       children: [
         _ProfileFixedHero(
           displayName: _displayName,
+          email: _email,
           avatarUrl: data.profile?['avatar_url']?.toString(),
           uploadingAvatar: uploadingAvatar,
           onAvatarTap: onAvatarTap,
@@ -303,7 +317,7 @@ class ProfileOverview extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _GymIdentity(name: _gymName),
+                      _GymIdentity(name: _gymName, role: _roleLabel),
                       const SizedBox(height: AppSpacing.sm),
                       _CompactProfileAction(
                         key: const ValueKey('profile-records-action'),
@@ -393,6 +407,7 @@ class ProfileOverview extends StatelessWidget {
 class _ProfileFixedHero extends StatelessWidget {
   const _ProfileFixedHero({
     required this.displayName,
+    required this.email,
     required this.avatarUrl,
     required this.uploadingAvatar,
     required this.onAvatarTap,
@@ -400,6 +415,7 @@ class _ProfileFixedHero extends StatelessWidget {
   });
 
   final String displayName;
+  final String email;
   final String? avatarUrl;
   final bool uploadingAvatar;
   final VoidCallback onAvatarTap;
@@ -440,17 +456,34 @@ class _ProfileFixedHero extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  displayName,
-                  key: const ValueKey('profile-display-name'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary(context),
-                    height: 1.02,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      key: const ValueKey('profile-display-name'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.barlowCondensed(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary(context),
+                        height: 1.02,
+                      ),
+                    ),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        email,
+                        key: const ValueKey('profile-email'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.helper(
+                          context,
+                        ).copyWith(color: AppColors.textSecondary(context)),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -613,8 +646,9 @@ class _SettingsButton extends StatelessWidget {
 }
 
 class _GymIdentity extends StatelessWidget {
-  const _GymIdentity({required this.name});
+  const _GymIdentity({required this.name, required this.role});
   final String name;
+  final String role;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -652,6 +686,14 @@ class _GymIdentity extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: AppTypography.itemTitle(context),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          role,
+          key: const ValueKey('profile-gym-role'),
+          style: AppTypography.helper(
+            context,
+          ).copyWith(color: AppColors.textSecondary(context)),
         ),
       ],
     ),

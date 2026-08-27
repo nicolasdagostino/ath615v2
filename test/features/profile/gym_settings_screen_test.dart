@@ -69,6 +69,8 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
         expect(find.text(appStrings.stripeNotConnected), findsOne);
+        expect(find.text(appStrings.connectStripe), findsOne);
+        expect(stripeConnectSetupEnabled, isTrue);
         expect(find.text(appStrings.comingSoon), findsNothing);
         expect(tester.takeException(), isNull);
       },

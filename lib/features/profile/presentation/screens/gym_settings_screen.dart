@@ -14,7 +14,7 @@ import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-bool _stripePaymentsEnabled = false;
+const bool stripeConnectSetupEnabled = true;
 
 enum GymStripeConnectState {
   disconnected,
@@ -114,7 +114,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_stripePaymentsEnabled && state == AppLifecycleState.resumed) {
+    if (stripeConnectSetupEnabled && state == AppLifecycleState.resumed) {
       _refreshStripeStatus();
     }
   }
@@ -477,16 +477,30 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                           payoutsEnabled: _stripePayoutsEnabled,
                         ),
                       ),
-                      if (_stripePaymentsEnabled) ...[
+                      if (stripeConnectSetupEnabled) ...[
                         const SizedBox(height: AppSpacing.sm),
                         OutlinedButton(
-                          onPressed: _stripeChargesEnabled
+                          onPressed: _connectingStripe
+                              ? null
+                              : gymStripeConnectState(
+                                      accountId: _stripeAccountId,
+                                      onboardingComplete:
+                                          _stripeOnboardingComplete,
+                                      chargesEnabled: _stripeChargesEnabled,
+                                      payoutsEnabled: _stripePayoutsEnabled,
+                                    ) ==
+                                    GymStripeConnectState.paymentsEnabled
                               ? _refreshStripeStatus
                               : _connectStripe,
                           child: Text(
-                            _stripeChargesEnabled
+                            _stripeAccountId == null
+                                ? appStrings.connectStripe
+                                : _stripeChargesEnabled
                                 ? appStrings.stripeConnected
-                                : appStrings.connectStripe,
+                                : appStrings.pick(
+                                    'CONTINUE SETUP',
+                                    'CONTINUAR CONFIGURACIÓN',
+                                  ),
                           ),
                         ),
                       ],
