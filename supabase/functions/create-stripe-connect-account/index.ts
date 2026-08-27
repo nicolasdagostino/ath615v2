@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { stripeConnectRefreshUrl, stripeConnectReturnUrl } from "./logic.ts";
 
 type ConnectContext = {
   gym_id: string;
@@ -45,10 +46,7 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const refreshUrl = Deno.env.get("STRIPE_CONNECT_REFRESH_URL");
-    const returnUrl = Deno.env.get("STRIPE_CONNECT_RETURN_URL");
-
-    if (!stripeSecretKey || !refreshUrl || !returnUrl) {
+    if (!stripeSecretKey) {
       throw new Error("configuration_error");
     }
 
@@ -109,8 +107,8 @@ serve(async (req) => {
       stripeSecretKey,
       {
         account: resolvedStripeAccountId,
-        refresh_url: refreshUrl,
-        return_url: returnUrl,
+        refresh_url: stripeConnectRefreshUrl,
+        return_url: stripeConnectReturnUrl,
         type: "account_onboarding",
       },
     );

@@ -127,7 +127,11 @@ class AppRouter {
         ),
         GoRoute(
           path: '/gym-settings',
-          builder: (context, state) => const GymSettingsScreen(),
+          builder: (context, state) => GymSettingsScreen(
+            connectAction: parseStripeConnectRouteAction(
+              state.uri.queryParameters['stripeConnect'],
+            ),
+          ),
         ),
         GoRoute(
           path: '/notifications',

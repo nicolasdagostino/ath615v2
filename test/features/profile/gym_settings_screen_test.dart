@@ -116,4 +116,57 @@ void main() {
       );
     },
   );
+
+  testWidgets('Connect return refreshes authoritative Stripe status', (
+    tester,
+  ) async {
+    var refreshes = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GymSettingsScreen(
+          connectAction: StripeConnectRouteAction.returnAndRefresh,
+          gymLoaderForTesting: () async => _connectedGym,
+          statusRefresherForTesting: () async => refreshes++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(refreshes, 1);
+    expect(find.byKey(const ValueKey('gym-information-title')), findsOneWidget);
+  });
+
+  testWidgets('expired Account Link opens one continuation for same context', (
+    tester,
+  ) async {
+    var continuations = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GymSettingsScreen(
+          connectAction: StripeConnectRouteAction.refreshOnboarding,
+          gymLoaderForTesting: () async => _connectedGym,
+          onboardingOpenerForTesting: () async => continuations++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(continuations, 1);
+    expect(find.byKey(const ValueKey('gym-information-title')), findsOneWidget);
+  });
 }
+
+const _connectedGym = <String, dynamic>{
+  'id': 'gym-1',
+  'business_name': 'ATHLETE 615',
+  'phone': '',
+  'email': 'gym@example.com',
+  'website': 'athlete615.com',
+  'address': 'Madrid',
+  'logo_url': null,
+  'gym_code': null,
+  'stripe_account_id': 'acct_test',
+  'stripe_onboarding_complete': false,
+  'stripe_charges_enabled': false,
+  'stripe_payouts_enabled': false,
+};

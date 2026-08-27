@@ -1,0 +1,10 @@
+Options -MultiViews
+RewriteEngine On
+
+<Files "apple-app-site-association">
+  ForceType application/json
+  Header always set Content-Type "application/json"
+</Files>
+
+RewriteRule ^connect/stripe/return/?$ connect/stripe/return/index.html [L]
+RewriteRule ^connect/stripe/refresh/?$ connect/stripe/refresh/index.html [L]

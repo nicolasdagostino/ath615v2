@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/router/deep_link_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
@@ -36,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await _repo.signIn(email: _email.text.trim(), password: _password.text);
       if (!mounted) return;
-      context.go('/');
+      context.go(pendingDeepLinkDestination.take() ?? '/');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

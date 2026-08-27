@@ -23,6 +23,15 @@ enum GymStripeConnectState {
   paymentsEnabled,
 }
 
+enum StripeConnectRouteAction { returnAndRefresh, refreshOnboarding }
+
+StripeConnectRouteAction? parseStripeConnectRouteAction(String? value) =>
+    switch (value) {
+      'return' => StripeConnectRouteAction.returnAndRefresh,
+      'refresh' => StripeConnectRouteAction.refreshOnboarding,
+      _ => null,
+    };
+
 GymStripeConnectState gymStripeConnectState({
   required String? accountId,
   required bool onboardingComplete,
@@ -40,9 +49,22 @@ GymStripeConnectState gymStripeConnectState({
 }
 
 class GymSettingsScreen extends StatefulWidget {
-  const GymSettingsScreen({super.key, this.gymLoaderForTesting});
+  const GymSettingsScreen({
+    super.key,
+    this.gymLoaderForTesting,
+    this.connectAction,
+    this.statusRefresherForTesting,
+    this.onboardingOpenerForTesting,
+  });
 
   final Future<Map<String, dynamic>?> Function()? gymLoaderForTesting;
+  final StripeConnectRouteAction? connectAction;
+
+  @visibleForTesting
+  final Future<void> Function()? statusRefresherForTesting;
+
+  @visibleForTesting
+  final Future<void> Function()? onboardingOpenerForTesting;
 
   @override
   State<GymSettingsScreen> createState() => _GymSettingsScreenState();
@@ -72,7 +94,22 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadGym();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadGym();
+    if (!mounted) return;
+    switch (widget.connectAction) {
+      case StripeConnectRouteAction.returnAndRefresh:
+        await _refreshStripeStatus();
+        break;
+      case StripeConnectRouteAction.refreshOnboarding:
+        await _connectStripe();
+        break;
+      case null:
+        break;
+    }
   }
 
   @override
@@ -211,6 +248,11 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   }
 
   Future<void> _refreshStripeStatus() async {
+    final injected = widget.statusRefresherForTesting;
+    if (injected != null) {
+      await injected();
+      return;
+    }
     if (_gymId == null) return;
 
     try {
@@ -225,6 +267,12 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
 
   Future<void> _connectStripe() async {
     if (_connectingStripe) return;
+
+    final injected = widget.onboardingOpenerForTesting;
+    if (injected != null) {
+      await injected();
+      return;
+    }
 
     setState(() => _connectingStripe = true);
 

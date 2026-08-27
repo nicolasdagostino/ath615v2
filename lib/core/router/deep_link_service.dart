@@ -7,6 +7,46 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/notifications/navigation/notification_destination.dart';
 
+enum StripeConnectLinkAction { returnToSettings, refreshOnboarding }
+
+StripeConnectLinkAction? stripeConnectLinkAction(Uri uri) {
+  final scheme = uri.scheme.toLowerCase();
+  final isHttpsHost =
+      scheme == 'https' && uri.host.toLowerCase() == 'athlete615.com';
+  final isFallbackScheme =
+      scheme == 'athletelab' && uri.host.toLowerCase() == 'connect';
+  if (!isHttpsHost && !isFallbackScheme) return null;
+
+  final path = isFallbackScheme ? '/connect${uri.path}' : uri.path;
+  return switch (path) {
+    '/connect/stripe/return' => StripeConnectLinkAction.returnToSettings,
+    '/connect/stripe/refresh' => StripeConnectLinkAction.refreshOnboarding,
+    _ => null,
+  };
+}
+
+String stripeConnectDestination(StripeConnectLinkAction action) =>
+    switch (action) {
+      StripeConnectLinkAction.returnToSettings =>
+        '/gym-settings?stripeConnect=return',
+      StripeConnectLinkAction.refreshOnboarding =>
+        '/gym-settings?stripeConnect=refresh',
+    };
+
+class PendingDeepLinkDestination {
+  String? _destination;
+
+  void remember(String destination) => _destination = destination;
+
+  String? take() {
+    final destination = _destination;
+    _destination = null;
+    return destination;
+  }
+}
+
+final pendingDeepLinkDestination = PendingDeepLinkDestination();
+
 String? checkoutReturnDestination(Uri uri) {
   if (uri.scheme.toLowerCase() != 'athletelab' ||
       uri.host.toLowerCase() != 'checkout') {
@@ -56,6 +96,18 @@ class DeepLinkService {
     final checkoutDestination = checkoutReturnDestination(uri);
     if (checkoutDestination != null) {
       _router.go(checkoutDestination);
+      return;
+    }
+
+    final connectAction = stripeConnectLinkAction(uri);
+    if (connectAction != null) {
+      final destination = stripeConnectDestination(connectAction);
+      if (Supabase.instance.client.auth.currentUser == null) {
+        pendingDeepLinkDestination.remember(destination);
+        _router.go('/login');
+      } else {
+        _router.go(destination);
+      }
       return;
     }
 
