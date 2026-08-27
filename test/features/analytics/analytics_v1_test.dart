@@ -168,6 +168,23 @@ class _FakeAnalyticsRepository implements AnalyticsRepository {
   @override
   Future<RevenueAnalytics> loadRevenue(AnalyticsPeriod period) =>
       throw UnimplementedError();
+
+  @override
+  Future<RetentionSummary> loadRetentionSummary() => throw UnimplementedError();
+
+  @override
+  Future<RetentionPage> loadRetentionSegment(
+    RetentionSegment segment, {
+    required int limit,
+    required int offset,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<RetentionCommunicationResult> sendRetentionCommunication({
+    required List<String> recipientIds,
+    required String title,
+    required String body,
+  }) => throw UnimplementedError();
 }
 
 final _overview = AnalyticsOverview(

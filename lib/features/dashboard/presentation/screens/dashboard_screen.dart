@@ -2940,7 +2940,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
 
                   if (_selectedTab == _DashboardTab.analytics) ...[
-                    const AnalyticsView(),
+                    AnalyticsView(onOpenMember: _openMember),
                   ],
 
                   if (_selectedTab == _DashboardTab.members) ...[

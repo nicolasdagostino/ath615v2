@@ -12,14 +12,16 @@ import '../../../core/widgets/app_async_state.dart';
 import '../../../core/widgets/app_section_chip.dart';
 import '../data/analytics_repository.dart';
 import '../domain/analytics_models.dart';
+import 'retention_analytics_content.dart';
 
-enum AnalyticsSection { overview, attendance, memberships, revenue }
+enum AnalyticsSection { overview, attendance, memberships, revenue, retention }
 
 class AnalyticsView extends StatefulWidget {
-  const AnalyticsView({super.key, this.repository});
+  const AnalyticsView({super.key, this.repository, this.onOpenMember});
 
   @visibleForTesting
   final AnalyticsRepository? repository;
+  final ValueChanged<Map<String, dynamic>>? onOpenMember;
 
   @override
   State<AnalyticsView> createState() => _AnalyticsViewState();
@@ -35,6 +37,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
   AttendanceAnalytics? _attendance;
   MembershipAnalytics? _memberships;
   RevenueAnalytics? _revenue;
+  RetentionSummary? _retention;
   Object? _error;
   bool _loading = true;
 
@@ -67,6 +70,10 @@ class _AnalyticsViewState extends State<AnalyticsView> {
           final result = await _repository.loadRevenue(_period);
           if (!mounted) return;
           setState(() => _revenue = result);
+        case AnalyticsSection.retention:
+          final result = await _repository.loadRetentionSummary();
+          if (!mounted) return;
+          setState(() => _retention = result);
       }
     } catch (error) {
       if (!mounted) return;
@@ -107,6 +114,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
               AnalyticsSection.attendance => appStrings.analyticsAttendance,
               AnalyticsSection.memberships => appStrings.analyticsMemberships,
               AnalyticsSection.revenue => appStrings.analyticsRevenue,
+              AnalyticsSection.retention => appStrings.analyticsRetention,
             };
             return Padding(
               padding: const EdgeInsets.only(right: AppSpacing.xs),
@@ -119,8 +127,10 @@ class _AnalyticsViewState extends State<AnalyticsView> {
           }).toList(),
         ),
       ),
-      const SizedBox(height: AppSpacing.md),
-      _PeriodSelector(selected: _period, onSelected: _selectPeriod),
+      if (_section != AnalyticsSection.retention) ...[
+        const SizedBox(height: AppSpacing.md),
+        _PeriodSelector(selected: _period, onSelected: _selectPeriod),
+      ],
       const SizedBox(height: AppSpacing.lg),
       if (_loading)
         AppAsyncState.loading(message: appStrings.analyticsLoading)
@@ -137,7 +147,13 @@ class _AnalyticsViewState extends State<AnalyticsView> {
       else if (_section == AnalyticsSection.memberships && _memberships != null)
         AnalyticsMembershipContent(data: _memberships!)
       else if (_section == AnalyticsSection.revenue && _revenue != null)
-        AnalyticsRevenueContent(data: _revenue!),
+        AnalyticsRevenueContent(data: _revenue!)
+      else if (_section == AnalyticsSection.retention && _retention != null)
+        AnalyticsRetentionContent(
+          summary: _retention!,
+          repository: _repository,
+          onOpenMember: widget.onOpenMember,
+        ),
     ],
   );
 }
@@ -445,7 +461,7 @@ class AnalyticsRevenueContent extends StatelessWidget {
                   shrinkWrap: true,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                  mainAxisExtent: 185,
+                    mainAxisExtent: 185,
                     crossAxisSpacing: AppSpacing.sm,
                     mainAxisSpacing: AppSpacing.sm,
                   ),

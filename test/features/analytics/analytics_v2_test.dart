@@ -21,13 +21,16 @@ void main() {
     await localeController.setLanguage('en');
   });
 
-  testWidgets('V2 exposes only the four implemented sections', (tester) async {
+  testWidgets('implemented analytics sections remain available', (
+    tester,
+  ) async {
     await _pump(tester, _FakeV2Repository());
     expect(find.text('OVERVIEW'), findsOneWidget);
     expect(find.text('ATTENDANCE'), findsOneWidget);
     expect(find.text('MEMBERSHIPS'), findsOneWidget);
     expect(find.text('REVENUE'), findsOneWidget);
-    expect(find.text('RETENTION'), findsNothing);
+    expect(find.text('RETENTION'), findsOneWidget);
+    expect(find.text('COHORTS'), findsNothing);
   });
 
   testWidgets(
@@ -132,8 +135,7 @@ Future<void> _pump(
 }
 
 Future<void> _selectSection(WidgetTester tester, String label) async {
-  final selector = find.byKey(const ValueKey('analytics-section-selector'));
-  await tester.drag(selector, const Offset(-600, 0));
+  await tester.ensureVisible(find.text(label));
   await tester.pumpAndSettle();
   await tester.tap(find.text(label));
   await tester.pumpAndSettle();
@@ -165,6 +167,23 @@ class _FakeV2Repository implements AnalyticsRepository {
     lastPeriod = period;
     return empty ? _emptyRevenue : _revenue;
   }
+
+  @override
+  Future<RetentionSummary> loadRetentionSummary() => throw UnimplementedError();
+
+  @override
+  Future<RetentionPage> loadRetentionSegment(
+    RetentionSegment segment, {
+    required int limit,
+    required int offset,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<RetentionCommunicationResult> sendRetentionCommunication({
+    required List<String> recipientIds,
+    required String title,
+    required String body,
+  }) => throw UnimplementedError();
 }
 
 final _overview = AnalyticsOverview(

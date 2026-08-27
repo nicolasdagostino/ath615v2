@@ -759,6 +759,7 @@ class AppStrings {
   String get analyticsAttendance => pick('Attendance', 'Asistencia');
   String get analyticsMemberships => pick('Memberships', 'Membresías');
   String get analyticsRevenue => pick('Revenue', 'Ingresos');
+  String get analyticsRetention => pick('Retention', 'Retención');
   String get analyticsSevenDays => pick('7 days', '7 días');
   String get analyticsThirtyDays => pick('30 days', '30 días');
   String get analyticsThisMonth => pick('This month', 'Este mes');
@@ -874,6 +875,86 @@ class AppStrings {
   String analyticsPaymentCount(int count) => count == 1
       ? pick('1 payment', '1 pago')
       : pick('$count payments', '$count pagos');
+  String get analyticsRetentionIntro => pick(
+    'Review objective activity signals and choose who you want to contact.',
+    'Revisa señales objetivas de actividad y elige a quién quieres contactar.',
+  );
+  String get analyticsRetentionBack =>
+      pick('Back to segments', 'Volver a segmentos');
+  String get analyticsRetentionLoadMore => pick('Load more', 'Cargar más');
+  String get analyticsRetentionLoadError => pick(
+    'Retention data could not be loaded.',
+    'No se pudieron cargar los datos de retención.',
+  );
+  String get retentionNoAttendance7 =>
+      pick('No attendance in 7 days', 'Sin asistencia en 7 días');
+  String get retentionNoAttendance14 =>
+      pick('No attendance in 14 days', 'Sin asistencia en 14 días');
+  String get retentionNoAttendance30 =>
+      pick('No attendance in 30 days', 'Sin asistencia en 30 días');
+  String get retentionActivePlanNoUse =>
+      pick('Active plan without recent use', 'Plan activo sin uso reciente');
+  String get retentionNoActivePlan => pick('No usable plan', 'Sin plan activo');
+  String get retentionExpiringSoon =>
+      pick('Plan expiring soon', 'Plan próximo a vencer');
+  String get retentionLowCredits => pick('Low credits', 'Pocos créditos');
+  String get retentionFirstClassNoReturn =>
+      pick('First class without return', 'Primera clase sin retorno');
+  String get retentionInactiveRecent =>
+      pick('No recent activity', 'Sin actividad reciente');
+  String get retentionRepeatedNoShows =>
+      pick('Repeated no-shows', 'No-shows repetidos');
+  String retentionMembersCount(int count) => count == 1
+      ? pick('1 member', '1 miembro')
+      : pick('$count members', '$count miembros');
+  String retentionSelectedCount(int count) => count == 1
+      ? pick('1 selected', '1 seleccionado')
+      : pick('$count selected', '$count seleccionados');
+  String get retentionSelectVisible =>
+      pick('Select visible', 'Seleccionar visibles');
+  String get retentionClearSelection =>
+      pick('Clear selection', 'Limpiar selección');
+  String get retentionNoMembers => pick(
+    'There are no members in this segment.',
+    'No hay miembros en este segmento.',
+  );
+  String get retentionEveryoneRecent =>
+      pick('Everyone has recent activity.', 'Todos tienen actividad reciente.');
+  String get retentionNoExpiring => pick(
+    'There are no memberships expiring soon.',
+    'No hay membresías próximas a vencer.',
+  );
+  String retentionLastAttendanceDaysAgo(int days) => pick(
+    'Last attendance: $days days ago',
+    'Última asistencia: hace $days días',
+  );
+  String retentionFirstClassDaysAgo(int days) =>
+      pick('First class $days days ago', 'Primera clase hace $days días');
+  String get retentionNoAttendanceYet =>
+      pick('No attendance yet', 'Sin asistencias todavía');
+  String retentionExpiresIn(int days) =>
+      pick('Plan expires in $days days', 'El plan vence en $days días');
+  String retentionNoShows30(int count) =>
+      pick('$count no-shows in 30 days', '$count no-shows en 30 días');
+  String retentionFutureBooking(String date) =>
+      pick('Next booking: $date', 'Próxima reserva: $date');
+  String get retentionRecipients => pick('Recipients', 'Destinatarios');
+  String get retentionCommunicationRequired =>
+      pick('Enter a title and message.', 'Introduce un título y un mensaje.');
+  String get retentionCommunicationError => pick(
+    'The communication could not be sent.',
+    'No se pudo enviar la comunicación.',
+  );
+  String get retentionConfirmTitle =>
+      pick('Send communication?', '¿Enviar comunicación?');
+  String retentionConfirmMessage(int count) => pick(
+    'This communication will be sent to $count selected members.',
+    'Esta comunicación se enviará a $count miembros seleccionados.',
+  );
+  String retentionCommunicationSent(int count) => pick(
+    'Communication sent to $count members.',
+    'Comunicación enviada a $count miembros.',
+  );
   String get dashboardSummary => pick('Today at a glance', 'Resumen de hoy');
   String get dashboardToday => pick('Today', 'Hoy');
   String get dashboardOverviewLoading =>

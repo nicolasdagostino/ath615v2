@@ -534,6 +534,141 @@ class RevenueExcludedCounts {
   final int unclassifiedManualMethod;
 }
 
+enum RetentionSegment {
+  noAttendance7('no_attendance_7'),
+  noAttendance14('no_attendance_14'),
+  noAttendance30('no_attendance_30'),
+  activeMembershipNoRecentUse('active_membership_no_recent_use'),
+  noUsableMembership('no_usable_membership'),
+  expiringSoon('expiring_soon'),
+  lowCredits('low_credits'),
+  firstClassNoReturn('first_class_no_return'),
+  inactiveRecent('inactive_recent'),
+  repeatedNoShows('repeated_no_shows');
+
+  const RetentionSegment(this.apiValue);
+  final String apiValue;
+}
+
+class RetentionSummary {
+  const RetentionSummary({required this.timezone, required this.counts});
+
+  factory RetentionSummary.fromJson(Map<String, dynamic> json) {
+    final values = _map(json['segments']);
+    return RetentionSummary(
+      timezone: json['timezone']?.toString() ?? '',
+      counts: {
+        for (final segment in RetentionSegment.values)
+          segment: _int(values[segment.apiValue]),
+      },
+    );
+  }
+
+  final String timezone;
+  final Map<RetentionSegment, int> counts;
+  int countFor(RetentionSegment segment) => counts[segment] ?? 0;
+}
+
+class RetentionMember {
+  const RetentionMember({
+    required this.userId,
+    required this.name,
+    required this.avatarUrl,
+    required this.lastAttendedAt,
+    required this.attendancesCount,
+    required this.usableMembership,
+    required this.membershipPlanName,
+    required this.membershipPlanType,
+    required this.creditsRemaining,
+    required this.membershipEndsAt,
+    required this.hasFutureBooking,
+    required this.futureBookingAt,
+    required this.noShowCount30d,
+  });
+
+  factory RetentionMember.fromJson(Map<String, dynamic> json) =>
+      RetentionMember(
+        userId: json['userId']?.toString() ?? '',
+        name: json['name']?.toString() ?? '—',
+        avatarUrl: json['avatarUrl']?.toString(),
+        lastAttendedAt: _dateOrNull(json['lastAttendedAt']),
+        attendancesCount: _int(json['attendancesCount']),
+        usableMembership: json['usableMembership'] == true,
+        membershipPlanName: json['membershipPlanName']?.toString(),
+        membershipPlanType: json['membershipPlanType']?.toString(),
+        creditsRemaining: _intOrNull(json['creditsRemaining']),
+        membershipEndsAt: _dateOrNull(json['membershipEndsAt']),
+        hasFutureBooking: json['hasFutureBooking'] == true,
+        futureBookingAt: _dateOrNull(json['futureBookingAt']),
+        noShowCount30d: _int(json['noShowCount30d']),
+      );
+
+  final String userId;
+  final String name;
+  final String? avatarUrl;
+  final DateTime? lastAttendedAt;
+  final int attendancesCount;
+  final bool usableMembership;
+  final String? membershipPlanName;
+  final String? membershipPlanType;
+  final int? creditsRemaining;
+  final DateTime? membershipEndsAt;
+  final bool hasFutureBooking;
+  final DateTime? futureBookingAt;
+  final int noShowCount30d;
+
+  Map<String, dynamic> get memberDetailData => {
+    'id': userId,
+    'full_name': name,
+    'avatar_url': avatarUrl,
+    'role': 'athlete',
+    'is_active': true,
+  };
+}
+
+class RetentionPage {
+  const RetentionPage({
+    required this.segment,
+    required this.totalCount,
+    required this.limit,
+    required this.offset,
+    required this.items,
+  });
+
+  factory RetentionPage.fromJson(Map<String, dynamic> json) => RetentionPage(
+    segment: RetentionSegment.values.firstWhere(
+      (segment) => segment.apiValue == json['segment']?.toString(),
+    ),
+    totalCount: _int(json['totalCount']),
+    limit: _int(json['limit']),
+    offset: _int(json['offset']),
+    items: (json['items'] as List<dynamic>? ?? const [])
+        .map((row) => RetentionMember.fromJson(_map(row)))
+        .toList(),
+  );
+
+  final RetentionSegment segment;
+  final int totalCount;
+  final int limit;
+  final int offset;
+  final List<RetentionMember> items;
+  bool get hasMore => offset + items.length < totalCount;
+}
+
+class RetentionCommunicationResult {
+  const RetentionCommunicationResult({
+    required this.count,
+    required this.communicationId,
+  });
+  factory RetentionCommunicationResult.fromJson(Map<String, dynamic> json) =>
+      RetentionCommunicationResult(
+        count: _int(json['count']),
+        communicationId: json['communicationId']?.toString() ?? '',
+      );
+  final int count;
+  final String communicationId;
+}
+
 Map<String, dynamic> _map(Object? value) =>
     Map<String, dynamic>.from(value as Map? ?? const {});
 
@@ -548,3 +683,6 @@ int? _intOrNull(Object? value) => value == null
 
 double? _doubleOrNull(Object? value) =>
     value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '');
+
+DateTime? _dateOrNull(Object? value) =>
+    value == null ? null : DateTime.tryParse(value.toString());
