@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -92,10 +93,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final role = _profile?['role']?.toString();
     final gymId = _profile?['gym_id']?.toString();
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: settingsSystemUiOverlayStyle(isDark: isDark),
+      child: Scaffold(
+        backgroundColor: AppColors.background(context),
+        body: SafeArea(
+          child: Column(
           children: [
             _SettingsHeader(onBack: () => Navigator.of(context).maybePop()),
             Expanded(
@@ -127,11 +131,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
             ),
           ],
+          ),
         ),
       ),
     );
   }
 }
+
+@visibleForTesting
+SystemUiOverlayStyle settingsSystemUiOverlayStyle({required bool isDark}) =>
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    );
 
 class _SettingsHeader extends StatelessWidget {
   const _SettingsHeader({required this.onBack});

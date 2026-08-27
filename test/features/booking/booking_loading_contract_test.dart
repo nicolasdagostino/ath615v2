@@ -32,4 +32,19 @@ void main() {
     expect(workout, contains('AppCenteredLoadingIndicator('));
     expect(booking, isNot(contains('message: appStrings.loadingClasses')));
   });
+
+  test('upcoming reservations entry icon uses primary instead of accent', () {
+    final booking = File(
+      'lib/features/booking/presentation/screens/booking_screen.dart',
+    ).readAsStringSync();
+    final entryStart = booking.indexOf("ValueKey('booking-my-reservations')");
+    final entryEnd = booking.indexOf(
+      'const SizedBox(height: AppSpacing.md)',
+      entryStart,
+    );
+    final entry = booking.substring(entryStart, entryEnd);
+
+    expect(entry, contains('color: AppColors.primary'));
+    expect(entry, isNot(contains('AppColors.accent')));
+  });
 }

@@ -122,7 +122,10 @@ class _MemberStaffNotesSectionState extends State<MemberStaffNotesSection> {
               child: Center(
                 child: SizedBox.square(
                   dimension: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             );

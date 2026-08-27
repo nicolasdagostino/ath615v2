@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/dashboard/data/member_staff_notes_repository.dart';
@@ -95,6 +98,22 @@ void main() {
     expect(find.byKey(const ValueKey('add-member-staff-note')), findsNothing);
     expect(find.byTooltip('Actions'), findsNothing);
   });
+
+  testWidgets(
+    'member notes loading spinner uses primary, never legacy accent',
+    (tester) async {
+      final repository = _LoadingNotesRepository();
+      await tester.pumpWidget(_app(repository: repository));
+
+      final spinner = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(spinner.color, AppColors.primary);
+      expect(spinner.color, isNot(AppColors.accent));
+      repository.complete();
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('note editor uses the keyboard viewport at 320px', (
     tester,
@@ -256,4 +275,14 @@ class _FakeNotesRepository implements MemberStaffNotesRepository {
       ),
     );
   }
+}
+
+class _LoadingNotesRepository extends _FakeNotesRepository {
+  final _completer = Completer<List<MemberStaffNote>>();
+
+  @override
+  Future<List<MemberStaffNote>> listForMember(String memberUserId) =>
+      _completer.future;
+
+  void complete() => _completer.complete(const []);
 }

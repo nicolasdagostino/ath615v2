@@ -1,4 +1,5 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/widgets/app_async_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +25,11 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    final spinner = tester.widget<CircularProgressIndicator>(
+      find.byType(CircularProgressIndicator),
+    );
+    expect(spinner.color, AppColors.primary);
+    expect(spinner.color, isNot(AppColors.accent));
     expect(find.text('Loading members…'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

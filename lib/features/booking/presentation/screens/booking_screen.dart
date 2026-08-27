@@ -755,6 +755,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       icon: const Icon(
                         Icons.event_available_outlined,
                         size: 19,
+                        color: AppColors.primary,
                       ),
                       label: Text(
                         appStrings.myUpcomingBookings.toUpperCase(),

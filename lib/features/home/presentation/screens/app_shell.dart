@@ -22,6 +22,8 @@ class AppShell extends StatefulWidget {
     this.initialSection,
     this.initialWorkoutDate,
     this.initialUnreadForTesting = 0,
+    this.initialDashboardMemberIdForTesting,
+    this.dashboardScreenBuilderForTesting,
   });
 
   final String? initialSection;
@@ -32,6 +34,13 @@ class AppShell extends StatefulWidget {
 
   @visibleForTesting
   final String? initialRoleForTesting;
+
+  @visibleForTesting
+  final String? initialDashboardMemberIdForTesting;
+
+  @visibleForTesting
+  final Widget Function(String? section, String? memberId)?
+  dashboardScreenBuilderForTesting;
 
   @visibleForTesting
   final Widget Function(String section)? screenBuilderForTesting;
@@ -54,6 +63,7 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _dashboardSection = widget.initialSection;
+    _dashboardMemberId = widget.initialDashboardMemberIdForTesting;
     _unreadNotifications = widget.initialUnreadForTesting;
     final initialRole = widget.initialRoleForTesting;
     if (initialRole == null) {
@@ -235,7 +245,12 @@ class _AppShellState extends State<AppShell> {
             testScreenBuilder('booking'),
             testScreenBuilder('messages'),
             testScreenBuilder('profile'),
-            if (canSeeDashboard) testScreenBuilder('dashboard'),
+            if (canSeeDashboard)
+              widget.dashboardScreenBuilderForTesting?.call(
+                    _dashboardSection,
+                    _dashboardMemberId,
+                  ) ??
+                  testScreenBuilder('dashboard'),
           ];
 
     final navItems = [
@@ -278,7 +293,13 @@ class _AppShellState extends State<AppShell> {
         index: _index,
         items: navItems,
         onSelected: (value) {
-          setState(() => _index = value);
+          setState(() {
+            _index = value;
+            if (canSeeDashboard && value == 4) {
+              _dashboardSection = null;
+              _dashboardMemberId = null;
+            }
+          });
           if (value == 2 && widget.screenBuilderForTesting == null) {
             _loadUnreadNotifications();
           }

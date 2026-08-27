@@ -54,7 +54,10 @@ class AppAsyncState extends StatelessWidget {
               if (isLoading)
                 const SizedBox.square(
                   dimension: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.primary,
+                  ),
                 )
               else
                 Icon(

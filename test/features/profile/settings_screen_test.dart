@@ -108,6 +108,16 @@ void main() {
     expect(find.byKey(const ValueKey('change-password-confirm')), findsOne);
   });
 
+  test('settings status bar icons follow surface brightness', () {
+    final light = settingsSystemUiOverlayStyle(isDark: false);
+    final dark = settingsSystemUiOverlayStyle(isDark: true);
+
+    expect(light.statusBarIconBrightness, Brightness.dark);
+    expect(light.statusBarBrightness, Brightness.light);
+    expect(dark.statusBarIconBrightness, Brightness.light);
+    expect(dark.statusBarBrightness, Brightness.dark);
+  });
+
   for (final mode in [ThemeMode.light, ThemeMode.dark]) {
     testWidgets('settings retains real options at 320px in ${mode.name}', (
       tester,

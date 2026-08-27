@@ -121,6 +121,43 @@ void main() {
     expect(find.byIcon(Icons.calendar_month), findsOneWidget);
   });
 
+  testWidgets('tapping Panel clears a transient member detail destination', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppShell(
+          initialRoleForTesting: 'admin',
+          initialDashboardMemberIdForTesting: 'member-1',
+          screenBuilderForTesting: (section) => Text(
+            section,
+            key: ValueKey('screen-$section'),
+          ),
+          dashboardScreenBuilderForTesting: (section, memberId) => Text(
+            memberId == null ? 'DASHBOARD ROOT' : 'MEMBER $memberId',
+            key: ValueKey('dashboard-${memberId ?? 'root'}'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('MEMBER member-1'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.dashboard_outlined));
+    await tester.pump();
+    expect(find.text('DASHBOARD ROOT'), findsOneWidget);
+    expect(find.text('MEMBER member-1'), findsNothing);
+  });
+
   testWidgets('selected destination uses the shared primary instead of gold', (
     tester,
   ) async {
