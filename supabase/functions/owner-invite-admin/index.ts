@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
+  gymAcceptsInvitations,
   ownerCanInvite,
   ownerInviteMetadata,
   shouldMaterializeInvitedName,
@@ -23,19 +24,21 @@ serve(async (req) => {
     const body = await req.json();
     const email = String(body.email ?? "").trim().toLowerCase();
     const fullName = String(body.full_name ?? body.fullName ?? "").trim();
-    if (!email) throw new Error("Missing email");
+    let gymId = String(body.gym_id ?? "").trim();
+    if (!gymId) {
+      const { data: legacyEffectiveGym, error: effectiveGymError } =
+        await userClient.rpc("effective_gym_id");
+      if (effectiveGymError) throw effectiveGymError;
+      gymId = String(legacyEffectiveGym ?? "").trim();
+    }
+    if (!email || !gymId) throw new Error("Missing email or gym");
 
-    const [
-      { data: gymId, error: gymError },
-      { data: profile, error: profileError },
-    ] = await Promise.all([
-      userClient.rpc("effective_gym_id"),
+    const [{ data: profile, error: profileError }] = await Promise.all([
       admin.from("profiles").select("role").eq("id", auth.user.id).single(),
     ]);
-    if (gymError || !gymId) throw gymError ?? new Error("No effective gym");
     if (profileError) throw profileError;
     const { data: gym, error: gymLookupError } = await admin.from("gyms")
-      .select("owner_id").eq("id", gymId).single();
+      .select("owner_id,lifecycle_status").eq("id", gymId).single();
     if (gymLookupError) throw gymLookupError;
     if (
       !ownerCanInvite({
@@ -44,6 +47,9 @@ serve(async (req) => {
         actorId: auth.user.id,
       })
     ) throw new Error("Only the gym owner can invite admins");
+    if (!gymAcceptsInvitations(gym.lifecycle_status)) {
+      throw new Error("Gym is not active");
+    }
 
     let { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { ...ownerInviteMetadata(fullName), gym_id: gymId },

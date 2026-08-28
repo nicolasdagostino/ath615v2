@@ -11,6 +11,10 @@ end $$;
 
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claim.sub','bf100000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claims',jsonb_build_object(
+  'sub','bf100000-0000-0000-0000-000000000001','role','authenticated',
+  'session_id','bf100000-0000-0000-0000-000000000099'
+)::text,true);
 select public.create_gym('Owner Polish Gym');
 
 do $$ declare gid uuid; rows_count integer;
@@ -25,8 +29,8 @@ end $$;
 select set_config('request.jwt.claim.sub','bf100000-0000-0000-0000-000000000003',true);
 do $$ begin
   perform public.list_owner_gym_overview();
-  if found then raise exception 'athlete received owner gyms'; end if;
-end $$;
+  raise exception 'athlete received owner gyms';
+exception when sqlstate '42501' then null; end $$;
 do $$ begin
   perform public.select_owner_effective_gym((select id from gyms where name='Owner Polish Gym'));
   raise exception 'cross-role gym switch accepted';

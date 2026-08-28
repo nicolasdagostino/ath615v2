@@ -1,13 +1,18 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  gymAcceptsInvitations,
   ownerCanInvite,
   ownerInviteMetadata,
   shouldMaterializeInvitedName,
 } from "./logic.ts";
 
-Deno.test("owner invite is scoped to the owned effective gym", () => {
+Deno.test("owner invite is scoped to the explicitly selected owned gym", () => {
   assertEquals(
-    ownerCanInvite({ profileRole: "owner", gymOwnerId: "u1", actorId: "u1" }),
+    ownerCanInvite({
+      profileRole: "owner",
+      gymOwnerId: "u1",
+      actorId: "u1",
+    }),
     true,
   );
   assertEquals(
@@ -18,6 +23,9 @@ Deno.test("owner invite is scoped to the owned effective gym", () => {
     ownerCanInvite({ profileRole: "admin", gymOwnerId: "u1", actorId: "u1" }),
     false,
   );
+  assertEquals(gymAcceptsInvitations("active"), true);
+  assertEquals(gymAcceptsInvitations("suspended"), false);
+  assertEquals(gymAcceptsInvitations("archived"), false);
 });
 Deno.test("invite metadata never substitutes email for a missing name", () => {
   assertEquals(ownerInviteMetadata(""), { role: "admin" });

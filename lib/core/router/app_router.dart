@@ -59,10 +59,17 @@ class AppRouter {
           builder: (context, state) => const OwnerScreen(),
         ),
         GoRoute(
+          path: '/owner/gym/:id',
+          builder: (context, state) =>
+              OwnerGymDetailScreen(gymId: state.pathParameters['id']!),
+        ),
+        GoRoute(
           path: '/app',
           builder: (context, state) => AppShell(
             initialSection: state.uri.queryParameters['section'],
             initialNotificationId: state.uri.queryParameters['notificationId'],
+            ownerInspection:
+                state.uri.queryParameters['ownerInspection'] == 'true',
             initialWorkoutDate: parseNotificationDate(
               state.uri.queryParameters['date'],
             ),

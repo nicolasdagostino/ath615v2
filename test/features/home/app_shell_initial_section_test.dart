@@ -119,6 +119,54 @@ void main() {
     },
   );
 
+  testWidgets('explicit admin inspection keeps a persistent Owner return', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppShell(
+          initialRoleForTesting: 'owner',
+          ownerInspection: true,
+          screenBuilderForTesting: (section) => Text(section),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('RETURN TO OWNER'), findsOneWidget);
+    expect(find.byIcon(Icons.dashboard), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('suspended gym gate offers only active alternatives at 320 px', (
+    tester,
+  ) async {
+    String? selected;
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: buildGymLifecycleBlockedForTesting(
+          status: 'suspended',
+          gymName: 'Suspended QA Gym',
+          alternatives: const [
+            {'id': 'active-gym', 'name': 'Active Gym'},
+          ],
+          onSelectGym: (id) => selected = id,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Active Gym'));
+    expect(selected, 'active-gym');
+    expect(find.textContaining('temporarily suspended'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('manual navigation remains available after role initialization', (
     tester,
   ) async {

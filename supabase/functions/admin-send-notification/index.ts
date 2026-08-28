@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import {
+  assertEffectiveGymSelection,
+  assertGymOperational,
+} from "../_shared/gym_lifecycle.ts";
 
 const allowedAudiences = new Set(["all", "athlete", "coach", "admin"]);
 
@@ -52,6 +56,14 @@ serve(async (req) => {
       throw new Error("Only admins can send notifications");
     }
     if (!adminProfile.gym_id) throw new Error("Admin has no gym_id");
+    const { data: effectiveGymId, error: effectiveGymError } = await userClient
+      .rpc("effective_gym_id");
+    if (effectiveGymError) throw effectiveGymError;
+    assertEffectiveGymSelection(adminProfile.gym_id, effectiveGymId);
+    const { data: gym, error: gymError } = await adminClient.from("gyms")
+      .select("lifecycle_status").eq("id", adminProfile.gym_id).single();
+    if (gymError) throw gymError;
+    assertGymOperational(gym.lifecycle_status);
 
     let recipientsQuery = adminClient
       .from("profiles")

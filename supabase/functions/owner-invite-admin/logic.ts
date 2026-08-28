@@ -4,6 +4,8 @@ export function ownerCanInvite(
   return input.profileRole === "owner" && input.gymOwnerId === input.actorId;
 }
 
+export const gymAcceptsInvitations = (status: unknown) => status === "active";
+
 export function ownerInviteMetadata(fullName: string) {
   const normalized = fullName.trim();
   return normalized

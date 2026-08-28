@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
@@ -21,6 +22,7 @@ class AppShell extends StatefulWidget {
     this.screenBuilderForTesting,
     this.initialSection,
     this.initialNotificationId,
+    this.ownerInspection = false,
     this.initialWorkoutDate,
     this.initialUnreadForTesting = 0,
     this.initialDashboardMemberIdForTesting,
@@ -29,6 +31,7 @@ class AppShell extends StatefulWidget {
 
   final String? initialSection;
   final String? initialNotificationId;
+  final bool ownerInspection;
   final DateTime? initialWorkoutDate;
 
   @visibleForTesting
@@ -60,6 +63,8 @@ class _AppShellState extends State<AppShell> {
   String? _dashboardMemberId;
   int _unreadNotifications = 0;
   RealtimeChannel? _notificationsChannel;
+  String? _gymLifecycleStatus;
+  List<Map<String, dynamic>> _alternativeGyms = const [];
 
   @override
   void initState() {
@@ -134,11 +139,21 @@ class _AppShellState extends State<AppShell> {
         .eq('id', user.id)
         .single();
 
-    final gymId = profile['gym_id']?.toString();
+    Map<String, dynamic>? accessContext;
+    try {
+      final raw = await Supabase.instance.client.rpc(
+        'get_selected_gym_access_context',
+      );
+      if (raw is Map) accessContext = Map<String, dynamic>.from(raw);
+    } catch (_) {}
 
-    String? gymName;
+    final gymId =
+        accessContext?['selected_gym_id']?.toString() ??
+        profile['gym_id']?.toString();
 
-    if (gymId != null) {
+    String? gymName = accessContext?['selected_gym_name']?.toString();
+
+    if (gymId != null && gymName == null) {
       try {
         final gym = await Supabase.instance.client
             .from('gyms')
@@ -155,6 +170,10 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _role = profile['role'] as String?;
       _gymName = gymName;
+      _gymLifecycleStatus = accessContext?['status']?.toString();
+      _alternativeGyms = List<Map<String, dynamic>>.from(
+        accessContext?['active_gyms'] as List? ?? const [],
+      );
       if (!_initialSectionResolved) {
         _index = initialShellIndexForRole(
           _role,
@@ -214,6 +233,23 @@ class _AppShellState extends State<AppShell> {
     }
 
     final canSeeDashboard = _role == 'admin' || _role == 'owner';
+
+    if (_gymLifecycleStatus != null && _gymLifecycleStatus != 'active') {
+      return _GymLifecycleBlocked(
+        status: _gymLifecycleStatus!,
+        gymName: _gymName,
+        alternatives: _alternativeGyms,
+        ownerInspection: widget.ownerInspection && _role == 'owner',
+        onSelectGym: (gymId) async {
+          await Supabase.instance.client.rpc(
+            'select_effective_gym',
+            params: {'p_gym_id': gymId},
+          );
+          await _loadRole();
+        },
+        onReturnOwner: _returnToOwner,
+      );
+    }
 
     final testScreenBuilder = widget.screenBuilderForTesting;
     final screens = testScreenBuilder == null
@@ -306,7 +342,38 @@ class _AppShellState extends State<AppShell> {
     }
 
     return Scaffold(
-      body: screens[_index],
+      body: Column(
+        children: [
+          if (widget.ownerInspection && _role == 'owner')
+            Material(
+              color: AppColors.primary,
+              child: SafeArea(
+                bottom: false,
+                child: ListTile(
+                  dense: true,
+                  title: Text(
+                    appStrings.pick(
+                      'ADMIN INSPECTION MODE',
+                      'MODO INSPECCIÓN ADMIN',
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  trailing: TextButton(
+                    onPressed: _returnToOwner,
+                    child: Text(
+                      appStrings.pick('RETURN TO OWNER', 'VOLVER A OWNER'),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: screens[_index]),
+        ],
+      ),
       bottomNavigationBar: _ShellBottomNav(
         index: _index,
         items: navItems,
@@ -325,7 +392,104 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
+
+  Future<void> _returnToOwner() async {
+    await Supabase.instance.client.rpc('leave_owner_gym_inspection');
+    if (!mounted) return;
+    context.go('/owner');
+  }
 }
+
+class _GymLifecycleBlocked extends StatelessWidget {
+  const _GymLifecycleBlocked({
+    required this.status,
+    required this.gymName,
+    required this.alternatives,
+    required this.ownerInspection,
+    required this.onSelectGym,
+    required this.onReturnOwner,
+  });
+  final String status;
+  final String? gymName;
+  final List<Map<String, dynamic>> alternatives;
+  final bool ownerInspection;
+  final ValueChanged<String> onSelectGym;
+  final VoidCallback onReturnOwner;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.background(context),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.screenX),
+        children: [
+          Icon(
+            status == 'archived'
+                ? Icons.archive_outlined
+                : Icons.pause_circle_outline,
+            size: 52,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            gymName ?? appStrings.appBrand,
+            style: AppTypography.itemTitle(context),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            status == 'archived'
+                ? appStrings.pick(
+                    'This center is archived and is not available for operational use.',
+                    'Este centro está archivado y no está disponible para uso operativo.',
+                  )
+                : appStrings.pick(
+                    'This center is temporarily suspended. Contact the service administrator.',
+                    'Este centro está temporalmente suspendido. Contacta con el administrador del servicio.',
+                  ),
+            style: AppTypography.body(context),
+          ),
+          if (ownerInspection) ...[
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: onReturnOwner,
+              child: Text(appStrings.pick('RETURN TO OWNER', 'VOLVER A OWNER')),
+            ),
+          ],
+          if (alternatives.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              appStrings.pick('AVAILABLE GYMS', 'GIMNASIOS DISPONIBLES'),
+              style: AppTypography.sectionTitle(context),
+            ),
+            ...alternatives.map(
+              (g) => ListTile(
+                title: Text(g['name']?.toString() ?? ''),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => onSelectGym(g['id'].toString()),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+@visibleForTesting
+Widget buildGymLifecycleBlockedForTesting({
+  required String status,
+  String? gymName,
+  List<Map<String, dynamic>> alternatives = const [],
+  bool ownerInspection = false,
+  ValueChanged<String>? onSelectGym,
+  VoidCallback? onReturnOwner,
+}) => _GymLifecycleBlocked(
+  status: status,
+  gymName: gymName,
+  alternatives: alternatives,
+  ownerInspection: ownerInspection,
+  onSelectGym: onSelectGym ?? (_) {},
+  onReturnOwner: onReturnOwner ?? () {},
+);
 
 @visibleForTesting
 int initialShellIndexForRole(String? role, {String? requestedSection}) {
