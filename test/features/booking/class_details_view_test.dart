@@ -3,6 +3,7 @@ import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/features/booking/presentation/booking_colors.dart';
 import 'package:ath615v2/features/booking/presentation/widgets/attendance_add_booking_sheets.dart';
 import 'package:ath615v2/features/booking/presentation/widgets/class_details_sheet.dart';
+import 'package:ath615v2/features/booking/data/coach_briefing_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,6 +50,9 @@ void main() {
     List<ClassDetailAdminAction> adminActions = const [],
     ClassDetailAttendeeActions? attendeeActions,
     ValueChanged<String>? onMemberTap,
+    CoachBriefingClass? intelligence,
+    Map<String, String> pinnedNotesByMember = const {},
+    Future<void> Function()? onMarkAllAttended,
   }) {
     final roster =
         bookings ??
@@ -88,6 +92,9 @@ void main() {
                 adminActions: adminActions,
                 attendeeActions: attendeeActions,
                 onMemberTap: onMemberTap,
+                intelligence: intelligence,
+                pinnedNotesByMember: pinnedNotesByMember,
+                onMarkAllAttended: onMarkAllAttended,
               ),
             ),
           ),
@@ -188,6 +195,104 @@ void main() {
     expect(find.text(appStrings.noBookingsYet), findsOneWidget);
     expect(find.text(appStrings.waitlist), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unified detail renders today intelligence and pinned note', (
+    tester,
+  ) async {
+    var markedAll = false;
+    final now = DateTime.now();
+    final intelligence = CoachBriefingClass(
+      id: 'class-1',
+      title: 'Fresh Start',
+      startsAt: now.subtract(const Duration(minutes: 30)),
+      localStartTime: '09:00',
+      durationMinutes: 60,
+      capacity: 16,
+      coachName: 'Jess Brown',
+      programName: 'Fresh Start',
+      workoutDescription: '5 rounds\n10 pull-ups',
+      booked: [
+        CoachBriefingAthlete(
+          bookingId: 'booking-1',
+          userId: 'athlete-1',
+          name: 'Alex Duarte',
+          avatarUrl: null,
+          isGuest: false,
+          attendanceStatus: 'booked',
+          firstClass: true,
+          membershipUsable: true,
+          membershipPlanType: 'class_pack',
+          creditsRemaining: 1,
+          membershipExpiresAt: now.add(const Duration(days: 2)),
+        ),
+        CoachBriefingAthlete(
+          bookingId: 'booking-2',
+          userId: 'athlete-2',
+          name: 'Laura Martín',
+          avatarUrl: null,
+          isGuest: false,
+          attendanceStatus: 'booked',
+          firstClass: false,
+          membershipUsable: false,
+          membershipPlanType: null,
+          creditsRemaining: null,
+          membershipExpiresAt: null,
+        ),
+      ],
+      waitlist: const [
+        CoachBriefingWaitlistMember(
+          userId: 'wait-1',
+          name: 'Matías Ruiz',
+          avatarUrl: null,
+          position: 1,
+        ),
+      ],
+    );
+    await pumpAt(
+      tester,
+      child: details(
+        klass: {
+          ...classData(),
+          'starts_at': now
+              .subtract(const Duration(minutes: 30))
+              .toIso8601String(),
+        },
+        bookings: const [
+          {'id': 'booking-1', 'user_id': 'athlete-1', 'status': 'booked'},
+          {'id': 'booking-2', 'user_id': 'athlete-2', 'status': 'booked'},
+        ],
+        intelligence: intelligence,
+        pinnedNotesByMember: const {'athlete-1': 'Prefers Spanish cues.'},
+        onMarkAllAttended: () async => markedAll = true,
+      ),
+    );
+
+    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.text('09:00'), findsOneWidget);
+    expect(find.textContaining('5 rounds'), findsOneWidget);
+    expect(find.text('FIRST CLASS'), findsOneWidget);
+    expect(find.text('1 CREDIT LEFT'), findsOneWidget);
+    expect(find.textContaining('EXPIRES IN'), findsOneWidget);
+    expect(find.text('NO MEMBERSHIP'), findsOneWidget);
+    expect(find.text('NOTE'), findsOneWidget);
+
+    await tester.tap(find.text('NOTE'));
+    await tester.pumpAndSettle();
+    expect(find.text('Prefers Spanish cues.'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Prefers Spanish cues.'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('class-detail-mark-all-attended')),
+      160,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('class-detail-mark-all-attended')),
+    );
+    await tester.pump();
+    expect(markedAll, isTrue);
   });
 
   testWidgets('fits at 320px in light and dark', (tester) async {

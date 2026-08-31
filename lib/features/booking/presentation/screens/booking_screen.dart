@@ -24,6 +24,7 @@ import '../widgets/edit_class_sheet.dart';
 import 'my_reservations_screen.dart';
 import '../booking_colors.dart';
 import '../../data/class_cancellation_service.dart';
+import '../../data/coach_briefing_repository.dart';
 
 Future<bool> completeClassDeletion({
   required Future<void> Function() delete,
@@ -68,6 +69,7 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _loading = true;
   String? _loadError;
   String? _role;
+  bool _isCoach = false;
   String? _gymId;
   bool _hasActiveMembership = false;
   bool _isAccountActive = true;
@@ -88,6 +90,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   bool get _canCreateClass => _role == 'admin' || _role == 'owner';
   bool get _canManageAttendance => _role == 'admin' || _role == 'owner';
+  bool get _canOperateClass => _canManageAttendance || _isCoach;
 
   @override
   void initState() {
@@ -170,13 +173,14 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final profile = await _client
           .from('profiles')
-          .select('role, gym_id, is_active')
+          .select('role, gym_id, is_active, is_coach')
           .eq('id', user.id)
           .single();
 
       final gymId = profile['gym_id'] as String?;
       final role = profile['role'] as String?;
       final isAccountActive = profile['is_active'] == true;
+      final isCoach = profile['is_coach'] == true || role == 'coach';
 
       bool hasActiveMembership = true;
       int? creditsRemaining;
@@ -210,6 +214,7 @@ class _BookingScreenState extends State<BookingScreen> {
         setState(() {
           _gymId = null;
           _role = role;
+          _isCoach = isCoach;
           _classes = [];
           _myBookedClassIds = {};
           _myWaitlistPositions = {};
@@ -297,6 +302,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!isCurrentLoad()) return;
       setState(() {
         _role = role;
+        _isCoach = isCoach;
         _gymId = gymId;
         _classes = classRows;
         _myBookedClassIds = bookedIds;
@@ -679,6 +685,9 @@ class _BookingScreenState extends State<BookingScreen> {
             )
           : null,
       onMemberTap: _canManageAttendance ? widget.onOpenAdminMember : null,
+      coachRepository: _canOperateClass
+          ? SupabaseCoachBriefingRepository(_client)
+          : null,
     );
   }
 

@@ -64,4 +64,51 @@ void main() {
     expect(detail, contains("call(booking, 'no_show')"));
     expect(detail, contains("_ => appStrings.bookingBooked"));
   });
+
+  test('pinned notes remain staff-only and effective-gym scoped', () {
+    final migration = File(
+      'supabase/migrations/20260825210000_add_member_staff_notes.sql',
+    ).readAsStringSync();
+    expect(migration, contains('public.member_staff_notes_can_read()'));
+    expect(migration, contains('public.membership_actor_is_active()'));
+    expect(
+      migration,
+      contains(
+        'public.membership_actor_can_manage() or public.effective_gym_is_coach()',
+      ),
+    );
+    expect(migration, contains('where n.gym_id = v_gym_id and n.is_pinned'));
+    expect(migration, contains('gm.gym_id = n.gym_id'));
+    expect(
+      migration,
+      contains('gm.user_id = n.member_user_id and gm.is_active'),
+    );
+  });
+
+  test('Coach attendance UI depends on an authorized today class match', () {
+    final detail = File(
+      'lib/features/booking/presentation/widgets/class_details_sheet.dart',
+    ).readAsStringSync();
+    expect(detail, contains('candidate.id == classId'));
+    expect(
+      detail,
+      contains('operationsRepository != null && intelligence != null'),
+    );
+    expect(detail, contains('onMarkAllAttended:'));
+  });
+
+  test('Dashboard and Booking share the one Class Detail destination', () {
+    final booking = File(
+      'lib/features/booking/presentation/screens/booking_screen.dart',
+    ).readAsStringSync();
+    final dashboard = File(
+      'lib/features/dashboard/presentation/screens/dashboard_screen.dart',
+    ).readAsStringSync();
+    expect(booking, contains('showClassDetailsSheet('));
+    expect(dashboard, contains('showClassDetailsSheet('));
+    expect(dashboard, contains('onOpenTodayClass: _openCoachClass'));
+    expect(dashboard, contains('onOpenTodayClassBriefing: _openCoachClass'));
+    expect(dashboard, isNot(contains('class _TodayClassBriefingSheet')));
+    expect(dashboard, isNot(contains('class _BriefingPersonRow')));
+  });
 }

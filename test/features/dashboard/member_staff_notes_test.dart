@@ -4,7 +4,6 @@ import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/dashboard/data/member_staff_notes_repository.dart';
-import 'package:ath615v2/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:ath615v2/features/dashboard/presentation/widgets/member_staff_notes_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,43 +141,6 @@ void main() {
     expect(saveRect.bottom, lessThanOrEqualTo(420));
     expect(saveRect.top - bodyRect.bottom, lessThan(100));
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('briefing combines automatic insight with only pinned note', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        home: Scaffold(
-          body: buildTodayClassBriefingForTest(
-            klass: const {
-              'programs': {'name': 'CrossFit'},
-            },
-            bookings: const [
-              {'user_id': 'member-1'},
-            ],
-            waitlist: const [],
-            membersById: const {
-              'member-1': {
-                'id': 'member-1',
-                'full_name': 'Juan Pérez',
-                'membership_type': 'pack',
-                'credits_remaining': 10,
-              },
-            },
-            attendedCounts: const {'member-1': 0},
-            pinnedNotesByMember: const {
-              'member-1': 'Preparing HYROX in October',
-            },
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('FIRST CLASS'), findsOneWidget);
-    expect(find.text('Preparing HYROX in October'), findsOneWidget);
-    expect(find.text('A normal note must stay hidden'), findsNothing);
   });
 
   test(

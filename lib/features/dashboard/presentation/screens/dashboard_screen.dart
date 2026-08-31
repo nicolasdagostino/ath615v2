@@ -25,7 +25,6 @@ import '../../../auth/data/auth_repository.dart';
 import '../../../analytics/presentation/analytics_view.dart';
 import '../../../booking/presentation/booking_occupancy.dart';
 import '../../../booking/data/coach_briefing_repository.dart';
-import '../../../booking/presentation/screens/coach_briefing_screen.dart';
 import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
@@ -56,7 +55,6 @@ class DashboardScreen extends StatefulWidget {
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
-
 enum _DashboardTab { overview, members, plans, analytics }
 
 enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
@@ -99,15 +97,6 @@ bool adminMembershipRequestNeedsAction(Map<String, dynamic> request) =>
     request['status'] == 'pending' &&
     request['payment_method'] == 'cash' &&
     request['payment_status'] == 'pending';
-
-const int adminLowCreditsThreshold = 2;
-
-int? nextAdminAttendanceMilestone(int attendedCount) {
-  for (final target in const [50, 100, 200, 500]) {
-    if (attendedCount < target) return target;
-  }
-  return null;
-}
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
@@ -262,126 +251,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _openTodayClass(Map<String, dynamic> klass) async {
+  Future<void> _openCoachClass(Map<String, dynamic> row) async {
     await showClassDetailsSheet(
       context: context,
       client: Supabase.instance.client,
-      klass: klass,
+      klass: row,
       actionLabel: '',
       onAction: null,
+      coachRepository: SupabaseCoachBriefingRepository(
+        Supabase.instance.client,
+      ),
       onMemberTap: (memberId) {
         final member = _members.where(
           (candidate) => candidate['id']?.toString() == memberId,
         );
         if (member.isNotEmpty) _openMember(member.first);
       },
-    );
-  }
-
-  Future<void> _openCoachClass(Map<String, dynamic> row) async {
-    final repository = SupabaseCoachBriefingRepository(
-      Supabase.instance.client,
-    );
-    try {
-      final briefing = await repository.loadToday();
-      final classId = row['id']?.toString();
-      final matches = briefing.classes.where((klass) => klass.id == classId);
-      if (matches.isEmpty) {
-        await _openTodayClass(row);
-        return;
-      }
-      if (!mounted) return;
-      await showCoachClassDetail(
-        context: context,
-        klass: matches.first,
-        repository: repository,
-        onOpenMember: (memberId) {
-          final member = _members.where(
-            (candidate) => candidate['id']?.toString() == memberId,
-          );
-          if (member.isEmpty) return;
-          Navigator.of(context).pop();
-          _openMember(member.first);
-        },
-        onChanged: _loadOverviewStats,
-      );
-    } catch (_) {
-      if (mounted) await _openTodayClass(row);
-    }
-  }
-
-  Future<void> _openTodayClassBriefing(Map<String, dynamic> klass) async {
-    final bookings = List<Map<String, dynamic>>.from(
-      klass['booking_rows'] as List? ?? const [],
-    );
-    final waitlist = List<Map<String, dynamic>>.from(
-      klass['waitlist_rows'] as List? ?? const [],
-    );
-    final userIds = <String>{
-      ...bookings.map((row) => row['user_id']?.toString()).whereType<String>(),
-      ...waitlist.map((row) => row['user_id']?.toString()).whereType<String>(),
-    }.toList();
-    final startsAt = DateTime.tryParse(
-      klass['starts_at']?.toString() ?? '',
-    )?.toUtc();
-    final attendedCounts = <String, int>{};
-    Map<String, String> pinnedNotesByMember = const {};
-    var attendanceCountsLoaded = userIds.isEmpty;
-
-    if (userIds.isNotEmpty && startsAt != null) {
-      try {
-        final attended = await Supabase.instance.client
-            .from('class_bookings')
-            .select('user_id, classes!inner(gym_id, starts_at)')
-            .inFilter('user_id', userIds)
-            .eq('status', 'attended')
-            .eq('classes.gym_id', _gymId!)
-            .lt('classes.starts_at', startsAt.toIso8601String());
-        for (final row in List<Map<String, dynamic>>.from(attended)) {
-          final userId = row['user_id']?.toString();
-          if (userId != null) {
-            attendedCounts[userId] = (attendedCounts[userId] ?? 0) + 1;
-          }
-        }
-        attendanceCountsLoaded = true;
-      } catch (_) {
-        attendanceCountsLoaded = false;
-      }
-    }
-
-    if (userIds.isNotEmpty) {
-      try {
-        pinnedNotesByMember = await loadBriefingPinnedNotes(
-          _memberStaffNotesRepository,
-          userIds,
-        );
-      } catch (_) {
-        pinnedNotesByMember = const {};
-      }
-    }
-
-    if (!mounted) return;
-    final membersById = {
-      for (final member in _members) member['id'].toString(): member,
-    };
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _TodayClassBriefingSheet(
-        klass: klass,
-        bookings: bookings,
-        waitlist: waitlist,
-        membersById: membersById,
-        attendedCounts: attendedCounts,
-        pinnedNotesByMember: pinnedNotesByMember,
-        attendanceCountsLoaded: attendanceCountsLoaded,
-        onOpenMember: (member) {
-          Navigator.of(sheetContext).pop();
-          _openMember(member);
-        },
-      ),
     );
   }
 
@@ -2963,7 +2848,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           });
                         },
                         onOpenTodayClass: _openCoachClass,
-                        onOpenTodayClassBriefing: _openTodayClassBriefing,
+                        onOpenTodayClassBriefing: _openCoachClass,
                         onSendNotification: _openCommunicationSheet,
                       ),
                   ],
@@ -3911,25 +3796,6 @@ Widget buildDashboardOverviewForTest({
   );
 }
 
-@visibleForTesting
-Widget buildTodayClassBriefingForTest({
-  required Map<String, dynamic> klass,
-  required List<Map<String, dynamic>> bookings,
-  required List<Map<String, dynamic>> waitlist,
-  required Map<String, Map<String, dynamic>> membersById,
-  required Map<String, int> attendedCounts,
-  Map<String, String> pinnedNotesByMember = const {},
-  ValueChanged<Map<String, dynamic>>? onOpenMember,
-}) => _TodayClassBriefingSheet(
-  klass: klass,
-  bookings: bookings,
-  waitlist: waitlist,
-  membersById: membersById,
-  attendedCounts: attendedCounts,
-  pinnedNotesByMember: pinnedNotesByMember,
-  onOpenMember: onOpenMember ?? (_) {},
-);
-
 class _ActionRequiredCard extends StatelessWidget {
   const _ActionRequiredCard({
     required this.joinRequests,
@@ -4767,357 +4633,6 @@ class _TodayClassesSummary extends StatelessWidget {
       ],
     );
   }
-}
-
-class _TodayClassBriefingSheet extends StatelessWidget {
-  const _TodayClassBriefingSheet({
-    required this.klass,
-    required this.bookings,
-    required this.waitlist,
-    required this.membersById,
-    required this.attendedCounts,
-    this.pinnedNotesByMember = const {},
-    this.attendanceCountsLoaded = true,
-    required this.onOpenMember,
-  });
-
-  final Map<String, dynamic> klass;
-  final List<Map<String, dynamic>> bookings;
-  final List<Map<String, dynamic>> waitlist;
-  final Map<String, Map<String, dynamic>> membersById;
-  final Map<String, int> attendedCounts;
-  final Map<String, String> pinnedNotesByMember;
-  final bool attendanceCountsLoaded;
-  final ValueChanged<Map<String, dynamic>> onOpenMember;
-
-  String? _insight(Map<String, dynamic> member, int attendedCount) {
-    if (attendanceCountsLoaded && attendedCount == 0) {
-      return appStrings.firstClass.toUpperCase();
-    }
-
-    final milestone = attendanceCountsLoaded
-        ? nextAdminAttendanceMilestone(attendedCount)
-        : null;
-    if (milestone != null && milestone - attendedCount == 1) {
-      return appStrings.nextMilestone(attendedCount, milestone);
-    }
-
-    final membershipType = member['membership_type']?.toString();
-    final credits = member['credits_remaining'];
-    if (membershipType != 'unlimited' &&
-        credits is num &&
-        credits >= 0 &&
-        credits <= adminLowCreditsThreshold) {
-      return appStrings.lowCreditsRemaining(credits.toInt());
-    }
-
-    final expiry = DateTime.tryParse(
-      member['membership_expires_at']?.toString() ?? '',
-    )?.toLocal();
-    if (expiry != null) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
-      final days = expiryDay.difference(today).inDays;
-      if (days >= 0 && days <= 7) {
-        return appStrings.membershipExpiresSoon.toUpperCase();
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final program = klass['programs'];
-    final programName = program is Map
-        ? program['name']?.toString().trim()
-        : null;
-    final title = programName?.isNotEmpty == true
-        ? programName!
-        : appStrings.classFallback;
-
-    return FractionallySizedBox(
-      heightFactor: .88,
-      child: Material(
-        color: AppColors.background(context),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadii.sheet),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.sm,
-                AppSpacing.sm,
-                AppSpacing.screenX,
-                AppSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    color: AppColors.textPrimary(context),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          appStrings.classBriefing.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          style: AppTypography.sectionTitle(context),
-                        ),
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.helper(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSizes.minimumTouchTarget),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: AppColors.border(context)),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenX,
-                  AppSpacing.md,
-                  AppSpacing.screenX,
-                  AppSpacing.xl,
-                ),
-                children: [
-                  _ClassSectionLabel(
-                    label: appStrings.pick('Booked', 'Reservados'),
-                    count: bookings.length,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  if (bookings.isEmpty)
-                    _BriefingEmpty(label: appStrings.noBookingsYet)
-                  else
-                    ...bookings.map((booking) {
-                      final userId = booking['user_id']?.toString();
-                      final member = userId == null
-                          ? null
-                          : membersById[userId];
-                      final rawName = booking['is_guest'] == true
-                          ? booking['guest_name']?.toString()
-                          : member?['full_name']?.toString();
-                      return _BriefingPersonRow(
-                        name: rawName?.trim().isNotEmpty == true
-                            ? rawName!.trim()
-                            : appStrings.member,
-                        avatarUrl: member?['avatar_url']?.toString(),
-                        insight: member == null
-                            ? null
-                            : _insight(member, attendedCounts[userId] ?? 0),
-                        staffNote: userId == null
-                            ? null
-                            : pinnedNotesByMember[userId],
-                        onTap: member == null
-                            ? null
-                            : () => onOpenMember(member),
-                      );
-                    }),
-                  if (waitlist.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    _ClassSectionLabel(
-                      label: appStrings.waitlist,
-                      count: waitlist.length,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    ...waitlist.asMap().entries.map((entry) {
-                      final userId = entry.value['user_id']?.toString();
-                      final member = userId == null
-                          ? null
-                          : membersById[userId];
-                      return _BriefingPersonRow(
-                        name:
-                            member?['full_name']
-                                    ?.toString()
-                                    .trim()
-                                    .isNotEmpty ==
-                                true
-                            ? member!['full_name'].toString().trim()
-                            : appStrings.member,
-                        avatarUrl: member?['avatar_url']?.toString(),
-                        leading: '${entry.key + 1}',
-                        staffNote: userId == null
-                            ? null
-                            : pinnedNotesByMember[userId],
-                        onTap: member == null
-                            ? null
-                            : () => onOpenMember(member),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ClassSectionLabel extends StatelessWidget {
-  const _ClassSectionLabel({required this.label, required this.count});
-
-  final String label;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          label.toUpperCase(),
-          style: AppTypography.sectionTitle(context),
-        ),
-      ),
-      Text('$count', style: AppTypography.helper(context)),
-    ],
-  );
-}
-
-class _BriefingEmpty extends StatelessWidget {
-  const _BriefingEmpty({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-    child: Text(label, style: AppTypography.bodySecondary(context)),
-  );
-}
-
-class _BriefingPersonRow extends StatelessWidget {
-  const _BriefingPersonRow({
-    required this.name,
-    this.avatarUrl,
-    this.insight,
-    this.staffNote,
-    this.leading,
-    this.onTap,
-  });
-
-  final String name;
-  final String? avatarUrl;
-  final String? insight;
-  final String? staffNote;
-  final String? leading;
-  final VoidCallback? onTap;
-
-  String get _initials {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    return parts
-        .where((part) => part.isNotEmpty)
-        .take(2)
-        .map((part) => part[0])
-        .join()
-        .toUpperCase();
-  }
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 58),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: AppColors.border(context), width: .7),
-          ),
-        ),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              SizedBox(
-                width: 24,
-                child: Text(leading!, style: AppTypography.helper(context)),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-            ],
-            CircleAvatar(
-              radius: 18,
-              foregroundImage: avatarUrl?.trim().isNotEmpty == true
-                  ? NetworkImage(avatarUrl!)
-                  : null,
-              backgroundColor: AppColors.surfaceAlt(context),
-              child: avatarUrl?.trim().isNotEmpty == true
-                  ? null
-                  : Text(
-                      _initials.isEmpty ? 'M' : _initials,
-                      style: AppTypography.buttonLabel(
-                        context,
-                      ).copyWith(color: AppColors.primary),
-                    ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(context),
-                  ),
-                  if (insight != null)
-                    Text(
-                      insight!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.helper(
-                        context,
-                      ).copyWith(color: AppColors.primary),
-                    ),
-                  if (staffNote != null) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.flag_rounded,
-                          size: 14,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            staffNote!,
-                            key: ValueKey('briefing-pinned-note-$name'),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.helper(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (onTap != null)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary(context),
-                size: 20,
-              ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class _WeeklyBookingsCard extends StatelessWidget {

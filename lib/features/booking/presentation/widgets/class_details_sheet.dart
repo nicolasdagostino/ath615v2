@@ -10,6 +10,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_admin_actions.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../booking_colors.dart';
+import '../../data/coach_briefing_repository.dart';
 import 'attendance_admin_actions.dart';
 
 class ClassDetailAdminAction {
@@ -49,24 +50,91 @@ Future<void> showClassDetailsSheet({
   List<ClassDetailAdminAction> adminActions = const [],
   ClassDetailAttendeeActions? attendeeActions,
   ValueChanged<String>? onMemberTap,
+  CoachBriefingRepository? coachRepository,
+  CoachBriefingClass? prefetchedIntelligence,
 }) async {
   final classId = klass['id'].toString();
 
-  final bookings = await client
-      .from('class_bookings')
-      .select('id, user_id, guest_name, is_guest, status, created_at')
-      .eq('class_id', classId)
-      .neq('status', 'cancelled')
-      .order('created_at', ascending: true);
+  CoachBriefingClass? intelligence = prefetchedIntelligence;
+  final operationsRepository = coachRepository;
+  if (intelligence == null && operationsRepository != null) {
+    try {
+      final briefing = await operationsRepository.loadToday();
+      intelligence = briefing.classes
+          .where((candidate) => candidate.id == classId)
+          .firstOrNull;
+    } catch (_) {
+      // Future/historical classes and unauthorized actors keep normal detail.
+    }
+  }
 
-  final waitlist = await client
-      .from('class_waitlist')
-      .select('user_id, created_at')
-      .eq('class_id', classId)
-      .order('created_at', ascending: true);
+  late final List<Map<String, dynamic>> bookingRows;
+  late final List<Map<String, dynamic>> waitlistRows;
+  late final Map<String, Map<String, dynamic>> profileById;
+  if (intelligence case final todayClass?) {
+    bookingRows = [
+      for (final athlete in todayClass.booked)
+        {
+          'id': athlete.bookingId,
+          'user_id': athlete.userId,
+          'guest_name': athlete.isGuest ? athlete.name : null,
+          'is_guest': athlete.isGuest,
+          'status': athlete.attendanceStatus,
+        },
+    ];
+    waitlistRows = [
+      for (final member in todayClass.waitlist)
+        {'user_id': member.userId, 'position': member.position},
+    ];
+    profileById = {
+      for (final athlete in todayClass.booked)
+        if (athlete.userId != null)
+          athlete.userId!: {
+            'id': athlete.userId,
+            'full_name': athlete.name,
+            'avatar_url': athlete.avatarUrl,
+          },
+      for (final member in todayClass.waitlist)
+        member.userId: {
+          'id': member.userId,
+          'full_name': member.name,
+          'avatar_url': member.avatarUrl,
+        },
+    };
+  } else {
+    final bookings = await client
+        .from('class_bookings')
+        .select('id, user_id, guest_name, is_guest, status, created_at')
+        .eq('class_id', classId)
+        .neq('status', 'cancelled')
+        .order('created_at', ascending: true);
+    final waitlist = await client
+        .from('class_waitlist')
+        .select('user_id, created_at')
+        .eq('class_id', classId)
+        .order('created_at', ascending: true);
+    bookingRows = List<Map<String, dynamic>>.from(bookings);
+    waitlistRows = List<Map<String, dynamic>>.from(waitlist);
 
-  final bookingRows = List<Map<String, dynamic>>.from(bookings);
-  final waitlistRows = List<Map<String, dynamic>>.from(waitlist);
+    final userIds = <String>{
+      if (klass['coach_id'] != null) klass['coach_id'].toString(),
+      ...bookingRows
+          .where((booking) => booking['user_id'] != null)
+          .map((booking) => booking['user_id'].toString()),
+      ...waitlistRows.map((entry) => entry['user_id'].toString()),
+    }.toList();
+    final profiles = userIds.isEmpty
+        ? <Map<String, dynamic>>[]
+        : List<Map<String, dynamic>>.from(
+            await client
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .inFilter('id', userIds),
+          );
+    profileById = {
+      for (final profile in profiles) profile['id'].toString(): profile,
+    };
+  }
   final currentUserId = client.auth.currentUser?.id;
   final myWaitlistIndex = currentUserId == null
       ? -1
@@ -75,25 +143,28 @@ Future<void> showClassDetailsSheet({
         );
   final myWaitlistPosition = myWaitlistIndex >= 0 ? myWaitlistIndex + 1 : null;
 
-  final userIds = <String>{
-    if (klass['coach_id'] != null) klass['coach_id'].toString(),
-    ...bookingRows
-        .where((booking) => booking['user_id'] != null)
-        .map((booking) => booking['user_id'].toString()),
-    ...waitlistRows.map((entry) => entry['user_id'].toString()),
-  }.toList();
-
-  final profiles = userIds.isEmpty
-      ? <Map<String, dynamic>>[]
-      : List<Map<String, dynamic>>.from(
-          await client
-              .from('profiles')
-              .select('id, full_name, avatar_url')
-              .inFilter('id', userIds),
+  Map<String, String> pinnedNotesByMember = const {};
+  if (intelligence != null && operationsRepository != null) {
+    final memberIds = intelligence.booked
+        .map((athlete) => athlete.userId)
+        .whereType<String>()
+        .toSet()
+        .toList();
+    if (memberIds.isNotEmpty) {
+      try {
+        final notes = await client.rpc(
+          'list_effective_member_pinned_notes',
+          params: {'p_member_user_ids': memberIds},
         );
-  final profileById = {
-    for (final profile in profiles) profile['id'].toString(): profile,
-  };
+        pinnedNotesByMember = {
+          for (final note in List<Map<String, dynamic>>.from(notes as List))
+            note['member_user_id'].toString(): note['body'].toString(),
+        };
+      } catch (_) {
+        // Notes are optional context; class operations remain available.
+      }
+    }
+  }
 
   if (!context.mounted) return;
   await showModalBottomSheet<void>(
@@ -131,16 +202,55 @@ Future<void> showClassDetailsSheet({
           Map<String, dynamic> booking,
           String status,
         ) async {
+          final previous = booking['status']?.toString() ?? 'booked';
+          booking['status'] = status;
+          setSheetState(() {});
           try {
-            await updateClassBookingAttendance(
-              client: client,
-              bookingId: booking['id'].toString(),
-              status: status,
-            );
-            booking['status'] = status;
-            setSheetState(() {});
+            if (operationsRepository != null && intelligence != null) {
+              final updated = await operationsRepository.setAttendance(
+                bookingId: booking['id'].toString(),
+                expectedStatus: previous,
+                status: status,
+              );
+              if (!updated) throw StateError('attendance_conflict');
+            } else {
+              await updateClassBookingAttendance(
+                client: client,
+                bookingId: booking['id'].toString(),
+                status: status,
+              );
+            }
             await attendeeActions?.onChanged?.call();
           } catch (error) {
+            booking['status'] = previous;
+            setSheetState(() {});
+            if (!sheetContext.mounted) return;
+            ScaffoldMessenger.of(sheetContext).showSnackBar(
+              SnackBar(content: Text(appStrings.attendanceError(error))),
+            );
+          }
+        }
+
+        Future<void> markAllAttended() async {
+          if (operationsRepository == null || intelligence == null) return;
+          final previous = {
+            for (final booking in bookingRows)
+              booking['id'].toString(): booking['status'],
+          };
+          for (final booking in bookingRows) {
+            if (booking['is_guest'] != true && booking['status'] == 'booked') {
+              booking['status'] = 'attended';
+            }
+          }
+          setSheetState(() {});
+          try {
+            await operationsRepository.markAllAttended(classId);
+            await attendeeActions?.onChanged?.call();
+          } catch (error) {
+            for (final booking in bookingRows) {
+              booking['status'] = previous[booking['id'].toString()];
+            }
+            setSheetState(() {});
             if (!sheetContext.mounted) return;
             ScaffoldMessenger.of(sheetContext).showSnackBar(
               SnackBar(content: Text(appStrings.attendanceError(error))),
@@ -205,6 +315,12 @@ Future<void> showClassDetailsSheet({
                     Navigator.pop(sheetContext);
                     onMemberTap(memberId);
                   },
+            intelligence: intelligence,
+            pinnedNotesByMember: pinnedNotesByMember,
+            onMarkAllAttended:
+                operationsRepository != null && intelligence != null
+                ? markAllAttended
+                : null,
             onAttendeeStatusChanged: updateAttendeeStatus,
             onAttendeeRemoved: removeAttendee,
             onAction: onAction == null
@@ -237,6 +353,9 @@ class ClassDetailsView extends StatelessWidget {
     this.onAttendeeStatusChanged,
     this.onAttendeeRemoved,
     this.onMemberTap,
+    this.intelligence,
+    this.pinnedNotesByMember = const {},
+    this.onMarkAllAttended,
   });
 
   final Map<String, dynamic> klass;
@@ -253,6 +372,9 @@ class ClassDetailsView extends StatelessWidget {
   onAttendeeStatusChanged;
   final Future<void> Function(Map<String, dynamic>, String)? onAttendeeRemoved;
   final ValueChanged<String>? onMemberTap;
+  final CoachBriefingClass? intelligence;
+  final Map<String, String> pinnedNotesByMember;
+  final Future<void> Function()? onMarkAllAttended;
 
   String _formatDate(DateTime date) {
     final locale = appStrings.isEs ? 'es' : 'en';
@@ -267,6 +389,11 @@ class ClassDetailsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startsAt = DateTime.parse(klass['starts_at'].toString()).toLocal();
+    final enrichedByBookingId = {
+      for (final athlete
+          in intelligence?.booked ?? const <CoachBriefingAthlete>[])
+        athlete.bookingId: athlete,
+    };
     final storedTitle = klass['title']?.toString().trim().isNotEmpty == true
         ? klass['title'].toString().trim()
         : appStrings.classFallback;
@@ -288,6 +415,13 @@ class ClassDetailsView extends StatelessWidget {
     final coachAvatar =
         coachProfile?['avatar_url']?.toString() ??
         coachMap?['avatar_url']?.toString();
+    final temporalStatus = intelligence?.temporalStatusAt(DateTime.now());
+    final statusLabel = switch (temporalStatus) {
+      CoachClassTemporalStatus.upcoming => 'UPCOMING',
+      CoachClassTemporalStatus.inProgress => 'IN PROGRESS',
+      CoachClassTemporalStatus.completed => 'COMPLETED',
+      null => null,
+    };
 
     return Material(
       color: AppColors.background(context),
@@ -322,7 +456,9 @@ class ClassDetailsView extends StatelessWidget {
                   children: [
                     _ClassFact(
                       icon: Icons.schedule_rounded,
-                      value: _time(startsAt),
+                      value: intelligence?.localStartTime.isNotEmpty == true
+                          ? intelligence!.localStartTime
+                          : _time(startsAt),
                     ),
                     _ClassFact(
                       icon: Icons.calendar_today_outlined,
@@ -332,6 +468,23 @@ class ClassDetailsView extends StatelessWidget {
                       icon: Icons.timer_outlined,
                       value: '$duration MIN',
                     ),
+                    if (statusLabel != null)
+                      _ClassFact(
+                        icon: Icons.timelapse_rounded,
+                        value: statusLabel,
+                      ),
+                    if (intelligence != null)
+                      _ClassFact(
+                        icon: Icons.groups_outlined,
+                        value:
+                            '${intelligence!.booked.length} / ${intelligence!.capacity}',
+                      ),
+                    if (intelligence?.waitlist.isNotEmpty == true)
+                      _ClassFact(
+                        icon: Icons.hourglass_bottom_rounded,
+                        value:
+                            '${appStrings.waitlist} ${intelligence!.waitlist.length}',
+                      ),
                   ],
                 ),
                 const _ClassDetailDivider(),
@@ -356,10 +509,16 @@ class ClassDetailsView extends StatelessWidget {
                 _ClassSectionTitle(label: appStrings.classDescriptionLabel),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  description.isEmpty
+                  intelligence?.workoutDescription?.trim().isNotEmpty == true
+                      ? intelligence!.workoutDescription!
+                      : description.isEmpty
                       ? appStrings.pick(
-                          'No description added.',
-                          'No se añadió descripción.',
+                          intelligence == null
+                              ? 'No description added.'
+                              : 'No WOD programmed.',
+                          intelligence == null
+                              ? 'No se añadió descripción.'
+                              : 'No hay WOD programado.',
                         )
                       : description,
                   style: AppTypography.bodySecondary(context).copyWith(
@@ -395,17 +554,26 @@ class ClassDetailsView extends StatelessWidget {
                     final name = rawName == null || rawName.trim().isEmpty
                         ? appStrings.member
                         : rawName.trim();
+                    final athlete =
+                        enrichedByBookingId[booking['id']?.toString()];
                     return ClassPersonRow(
                       name: name,
                       avatarUrl: isGuest
                           ? null
                           : profile?['avatar_url']?.toString(),
                       status: _attendeeStatus(booking['status']?.toString()),
+                      badges: athlete == null
+                          ? const []
+                          : _intelligenceBadges(athlete, DateTime.now()),
+                      staffNote: athlete?.userId == null
+                          ? null
+                          : pinnedNotesByMember[athlete!.userId],
                       onTap: isGuest || userId == null || onMemberTap == null
                           ? null
                           : () => onMemberTap!(userId),
                       actionKey: ValueKey('class-attendee-${booking['id']}'),
-                      onAction: attendeeActions == null
+                      onAction:
+                          attendeeActions == null && onMarkAllAttended == null
                           ? null
                           : () => _showAttendeeActions(
                               context,
@@ -414,6 +582,29 @@ class ClassDetailsView extends StatelessWidget {
                             ),
                     );
                   }),
+                if (onMarkAllAttended != null &&
+                    temporalStatus != CoachClassTemporalStatus.upcoming &&
+                    bookings.any(
+                      (booking) =>
+                          booking['is_guest'] != true &&
+                          booking['status'] == 'booked',
+                    )) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      key: const ValueKey('class-detail-mark-all-attended'),
+                      onPressed: onMarkAllAttended,
+                      icon: const Icon(Icons.done_all_rounded),
+                      label: Text(
+                        appStrings.pick(
+                          'MARK ALL ATTENDED',
+                          'MARCAR TODOS PRESENTES',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 if (waitlist.isNotEmpty || myWaitlistPosition != null) ...[
                   const _ClassDetailDivider(),
                   _ClassSectionHeader(
@@ -463,6 +654,26 @@ class ClassDetailsView extends StatelessWidget {
     _ => appStrings.bookingBooked,
   };
 
+  List<String> _intelligenceBadges(CoachBriefingAthlete athlete, DateTime now) {
+    final badges = <String>[];
+    if (athlete.firstClass) badges.add('FIRST CLASS');
+    if (athlete.hasLowCredits) {
+      final credits = athlete.creditsRemaining!;
+      badges.add('$credits ${credits == 1 ? 'CREDIT' : 'CREDITS'} LEFT');
+    }
+    if (athlete.membershipExpiresWithin(now, const Duration(days: 7))) {
+      final remaining = athlete.membershipExpiresAt!.difference(now);
+      final days = remaining.inHours <= 24
+          ? 0
+          : (remaining.inHours / 24).ceil();
+      badges.add(days == 0 ? 'EXPIRES TODAY' : 'EXPIRES IN $days DAYS');
+    }
+    if (!athlete.isGuest && !athlete.membershipUsable) {
+      badges.add('NO MEMBERSHIP');
+    }
+    return badges;
+  }
+
   void _showAttendeeActions(
     BuildContext context, {
     required Map<String, dynamic> booking,
@@ -477,25 +688,29 @@ class ClassDetailsView extends StatelessWidget {
         accentColor: BookingColors.primary,
         onClose: () => Navigator.pop(sheetContext),
         actions: [
-          if (attendeeActions?.canMarkAttendance == true &&
+          if ((attendeeActions?.canMarkAttendance == true ||
+                  onMarkAllAttended != null) &&
               status != 'attended')
             AppAdminAction(
               icon: Icons.check_circle_outline_rounded,
               label: appStrings.markAttendance,
               onTap: () => onAttendeeStatusChanged?.call(booking, 'attended'),
             ),
-          if (attendeeActions?.canMarkAttendance == true && status != 'no_show')
+          if ((attendeeActions?.canMarkAttendance == true ||
+                  onMarkAllAttended != null) &&
+              status != 'no_show')
             AppAdminAction(
               icon: Icons.person_off_outlined,
               label: appStrings.markNoShow,
               onTap: () => onAttendeeStatusChanged?.call(booking, 'no_show'),
             ),
-          AppAdminAction(
-            icon: Icons.person_remove_alt_1_outlined,
-            label: appStrings.remove,
-            destructive: true,
-            onTap: () => onAttendeeRemoved?.call(booking, name),
-          ),
+          if (attendeeActions != null)
+            AppAdminAction(
+              icon: Icons.person_remove_alt_1_outlined,
+              label: appStrings.remove,
+              destructive: true,
+              onTap: () => onAttendeeRemoved?.call(booking, name),
+            ),
         ],
       ),
     );
@@ -761,6 +976,8 @@ class ClassPersonRow extends StatelessWidget {
     this.onAction,
     this.actionKey,
     this.onTap,
+    this.badges = const [],
+    this.staffNote,
   });
 
   final String name;
@@ -771,6 +988,8 @@ class ClassPersonRow extends StatelessWidget {
   final VoidCallback? onAction;
   final Key? actionKey;
   final VoidCallback? onTap;
+  final List<String> badges;
+  final String? staffNote;
 
   String get _initials {
     final parts = name
@@ -836,6 +1055,26 @@ class ClassPersonRow extends StatelessWidget {
                   ),
                   if (status != null)
                     Text(status!, style: AppTypography.helper(context)),
+                  if (badges.isNotEmpty || staffNote != null) ...[
+                    const SizedBox(height: AppSpacing.xxs),
+                    Wrap(
+                      spacing: AppSpacing.xxs,
+                      runSpacing: AppSpacing.xxs,
+                      children: [
+                        for (final badge in badges.take(3))
+                          _ClassContextBadge(label: badge),
+                        if (badges.length > 3)
+                          _ClassContextBadge(label: '+${badges.length - 3}'),
+                        if (staffNote != null)
+                          _ClassContextBadge(
+                            key: ValueKey('class-detail-note-$name'),
+                            label: 'NOTE',
+                            icon: Icons.flag_outlined,
+                            onTap: () => _showStaffNote(context, staffNote!),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -855,6 +1094,67 @@ class ClassPersonRow extends StatelessWidget {
       ),
     );
   }
+
+  void _showStaffNote(BuildContext context, String note) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenX),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('NOTE', style: AppTypography.sectionTitle(context)),
+            const SizedBox(height: AppSpacing.sm),
+            Text(note, style: AppTypography.body(context)),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClassContextBadge extends StatelessWidget {
+  const _ClassContextBadge({
+    super.key,
+    required this.label,
+    this.icon,
+    this.onTap,
+  });
+
+  final String label;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(AppRadii.pill),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: AppColors.primary),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: AppTypography.helper(
+              context,
+            ).copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _ClassEmptyLabel extends StatelessWidget {
