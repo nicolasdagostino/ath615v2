@@ -9,11 +9,13 @@ import 'package:ath615v2/core/widgets/app_secondary_action_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/available_memberships_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _FakeAvailableService implements AvailableMembershipsService {
   _FakeAvailableService({
     required this.plans,
     this.failRequest = false,
+    this.requestError,
     this.failLoad = false,
     this.loadCompleter,
     this.gymDocuments = const [],
@@ -37,6 +39,7 @@ class _FakeAvailableService implements AvailableMembershipsService {
 
   final List<Map<String, dynamic>> plans;
   final bool failRequest;
+  final Object? requestError;
   final bool failLoad;
   final Completer<List<Map<String, dynamic>>>? loadCompleter;
   final List<Map<String, dynamic>> gymDocuments;
@@ -83,6 +86,7 @@ class _FakeAvailableService implements AvailableMembershipsService {
     requestedPlans.add(plan['id'].toString());
     acceptedDocuments.add(documentIds);
     acceptedGymDocuments.add(gymDocumentVersionIds);
+    if (requestError case final error?) throw error;
     if (failRequest) throw StateError('request failed');
     return MembershipRequestResult.sent;
   }
@@ -104,6 +108,7 @@ Future<void> _pumpFlow(
   required _FakeAvailableService service,
   ThemeMode mode = ThemeMode.light,
   bool settle = true,
+  Future<void> Function(BuildContext context)? reviewDocuments,
 }) async {
   tester.view.physicalSize = const Size(320, 720);
   tester.view.devicePixelRatio = 1;
@@ -118,6 +123,7 @@ Future<void> _pumpFlow(
         key: ValueKey(service),
         type: type,
         service: service,
+        reviewDocuments: reviewDocuments,
       ),
     ),
   );
@@ -252,7 +258,140 @@ void main() {
     await tester.tap(find.text('REQUEST MEMBERSHIP'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('membership-request-sheet')), findsOne);
-    expect(find.textContaining('request failed'), findsOne);
+    expect(
+      find.text('We could not complete the request. Try again.'),
+      findsOne,
+    );
+    expect(find.textContaining('request failed'), findsNothing);
+  });
+
+  testWidgets('required consent is human, actionable, and never leaks SQL', (
+    tester,
+  ) async {
+    var reviews = 0;
+    final service = _FakeAvailableService(
+      plans: [plan(unlimited: true)],
+      requestError: const PostgrestException(
+        message: 'required_consent_missing',
+        code: 'P0001',
+        details: 'Bad Request from create_consented_cash_membership_request',
+      ),
+    );
+    await _pumpFlow(
+      tester,
+      type: 'subscription',
+      service: service,
+      reviewDocuments: (_) async => reviews++,
+    );
+    await tester.tap(find.byKey(const ValueKey('available-plan-unlimited')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('checkout-document-terms')),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('checkout-document-toggle-terms')),
+    );
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('REQUEST MEMBERSHIP'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A document needs your acceptance'), findsOneWidget);
+    expect(
+      find.text(
+        'Before requesting this membership, review and accept the documents required by the gym.',
+      ),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('membership-review-documents')),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(
+      find.byKey(const ValueKey('membership-review-documents')),
+      findsOneWidget,
+    );
+    for (final technicalDetail in [
+      'PostgrestException',
+      'P0001',
+      'Bad Request',
+      'create_consented_cash_membership_request',
+      'required_consent_missing',
+    ]) {
+      expect(find.textContaining(technicalDetail), findsNothing);
+    }
+
+    await tester.tap(find.byKey(const ValueKey('membership-review-documents')));
+    await tester.pumpAndSettle();
+    expect(reviews, 1);
+    expect(
+      find.byKey(const ValueKey('checkout-document-terms')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<AppFormSubmitButton>(find.byType(AppFormSubmitButton))
+          .enabled,
+      isFalse,
+    );
+  });
+
+  testWidgets('documents changed opens Documents V1 and reloads checkout', (
+    tester,
+  ) async {
+    var reviews = 0;
+    final service = _FakeAvailableService(
+      plans: [plan(unlimited: true)],
+      requestError: const PostgrestException(
+        message: 'documents_changed',
+        code: 'P0001',
+        details: 'Bad Request',
+      ),
+    );
+    await _pumpFlow(
+      tester,
+      type: 'subscription',
+      service: service,
+      reviewDocuments: (_) async => reviews++,
+    );
+    await tester.tap(find.byKey(const ValueKey('available-plan-unlimited')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('checkout-document-terms')),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('checkout-document-toggle-terms')),
+    );
+    await tester.scrollUntilVisible(
+      find.byType(AppFormSubmitButton),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('REQUEST MEMBERSHIP'));
+    await tester.pumpAndSettle();
+    expect(find.text('Documents updated'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('membership-review-documents')),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.byKey(const ValueKey('membership-review-documents')));
+    await tester.pumpAndSettle();
+    expect(reviews, 1);
+    expect(
+      tester
+          .widget<AppFormSubmitButton>(find.byType(AppFormSubmitButton))
+          .enabled,
+      isFalse,
+    );
   });
 
   testWidgets(

@@ -1080,8 +1080,31 @@ class AppStrings {
       pick('You already requested this plan.', 'Ya solicitaste este plan.');
   String get membershipRequestSent =>
       pick('Membership request sent.', 'Solicitud de membresía enviada.');
-  String membershipRequestError(Object e) =>
-      pick('Membership request error: $e', 'Error al solicitar membresía: $e');
+  String get membershipConsentMissingTitle =>
+      pick('A document needs your acceptance', 'Falta aceptar un documento');
+  String get membershipConsentMissingMessage => pick(
+    'Before requesting this membership, review and accept the documents required by the gym.',
+    'Antes de solicitar esta membresía, revisá y aceptá los documentos requeridos por el gimnasio.',
+  );
+  String get membershipDocumentsChangedTitle =>
+      pick('Documents updated', 'Los documentos se actualizaron');
+  String get membershipRequestCouldNotComplete => pick(
+    'We could not complete the request',
+    'No pudimos completar la solicitud',
+  );
+  String get membershipRequestConnection => pick(
+    'We could not connect. Check your connection and try again.',
+    'No pudimos conectar. Revisá tu conexión e intentá nuevamente.',
+  );
+  String get membershipRequestForbidden => pick(
+    'You do not have permission to perform this action.',
+    'No tenés permisos para realizar esta acción.',
+  );
+  String get membershipRequestUnexpected => pick(
+    'We could not complete the request. Try again.',
+    'No pudimos completar la solicitud. Intentá nuevamente.',
+  );
+  String get reviewDocuments => pick('Review documents', 'Revisar documentos');
 
   String get membershipTitle => pick('Membership', 'Membresía');
   String get adminMemberships => pick('Memberships', 'Membresía');

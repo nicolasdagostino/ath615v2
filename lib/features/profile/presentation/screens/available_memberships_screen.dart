@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,6 +11,7 @@ import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../membership_request_error.dart';
 
 const bool stripeMembershipPaymentsEnabled = false;
 const availableMembershipPlanColumns =
@@ -184,12 +186,16 @@ class AvailableMembershipsScreen extends StatefulWidget {
     super.key,
     required this.type,
     this.service,
+    this.reviewDocuments,
   });
 
   final String type;
 
   @visibleForTesting
   final AvailableMembershipsService? service;
+
+  @visibleForTesting
+  final Future<void> Function(BuildContext context)? reviewDocuments;
 
   @override
   State<AvailableMembershipsScreen> createState() =>
@@ -227,7 +233,7 @@ class _AvailableMembershipsScreenState
       debugPrint('Available memberships load failed: $error');
       if (!mounted) return;
       setState(() {
-        _error = error.toString();
+        _error = appStrings.plansLoadError;
         _loading = false;
       });
     }
@@ -240,6 +246,7 @@ class _AvailableMembershipsScreenState
         plan: plan,
         isSubscription: _isSubscription,
         service: _service,
+        reviewDocuments: widget.reviewDocuments,
       ),
     );
     if (completed == true && mounted) Navigator.of(context).pop(true);
@@ -363,10 +370,12 @@ class _MembershipRequestSheet extends StatefulWidget {
     required this.plan,
     required this.isSubscription,
     required this.service,
+    this.reviewDocuments,
   });
   final Map<String, dynamic> plan;
   final bool isSubscription;
   final AvailableMembershipsService service;
+  final Future<void> Function(BuildContext context)? reviewDocuments;
 
   @override
   State<_MembershipRequestSheet> createState() =>
@@ -376,7 +385,7 @@ class _MembershipRequestSheet extends StatefulWidget {
 class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
   bool _loading = false;
   bool _loadingContext = true;
-  String? _error;
+  MembershipRequestErrorPresentation? _error;
   MembershipCheckoutContext? _checkout;
   MembershipPaymentChoice _payment = MembershipPaymentChoice.inPerson;
   final Set<String> _acceptedDocumentIds = {};
@@ -407,16 +416,32 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
         _loadingContext = false;
       });
     } catch (error) {
+      debugPrint('Membership checkout context load failed: $error');
       if (!mounted) return;
       setState(() {
         _loadingContext = false;
-        _error = appStrings.membershipRequestError(error);
+        _error = presentMembershipRequestError(error);
       });
     }
   }
 
-  bool _documentsChanged(Object error) =>
-      error.toString().contains('documents_changed');
+  Future<void> _reviewDocuments() async {
+    if (_error?.canReviewDocuments ?? false) {
+      if (widget.reviewDocuments case final review?) {
+        await review(context);
+      } else {
+        await context.push('/documents');
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _acceptedDocumentIds.clear();
+      _acceptedGymDocumentVersionIds.clear();
+      _loadingContext = true;
+      _error = null;
+    });
+    await _loadContext();
+  }
 
   List<Map<String, dynamic>> get _requiredDocuments =>
       _checkout?.documents
@@ -451,7 +476,11 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
           if (!mounted) return;
           setState(() {
             _loading = false;
-            _error = appStrings.cardPaymentsComingSoon;
+            _error = MembershipRequestErrorPresentation(
+              kind: MembershipRequestErrorKind.unexpected,
+              title: appStrings.membershipRequestCouldNotComplete,
+              message: appStrings.cardPaymentsComingSoon,
+            );
           });
           return;
         }
@@ -479,19 +508,10 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      if (_documentsChanged(error)) {
-        setState(() {
-          _acceptedGymDocumentVersionIds.clear();
-          _loading = false;
-          _loadingContext = true;
-          _error = appStrings.documentsChangedRefresh;
-        });
-        await _loadContext();
-        return;
-      }
+      debugPrint('Membership request failed: $error');
       setState(() {
         _loading = false;
-        _error = appStrings.membershipRequestError(error);
+        _error = presentMembershipRequestError(error);
       });
     }
   }
@@ -626,7 +646,25 @@ class _MembershipRequestSheetState extends State<_MembershipRequestSheet> {
                     ],
                     if (_error != null) ...[
                       const SizedBox(height: AppSpacing.sm),
-                      Text(_error!, style: AppTypography.error(context)),
+                      Text(
+                        _error!.title,
+                        key: const ValueKey('membership-request-error-title'),
+                        style: AppTypography.itemTitle(context),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        _error!.message,
+                        key: const ValueKey('membership-request-error-message'),
+                        style: AppTypography.error(context),
+                      ),
+                      if (_error!.canReviewDocuments) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        TextButton(
+                          key: const ValueKey('membership-review-documents'),
+                          onPressed: _reviewDocuments,
+                          child: Text(appStrings.reviewDocuments.toUpperCase()),
+                        ),
+                      ],
                     ],
                     const SizedBox(height: AppSpacing.lg),
                     AppFormSubmitButton(
