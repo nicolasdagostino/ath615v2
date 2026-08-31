@@ -235,8 +235,8 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    final canSeeDashboard = _role == 'admin' || _role == 'owner';
-    final usesCoachBriefing = _isCoach || _role == 'coach';
+    final canAdminister = _role == 'admin' || _role == 'owner';
+    final canSeePanel = canAdminister || _isCoach || _role == 'coach';
 
     if (_gymLifecycleStatus != null && _gymLifecycleStatus != 'active') {
       return _GymLifecycleBlocked(
@@ -258,20 +258,17 @@ class _AppShellState extends State<AppShell> {
     final testScreenBuilder = widget.screenBuilderForTesting;
     final screens = testScreenBuilder == null
         ? <Widget>[
-            if (usesCoachBriefing)
-              CoachBriefingScreen(gymName: _gymName)
-            else
-              WorkoutsScreen(
-                gymName: _gymName,
-                unreadNotifications: _unreadNotifications,
-                onOpenNotifications: _openNotifications,
-                initialDate: widget.initialWorkoutDate,
-              ),
+            WorkoutsScreen(
+              gymName: _gymName,
+              unreadNotifications: _unreadNotifications,
+              onOpenNotifications: _openNotifications,
+              initialDate: widget.initialWorkoutDate,
+            ),
             BookingScreen(
               gymName: _gymName,
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
-              onOpenAdminMember: canSeeDashboard ? _openAdminMember : null,
+              onOpenAdminMember: canAdminister ? _openAdminMember : null,
             ),
             NotificationsScreen(
               key: ValueKey(
@@ -288,25 +285,28 @@ class _AppShellState extends State<AppShell> {
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
             ),
-            if (canSeeDashboard)
-              DashboardScreen(
-                key: ValueKey(
-                  'dashboard-${_dashboardSection ?? 'panel'}-'
-                  '${_dashboardMemberId ?? ''}',
-                ),
-                gymName: _gymName,
-                unreadNotifications: _unreadNotifications,
-                onOpenNotifications: _openNotifications,
-                initialSection: _dashboardSection,
-                initialMemberId: _dashboardMemberId,
-              ),
+            if (canSeePanel)
+              if (canAdminister)
+                DashboardScreen(
+                  key: ValueKey(
+                    'dashboard-${_dashboardSection ?? 'panel'}-'
+                    '${_dashboardMemberId ?? ''}',
+                  ),
+                  gymName: _gymName,
+                  unreadNotifications: _unreadNotifications,
+                  onOpenNotifications: _openNotifications,
+                  initialSection: _dashboardSection,
+                  initialMemberId: _dashboardMemberId,
+                )
+              else
+                CoachBriefingScreen(gymName: _gymName, showHeader: false),
           ]
         : <Widget>[
-            testScreenBuilder(usesCoachBriefing ? 'briefing' : 'workouts'),
+            testScreenBuilder('workouts'),
             testScreenBuilder('booking'),
             testScreenBuilder('messages'),
             testScreenBuilder('profile'),
-            if (canSeeDashboard)
+            if (canSeePanel)
               widget.dashboardScreenBuilderForTesting?.call(
                     _dashboardSection,
                     _dashboardMemberId,
@@ -318,9 +318,7 @@ class _AppShellState extends State<AppShell> {
       _ShellNavItem(
         icon: Icons.fitness_center_outlined,
         activeIcon: Icons.fitness_center,
-        label: usesCoachBriefing
-            ? appStrings.pick('Briefing', 'Briefing')
-            : appStrings.navWorkout,
+        label: appStrings.navWorkout,
       ),
       _ShellNavItem(
         icon: Icons.calendar_month_outlined,
@@ -338,7 +336,7 @@ class _AppShellState extends State<AppShell> {
         activeIcon: Icons.person,
         label: appStrings.navProfile,
       ),
-      if (canSeeDashboard)
+      if (canSeePanel)
         _ShellNavItem(
           icon: Icons.dashboard_outlined,
           activeIcon: Icons.dashboard,
@@ -389,7 +387,7 @@ class _AppShellState extends State<AppShell> {
         onSelected: (value) {
           setState(() {
             _index = value;
-            if (canSeeDashboard && value == 4) {
+            if (canAdminister && value == 4) {
               _dashboardSection = null;
               _dashboardMemberId = null;
             }
@@ -508,11 +506,7 @@ int initialShellIndexForRole(String? role, {String? requestedSection}) {
       (role == 'admin' || role == 'owner')) {
     return 4;
   }
-  return switch (role) {
-    'admin' || 'owner' => 4,
-    'athlete' => 1,
-    _ => 0,
-  };
+  return 0;
 }
 
 class _ShellNavItem {

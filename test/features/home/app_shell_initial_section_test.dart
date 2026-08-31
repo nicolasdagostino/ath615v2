@@ -39,11 +39,11 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('admin opens directly on Dashboard', (tester) async {
+  testWidgets('admin opens directly on WOD', (tester) async {
     await pumpShell(tester, 'admin');
 
-    expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
-    expect(find.byIcon(Icons.dashboard), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+    expect(find.byIcon(Icons.fitness_center), findsOneWidget);
     expect(find.byKey(const ValueKey('screen-booking')), findsNothing);
   });
 
@@ -88,7 +88,7 @@ void main() {
     );
     expect(
       initialShellIndexForRole('athlete', requestedSection: 'membership'),
-      1,
+      0,
     );
   });
 
@@ -100,23 +100,29 @@ void main() {
     expect(initialShellIndexForRole('athlete', requestedSection: 'wod'), 0);
   });
 
-  testWidgets('athlete opens directly on Booking', (tester) async {
+  testWidgets('athlete opens directly on WOD', (tester) async {
     await pumpShell(tester, 'athlete');
 
-    expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
-    expect(find.byIcon(Icons.calendar_month), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+    expect(find.byIcon(Icons.fitness_center), findsOneWidget);
     expect(find.byKey(const ValueKey('screen-dashboard')), findsNothing);
     expect(find.text('ANALYTICS'), findsNothing);
   });
 
-  testWidgets('coach opens Daily Coach Briefing as the primary tool', (
+  testWidgets('coach opens WOD and keeps Panel inside the shell', (
     tester,
   ) async {
     await pumpShell(tester, 'coach');
 
-    expect(find.byKey(const ValueKey('screen-briefing')), findsOneWidget);
-    expect(find.text('BRIEFING'), findsOneWidget);
-    expect(find.byKey(const ValueKey('screen-dashboard')), findsNothing);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+    expect(find.text('BRIEFING'), findsNothing);
+    expect(find.byIcon(Icons.dashboard_outlined), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.dashboard_outlined));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
+    expect(find.byIcon(Icons.dashboard), findsOneWidget);
+    expect(find.byIcon(Icons.fitness_center_outlined), findsOneWidget);
   });
 
   testWidgets(
@@ -124,8 +130,8 @@ void main() {
     (tester) async {
       await pumpShell(tester, 'owner');
 
-      expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
-      expect(find.byIcon(Icons.dashboard), findsOneWidget);
+      expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+      expect(find.byIcon(Icons.dashboard_outlined), findsOneWidget);
     },
   );
 
@@ -147,7 +153,7 @@ void main() {
     );
     await tester.pump();
     expect(find.text('RETURN TO OWNER'), findsOneWidget);
-    expect(find.byIcon(Icons.dashboard), findsOneWidget);
+    expect(find.byIcon(Icons.dashboard_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -213,7 +219,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('MEMBER member-1'), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.dashboard_outlined));
+    await tester.pump();
+    expect(find.text('DASHBOARD ROOT'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.calendar_month_outlined));
     await tester.pump();
     expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
@@ -229,7 +238,7 @@ void main() {
   ) async {
     await pumpShell(tester, 'athlete');
 
-    final selected = tester.widget<Icon>(find.byIcon(Icons.calendar_month));
+    final selected = tester.widget<Icon>(find.byIcon(Icons.fitness_center));
     expect(selected.color, AppColors.primary);
     expect(selected.color, isNot(AppColors.accent));
 
@@ -246,8 +255,6 @@ void main() {
 
     expect(find.byIcon(Icons.search_outlined), findsNothing);
     expect(find.byKey(const ValueKey('screen-explore')), findsNothing);
-    await tester.tap(find.byIcon(Icons.fitness_center_outlined));
-    await tester.pump();
     expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
   });
 
@@ -255,10 +262,10 @@ void main() {
     tester,
   ) async {
     await pumpShell(tester, 'admin');
-    expect(find.byKey(const ValueKey('screen-dashboard')), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
 
     await pumpShell(tester, 'athlete');
-    expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
     expect(find.byKey(const ValueKey('screen-dashboard')), findsNothing);
   });
 }

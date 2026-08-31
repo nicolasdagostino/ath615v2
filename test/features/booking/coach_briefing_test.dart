@@ -1,7 +1,9 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/features/booking/data/coach_briefing_repository.dart';
 import 'package:ath615v2/features/booking/presentation/screens/coach_briefing_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -89,6 +91,37 @@ void main() {
   });
 
   final now = DateTime.utc(2026, 8, 31, 10);
+
+  testWidgets('blue header owns the status bar safe area and contrast', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: CoachBriefingScreen(
+          repository: _FakeCoachBriefingRepository(
+            CoachBriefing(
+              localDate: DateTime(2026, 8, 31),
+              timezone: 'Europe/Madrid',
+              classes: const [],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final region = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+    );
+    expect(region.value.statusBarColor, AppColors.primary);
+    expect(region.value.statusBarIconBrightness, Brightness.light);
+    expect(region.value.statusBarBrightness, Brightness.dark);
+    expect(
+      find.byKey(const ValueKey('app-primary-gym-header')),
+      findsOneWidget,
+    );
+  });
 
   test('class status follows the real start/end window', () {
     expect(

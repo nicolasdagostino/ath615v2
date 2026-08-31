@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,6 +11,27 @@ import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../data/coach_briefing_repository.dart';
+
+Future<void> showCoachClassDetail({
+  required BuildContext context,
+  required CoachBriefingClass klass,
+  required CoachBriefingRepository repository,
+  DateTime? now,
+  ValueChanged<String>? onOpenMember,
+  Future<void> Function()? onChanged,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  backgroundColor: Colors.transparent,
+  builder: (_) => _CoachClassView(
+    klass: klass,
+    repository: repository,
+    now: now ?? DateTime.now(),
+    onOpenMember: onOpenMember,
+    onChanged: onChanged ?? () async {},
+  ),
+);
 
 class CoachBriefingScreen extends StatefulWidget {
   const CoachBriefingScreen({
@@ -75,18 +97,13 @@ class _CoachBriefingScreenState extends State<CoachBriefingScreen> {
   }
 
   Future<void> _openClass(CoachBriefingClass klass) async {
-    await showModalBottomSheet<void>(
+    await showCoachClassDetail(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CoachClassView(
-        klass: klass,
-        repository: _repository,
-        now: _now,
-        onOpenMember: widget.onOpenMember,
-        onChanged: _load,
-      ),
+      klass: klass,
+      repository: _repository,
+      now: _now,
+      onOpenMember: widget.onOpenMember,
+      onChanged: _load,
     );
   }
 
@@ -144,10 +161,15 @@ class _CoachBriefingScreenState extends State<CoachBriefingScreen> {
     );
 
     if (!widget.showHeader) return body;
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: AppColors.primary,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background(context),
+        body: Column(
           children: [
             AppPrimaryGymHeader(gymName: widget.gymName),
             Expanded(child: body),

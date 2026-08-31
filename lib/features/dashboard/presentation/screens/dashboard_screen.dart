@@ -24,6 +24,7 @@ import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../analytics/presentation/analytics_view.dart';
 import '../../../booking/presentation/booking_occupancy.dart';
+import '../../../booking/data/coach_briefing_repository.dart';
 import '../../../booking/presentation/screens/coach_briefing_screen.dart';
 import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
@@ -277,20 +278,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _openCoachBriefing() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => CoachBriefingScreen(
-          gymName: widget.gymName,
-          onOpenMember: (memberId) {
-            final member = _members.where(
-              (candidate) => candidate['id']?.toString() == memberId,
-            );
-            if (member.isNotEmpty) _openMember(member.first);
-          },
-        ),
-      ),
+  Future<void> _openCoachClass(Map<String, dynamic> row) async {
+    final repository = SupabaseCoachBriefingRepository(
+      Supabase.instance.client,
     );
+    try {
+      final briefing = await repository.loadToday();
+      final classId = row['id']?.toString();
+      final matches = briefing.classes.where((klass) => klass.id == classId);
+      if (matches.isEmpty) {
+        await _openTodayClass(row);
+        return;
+      }
+      if (!mounted) return;
+      await showCoachClassDetail(
+        context: context,
+        klass: matches.first,
+        repository: repository,
+        onOpenMember: (memberId) {
+          final member = _members.where(
+            (candidate) => candidate['id']?.toString() == memberId,
+          );
+          if (member.isEmpty) return;
+          Navigator.of(context).pop();
+          _openMember(member.first);
+        },
+        onChanged: _loadOverviewStats,
+      );
+    } catch (_) {
+      if (mounted) await _openTodayClass(row);
+    }
   }
 
   Future<void> _openTodayClassBriefing(Map<String, dynamic> klass) async {
@@ -2945,9 +2962,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _search.clear();
                           });
                         },
-                        onOpenTodayClass: _openTodayClass,
+                        onOpenTodayClass: _openCoachClass,
                         onOpenTodayClassBriefing: _openTodayClassBriefing,
-                        onOpenCoachBriefing: _openCoachBriefing,
                         onSendNotification: _openCommunicationSheet,
                       ),
                   ],
@@ -3697,7 +3713,6 @@ class _DashboardOverview extends StatelessWidget {
     required this.onOpenWithoutPlan,
     required this.onOpenTodayClass,
     required this.onOpenTodayClassBriefing,
-    required this.onOpenCoachBriefing,
     required this.onSendNotification,
   });
 
@@ -3723,7 +3738,6 @@ class _DashboardOverview extends StatelessWidget {
   final VoidCallback onOpenWithoutPlan;
   final Future<void> Function(Map<String, dynamic>) onOpenTodayClass;
   final Future<void> Function(Map<String, dynamic>) onOpenTodayClassBriefing;
-  final VoidCallback onOpenCoachBriefing;
   final VoidCallback onSendNotification;
 
   @override
@@ -3812,7 +3826,6 @@ class _DashboardOverview extends StatelessWidget {
           classRows: todayClassRows,
           onOpenClass: onOpenTodayClass,
           onOpenBriefing: onOpenTodayClassBriefing,
-          onOpenCoachBriefing: onOpenCoachBriefing,
         ),
         const SizedBox(height: AppSpacing.lg),
         _WeeklyBookingsCard(bookings: weeklyBookings),
@@ -3894,7 +3907,6 @@ Widget buildDashboardOverviewForTest({
     onOpenWithoutPlan: () {},
     onOpenTodayClass: onOpenTodayClass ?? noAction,
     onOpenTodayClassBriefing: onOpenTodayClassBriefing ?? noAction,
-    onOpenCoachBriefing: () {},
     onSendNotification: () {},
   );
 }
@@ -4534,7 +4546,6 @@ class _TodayClassesSummary extends StatelessWidget {
     required this.classRows,
     required this.onOpenClass,
     required this.onOpenBriefing,
-    required this.onOpenCoachBriefing,
   });
 
   final int classes;
@@ -4543,7 +4554,6 @@ class _TodayClassesSummary extends StatelessWidget {
   final List<Map<String, dynamic>> classRows;
   final Future<void> Function(Map<String, dynamic>) onOpenClass;
   final Future<void> Function(Map<String, dynamic>) onOpenBriefing;
-  final VoidCallback onOpenCoachBriefing;
 
   @override
   Widget build(BuildContext context) {
@@ -4551,25 +4561,9 @@ class _TodayClassesSummary extends StatelessWidget {
       key: const ValueKey('dashboard-today-classes'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                appStrings.todayClasses.toUpperCase(),
-                style: AppTypography.sectionTitle(context),
-              ),
-            ),
-            InkWell(
-              key: const ValueKey('open-coach-briefing'),
-              onTap: onOpenCoachBriefing,
-              child: Text(
-                appStrings.pick('COACH VIEW', 'VISTA COACH'),
-                style: AppTypography.helper(
-                  context,
-                ).copyWith(color: AppColors.primary),
-              ),
-            ),
-          ],
+        Text(
+          appStrings.todayClasses.toUpperCase(),
+          style: AppTypography.sectionTitle(context),
         ),
         const SizedBox(height: AppSpacing.xs),
         Container(
