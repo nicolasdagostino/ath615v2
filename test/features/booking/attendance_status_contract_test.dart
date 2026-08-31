@@ -25,6 +25,9 @@ void main() {
               ) &&
               !file.path.endsWith(
                 '20260826120000_fix_class_notification_timezone_and_batch_attendance.sql',
+              ) &&
+              !file.path.endsWith(
+                '20260831120000_add_daily_coach_briefing.sql',
               ),
         )
         .map((file) => file.readAsStringSync().toLowerCase())

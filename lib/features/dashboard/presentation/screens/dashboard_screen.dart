@@ -24,6 +24,7 @@ import '../../../../core/widgets/app_section_chip.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../analytics/presentation/analytics_view.dart';
 import '../../../booking/presentation/booking_occupancy.dart';
+import '../../../booking/presentation/screens/coach_briefing_screen.dart';
 import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
@@ -273,6 +274,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
         if (member.isNotEmpty) _openMember(member.first);
       },
+    );
+  }
+
+  Future<void> _openCoachBriefing() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => CoachBriefingScreen(
+          gymName: widget.gymName,
+          onOpenMember: (memberId) {
+            final member = _members.where(
+              (candidate) => candidate['id']?.toString() == memberId,
+            );
+            if (member.isNotEmpty) _openMember(member.first);
+          },
+        ),
+      ),
     );
   }
 
@@ -2930,6 +2947,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                         onOpenTodayClass: _openTodayClass,
                         onOpenTodayClassBriefing: _openTodayClassBriefing,
+                        onOpenCoachBriefing: _openCoachBriefing,
                         onSendNotification: _openCommunicationSheet,
                       ),
                   ],
@@ -3679,6 +3697,7 @@ class _DashboardOverview extends StatelessWidget {
     required this.onOpenWithoutPlan,
     required this.onOpenTodayClass,
     required this.onOpenTodayClassBriefing,
+    required this.onOpenCoachBriefing,
     required this.onSendNotification,
   });
 
@@ -3704,6 +3723,7 @@ class _DashboardOverview extends StatelessWidget {
   final VoidCallback onOpenWithoutPlan;
   final Future<void> Function(Map<String, dynamic>) onOpenTodayClass;
   final Future<void> Function(Map<String, dynamic>) onOpenTodayClassBriefing;
+  final VoidCallback onOpenCoachBriefing;
   final VoidCallback onSendNotification;
 
   @override
@@ -3792,6 +3812,7 @@ class _DashboardOverview extends StatelessWidget {
           classRows: todayClassRows,
           onOpenClass: onOpenTodayClass,
           onOpenBriefing: onOpenTodayClassBriefing,
+          onOpenCoachBriefing: onOpenCoachBriefing,
         ),
         const SizedBox(height: AppSpacing.lg),
         _WeeklyBookingsCard(bookings: weeklyBookings),
@@ -3873,6 +3894,7 @@ Widget buildDashboardOverviewForTest({
     onOpenWithoutPlan: () {},
     onOpenTodayClass: onOpenTodayClass ?? noAction,
     onOpenTodayClassBriefing: onOpenTodayClassBriefing ?? noAction,
+    onOpenCoachBriefing: () {},
     onSendNotification: () {},
   );
 }
@@ -4512,6 +4534,7 @@ class _TodayClassesSummary extends StatelessWidget {
     required this.classRows,
     required this.onOpenClass,
     required this.onOpenBriefing,
+    required this.onOpenCoachBriefing,
   });
 
   final int classes;
@@ -4520,6 +4543,7 @@ class _TodayClassesSummary extends StatelessWidget {
   final List<Map<String, dynamic>> classRows;
   final Future<void> Function(Map<String, dynamic>) onOpenClass;
   final Future<void> Function(Map<String, dynamic>) onOpenBriefing;
+  final VoidCallback onOpenCoachBriefing;
 
   @override
   Widget build(BuildContext context) {
@@ -4527,9 +4551,25 @@ class _TodayClassesSummary extends StatelessWidget {
       key: const ValueKey('dashboard-today-classes'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          appStrings.todayClasses.toUpperCase(),
-          style: AppTypography.sectionTitle(context),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                appStrings.todayClasses.toUpperCase(),
+                style: AppTypography.sectionTitle(context),
+              ),
+            ),
+            InkWell(
+              key: const ValueKey('open-coach-briefing'),
+              onTap: onOpenCoachBriefing,
+              child: Text(
+                appStrings.pick('COACH VIEW', 'VISTA COACH'),
+                style: AppTypography.helper(
+                  context,
+                ).copyWith(color: AppColors.primary),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.xs),
         Container(

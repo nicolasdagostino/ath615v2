@@ -109,6 +109,16 @@ void main() {
     expect(find.text('ANALYTICS'), findsNothing);
   });
 
+  testWidgets('coach opens Daily Coach Briefing as the primary tool', (
+    tester,
+  ) async {
+    await pumpShell(tester, 'coach');
+
+    expect(find.byKey(const ValueKey('screen-briefing')), findsOneWidget);
+    expect(find.text('BRIEFING'), findsOneWidget);
+    expect(find.byKey(const ValueKey('screen-dashboard')), findsNothing);
+  });
+
   testWidgets(
     'owner uses Dashboard when rendered in the administrative shell',
     (tester) async {
