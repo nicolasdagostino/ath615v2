@@ -1474,6 +1474,10 @@ class AppStrings {
 
   String workoutDetailError(Object e) =>
       pick('Workout detail error: $e', 'Error detalle WOD: $e');
+  String get workoutCommentLikeError => pick(
+    'Could not update the comment like.',
+    'No se pudo actualizar el me gusta del comentario.',
+  );
   String programsLoadError(Object e) =>
       pick('Programs load error: $e', 'Error cargando programas: $e');
   String createProgramError(Object e) =>

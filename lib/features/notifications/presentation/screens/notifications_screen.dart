@@ -231,6 +231,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     'birthday' => Icons.cake_outlined,
     'waitlist_promoted' => Icons.group_add_outlined,
     'gym_join_approved' || 'gym_join_rejected' => Icons.storefront_outlined,
+    'workout_comment_liked' => Icons.favorite_outline,
     'membership_approved' ||
     'membership_scheduled' ||
     'membership_payment_completed' => Icons.card_membership_outlined,

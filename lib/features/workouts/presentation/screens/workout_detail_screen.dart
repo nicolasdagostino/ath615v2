@@ -115,7 +115,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       final workout = await _client
           .from('workouts')
           .select(
-            'id, workout_date, description, image_url, programs(name), workout_likes(user_id), workout_comments(id, body, user_id, created_at)',
+            'id, workout_date, description, image_url, programs(name), workout_likes(user_id)',
           )
           .eq('id', widget.workoutId)
           .maybeSingle();
@@ -134,14 +134,12 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         return;
       }
 
-      final comments = List<Map<String, dynamic>>.from(
-        workout['workout_comments'] ?? [],
+      final commentData = await _client.rpc(
+        'list_effective_workout_comments',
+        params: {'p_workout_id': widget.workoutId},
       );
-
-      comments.sort(
-        (a, b) => (b['created_at'] ?? '').toString().compareTo(
-          (a['created_at'] ?? '').toString(),
-        ),
+      final comments = List<Map<String, dynamic>>.from(
+        commentData is List ? commentData : const [],
       );
 
       final userIds = comments
@@ -250,6 +248,24 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     }
   }
 
+  Future<WorkoutCommentLikeResult> _toggleCommentLike(
+    Map<String, dynamic> comment,
+  ) async {
+    final commentId = comment['id']?.toString();
+    if (commentId == null) throw const FormatException('invalid_comment');
+    final response = await _client.rpc(
+      'toggle_workout_comment_like',
+      params: {'p_comment_id': commentId},
+    );
+    final rows = response is List ? response : const [];
+    if (rows.isEmpty) throw const FormatException('invalid_like_response');
+    final row = Map<String, dynamic>.from(rows.first as Map);
+    return WorkoutCommentLikeResult(
+      liked: row['liked'] == true,
+      count: (row['like_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+
   Future<void> _addComment() async {
     final text = _commentCtrl.text.trim();
     final userId = _userId;
@@ -277,7 +293,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
       if (!mounted) return;
       setState(() {
-        _comments.insert(0, Map<String, dynamic>.from(res));
+        _comments.insert(0, {
+          ...Map<String, dynamic>.from(res),
+          'like_count': 0,
+          'liked_by_me': false,
+        });
         _authorNames[userId] =
             profile['full_name']?.toString() ?? appStrings.userFallbackName;
         final avatarUrl = profile['avatar_url']?.toString();
@@ -514,6 +534,28 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                           Text(
                                             comment['body']?.toString() ?? '',
                                             style: AppTypography.body(context),
+                                          ),
+                                          const SizedBox(height: AppSpacing.xs),
+                                          WorkoutCommentLikeButton(
+                                            liked:
+                                                comment['liked_by_me'] == true,
+                                            count:
+                                                (comment['like_count'] as num?)
+                                                    ?.toInt() ??
+                                                0,
+                                            onToggle: () =>
+                                                _toggleCommentLike(comment),
+                                            onError: () =>
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      appStrings
+                                                          .workoutCommentLikeError,
+                                                    ),
+                                                  ),
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -954,6 +996,30 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                                   height: 1.3,
                                                 ),
                                               ),
+                                              const SizedBox(height: 6),
+                                              WorkoutCommentLikeButton(
+                                                liked:
+                                                    comment['liked_by_me'] ==
+                                                    true,
+                                                count:
+                                                    (comment['like_count']
+                                                            as num?)
+                                                        ?.toInt() ??
+                                                    0,
+                                                onToggle: () =>
+                                                    _toggleCommentLike(comment),
+                                                onError: () =>
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          appStrings
+                                                              .workoutCommentLikeError,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -1173,6 +1239,119 @@ class _DetailInlineStat extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class WorkoutCommentLikeResult {
+  const WorkoutCommentLikeResult({required this.liked, required this.count});
+
+  final bool liked;
+  final int count;
+}
+
+class WorkoutCommentLikeButton extends StatefulWidget {
+  const WorkoutCommentLikeButton({
+    super.key,
+    required this.liked,
+    required this.count,
+    required this.onToggle,
+    required this.onError,
+  });
+
+  final bool liked;
+  final int count;
+  final Future<WorkoutCommentLikeResult> Function() onToggle;
+  final VoidCallback onError;
+
+  @override
+  State<WorkoutCommentLikeButton> createState() =>
+      _WorkoutCommentLikeButtonState();
+}
+
+class _WorkoutCommentLikeButtonState extends State<WorkoutCommentLikeButton> {
+  late bool _liked = widget.liked;
+  late int _count = widget.count;
+  bool _busy = false;
+
+  @override
+  void didUpdateWidget(covariant WorkoutCommentLikeButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_busy &&
+        (oldWidget.liked != widget.liked || oldWidget.count != widget.count)) {
+      _liked = widget.liked;
+      _count = widget.count;
+    }
+  }
+
+  Future<void> _toggle() async {
+    if (_busy) return;
+    final oldLiked = _liked;
+    final oldCount = _count;
+    setState(() {
+      _busy = true;
+      _liked = !oldLiked;
+      _count = (oldCount + (oldLiked ? -1 : 1)).clamp(0, 1 << 31);
+    });
+    try {
+      final result = await widget.onToggle();
+      if (!mounted) return;
+      setState(() {
+        _liked = result.liked;
+        _count = result.count;
+        _busy = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _liked = oldLiked;
+        _count = oldCount;
+        _busy = false;
+      });
+      widget.onError();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _liked
+        ? WorkoutColors.primary
+        : AppColors.textSecondary(context);
+    return Semantics(
+      button: true,
+      toggled: _liked,
+      label: _liked
+          ? appStrings.pick('Unlike comment', 'Quitar me gusta del comentario')
+          : appStrings.pick('Like comment', 'Me gusta el comentario'),
+      child: InkWell(
+        key: const ValueKey('workout-comment-like'),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        onTap: _busy ? null : _toggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _liked ? Icons.favorite : Icons.favorite_border,
+                key: ValueKey(_liked ? 'comment-liked' : 'comment-unliked'),
+                size: 17,
+                color: color,
+              ),
+              if (_count > 0) ...[
+                const SizedBox(width: 5),
+                Text(
+                  '$_count',
+                  key: const ValueKey('workout-comment-like-count'),
+                  style: AppTypography.helper(
+                    context,
+                  ).copyWith(color: color, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
