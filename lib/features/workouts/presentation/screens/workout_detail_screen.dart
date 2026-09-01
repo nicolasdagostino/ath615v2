@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../workout_colors.dart';
@@ -352,22 +353,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  Widget _socialAvatar(String? avatarUrl, String fallback) {
-    return CircleAvatar(
-      radius: 19,
-      backgroundColor: AppColors.surfaceAlt(context),
-      foregroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-          ? NetworkImage(avatarUrl)
-          : null,
-      child: avatarUrl == null || avatarUrl.isEmpty
-          ? Text(
-              fallback,
-              style: GoogleFonts.barlow(
-                color: WorkoutColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            )
-          : null,
+  Widget _socialAvatar(String? avatarUrl, String name) {
+    return AppAvatar(
+      name: name,
+      avatarUrl: avatarUrl,
+      size: 38,
+      maxInitials: 1,
+      foregroundColor: WorkoutColors.primary,
+      textStyle: GoogleFonts.barlow(
+        color: WorkoutColors.primary,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
 
@@ -468,12 +464,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _socialAvatar(
-                                      _authorAvatars[userId],
-                                      name.isEmpty
-                                          ? '?'
-                                          : name[0].toUpperCase(),
-                                    ),
+                                    _socialAvatar(_authorAvatars[userId], name),
                                     const SizedBox(width: AppSpacing.sm),
                                     Expanded(
                                       child: Column(
@@ -554,7 +545,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               ),
               child: Row(
                 children: [
-                  _socialAvatar(_currentAvatarUrl, '?'),
+                  _socialAvatar(_currentAvatarUrl, ''),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: TextField(
@@ -860,34 +851,21 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        ClipOval(
-                                          child: Container(
-                                            width: 38,
-                                            height: 38,
-                                            alignment: Alignment.center,
-                                            color: AppColors.surface(context),
-                                            child:
-                                                avatarUrl == null ||
-                                                    avatarUrl.trim().isEmpty
-                                                ? Text(
-                                                    initial,
-                                                    style:
-                                                        GoogleFonts.barlowCondensed(
-                                                          color: WorkoutColors
-                                                              .primary,
-                                                          fontSize: 15,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          height: 1.0,
-                                                        ),
-                                                  )
-                                                : Image.network(
-                                                    avatarUrl,
-                                                    width: 38,
-                                                    height: 38,
-                                                    fit: BoxFit.cover,
-                                                  ),
+                                        AppAvatar(
+                                          name: name.isEmpty ? initial : name,
+                                          avatarUrl: avatarUrl,
+                                          size: 38,
+                                          maxInitials: 1,
+                                          backgroundColor: AppColors.surface(
+                                            context,
                                           ),
+                                          textStyle:
+                                              GoogleFonts.barlowCondensed(
+                                                color: WorkoutColors.primary,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                height: 1,
+                                              ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(

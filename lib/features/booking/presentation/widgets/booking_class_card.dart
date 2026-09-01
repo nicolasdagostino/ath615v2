@@ -5,6 +5,7 @@ import '../../../../core/preferences/app_preferences_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../booking_colors.dart';
 import '../booking_occupancy.dart';
 
@@ -292,18 +293,15 @@ class _BookingStackAvatar extends StatelessWidget {
         color: AppColors.surface(context),
         shape: BoxShape.circle,
       ),
-      child: CircleAvatar(
-        backgroundColor: AppColors.surfaceAlt(context),
-        foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
-        child: hasAvatar
-            ? null
-            : Text(
-                _initials,
-                key: const ValueKey('booking-avatar-fallback'),
-                style: AppTypography.buttonLabel(
-                  context,
-                ).copyWith(color: BookingColors.primary, fontSize: 9),
-              ),
+      child: AppAvatar(
+        name: profile['full_name']?.toString() ?? _initials,
+        avatarUrl: hasAvatar ? avatarUrl : null,
+        size: BookingAvatarStack._diameter - 3,
+        foregroundColor: BookingColors.primary,
+        fallbackKey: const ValueKey('booking-avatar-fallback'),
+        textStyle: AppTypography.buttonLabel(
+          context,
+        ).copyWith(color: BookingColors.primary, fontSize: 9),
       ),
     );
   }

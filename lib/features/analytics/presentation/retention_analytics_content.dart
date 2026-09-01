@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_design_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_async_state.dart';
+import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_form_visuals.dart';
 import '../../../core/widgets/app_large_form_sheet.dart';
 import '../data/analytics_repository.dart';
@@ -320,24 +321,13 @@ class _RetentionMemberRow extends StatelessWidget {
           onChanged: (_) => onToggle(),
           activeColor: AppColors.primary,
         ),
-        InkWell(
-          onTap: onOpen,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage: member.avatarUrl == null
-                ? null
-                : NetworkImage(member.avatarUrl!),
-            child: member.avatarUrl == null
-                ? Text(
-                    member.name.isEmpty ? '?' : member.name[0].toUpperCase(),
-                    style: AppTypography.body(
-                      context,
-                    ).copyWith(color: AppColors.primary),
-                  )
-                : null,
-          ),
+        AppAvatar(
+          name: member.name,
+          avatarUrl: member.avatarUrl,
+          size: 40,
+          maxInitials: 1,
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+          foregroundColor: AppColors.primary,
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(

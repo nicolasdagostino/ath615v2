@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../booking_colors.dart';
 import '../../data/coach_briefing_repository.dart';
@@ -995,14 +996,6 @@ class ClassPersonRow extends StatelessWidget {
   final List<String> badges;
   final String? staffNote;
 
-  String get _initials {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty);
-    return parts.take(2).map((part) => part[0].toUpperCase()).join();
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
@@ -1030,18 +1023,11 @@ class ClassPersonRow extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.xs),
             ],
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.surfaceAlt(context),
-              foregroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
-              child: hasAvatar
-                  ? null
-                  : Text(
-                      _initials.isEmpty ? 'M' : _initials,
-                      style: AppTypography.buttonLabel(
-                        context,
-                      ).copyWith(color: BookingColors.primary),
-                    ),
+            AppAvatar(
+              name: name,
+              avatarUrl: hasAvatar ? avatarUrl : null,
+              size: 36,
+              foregroundColor: BookingColors.primary,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(

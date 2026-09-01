@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../domain/member_coach_capability.dart';
 
 class MemberListRow extends StatelessWidget {
@@ -168,27 +169,15 @@ class _MemberListAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
-    return ClipOval(
-      child: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        color: AppColors.textPrimary(context),
-        child: hasAvatar
-            ? Image.network(
-                avatarUrl!,
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-              )
-            : Text(
-                name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
-                style: AppTypography.itemTitle(context).copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
+    return AppAvatar(
+      name: name,
+      avatarUrl: hasAvatar ? avatarUrl : null,
+      size: 44,
+      maxInitials: 1,
+      backgroundColor: AppColors.textPrimary(context),
+      textStyle: AppTypography.itemTitle(
+        context,
+      ).copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
     );
   }
 }

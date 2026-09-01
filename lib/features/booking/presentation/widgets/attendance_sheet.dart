@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../booking_colors.dart';
 import 'attendance_add_booking_sheets.dart';
 import 'attendance_admin_actions.dart';
@@ -1050,27 +1051,14 @@ class _AttendanceAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
-    return ClipRRect(
+    return AppAvatar(
+      name: name,
+      avatarUrl: hasAvatar ? avatarUrl : null,
+      size: 36,
+      maxInitials: 1,
       borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        color: AppColors.surface(context),
-        child: hasAvatar
-            ? Image.network(
-                avatarUrl!,
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-              )
-            : Text(
-                name.trim().isEmpty ? 'M' : name.trim()[0].toUpperCase(),
-                style: _AttendanceText.rowTitle.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-      ),
+      backgroundColor: AppColors.surface(context),
+      textStyle: _AttendanceText.rowTitle.copyWith(color: AppColors.primary),
     );
   }
 }

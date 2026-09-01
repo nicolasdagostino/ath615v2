@@ -14,6 +14,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_admin_actions.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
@@ -3455,27 +3456,15 @@ class _MemberAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
-    return ClipRRect(
+    return AppAvatar(
+      name: name,
+      avatarUrl: hasAvatar ? avatarUrl : null,
+      size: 42,
+      maxInitials: 1,
       borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 42,
-        height: 42,
-        alignment: Alignment.center,
-        color: AppColors.surfaceAlt(context),
-        child: hasAvatar
-            ? Image.network(
-                avatarUrl!,
-                width: 42,
-                height: 42,
-                fit: BoxFit.cover,
-              )
-            : Text(
-                name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase(),
-                style: AppTypography.itemTitle(context).copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+      textStyle: AppTypography.itemTitle(context).copyWith(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

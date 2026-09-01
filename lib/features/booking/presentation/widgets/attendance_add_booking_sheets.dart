@@ -7,6 +7,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../booking_colors.dart';
 import 'class_form_components.dart';
 
@@ -399,13 +400,6 @@ class _MemberRow extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
 
-  String get initials => name
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .take(2)
-      .map((part) => part[0].toUpperCase())
-      .join();
-
   @override
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl?.trim().isNotEmpty == true;
@@ -419,18 +413,11 @@ class _MemberRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 64),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: AppColors.surfaceAlt(context),
-                foregroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
-                child: hasAvatar
-                    ? null
-                    : Text(
-                        initials.isEmpty ? 'M' : initials,
-                        style: AppTypography.buttonLabel(
-                          context,
-                        ).copyWith(color: BookingColors.primary),
-                      ),
+              AppAvatar(
+                name: name,
+                avatarUrl: hasAvatar ? avatarUrl : null,
+                size: 38,
+                foregroundColor: BookingColors.primary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
