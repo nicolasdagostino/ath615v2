@@ -288,11 +288,25 @@ void main() {
       160,
       scrollable: find.byType(Scrollable),
     );
+    final markAll = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('class-detail-mark-all-attended')),
+    );
+    expect(markAll.style?.backgroundColor?.resolve({}), BookingColors.primary);
     await tester.tap(
       find.byKey(const ValueKey('class-detail-mark-all-attended')),
     );
     await tester.pump();
     expect(markedAll, isTrue);
+  });
+
+  testWidgets('mark all is absent without an authorized callback', (
+    tester,
+  ) async {
+    await pumpAt(tester);
+    expect(
+      find.byKey(const ValueKey('class-detail-mark-all-attended')),
+      findsNothing,
+    );
   });
 
   testWidgets('fits at 320px in light and dark', (tester) async {

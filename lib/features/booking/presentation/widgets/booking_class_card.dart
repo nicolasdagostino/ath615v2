@@ -17,6 +17,7 @@ class BookingClassCard extends StatelessWidget {
     required this.buttonLabel,
     required this.buttonAction,
     required this.onTap,
+    this.bookedProfiles = const [],
     this.waitlistPosition,
     required this.formatDateTime,
     this.isLoading = false,
@@ -28,6 +29,7 @@ class BookingClassCard extends StatelessWidget {
   final String buttonLabel;
   final VoidCallback? buttonAction;
   final VoidCallback? onTap;
+  final List<Map<String, dynamic>> bookedProfiles;
   final int? waitlistPosition;
   final String Function(String raw) formatDateTime;
   final bool isLoading;
@@ -131,16 +133,28 @@ class BookingClassCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '$occupancyLabel · $bookedCount / $capacity ${appStrings.spots.toLowerCase()}',
-                  style: AppTypography.bodySecondary(context).copyWith(
-                    color: occupancy == BookingOccupancy.full
-                        ? AppColors.textPrimary(context)
-                        : AppColors.textSecondary(context),
-                    fontWeight: occupancy == BookingOccupancy.full
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$occupancyLabel · $bookedCount / $capacity ${appStrings.spots.toLowerCase()}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodySecondary(context).copyWith(
+                          color: occupancy == BookingOccupancy.full
+                              ? AppColors.textPrimary(context)
+                              : AppColors.textSecondary(context),
+                          fontWeight: occupancy == BookingOccupancy.full
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (bookedProfiles.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      BookingAvatarStack(profiles: bookedProfiles),
+                    ],
+                  ],
                 ),
                 if (showClassName) ...[
                   const SizedBox(height: AppSpacing.sm),
@@ -188,6 +202,108 @@ class BookingClassCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class BookingAvatarStack extends StatelessWidget {
+  const BookingAvatarStack({
+    super.key,
+    required this.profiles,
+    this.maxVisible = 4,
+  });
+
+  final List<Map<String, dynamic>> profiles;
+  final int maxVisible;
+
+  static const double _diameter = 26;
+  static const double _overlap = 7;
+
+  @override
+  Widget build(BuildContext context) {
+    if (profiles.isEmpty) return const SizedBox.shrink();
+
+    final visibleCount = profiles.length.clamp(0, maxVisible);
+    final overflowCount = profiles.length - visibleCount;
+    final avatarsWidth =
+        _diameter + (visibleCount - 1) * (_diameter - _overlap);
+
+    return Row(
+      key: const ValueKey('booking-avatar-stack'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: avatarsWidth,
+          height: _diameter,
+          child: Stack(
+            children: [
+              for (var index = 0; index < visibleCount; index++)
+                Positioned(
+                  left: index * (_diameter - _overlap),
+                  child: _BookingStackAvatar(profile: profiles[index]),
+                ),
+            ],
+          ),
+        ),
+        if (overflowCount > 0) ...[
+          const SizedBox(width: 4),
+          Text(
+            '+$overflowCount',
+            key: const ValueKey('booking-avatar-overflow'),
+            style: AppTypography.helper(context).copyWith(
+              color: AppColors.textSecondary(context),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _BookingStackAvatar extends StatelessWidget {
+  const _BookingStackAvatar({required this.profile});
+
+  final Map<String, dynamic> profile;
+
+  String get _initials {
+    final name = profile['full_name']?.toString().trim() ?? '';
+    if (name.isEmpty) return 'M';
+    return name
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = profile['avatar_url']?.toString().trim();
+    final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
+
+    return Container(
+      key: ValueKey('booking-avatar-${profile['id']}'),
+      width: BookingAvatarStack._diameter,
+      height: BookingAvatarStack._diameter,
+      padding: const EdgeInsets.all(1.5),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        shape: BoxShape.circle,
+      ),
+      child: CircleAvatar(
+        backgroundColor: AppColors.surfaceAlt(context),
+        foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+        child: hasAvatar
+            ? null
+            : Text(
+                _initials,
+                key: const ValueKey('booking-avatar-fallback'),
+                style: AppTypography.buttonLabel(
+                  context,
+                ).copyWith(color: BookingColors.primary, fontSize: 9),
+              ),
       ),
     );
   }

@@ -43,6 +43,21 @@ Future<bool> completeClassDeletion({
   }
 }
 
+Map<String, List<Map<String, dynamic>>> bookingActiveProfilesByClass({
+  required List<Map<String, dynamic>> bookings,
+  required Map<String, Map<String, dynamic>> profilesById,
+}) {
+  final result = <String, List<Map<String, dynamic>>>{};
+  for (final booking in bookings) {
+    if (booking['status'] != 'booked') continue;
+    final classId = booking['class_id']?.toString();
+    final profile = profilesById[booking['user_id']?.toString()];
+    if (classId == null || profile == null) continue;
+    (result[classId] ??= []).add(profile);
+  }
+  return result;
+}
+
 class BookingScreen extends StatefulWidget {
   const BookingScreen({
     super.key,
@@ -243,6 +258,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final classIds = classRows.map((c) => c['id'].toString()).toList();
       var bookingRows = <Map<String, dynamic>>[];
       var waitlistRows = <Map<String, dynamic>>[];
+      var bookingProfilesById = <String, Map<String, dynamic>>{};
 
       if (classIds.isNotEmpty) {
         final bookings = await _client
@@ -260,6 +276,23 @@ class _BookingScreenState extends State<BookingScreen> {
 
         bookingRows = List<Map<String, dynamic>>.from(bookings);
         waitlistRows = List<Map<String, dynamic>>.from(waitlist);
+
+        final bookedUserIds = bookingRows
+            .where((booking) => booking['status'] == 'booked')
+            .map((booking) => booking['user_id']?.toString())
+            .whereType<String>()
+            .toSet()
+            .toList();
+        if (bookedUserIds.isNotEmpty) {
+          final profiles = await _client
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .inFilter('id', bookedUserIds);
+          bookingProfilesById = {
+            for (final profile in List<Map<String, dynamic>>.from(profiles))
+              profile['id'].toString(): profile,
+          };
+        }
       }
 
       final bookedCountByClass = <String, int>{};
@@ -280,6 +313,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final waitlistPositions = <String, int>{};
       final waitlistCountByClass = <String, int>{};
+      final bookedProfilesByClass = bookingActiveProfilesByClass(
+        bookings: bookingRows,
+        profilesById: bookingProfilesById,
+      );
 
       for (final entry in waitlistRows) {
         final classId = entry['class_id']?.toString();
@@ -297,6 +334,7 @@ class _BookingScreenState extends State<BookingScreen> {
         final classId = c['id'].toString();
         c['booked_count'] = bookedCountByClass[classId] ?? 0;
         c['waitlist_count'] = waitlistCountByClass[classId] ?? 0;
+        c['booked_profiles'] = bookedProfilesByClass[classId] ?? const [];
       }
 
       if (!isCurrentLoad()) return;
@@ -936,6 +974,9 @@ class _BookingScreenState extends State<BookingScreen> {
                             klass: klass,
                             bookedCount: bookedCount,
                             capacity: capacity,
+                            bookedProfiles: List<Map<String, dynamic>>.from(
+                              klass['booked_profiles'] as List? ?? const [],
+                            ),
                             buttonLabel: buttonLabel,
                             buttonAction: buttonAction,
                             isLoading: isProcessing,

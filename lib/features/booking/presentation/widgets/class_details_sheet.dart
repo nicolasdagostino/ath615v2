@@ -595,6 +595,10 @@ class ClassDetailsView extends StatelessWidget {
                     child: FilledButton.icon(
                       key: const ValueKey('class-detail-mark-all-attended'),
                       onPressed: onMarkAllAttended,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: BookingColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
                       icon: const Icon(Icons.done_all_rounded),
                       label: Text(
                         appStrings.pick(
