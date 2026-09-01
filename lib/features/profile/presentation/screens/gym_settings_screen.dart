@@ -16,6 +16,35 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 const bool stripeConnectSetupEnabled = true;
 
+int saasPlanCapacityShortfall({required int active, required int? limit}) =>
+    limit == null ? 0 : (active - limit).clamp(0, active);
+
+String saasPlanChangeErrorMessage(Object error) {
+  final value = error.toString();
+  if (value.contains('saas_plan_capacity_too_low')) {
+    return appStrings.pick(
+      'This plan does not have enough capacity for your active athletes.',
+      'Este plan no tiene capacidad suficiente para tus atletas activos.',
+    );
+  }
+  if (value.contains('saas_plan_change_pending')) {
+    return appStrings.pick(
+      'There is already a plan change awaiting review.',
+      'Ya existe un cambio de plan pendiente de revisión.',
+    );
+  }
+  if (value.contains('saas_plan_unchanged')) {
+    return appStrings.pick(
+      'This is your current plan.',
+      'Este es tu plan actual.',
+    );
+  }
+  return appStrings.pick(
+    'The plan change request could not be completed.',
+    'No se pudo completar la solicitud de cambio de plan.',
+  );
+}
+
 enum GymStripeConnectState {
   disconnected,
   setupPending,
@@ -91,6 +120,7 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   String? _logoUrl;
   Map<String, dynamic>? _saasUsage;
   List<Map<String, dynamic>> _saasPlans = const [];
+  Map<String, dynamic>? _pendingSaasRequest;
 
   @override
   void initState() {
@@ -157,36 +187,185 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
       _saasPlans = List<Map<String, dynamic>>.from(
         await Supabase.instance.client
             .from('saas_plans')
-            .select('code,name,active_member_limit')
+            .select('code,name,active_member_limit,monthly_price_eur')
             .eq('is_active', true)
             .order('sort_order'),
       );
+      final pendingRows = List<Map<String, dynamic>>.from(
+        await Supabase.instance.client.rpc(
+              'get_effective_gym_pending_saas_plan_change',
+            )
+            as List,
+      );
+      _pendingSaasRequest = pendingRows.firstOrNull;
     }
 
     if (!mounted) return;
     setState(() => _loading = false);
   }
 
+  Future<void> _requestSaasPlan(Map<String, dynamic> plan) async {
+    try {
+      final request = await Supabase.instance.client.rpc(
+        'request_effective_gym_saas_plan_change',
+        params: {'p_requested_plan_code': plan['code']},
+      );
+      if (!mounted) return;
+      setState(() => _pendingSaasRequest = Map<String, dynamic>.from(request));
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(saasPlanChangeErrorMessage(error))),
+      );
+    }
+  }
+
+  Future<void> _cancelSaasRequest() async {
+    final request = _pendingSaasRequest;
+    if (request == null) return;
+    try {
+      await Supabase.instance.client.rpc(
+        'cancel_effective_gym_saas_plan_change',
+        params: {'p_request_id': request['id']},
+      );
+      if (mounted) {
+        setState(() => _pendingSaasRequest = null);
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(saasPlanChangeErrorMessage(error))),
+        );
+      }
+    }
+  }
+
   Future<void> _showSaasPlans() => showDialog<void>(
     context: context,
-    builder: (c) => AlertDialog(
-      title: Text(appStrings.pick('Available plans', 'Planes disponibles')),
-      content: Text(
-        _saasPlans
-            .map(
-              (p) => p['active_member_limit'] == null
-                  ? p['name'].toString()
-                  : '${p['name']} · ${p['active_member_limit']}',
-            )
-            .join('\n'),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c),
-          child: Text(appStrings.pick('Close', 'Cerrar')),
+    builder: (c) {
+      final active =
+          (_saasUsage?['active_athlete_count'] as num?)?.toInt() ?? 0;
+      final currentCode = _saasUsage?['plan_code']?.toString();
+      final pending = _pendingSaasRequest;
+      return AlertDialog(
+        title: Text(appStrings.pick('YOUR PLAN', 'TU PLAN')),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${_saasUsage?['plan_name'] ?? 'FREE'} · €${_saasPlans.where((p) => p['code'] == currentCode).firstOrNull?['monthly_price_eur'] ?? 0} / ${appStrings.pick('month', 'mes')}',
+                  key: const ValueKey('saas-current-plan-detail'),
+                  style: AppTypography.sectionTitle(context),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _saasUsage?['active_member_limit'] == null
+                      ? '$active ${appStrings.pick('active athletes · Unlimited', 'atletas activos · Sin límite')}'
+                      : '$active ${appStrings.pick('of', 'de')} ${_saasUsage?['active_member_limit']} ${appStrings.pick('active athletes', 'atletas activos')} · ${_saasUsage?['remaining_slots']} ${appStrings.pick('spots available', 'plazas disponibles')}',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (pending != null) ...[
+                  Text(
+                    '${appStrings.pick('CHANGE REQUESTED', 'CAMBIO SOLICITADO')}\n${pending['current_plan_code'].toString().toUpperCase()} → ${pending['requested_plan_code'].toString().toUpperCase()}\n${appStrings.pick('Pending approval', 'Pendiente de aprobación')}',
+                    key: const ValueKey('saas-pending-change'),
+                  ),
+                  TextButton(
+                    onPressed: _cancelSaasRequest,
+                    child: Text(
+                      appStrings.pick('CANCEL REQUEST', 'CANCELAR SOLICITUD'),
+                    ),
+                  ),
+                ] else
+                  ..._saasPlans.map((plan) {
+                    final limit = (plan['active_member_limit'] as num?)
+                        ?.toInt();
+                    final shortfall = saasPlanCapacityShortfall(
+                      active: active,
+                      limit: limit,
+                    );
+                    final isCurrent = plan['code'] == currentCode;
+                    return Padding(
+                      key: ValueKey('saas-plan-${plan['code']}'),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${plan['name']} · €${plan['monthly_price_eur']} / ${appStrings.pick('month', 'mes')}',
+                          ),
+                          Text(
+                            limit == null
+                                ? appStrings.pick(
+                                    'Unlimited athletes',
+                                    'Atletas ilimitados',
+                                  )
+                                : shortfall == 0
+                                ? appStrings.pick(
+                                    'Up to $limit athletes',
+                                    'Hasta $limit atletas',
+                                  )
+                                : appStrings.pick(
+                                    'Deactivate at least $shortfall athletes before requesting this plan.',
+                                    'Debes desactivar al menos $shortfall atletas antes de solicitar este plan.',
+                                  ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: isCurrent || shortfall > 0
+                                  ? null
+                                  : () => _requestSaasPlan(plan),
+                              child: Text(
+                                appStrings.pick(
+                                  'REQUEST CHANGE',
+                                  'SOLICITAR CAMBIO',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                if (pending == null &&
+                    _saasPlans.any(
+                      (p) =>
+                          saasPlanCapacityShortfall(
+                            active: active,
+                            limit: (p['active_member_limit'] as num?)?.toInt(),
+                          ) >
+                          0,
+                    ))
+                  TextButton(
+                    key: const ValueKey('saas-manage-members'),
+                    onPressed: () {
+                      Navigator.pop(c);
+                      context.go('/app?section=panel');
+                    },
+                    child: Text(
+                      appStrings.pick('MANAGE MEMBERS', 'GESTIONAR MIEMBROS'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
-      ],
-    ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: Text(appStrings.pick('Close', 'Cerrar')),
+          ),
+        ],
+      );
+    },
   );
 
   void _applyGym(Map<String, dynamic>? gym) {
@@ -208,6 +387,11 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
     }
     if (gym['saas_plans'] is List) {
       _saasPlans = List<Map<String, dynamic>>.from(gym['saas_plans'] as List);
+    }
+    if (gym['saas_pending_request'] is Map) {
+      _pendingSaasRequest = Map<String, dynamic>.from(
+        gym['saas_pending_request'] as Map,
+      );
     }
   }
 

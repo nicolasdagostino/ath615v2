@@ -34,16 +34,30 @@ void main() {
                 'stripe_charges_enabled': false,
                 'stripe_payouts_enabled': false,
                 'saas_usage': {
+                  'plan_code': 'growth',
                   'plan_name': 'GROWTH',
                   'active_athlete_count': 72,
                   'active_member_limit': 100,
+                  'remaining_slots': 28,
                 },
                 'saas_plans': [
-                  {'code': 'free', 'name': 'FREE', 'active_member_limit': 10},
+                  {
+                    'code': 'free',
+                    'name': 'FREE',
+                    'active_member_limit': 10,
+                    'monthly_price_eur': 0,
+                  },
+                  {
+                    'code': 'growth',
+                    'name': 'GROWTH',
+                    'active_member_limit': 100,
+                    'monthly_price_eur': 39,
+                  },
                   {
                     'code': 'unlimited',
                     'name': 'UNLIMITED',
                     'active_member_limit': null,
+                    'monthly_price_eur': 79,
                   },
                 ],
               },
@@ -86,9 +100,24 @@ void main() {
         expect(find.text('72 / 100 active athletes'), findsOne);
         await tester.tap(find.text('View plan'));
         await tester.pumpAndSettle();
-        expect(find.text('Available plans'), findsOne);
-        expect(find.textContaining('FREE · 10'), findsOne);
+        expect(find.text('YOUR PLAN'), findsOne);
+        expect(
+          find.byKey(const ValueKey('saas-current-plan-detail')),
+          findsOne,
+        );
+        expect(
+          find.textContaining('Deactivate at least 62 athletes'),
+          findsOne,
+        );
+        expect(find.byKey(const ValueKey('saas-manage-members')), findsOne);
         expect(find.textContaining('UNLIMITED'), findsOne);
+        final currentRequest = tester.widget<TextButton>(
+          find.descendant(
+            of: find.byKey(const ValueKey('saas-plan-growth')),
+            matching: find.byType(TextButton),
+          ),
+        );
+        expect(currentRequest.onPressed, isNull);
         await tester.tap(find.text('Close'));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
@@ -104,6 +133,20 @@ void main() {
       },
     );
   }
+
+  test('SaaS downgrade shortfall and errors remain human', () {
+    expect(saasPlanCapacityShortfall(active: 73, limit: 40), 33);
+    expect(saasPlanCapacityShortfall(active: 10, limit: 10), 0);
+    expect(saasPlanCapacityShortfall(active: 300, limit: null), 0);
+    expect(
+      saasPlanChangeErrorMessage(Exception('P0001 saas_plan_capacity_too_low')),
+      isNot(contains('P0001')),
+    );
+    expect(
+      saasPlanChangeErrorMessage(Exception('PostgrestException unknown_rpc')),
+      isNot(anyOf(contains('Postgrest'), contains('unknown_rpc'))),
+    );
+  });
 
   test(
     'Stripe status reflects real Connect fields without enabling payments',

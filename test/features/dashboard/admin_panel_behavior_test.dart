@@ -180,6 +180,21 @@ void main() {
     expect(memberSource, contains('gym_member_created_at:'));
   });
 
+  test(
+    'Members exposes active/inactive filters and preserves data on deactivation',
+    () {
+      final source = File(
+        'lib/features/dashboard/presentation/screens/dashboard_screen.dart',
+      ).readAsStringSync();
+      expect(source, contains('_MemberRoleFilter.active'));
+      expect(source, contains('_MemberRoleFilter.inactive'));
+      expect(source, contains('Their profile and history will be preserved.'));
+      expect(source, contains('This athlete has an active membership.'));
+      expect(source, contains("'set_gym_member_active'"));
+      expect(source, isNot(contains(".delete().eq('id', memberId)")));
+    },
+  );
+
   test('member since uses gym membership creation, never profile creation', () {
     final joined = adminGymMemberCreatedAt({
       'created_at': '2024-01-10T00:00:00Z',

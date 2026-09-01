@@ -2,6 +2,8 @@ import 'package:ath615v2/features/owner/presentation/screens/owner_screen.dart';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:ath615v2/core/theme/app_theme.dart';
 
 void main() {
   test('owner gym summary exposes aggregate counts and Connect state', () {
@@ -70,5 +72,38 @@ void main() {
       source.indexOf("'select_owner_effective_gym'"),
       greaterThan(source.indexOf('Future<void> _enterAdmin()')),
     );
+  });
+
+  testWidgets('Platform Owner request card exposes commercial review actions', (
+    tester,
+  ) async {
+    var approved = false;
+    var rejected = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: OwnerPlanRequestCard(
+            request: const {
+              'id': 'request-1',
+              'gym_name': 'ATHLETE 615',
+              'current_plan_name': 'STARTER',
+              'requested_plan_name': 'GROWTH',
+              'active_athlete_count': 21,
+              'current_price_eur': 19,
+              'requested_price_eur': 39,
+            },
+            onApprove: () => approved = true,
+            onReject: () => rejected = true,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('STARTER → GROWTH'), findsOne);
+    expect(find.textContaining('€19 → €39'), findsOne);
+    await tester.tap(find.text('APPROVE'));
+    await tester.tap(find.text('REJECT'));
+    expect(approved, isTrue);
+    expect(rejected, isTrue);
   });
 }

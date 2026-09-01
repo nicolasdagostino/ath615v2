@@ -57,7 +57,7 @@ class DashboardScreen extends StatefulWidget {
 }
 enum _DashboardTab { overview, members, plans, analytics }
 
-enum _MemberRoleFilter { all, athlete, coach, admin, withoutPlan }
+enum _MemberRoleFilter { all, active, inactive, athlete, coach, admin, withoutPlan }
 
 bool adminMemberHasActivePlan(Map<String, dynamic> member) =>
     (member['membership_name']?.toString().trim() ?? '').isNotEmpty;
@@ -1056,6 +1056,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         case _MemberRoleFilter.withoutPlan:
           return adminMemberIsWithoutActivePlan(m);
 
+        case _MemberRoleFilter.active:
+          return m['is_active'] == true;
+
+        case _MemberRoleFilter.inactive:
+          return m['is_active'] != true;
+
         case _MemberRoleFilter.all:
           return true;
       }
@@ -1341,6 +1347,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final current = member['is_active'] == true;
     final next = !current;
+
+    if (current) {
+      final name = member['full_name']?.toString().trim();
+      final hasMembership = adminMemberHasActivePlan(member);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            appStrings.pick(
+              'Deactivate ${name?.isNotEmpty == true ? name : 'member'}',
+              'Desactivar a ${name?.isNotEmpty == true ? name : 'miembro'}',
+            ),
+          ),
+          content: Text(
+            [
+              appStrings.pick(
+                'This athlete will stop counting as an active member and will not be able to use features reserved for active athletes. Their profile and history will be preserved.',
+                'Este atleta dejará de contar como miembro activo y no podrá utilizar las funciones reservadas a atletas activos. Su perfil e historial se conservarán.',
+              ),
+              if (hasMembership)
+                appStrings.pick(
+                  'This athlete has an active membership. It will remain registered, but cannot be used while the athlete is inactive.',
+                  'Este atleta tiene una membresía activa. Seguirá registrada, pero no podrá utilizarla mientras permanezca inactivo.',
+                ),
+            ].join('\n\n'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(appStrings.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              child: Text(appStrings.deactivateMember.toUpperCase()),
+            ),
+          ],
+        ),
+      ) ?? false;
+      if (!confirmed) return;
+    }
 
     try {
       final updated = await Supabase.instance.client
@@ -2953,6 +3000,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _roleFilter = _MemberRoleFilter.all;
                                   });
                                 },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label:
+                                    '${appStrings.pick('Active', 'Activos')} (${_members.where((m) => m['is_active'] == true).length})',
+                                selected:
+                                    _roleFilter == _MemberRoleFilter.active,
+                                onTap: () => setState(
+                                  () => _roleFilter = _MemberRoleFilter.active,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              MemberFilterChip(
+                                label:
+                                    '${appStrings.pick('Inactive', 'Inactivos')} (${_members.where((m) => m['is_active'] != true).length})',
+                                selected:
+                                    _roleFilter == _MemberRoleFilter.inactive,
+                                onTap: () => setState(
+                                  () => _roleFilter = _MemberRoleFilter.inactive,
+                                ),
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               MemberFilterChip(

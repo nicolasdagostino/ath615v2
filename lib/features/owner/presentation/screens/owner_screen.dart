@@ -21,6 +21,8 @@ class OwnerGymSummary {
       DateTime.tryParse(data['last_activity_at']?.toString() ?? '');
   int count(String key) => (data[key] as num?)?.toInt() ?? 0;
   String get saasPlanName => data['saas_plan_name']?.toString() ?? 'FREE';
+  int get saasMonthlyPrice =>
+      (data['saas_monthly_price_eur'] as num?)?.toInt() ?? 0;
   int? get saasLimit => (data['saas_active_member_limit'] as num?)?.toInt();
   int get saasAthletes => count('saas_active_athlete_count');
   bool get saasLimitReached => data['saas_limit_reached'] == true;
@@ -56,6 +58,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
   final _inviteEmail = TextEditingController();
   final _client = Supabase.instance.client;
   List<OwnerGymSummary> _gyms = const [];
+  List<Map<String, dynamic>> _planRequests = const [];
   bool _loading = true, _working = false;
   String? _error;
   String _filter = 'active';
@@ -77,11 +80,31 @@ class _OwnerScreenState extends State<OwnerScreen> {
   Future<void> _load() async {
     try {
       final rows = await _client.rpc('list_owner_gym_overview');
+      final plans = List<Map<String, dynamic>>.from(
+        await _client.from('saas_plans').select('code,monthly_price_eur'),
+      );
+      final prices = {
+        for (final plan in plans)
+          plan['code'].toString(): plan['monthly_price_eur'],
+      };
+      final requests = List<Map<String, dynamic>>.from(
+        await _client.rpc(
+              'list_platform_saas_plan_change_requests',
+              params: {'p_status': 'pending'},
+            )
+            as List,
+      );
       if (!mounted) return;
       setState(() {
-        _gyms = List<Map<String, dynamic>>.from(
-          rows as List,
-        ).map(OwnerGymSummary.new).toList();
+        _gyms = List<Map<String, dynamic>>.from(rows as List)
+            .map(
+              (row) => OwnerGymSummary({
+                ...row,
+                'saas_monthly_price_eur': prices[row['saas_plan_code']],
+              }),
+            )
+            .toList();
+        _planRequests = requests;
         _loading = false;
         _error = null;
       });
@@ -92,6 +115,41 @@ class _OwnerScreenState extends State<OwnerScreen> {
           _error = e.toString();
         });
       }
+    }
+  }
+
+  Future<void> _reviewPlanRequest(
+    Map<String, dynamic> request,
+    bool approve,
+  ) async {
+    try {
+      await _client.rpc(
+        'platform_review_saas_plan_change',
+        params: {
+          'p_request_id': request['id'],
+          'p_approve': approve,
+          'p_rejection_reason': null,
+        },
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      final capacity = error.toString().contains('saas_plan_capacity_too_low');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            capacity
+                ? appStrings.pick(
+                    'The gym now has too many active athletes for that plan.',
+                    'El gimnasio ahora tiene demasiados atletas activos para ese plan.',
+                  )
+                : appStrings.pick(
+                    'The request could not be reviewed.',
+                    'No se pudo revisar la solicitud.',
+                  ),
+          ),
+        ),
+      );
     }
   }
 
@@ -238,6 +296,22 @@ class _OwnerScreenState extends State<OwnerScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
+            if (_planRequests.isNotEmpty) ...[
+              Text(
+                '${appStrings.pick('PLAN REQUESTS', 'SOLICITUDES DE PLAN')} (${_planRequests.length})',
+                key: const ValueKey('owner-plan-requests-title'),
+                style: AppTypography.sectionTitle(context),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ..._planRequests.map(
+                (request) => OwnerPlanRequestCard(
+                  request: request,
+                  onApprove: () => _reviewPlanRequest(request, true),
+                  onReject: () => _reviewPlanRequest(request, false),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             if (_loading)
               const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
@@ -275,6 +349,58 @@ class _OwnerScreenState extends State<OwnerScreen> {
       ),
     );
   }
+}
+
+class OwnerPlanRequestCard extends StatelessWidget {
+  const OwnerPlanRequestCard({
+    super.key,
+    required this.request,
+    required this.onApprove,
+    required this.onReject,
+  });
+  final Map<String, dynamic> request;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: ValueKey('owner-plan-request-${request['id']}'),
+    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+    padding: const EdgeInsets.all(AppSpacing.md),
+    decoration: BoxDecoration(
+      color: AppColors.surface(context),
+      border: Border.all(color: AppColors.border(context)),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          request['gym_name']?.toString() ?? '',
+          style: AppTypography.itemTitle(context),
+        ),
+        Text(
+          '${request['current_plan_name']} → ${request['requested_plan_name']}',
+        ),
+        Text(
+          '${request['active_athlete_count']} ${appStrings.pick('active athletes', 'atletas activos')} · €${request['current_price_eur']} → €${request['requested_price_eur']} / ${appStrings.pick('month', 'mes')}',
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: onReject,
+              child: Text(appStrings.pick('REJECT', 'RECHAZAR')),
+            ),
+            FilledButton(
+              onPressed: onApprove,
+              child: Text(appStrings.pick('APPROVE', 'APROBAR')),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 String _ownerStatusLabel(String status) => switch (status) {
@@ -340,6 +466,7 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
   OwnerGymSummary? _gym;
   bool _loading = true;
   String? _error;
+  Map<String, dynamic>? _pendingPlanRequest;
 
   @override
   void initState() {
@@ -353,9 +480,26 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
         'get_platform_gym_detail',
         params: {'p_gym_id': widget.gymId},
       );
+      final plans = List<Map<String, dynamic>>.from(
+        await _client.from('saas_plans').select('code,monthly_price_eur'),
+      );
+      final detail = Map<String, dynamic>.from(row as Map);
+      detail['saas_monthly_price_eur'] = plans
+          .where((p) => p['code'] == detail['saas_plan_code'])
+          .firstOrNull?['monthly_price_eur'];
+      final requests = List<Map<String, dynamic>>.from(
+        await _client.rpc(
+              'list_platform_saas_plan_change_requests',
+              params: {'p_status': 'pending'},
+            )
+            as List,
+      );
       if (mounted) {
         setState(() {
-          _gym = OwnerGymSummary(Map<String, dynamic>.from(row as Map));
+          _gym = OwnerGymSummary(detail);
+          _pendingPlanRequest = requests
+              .where((request) => request['gym_id'].toString() == widget.gymId)
+              .firstOrNull;
           _loading = false;
           _error = null;
         });
@@ -367,6 +511,40 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
           _error = e.toString();
         });
       }
+    }
+  }
+
+  Future<void> _reviewPending(bool approve) async {
+    final request = _pendingPlanRequest;
+    if (request == null) return;
+    try {
+      await _client.rpc(
+        'platform_review_saas_plan_change',
+        params: {
+          'p_request_id': request['id'],
+          'p_approve': approve,
+          'p_rejection_reason': null,
+        },
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      final capacity = error.toString().contains('saas_plan_capacity_too_low');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            capacity
+                ? appStrings.pick(
+                    'The gym now has too many active athletes for that plan.',
+                    'El gimnasio ahora tiene demasiados atletas activos para ese plan.',
+                  )
+                : appStrings.pick(
+                    'The plan request could not be reviewed.',
+                    'No se pudo revisar la solicitud de plan.',
+                  ),
+          ),
+        ),
+      );
     }
   }
 
@@ -557,6 +735,14 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
               Chip(label: Text(_ownerStatusLabel(_gym!.status).toUpperCase())),
               const SizedBox(height: AppSpacing.lg),
               _OwnerSummaryBlock(gym: _gym!),
+              if (_pendingPlanRequest != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                OwnerPlanRequestCard(
+                  request: _pendingPlanRequest!,
+                  onApprove: () => _reviewPending(true),
+                  onReject: () => _reviewPending(false),
+                ),
+              ],
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton(
                 key: const ValueKey('platform-change-saas-plan'),
@@ -636,7 +822,7 @@ class _OwnerSummaryBlock extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Text(
-        '${gym.saasPlanName}\n${gym.saasUsageLabel}\n${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches\n${gym.count('active_membership_count')} memberships\nStripe: ${gym.stripeLabel}${dates.isEmpty ? '' : '\n${dates.join(' · ')}'}',
+        '${gym.saasPlanName}\n€${gym.saasMonthlyPrice} / ${appStrings.pick('month', 'mes')}\n${gym.saasUsageLabel}\n${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches\n${gym.count('active_membership_count')} memberships\nStripe: ${gym.stripeLabel}${dates.isEmpty ? '' : '\n${dates.join(' · ')}'}',
         style: AppTypography.body(context),
       ),
     );
