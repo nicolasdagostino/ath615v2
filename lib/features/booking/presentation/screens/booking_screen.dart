@@ -46,16 +46,46 @@ Future<bool> completeClassDeletion({
 Map<String, List<Map<String, dynamic>>> bookingActiveProfilesByClass({
   required List<Map<String, dynamic>> bookings,
   required Map<String, Map<String, dynamic>> profilesById,
+  Set<String> completedClassIds = const {},
 }) {
   final result = <String, List<Map<String, dynamic>>>{};
   for (final booking in bookings) {
-    if (booking['status'] != 'booked') continue;
     final classId = booking['class_id']?.toString();
+    if (classId == null ||
+        !bookingAppearsInAvatarStack(
+          status: booking['status']?.toString(),
+          isCompleted: completedClassIds.contains(classId),
+        )) {
+      continue;
+    }
     final profile = profilesById[booking['user_id']?.toString()];
-    if (classId == null || profile == null) continue;
+    if (profile == null) continue;
     (result[classId] ??= []).add(profile);
   }
   return result;
+}
+
+bool bookingAppearsInAvatarStack({
+  required String? status,
+  required bool isCompleted,
+}) {
+  if (status == 'booked') return true;
+  return isCompleted && (status == 'attended' || status == 'no_show');
+}
+
+Set<String> completedBookingClassIds(
+  List<Map<String, dynamic>> classes, {
+  DateTime? now,
+}) {
+  final currentTime = now ?? DateTime.now();
+  return {
+    for (final klass in classes)
+      if (!DateTime.parse(klass['starts_at'].toString())
+          .toLocal()
+          .add(Duration(minutes: klass['duration_minutes'] as int? ?? 60))
+          .isAfter(currentTime))
+        klass['id'].toString(),
+  };
 }
 
 class BookingScreen extends StatefulWidget {
@@ -256,6 +286,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final classRows = List<Map<String, dynamic>>.from(classes);
       final classIds = classRows.map((c) => c['id'].toString()).toList();
+      final completedClassIds = completedBookingClassIds(classRows);
       var bookingRows = <Map<String, dynamic>>[];
       var waitlistRows = <Map<String, dynamic>>[];
       var bookingProfilesById = <String, Map<String, dynamic>>{};
@@ -278,7 +309,14 @@ class _BookingScreenState extends State<BookingScreen> {
         waitlistRows = List<Map<String, dynamic>>.from(waitlist);
 
         final bookedUserIds = bookingRows
-            .where((booking) => booking['status'] == 'booked')
+            .where((booking) {
+              final classId = booking['class_id']?.toString();
+              return classId != null &&
+                  bookingAppearsInAvatarStack(
+                    status: booking['status']?.toString(),
+                    isCompleted: completedClassIds.contains(classId),
+                  );
+            })
             .map((booking) => booking['user_id']?.toString())
             .whereType<String>()
             .toSet()
@@ -316,6 +354,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final bookedProfilesByClass = bookingActiveProfilesByClass(
         bookings: bookingRows,
         profilesById: bookingProfilesById,
+        completedClassIds: completedClassIds,
       );
 
       for (final entry in waitlistRows) {

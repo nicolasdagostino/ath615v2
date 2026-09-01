@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ath615v2/core/strings/app_strings.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/features/booking/presentation/screens/booking_screen.dart';
@@ -103,18 +105,17 @@ void main() {
     expect(tapped, isTrue);
   });
 
-  test('only booked profiles enter the stack; waitlist is not an input', () {
+  test('future classes include booked and exclude attendance statuses', () {
     final rows = bookingActiveProfilesByClass(
       bookings: const [
         {'class_id': 'class-1', 'user_id': 'booked', 'status': 'booked'},
-        {'class_id': 'class-1', 'user_id': 'cancelled', 'status': 'cancelled'},
+        {'class_id': 'class-1', 'user_id': 'attended', 'status': 'attended'},
         {'class_id': 'class-1', 'user_id': 'no-show', 'status': 'no_show'},
       ],
       profilesById: {
         'booked': {'id': 'booked'},
-        'cancelled': {'id': 'cancelled'},
+        'attended': {'id': 'attended'},
         'no-show': {'id': 'no-show'},
-        'waitlisted': {'id': 'waitlisted'},
       },
     );
 
@@ -122,4 +123,81 @@ void main() {
       const {'id': 'booked'},
     ]);
   });
+
+  test('completed classes include booked, attended and no-show only', () {
+    final rows = bookingActiveProfilesByClass(
+      bookings: const [
+        {'class_id': 'past', 'user_id': 'booked', 'status': 'booked'},
+        {'class_id': 'past', 'user_id': 'attended', 'status': 'attended'},
+        {'class_id': 'past', 'user_id': 'no-show', 'status': 'no_show'},
+        {'class_id': 'past', 'user_id': 'cancelled', 'status': 'cancelled'},
+      ],
+      profilesById: {
+        'booked': {'id': 'booked'},
+        'attended': {'id': 'attended'},
+        'no-show': {'id': 'no-show'},
+        'cancelled': {'id': 'cancelled'},
+        'waitlisted': {'id': 'waitlisted'},
+      },
+      completedClassIds: const {'past'},
+    );
+
+    expect(rows['past']?.map((profile) => profile['id']), [
+      'booked',
+      'attended',
+      'no-show',
+    ]);
+  });
+
+  test('completion is based on class end time, not a visual condition', () {
+    final now = DateTime(2030, 8, 12, 12);
+    final completed = completedBookingClassIds([
+      {
+        'id': 'past',
+        'starts_at': DateTime(2030, 8, 12, 10).toIso8601String(),
+        'duration_minutes': 60,
+      },
+      {
+        'id': 'active',
+        'starts_at': DateTime(2030, 8, 12, 11, 30).toIso8601String(),
+        'duration_minutes': 60,
+      },
+      {
+        'id': 'future',
+        'starts_at': DateTime(2030, 8, 12, 13).toIso8601String(),
+        'duration_minutes': 60,
+      },
+    ], now: now);
+
+    expect(completed, {'past'});
+  });
+
+  testWidgets('completed six-person roster keeps four avatars plus two', (
+    tester,
+  ) async {
+    await pumpCard(tester, count: 6);
+    expect(
+      find.byKey(const ValueKey('booking-avatar-fallback')),
+      findsNWidgets(4),
+    );
+    expect(find.text('+2'), findsOneWidget);
+    expect(find.textContaining('6 / 10'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test(
+    'booking avatar profiles remain one batch query for rendered classes',
+    () {
+      final source = File(
+        'lib/features/booking/presentation/screens/booking_screen.dart',
+      ).readAsStringSync();
+
+      expect(source, contains(".inFilter('class_id', classIds)"));
+      expect(source, contains(".inFilter('id', bookedUserIds)"));
+      expect(
+        RegExp(r"\.inFilter\('id', bookedUserIds\)").allMatches(source).length,
+        1,
+      );
+    },
+  );
 }
