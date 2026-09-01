@@ -20,6 +20,18 @@ class OwnerGymSummary {
   DateTime? get lastActivityAt =>
       DateTime.tryParse(data['last_activity_at']?.toString() ?? '');
   int count(String key) => (data[key] as num?)?.toInt() ?? 0;
+  String get saasPlanName => data['saas_plan_name']?.toString() ?? 'FREE';
+  int? get saasLimit => (data['saas_active_member_limit'] as num?)?.toInt();
+  int get saasAthletes => count('saas_active_athlete_count');
+  bool get saasLimitReached => data['saas_limit_reached'] == true;
+  bool get saasOverLimit => data['saas_over_limit'] == true;
+  String get saasUsageLabel => saasLimit == null
+      ? '$saasAthletes ${appStrings.pick('athletes', 'atletas')} · ${appStrings.pick('Unlimited', 'Ilimitado')}'
+      : '$saasAthletes / $saasLimit ${appStrings.pick('athletes', 'atletas')}${saasOverLimit
+            ? ' · ${appStrings.pick('Over limit', 'Por encima del límite')}'
+            : saasLimitReached
+            ? ' · ${appStrings.pick('Limit reached', 'Límite alcanzado')}'
+            : ''}';
   String get stripeLabel {
     if ((data['stripe_account_id']?.toString() ?? '').isEmpty) {
       return appStrings.stripeNotConnected;
@@ -301,7 +313,7 @@ class _OwnerGymRow extends StatelessWidget {
         style: AppTypography.itemTitle(context),
       ),
       subtitle: Text(
-        '${_ownerStatusLabel(gym.status).toUpperCase()} · ${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches · ${gym.count('athlete_count')} ${appStrings.pick('athletes', 'atletas')}\n${gym.count('active_membership_count')} memberships · ${gym.stripeLabel}',
+        '${_ownerStatusLabel(gym.status).toUpperCase()} · ${gym.saasPlanName}\n${gym.saasUsageLabel}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches · ${gym.stripeLabel}',
       ),
       isThreeLine: true,
       trailing: IconButton(
@@ -401,6 +413,47 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
       params: {'p_gym_id': gym.id},
     );
     if (mounted) context.go('/app?section=panel&ownerInspection=true');
+  }
+
+  Future<void> _changeSaasPlan() async {
+    final gym = _gym;
+    if (gym == null) return;
+    final plans = List<Map<String, dynamic>>.from(
+      await _client
+          .from('saas_plans')
+          .select('code,name,active_member_limit')
+          .eq('is_active', true)
+          .order('sort_order'),
+    );
+    if (!mounted) return;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: Text(appStrings.pick('SaaS plan', 'Plan SaaS')),
+        children: plans
+            .map(
+              (p) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(c, p['code'].toString()),
+                child: Text(
+                  p['active_member_limit'] == null
+                      ? p['name'].toString()
+                      : '${p['name']} · ${p['active_member_limit']}',
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+    if (selected == null) return;
+    await _client.rpc(
+      'platform_set_gym_saas_subscription',
+      params: {
+        'p_gym_id': gym.id,
+        'p_plan_code': selected,
+        'p_override_member_limit': null,
+      },
+    );
+    await _load();
   }
 
   Future<void> _delete() async {
@@ -504,6 +557,14 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
               Chip(label: Text(_ownerStatusLabel(_gym!.status).toUpperCase())),
               const SizedBox(height: AppSpacing.lg),
               _OwnerSummaryBlock(gym: _gym!),
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton(
+                key: const ValueKey('platform-change-saas-plan'),
+                onPressed: _changeSaasPlan,
+                child: Text(
+                  appStrings.pick('CHANGE SAAS PLAN', 'CAMBIAR PLAN SAAS'),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
               if (_gym!.status == 'active')
                 AppButton(
@@ -575,7 +636,7 @@ class _OwnerSummaryBlock extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.card),
       ),
       child: Text(
-        '${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches · ${gym.count('athlete_count')} ${appStrings.pick('athletes', 'atletas')}\n${gym.count('active_membership_count')} memberships\nStripe: ${gym.stripeLabel}${dates.isEmpty ? '' : '\n${dates.join(' · ')}'}',
+        '${gym.saasPlanName}\n${gym.saasUsageLabel}\n${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches\n${gym.count('active_membership_count')} memberships\nStripe: ${gym.stripeLabel}${dates.isEmpty ? '' : '\n${dates.join(' · ')}'}',
         style: AppTypography.body(context),
       ),
     );

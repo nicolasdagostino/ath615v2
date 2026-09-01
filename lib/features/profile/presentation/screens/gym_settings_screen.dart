@@ -89,6 +89,8 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   bool _stripeChargesEnabled = false;
   bool _stripePayoutsEnabled = false;
   String? _logoUrl;
+  Map<String, dynamic>? _saasUsage;
+  List<Map<String, dynamic>> _saasPlans = const [];
 
   @override
   void initState() {
@@ -147,11 +149,45 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
           .single();
 
       _applyGym(gym);
+      final usageRows = await Supabase.instance.client.rpc(
+        'get_effective_gym_saas_usage',
+      );
+      final rows = List<Map<String, dynamic>>.from(usageRows as List);
+      _saasUsage = rows.isEmpty ? null : rows.first;
+      _saasPlans = List<Map<String, dynamic>>.from(
+        await Supabase.instance.client
+            .from('saas_plans')
+            .select('code,name,active_member_limit')
+            .eq('is_active', true)
+            .order('sort_order'),
+      );
     }
 
     if (!mounted) return;
     setState(() => _loading = false);
   }
+
+  Future<void> _showSaasPlans() => showDialog<void>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: Text(appStrings.pick('Available plans', 'Planes disponibles')),
+      content: Text(
+        _saasPlans
+            .map(
+              (p) => p['active_member_limit'] == null
+                  ? p['name'].toString()
+                  : '${p['name']} · ${p['active_member_limit']}',
+            )
+            .join('\n'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(c),
+          child: Text(appStrings.pick('Close', 'Cerrar')),
+        ),
+      ],
+    ),
+  );
 
   void _applyGym(Map<String, dynamic>? gym) {
     if (gym == null) return;
@@ -167,6 +203,12 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
     _stripeOnboardingComplete = gym['stripe_onboarding_complete'] == true;
     _stripeChargesEnabled = gym['stripe_charges_enabled'] == true;
     _stripePayoutsEnabled = gym['stripe_payouts_enabled'] == true;
+    if (gym['saas_usage'] is Map) {
+      _saasUsage = Map<String, dynamic>.from(gym['saas_usage'] as Map);
+    }
+    if (gym['saas_plans'] is List) {
+      _saasPlans = List<Map<String, dynamic>>.from(gym['saas_plans'] as List);
+    }
   }
 
   Future<void> _uploadLogo() async {
@@ -400,6 +442,43 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                         const SizedBox(height: AppSpacing.lg),
                         _GymQrCard(gymCode: _gymCode!),
                       ],
+                      const SizedBox(height: AppSpacing.lg),
+                      AppFormSectionLabel(
+                        label: appStrings.pick('PLAN', 'PLAN'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_saasUsage != null)
+                        ListTile(
+                          key: const ValueKey('gym-saas-plan-card'),
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(
+                            Icons.workspace_premium_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(
+                            _saasUsage!['plan_name']?.toString() ?? 'FREE',
+                          ),
+                          subtitle: Text(
+                            _saasUsage!['active_member_limit'] == null
+                                ? '${_saasUsage!['active_athlete_count']} ${appStrings.pick('active athletes · Unlimited', 'atletas activos · Ilimitado')}'
+                                : '${_saasUsage!['active_athlete_count']} / ${_saasUsage!['active_member_limit']} ${appStrings.pick('active athletes', 'atletas activos')}',
+                          ),
+                          trailing: TextButton(
+                            onPressed: _showSaasPlans,
+                            child: Text(
+                              appStrings.pick('View plan', 'Ver plan'),
+                            ),
+                          ),
+                        ),
+                      if (_saasUsage?['over_limit'] == true)
+                        Text(
+                          appStrings.pick(
+                            'This gym is over its active athlete limit. Existing athletes keep access, but new activations are blocked.',
+                            'Este gimnasio supera su límite de atletas activos. Los atletas existentes conservan el acceso, pero se bloquean nuevas activaciones.',
+                          ),
+                        )
+                      else if (_saasUsage?['limit_reached'] == true)
+                        Text(appStrings.gymMemberLimitReached),
                       const SizedBox(height: AppSpacing.lg),
                       AppFormSectionLabel(
                         label: appStrings.gymInformation.toUpperCase(),

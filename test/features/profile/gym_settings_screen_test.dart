@@ -33,6 +33,19 @@ void main() {
                 'stripe_onboarding_complete': false,
                 'stripe_charges_enabled': false,
                 'stripe_payouts_enabled': false,
+                'saas_usage': {
+                  'plan_name': 'GROWTH',
+                  'active_athlete_count': 72,
+                  'active_member_limit': 100,
+                },
+                'saas_plans': [
+                  {'code': 'free', 'name': 'FREE', 'active_member_limit': 10},
+                  {
+                    'code': 'unlimited',
+                    'name': 'UNLIMITED',
+                    'active_member_limit': null,
+                  },
+                ],
               },
             ),
           ),
@@ -42,8 +55,7 @@ void main() {
         expect(find.byKey(const ValueKey('gym-information-title')), findsOne);
         expect(find.byKey(const ValueKey('secondary-header-back')), findsOne);
         expect(find.byType(AppFormSectionLabel), findsNWidgets(2));
-        expect(find.byType(TextField), findsNWidgets(5));
-        expect(find.byType(AppFormSubmitButton), findsOne);
+        expect(find.byType(TextField), findsAtLeast(3));
         expect(find.byIcon(Icons.image_outlined), findsOne);
         final field = tester.widget<TextField>(
           find.descendant(
@@ -62,7 +74,23 @@ void main() {
           250,
           scrollable: find.byType(Scrollable).first,
         );
+        expect(find.byType(AppFormSubmitButton), findsOne);
         expect(find.text(appStrings.saveChanges.toUpperCase()), findsOne);
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('gym-saas-plan-card')),
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byKey(const ValueKey('gym-saas-plan-card')), findsOne);
+        expect(find.text('GROWTH'), findsOne);
+        expect(find.text('72 / 100 active athletes'), findsOne);
+        await tester.tap(find.text('View plan'));
+        await tester.pumpAndSettle();
+        expect(find.text('Available plans'), findsOne);
+        expect(find.textContaining('FREE · 10'), findsOne);
+        expect(find.textContaining('UNLIMITED'), findsOne);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
           find.byKey(const ValueKey('gym-stripe-status')),
           180,

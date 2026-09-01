@@ -1484,8 +1484,25 @@ class AppStrings {
       pick('Attendance error: $e', 'Error en asistencia: $e');
   String loadMembersError(Object e) =>
       pick('Load members error: $e', 'Error cargando miembros: $e');
-  String inviteAthleteError(Object e) =>
-      pick('Invite athlete error: $e', 'Error invitando atleta: $e');
+  bool isGymMemberLimitError(Object e) =>
+      e.toString().contains('gym_member_limit_reached');
+  String get gymMemberLimitReached => pick(
+    'You have reached the active athlete limit for your plan.',
+    'Has alcanzado el límite de atletas activos de tu plan.',
+  );
+  String get gymMemberLimitGuidance => pick(
+    'Deactivate an athlete or upgrade your plan to add another.',
+    'Desactiva un atleta o mejora tu plan para añadir otro.',
+  );
+  String inviteAthleteError(Object e) => isGymMemberLimitError(e)
+      ? '$gymMemberLimitReached $gymMemberLimitGuidance'
+      : pick('Could not invite the athlete.', 'No se pudo invitar al atleta.');
+  String reactivateMemberError(Object e) => isGymMemberLimitError(e)
+      ? '$gymMemberLimitReached $gymMemberLimitGuidance'
+      : pick(
+          'Could not update the member.',
+          'No se pudo actualizar al miembro.',
+        );
 
   String get profileDeleteAccount => pick('Delete account', 'Eliminar cuenta');
 

@@ -1378,7 +1378,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update member status: $e')),
+        SnackBar(content: Text(appStrings.reactivateMemberError(e))),
       );
     }
   }

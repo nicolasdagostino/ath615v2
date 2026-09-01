@@ -50,3 +50,33 @@ export function gymMemberRelation(input: {
     invited_by: input.invitedBy,
   };
 }
+
+export function publicInviteError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = message.includes("gym_member_limit_reached")
+    ? "gym_member_limit_reached"
+    : null;
+  return { code, error: code ?? "request_failed", status: code ? 409 : 400 };
+}
+
+export async function cleanupFailedInvite(input: {
+  createdAuthUserId: string | null;
+  reservationId: string | null;
+  deleteCreatedUser: (id: string) => Promise<unknown>;
+  releaseReservation: (id: string) => Promise<unknown>;
+}) {
+  if (input.createdAuthUserId) {
+    try {
+      await input.deleteCreatedUser(input.createdAuthUserId);
+    } catch (_) {
+      // Best effort; never delete an identity not created by this request.
+    }
+  }
+  if (input.reservationId) {
+    try {
+      await input.releaseReservation(input.reservationId);
+    } catch (_) {
+      // Expiry is the final reservation cleanup fallback.
+    }
+  }
+}

@@ -4,16 +4,29 @@ import { corsHeaders } from "../_shared/cors.ts";
 import {
   canInviteAthlete,
   canReuseExistingProfile,
+  cleanupFailedInvite,
   gymMemberRelation,
   invitedMemberRole,
   invitedProfilePatch,
+  publicInviteError,
 } from "./logic.ts";
+
+type ReservationClient = {
+  rpc: (name: string, params: Record<string, unknown>) => Promise<unknown>;
+};
+type CleanupAdminClient = {
+  auth: { admin: { deleteUser: (id: string) => Promise<unknown> } };
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let reservationId: string | null = null;
+  let createdAuthUserId: string | null = null;
+  let reservationClient: ReservationClient | null = null;
+  let cleanupAdminClient: CleanupAdminClient | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -25,6 +38,8 @@ serve(async (req) => {
     });
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    reservationClient = userClient as unknown as ReservationClient;
+    cleanupAdminClient = adminClient as unknown as CleanupAdminClient;
 
     const { data: userData, error: userError } = await userClient.auth
       .getUser();
@@ -55,6 +70,17 @@ serve(async (req) => {
     }
     if (!effectiveGymId) throw new Error("Admin has no effective gym");
 
+    // Reserve capacity transactionally before Auth Admin can create/send
+    // anything. The reservation protects this slot across service boundaries.
+    if (invitedMemberRole(role) === "athlete") {
+      const { data: reservedId, error: slotError } = await userClient.rpc(
+        "reserve_effective_gym_athlete_slot",
+        { p_email: email },
+      );
+      if (slotError) throw slotError;
+      reservationId = String(reservedId);
+    }
+
     let { data, error } = await adminClient.auth.admin.inviteUserByEmail(
       email,
       {
@@ -84,6 +110,8 @@ serve(async (req) => {
       }
       data = { user: { id: existingProfile.id } } as typeof data;
       error = null;
+    } else if (data.user?.id) {
+      createdAuthUserId = data.user.id;
     }
 
     if (data.user?.id && (phone || birthDate || fullName)) {
@@ -109,43 +137,53 @@ serve(async (req) => {
 
     if (!data.user?.id) throw new Error("Invitation did not resolve a user");
 
-    const relation = gymMemberRelation({
-      gymId: effectiveGymId,
-      userId: data.user.id,
-      role,
-      invitedBy: userData.user.id,
-      joinedAt: new Date().toISOString(),
-    });
-    const { error: insertRelationError } = await adminClient
-      .from("gym_members")
-      .upsert(relation, {
-        onConflict: "gym_id,user_id",
-        ignoreDuplicates: true,
+    if (invitedMemberRole(role) === "athlete") {
+      const { error: materializeError } = await adminClient.rpc(
+        "materialize_reserved_gym_athlete",
+        {
+          p_reservation_id: reservationId,
+          p_user_id: data.user.id,
+          p_invited_by: userData.user.id,
+        },
+      );
+      if (materializeError) throw materializeError;
+      reservationId = null;
+    } else {
+      const relation = gymMemberRelation({
+        gymId: effectiveGymId,
+        userId: data.user.id,
+        role,
+        invitedBy: userData.user.id,
+        joinedAt: new Date().toISOString(),
       });
-    if (insertRelationError) throw insertRelationError;
-    const { error: relationError } = await adminClient
-      .from("gym_members")
-      .update({
-        role: relation.role,
-        is_active: relation.is_active,
-        is_coach: relation.is_coach,
-        invited_by: relation.invited_by,
-      })
-      .eq("gym_id", effectiveGymId)
-      .eq("user_id", data.user.id);
-    if (relationError) throw relationError;
+      const { error: relationError } = await adminClient.from("gym_members")
+        .upsert(relation, { onConflict: "gym_id,user_id" });
+      if (relationError) throw relationError;
+    }
 
     return new Response(JSON.stringify({ ok: true, user: data.user }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    await cleanupFailedInvite({
+      createdAuthUserId,
+      reservationId,
+      deleteCreatedUser: (id) => cleanupAdminClient!.auth.admin.deleteUser(id),
+      releaseReservation: (id) =>
+        reservationClient!.rpc(
+          "release_gym_athlete_slot_reservation",
+          { p_reservation_id: id },
+        ),
+    });
+    const publicError = publicInviteError(e);
     return new Response(
       JSON.stringify({
         ok: false,
-        error: e instanceof Error ? e.message : String(e),
+        error: publicError.error,
+        code: publicError.code,
       }),
       {
-        status: 400,
+        status: publicError.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
