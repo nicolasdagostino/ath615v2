@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -25,6 +26,15 @@ class OwnerGymSummary {
       (data['saas_monthly_price_eur'] as num?)?.toInt() ?? 0;
   int? get saasLimit => (data['saas_active_member_limit'] as num?)?.toInt();
   int get saasAthletes => count('saas_active_athlete_count');
+  int get inactiveAthletes => count('inactive_athlete_count');
+  double? get capacityPercent => (data['capacity_percent'] as num?)?.toDouble();
+  int get databaseRecords => count('database_record_count');
+  double get databaseShare =>
+      (data['database_record_share_percent'] as num?)?.toDouble() ?? 0;
+  Map<String, dynamic>? get pendingRequest =>
+      data['pending_plan_request'] is Map
+      ? Map<String, dynamic>.from(data['pending_plan_request'] as Map)
+      : null;
   bool get saasLimitReached => data['saas_limit_reached'] == true;
   bool get saasOverLimit => data['saas_over_limit'] == true;
   String get saasUsageLabel => saasLimit == null
@@ -59,6 +69,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
   final _client = Supabase.instance.client;
   List<OwnerGymSummary> _gyms = const [];
   List<Map<String, dynamic>> _planRequests = const [];
+  Map<String, dynamic> _summary = const {};
   bool _loading = true, _working = false;
   String? _error;
   String _filter = 'active';
@@ -79,32 +90,21 @@ class _OwnerScreenState extends State<OwnerScreen> {
 
   Future<void> _load() async {
     try {
-      final rows = await _client.rpc('list_owner_gym_overview');
-      final plans = List<Map<String, dynamic>>.from(
-        await _client.from('saas_plans').select('code,monthly_price_eur'),
+      final payload = Map<String, dynamic>.from(
+        await _client.rpc('get_platform_owner_dashboard_v2') as Map,
       );
-      final prices = {
-        for (final plan in plans)
-          plan['code'].toString(): plan['monthly_price_eur'],
-      };
-      final requests = List<Map<String, dynamic>>.from(
-        await _client.rpc(
-              'list_platform_saas_plan_change_requests',
-              params: {'p_status': 'pending'},
-            )
-            as List,
-      );
+      final gyms = List<Map<String, dynamic>>.from(payload['gyms'] as List);
       if (!mounted) return;
       setState(() {
-        _gyms = List<Map<String, dynamic>>.from(rows as List)
+        _gyms = gyms.map(OwnerGymSummary.new).toList();
+        _planRequests = gyms
+            .where((gym) => gym['pending_plan_request'] is Map)
             .map(
-              (row) => OwnerGymSummary({
-                ...row,
-                'saas_monthly_price_eur': prices[row['saas_plan_code']],
-              }),
+              (gym) =>
+                  Map<String, dynamic>.from(gym['pending_plan_request'] as Map),
             )
             .toList();
-        _planRequests = requests;
+        _summary = Map<String, dynamic>.from(payload['summary'] as Map);
         _loading = false;
         _error = null;
       });
@@ -112,7 +112,10 @@ class _OwnerScreenState extends State<OwnerScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.toString();
+          _error = appStrings.pick(
+            'The Owner dashboard could not be loaded.',
+            'No se pudo cargar el dashboard Owner.',
+          );
         });
       }
     }
@@ -172,11 +175,18 @@ class _OwnerScreenState extends State<OwnerScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              appStrings.pick(
+                'The gym could not be created.',
+                'No se pudo crear el gimnasio.',
+              ),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _working = false);
@@ -251,7 +261,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
     return Scaffold(
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        title: Text(appStrings.pick('MY GYMS', 'MIS GIMNASIOS')),
+        title: Text(appStrings.pick('OWNER DASHBOARD', 'DASHBOARD OWNER')),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -268,14 +278,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenX),
           children: [
-            Text(
-              appStrings.pick(
-                '${_gyms.length} gyms',
-                '${_gyms.length} gimnasios',
-              ),
-              key: const ValueKey('owner-gym-count'),
-              style: AppTypography.sectionTitle(context),
-            ),
+            OwnerDashboardKpis(summary: _summary),
             const SizedBox(height: AppSpacing.md),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -312,6 +315,14 @@ class _OwnerScreenState extends State<OwnerScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
             ],
+            OwnerAttentionPanel(gyms: _gyms),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              appStrings.pick('GYM CUSTOMERS', 'GIMNASIOS'),
+              key: const ValueKey('owner-gym-count'),
+              style: AppTypography.sectionTitle(context),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             if (_loading)
               const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
@@ -320,7 +331,7 @@ class _OwnerScreenState extends State<OwnerScreen> {
               Text(_error!, style: TextStyle(color: AppColors.danger))
             else
               ...visible.map(
-                (gym) => _OwnerGymRow(
+                (gym) => OwnerGymCustomerCard(
                   gym: gym,
                   onTap: () => _openDetail(gym),
                   onInvite: () => _invite(gym),
@@ -410,8 +421,136 @@ String _ownerStatusLabel(String status) => switch (status) {
   _ => appStrings.pick('All', 'Todos'),
 };
 
-class _OwnerGymRow extends StatelessWidget {
-  const _OwnerGymRow({
+class OwnerDashboardKpis extends StatelessWidget {
+  const OwnerDashboardKpis({super.key, required this.summary});
+  final Map<String, dynamic> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <(IconData, String, int)>[
+      (
+        Icons.business_rounded,
+        appStrings.pick('Active gyms', 'Gimnasios activos'),
+        (summary['active_gym_count'] as num?)?.toInt() ?? 0,
+      ),
+      (
+        Icons.groups_rounded,
+        appStrings.pick('Active athletes', 'Atletas activos'),
+        (summary['active_athlete_count'] as num?)?.toInt() ?? 0,
+      ),
+      (
+        Icons.swap_horiz_rounded,
+        appStrings.pick('Plan requests', 'Solicitudes de plan'),
+        (summary['pending_plan_request_count'] as num?)?.toInt() ?? 0,
+      ),
+      (
+        Icons.pause_circle_outline_rounded,
+        appStrings.pick('Suspended gyms', 'Gimnasios suspendidos'),
+        (summary['suspended_gym_count'] as num?)?.toInt() ?? 0,
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 720 ? 4 : 2;
+        final width =
+            (constraints.maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: items
+              .map(
+                (item) => SizedBox(
+                  width: width,
+                  child: Container(
+                    key: ValueKey('owner-kpi-${item.$2}'),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface(context),
+                      border: Border.all(color: AppColors.border(context)),
+                      borderRadius: BorderRadius.circular(AppRadii.card),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(item.$1, color: AppColors.primary, size: 20),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '${item.$3}',
+                          style: AppTypography.sectionTitle(context),
+                        ),
+                        Text(
+                          item.$2,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class OwnerAttentionPanel extends StatelessWidget {
+  const OwnerAttentionPanel({super.key, required this.gyms});
+  final List<OwnerGymSummary> gyms;
+
+  @override
+  Widget build(BuildContext context) {
+    final attention = gyms.where(
+      (gym) =>
+          gym.pendingRequest != null ||
+          (gym.capacityPercent ?? 0) >= 90 ||
+          gym.status != 'active',
+    );
+    if (attention.isEmpty) return const SizedBox.shrink();
+    return Container(
+      key: const ValueKey('owner-attention-panel'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appStrings.pick('ATTENTION', 'ATENCIÓN'),
+            style: AppTypography.sectionTitle(context),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          ...attention.map((gym) {
+            final reason = gym.pendingRequest != null
+                ? appStrings.pick(
+                    'plan request pending',
+                    'solicitud de plan pendiente',
+                  )
+                : gym.status != 'active'
+                ? _ownerStatusLabel(gym.status)
+                : gym.saasOverLimit
+                ? appStrings.pick('over member limit', 'supera el límite')
+                : gym.saasLimitReached
+                ? appStrings.pick('member limit reached', 'límite alcanzado')
+                : appStrings.pick(
+                    'member capacity at ${gym.capacityPercent?.toStringAsFixed(0)}%',
+                    'capacidad al ${gym.capacityPercent?.toStringAsFixed(0)}%',
+                  );
+            return Text('• ${gym.name} · $reason');
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class OwnerGymCustomerCard extends StatelessWidget {
+  const OwnerGymCustomerCard({
+    super.key,
     required this.gym,
     required this.onTap,
     required this.onInvite,
@@ -419,37 +558,117 @@ class _OwnerGymRow extends StatelessWidget {
   final OwnerGymSummary gym;
   final VoidCallback onTap, onInvite;
   @override
+  Widget build(BuildContext context) {
+    final percent = gym.capacityPercent;
+    return Container(
+      key: ValueKey('owner-gym-card-${gym.id}'),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border.all(color: AppColors.border(context)),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  gym.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.itemTitle(context),
+                ),
+              ),
+              _OwnerStatusPill(status: gym.status),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            gym.saasPlanName,
+            style: AppTypography.sectionTitle(
+              context,
+            ).copyWith(color: AppColors.primary),
+          ),
+          Text(gym.saasUsageLabel),
+          if (percent != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            LinearProgressIndicator(
+              value: (percent / 100).clamp(0, 1),
+              color: AppColors.primary,
+              backgroundColor: AppColors.surfaceAlt(context),
+            ),
+            Text('${percent.toStringAsFixed(0)}% capacity'),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Text('${gym.count('admin_count')} admins'),
+              Text('${gym.count('coach_count')} coaches'),
+              Text(
+                '${gym.count('active_membership_count')} ${appStrings.pick('active memberships', 'membresías activas')}',
+              ),
+            ],
+          ),
+          Text('Stripe: ${gym.stripeLabel}'),
+          if (gym.pendingRequest != null)
+            Text(
+              appStrings.pick(
+                'Plan change pending',
+                'Cambio de plan pendiente',
+              ),
+              style: const TextStyle(color: AppColors.primary),
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              IconButton(
+                tooltip: appStrings.pick(
+                  'Invite administrator',
+                  'Invitar administrador',
+                ),
+                icon: const Icon(
+                  Icons.person_add_alt_1,
+                  color: AppColors.primary,
+                ),
+                onPressed: onInvite,
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: Text(appStrings.pick('VIEW GYM', 'VER GIMNASIO')),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OwnerStatusPill extends StatelessWidget {
+  const _OwnerStatusPill({required this.status});
+  final String status;
+  @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-    decoration: BoxDecoration(
-      color: AppColors.surface(context),
-      border: Border.all(color: AppColors.border(context)),
-      borderRadius: BorderRadius.circular(AppRadii.card),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xs,
     ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      onTap: onTap,
-      title: Text(
-        gym.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.itemTitle(context),
-      ),
-      subtitle: Text(
-        '${_ownerStatusLabel(gym.status).toUpperCase()} · ${gym.saasPlanName}\n${gym.saasUsageLabel}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches · ${gym.stripeLabel}',
-      ),
-      isThreeLine: true,
-      trailing: IconButton(
-        tooltip: appStrings.pick(
-          'Invite administrator',
-          'Invitar administrador',
-        ),
-        icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
-        onPressed: onInvite,
-      ),
+    decoration: BoxDecoration(
+      color: status == 'active'
+          ? AppColors.primary.withValues(alpha: 0.12)
+          : AppColors.surfaceAlt(context),
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      _ownerStatusLabel(status).toUpperCase(),
+      style: AppTypography.buttonLabel(context),
     ),
   );
 }
@@ -464,6 +683,7 @@ class OwnerGymDetailScreen extends StatefulWidget {
 class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
   final _client = Supabase.instance.client;
   OwnerGymSummary? _gym;
+  Map<String, dynamic>? _detail;
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _pendingPlanRequest;
@@ -476,30 +696,20 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
 
   Future<void> _load() async {
     try {
-      final row = await _client.rpc(
-        'get_platform_gym_detail',
-        params: {'p_gym_id': widget.gymId},
-      );
-      final plans = List<Map<String, dynamic>>.from(
-        await _client.from('saas_plans').select('code,monthly_price_eur'),
-      );
-      final detail = Map<String, dynamic>.from(row as Map);
-      detail['saas_monthly_price_eur'] = plans
-          .where((p) => p['code'] == detail['saas_plan_code'])
-          .firstOrNull?['monthly_price_eur'];
-      final requests = List<Map<String, dynamic>>.from(
+      final row = Map<String, dynamic>.from(
         await _client.rpc(
-              'list_platform_saas_plan_change_requests',
-              params: {'p_status': 'pending'},
+              'get_platform_gym_crm_v2',
+              params: {'p_gym_id': widget.gymId},
             )
-            as List,
+            as Map,
       );
       if (mounted) {
         setState(() {
-          _gym = OwnerGymSummary(detail);
-          _pendingPlanRequest = requests
-              .where((request) => request['gym_id'].toString() == widget.gymId)
-              .firstOrNull;
+          _detail = row;
+          _gym = OwnerGymSummary(row);
+          _pendingPlanRequest = row['pending_plan_request'] is Map
+              ? Map<String, dynamic>.from(row['pending_plan_request'] as Map)
+              : null;
           _loading = false;
           _error = null;
         });
@@ -508,9 +718,29 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.toString();
+          _error = appStrings.pick(
+            'The gym customer record could not be loaded.',
+            'No se pudo cargar la ficha del gimnasio.',
+          );
         });
       }
+    }
+  }
+
+  Future<void> _openContact(String scheme, String value) async {
+    final uri = Uri(scheme: scheme, path: value);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+        mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            appStrings.pick(
+              'The contact action could not be opened.',
+              'No se pudo abrir la acción de contacto.',
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -730,11 +960,15 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
         : ListView(
             padding: const EdgeInsets.all(AppSpacing.screenX),
             children: [
-              Text(_gym!.name, style: AppTypography.itemTitle(context)),
-              const SizedBox(height: AppSpacing.sm),
-              Chip(label: Text(_ownerStatusLabel(_gym!.status).toUpperCase())),
-              const SizedBox(height: AppSpacing.lg),
-              _OwnerSummaryBlock(gym: _gym!),
+              OwnerGymCrmHeader(gym: _gym!),
+              const SizedBox(height: AppSpacing.md),
+              OwnerGymContactSection(
+                detail: _detail!,
+                onCall: (value) => _openContact('tel', value),
+                onEmail: (value) => _openContact('mailto', value),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              OwnerGymPlanSection(gym: _gym!),
               if (_pendingPlanRequest != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 OwnerPlanRequestCard(
@@ -751,12 +985,27 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
                   appStrings.pick('CHANGE SAAS PLAN', 'CAMBIAR PLAN SAAS'),
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              OwnerGymOperationalSection(gym: _gym!),
+              const SizedBox(height: AppSpacing.md),
+              OwnerGymDataSection(gym: _gym!),
               const SizedBox(height: AppSpacing.xl),
               if (_gym!.status == 'active')
-                AppButton(
-                  label: appStrings.pick('ENTER AS ADMIN', 'ENTRAR COMO ADMIN'),
+                OutlinedButton.icon(
+                  key: const ValueKey('owner-enter-as-admin'),
+                  icon: const Icon(Icons.login_rounded),
+                  label: Text(
+                    appStrings.pick('ENTER AS ADMIN', 'ENTRAR COMO ADMIN'),
+                  ),
                   onPressed: _enterAdmin,
                 ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                appStrings.pick('ADMINISTRATION', 'ADMINISTRACIÓN'),
+                style: AppTypography.sectionTitle(
+                  context,
+                ).copyWith(color: AppColors.danger),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (_gym!.status != 'suspended')
                 OutlinedButton(
@@ -795,36 +1044,258 @@ class _OwnerGymDetailScreenState extends State<OwnerGymDetailScreen> {
   );
 }
 
-class _OwnerSummaryBlock extends StatelessWidget {
-  const _OwnerSummaryBlock({required this.gym});
+class OwnerGymCrmHeader extends StatelessWidget {
+  const OwnerGymCrmHeader({super.key, required this.gym});
   final OwnerGymSummary gym;
   @override
   Widget build(BuildContext context) {
-    final created = gym.createdAt;
-    final activity = gym.lastActivityAt;
-    final dates = <String>[
-      if (created != null)
-        appStrings.pick(
-          'Created ${MaterialLocalizations.of(context).formatCompactDate(created.toLocal())}',
-          'Creado ${MaterialLocalizations.of(context).formatCompactDate(created.toLocal())}',
+    final percent = gym.capacityPercent;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(gym.name, style: AppTypography.itemTitle(context)),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          children: [
+            _OwnerStatusPill(status: gym.status),
+            Text(
+              gym.saasPlanName,
+              style: AppTypography.sectionTitle(
+                context,
+              ).copyWith(color: AppColors.primary),
+            ),
+          ],
         ),
-      if (activity != null)
-        appStrings.pick(
-          'Last activity ${MaterialLocalizations.of(context).formatCompactDate(activity.toLocal())}',
-          'Última actividad ${MaterialLocalizations.of(context).formatCompactDate(activity.toLocal())}',
-        ),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        border: Border.all(color: AppColors.border(context)),
-        borderRadius: BorderRadius.circular(AppRadii.card),
+        const SizedBox(height: AppSpacing.sm),
+        Text(gym.saasUsageLabel, style: AppTypography.body(context)),
+        if (percent != null) Text('${percent.toStringAsFixed(0)}% capacity'),
+      ],
+    );
+  }
+}
+
+class _OwnerSection extends StatelessWidget {
+  const _OwnerSection({required this.title, required this.child});
+  final String title;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    decoration: BoxDecoration(
+      color: AppColors.surface(context),
+      border: Border.all(color: AppColors.border(context)),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTypography.sectionTitle(context)),
+        const SizedBox(height: AppSpacing.sm),
+        child,
+      ],
+    ),
+  );
+}
+
+class OwnerGymContactSection extends StatelessWidget {
+  const OwnerGymContactSection({
+    super.key,
+    required this.detail,
+    required this.onCall,
+    required this.onEmail,
+  });
+  final Map<String, dynamic> detail;
+  final ValueChanged<String> onCall;
+  final ValueChanged<String> onEmail;
+
+  @override
+  Widget build(BuildContext context) {
+    final contact = Map<String, dynamic>.from(
+      detail['contact'] as Map? ?? const {},
+    );
+    final admins = List<Map<String, dynamic>>.from(
+      (detail['admins'] as List? ?? const []).map(
+        (admin) => Map<String, dynamic>.from(admin as Map),
       ),
-      child: Text(
-        '${gym.saasPlanName}\n€${gym.saasMonthlyPrice} / ${appStrings.pick('month', 'mes')}\n${gym.saasUsageLabel}\n${gym.count('active_member_count')} ${appStrings.pick('active members', 'miembros activos')}\n${gym.count('admin_count')} admins · ${gym.count('coach_count')} coaches\n${gym.count('active_membership_count')} memberships\nStripe: ${gym.stripeLabel}${dates.isEmpty ? '' : '\n${dates.join(' · ')}'}',
-        style: AppTypography.body(context),
+    );
+    final gymLines = <String>[
+      if ((contact['phone']?.toString().trim() ?? '').isNotEmpty)
+        contact['phone'].toString(),
+      if ((contact['email']?.toString().trim() ?? '').isNotEmpty)
+        contact['email'].toString(),
+      if ((contact['website']?.toString().trim() ?? '').isNotEmpty)
+        contact['website'].toString(),
+      if ((contact['address']?.toString().trim() ?? '').isNotEmpty)
+        contact['address'].toString(),
+    ];
+    return _OwnerSection(
+      title: appStrings.pick('CONTACT', 'CONTACTO'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (gymLines.isNotEmpty) ...[
+            Text(
+              appStrings.pick('Gym contact', 'Contacto del gimnasio'),
+              style: AppTypography.buttonLabel(context),
+            ),
+            ...gymLines.map(Text.new),
+            Wrap(
+              spacing: AppSpacing.xs,
+              children: [
+                if ((contact['phone']?.toString().trim() ?? '').isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => onCall(contact['phone'].toString()),
+                    icon: const Icon(Icons.call_outlined),
+                    label: Text(appStrings.pick('CALL', 'LLAMAR')),
+                  ),
+                if ((contact['email']?.toString().trim() ?? '').isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => onEmail(contact['email'].toString()),
+                    icon: const Icon(Icons.email_outlined),
+                    label: const Text('EMAIL'),
+                  ),
+              ],
+            ),
+          ],
+          Text(
+            appStrings.pick('ADMINS', 'ADMINISTRADORES'),
+            style: AppTypography.buttonLabel(context),
+          ),
+          if (admins.isEmpty)
+            Text(
+              appStrings.pick(
+                'No active administrator contact is available.',
+                'No hay contacto de administrador activo disponible.',
+              ),
+            )
+          else
+            ...admins.map((admin) {
+              final name = admin['full_name']?.toString().trim();
+              final email = admin['email']?.toString().trim();
+              final phone = admin['phone']?.toString().trim();
+              return Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name?.isNotEmpty == true
+                          ? name!
+                          : appStrings.pick('Administrator', 'Administrador'),
+                      style: AppTypography.body(context),
+                    ),
+                    if (email?.isNotEmpty == true) Text(email!),
+                    if (phone?.isNotEmpty == true) Text(phone!),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      children: [
+                        if (phone?.isNotEmpty == true)
+                          TextButton.icon(
+                            onPressed: () => onCall(phone!),
+                            icon: const Icon(Icons.call_outlined),
+                            label: Text(appStrings.pick('CALL', 'LLAMAR')),
+                          ),
+                        if (email?.isNotEmpty == true)
+                          TextButton.icon(
+                            onPressed: () => onEmail(email!),
+                            icon: const Icon(Icons.email_outlined),
+                            label: const Text('EMAIL'),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
       ),
     );
   }
+}
+
+class OwnerGymPlanSection extends StatelessWidget {
+  const OwnerGymPlanSection({super.key, required this.gym});
+  final OwnerGymSummary gym;
+  @override
+  Widget build(BuildContext context) {
+    final percent = gym.capacityPercent;
+    return _OwnerSection(
+      title: appStrings.pick('PLAN', 'PLAN'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(gym.saasPlanName, style: AppTypography.itemTitle(context)),
+          Text('€${gym.saasMonthlyPrice} / ${appStrings.pick('month', 'mes')}'),
+          Text(gym.saasUsageLabel),
+          if (gym.saasLimit == null)
+            Text(appStrings.pick('No member limit', 'Sin límite de miembros'))
+          else ...[
+            Text(
+              '${gym.count('saas_remaining_slots')} ${appStrings.pick('slots available', 'plazas disponibles')}',
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            LinearProgressIndicator(
+              value: ((percent ?? 0) / 100).clamp(0, 1),
+              color: AppColors.primary,
+              backgroundColor: AppColors.surfaceAlt(context),
+            ),
+            Text('${(percent ?? 0).toStringAsFixed(0)}% capacity'),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class OwnerGymOperationalSection extends StatelessWidget {
+  const OwnerGymOperationalSection({super.key, required this.gym});
+  final OwnerGymSummary gym;
+  @override
+  Widget build(BuildContext context) => _OwnerSection(
+    title: appStrings.pick('OPERATIONAL USAGE', 'USO OPERATIVO'),
+    child: Wrap(
+      spacing: AppSpacing.lg,
+      runSpacing: AppSpacing.sm,
+      children: [
+        Text('${gym.saasAthletes} active athletes'),
+        Text('${gym.inactiveAthletes} inactive athletes'),
+        Text('${gym.count('admin_count')} admins'),
+        Text('${gym.count('coach_count')} coaches'),
+        Text('${gym.count('active_membership_count')} active memberships'),
+        Text('${gym.count('class_count')} classes'),
+        Text('${gym.count('booking_count')} bookings'),
+        Text('Stripe: ${gym.stripeLabel}'),
+      ],
+    ),
+  );
+}
+
+class OwnerGymDataSection extends StatelessWidget {
+  const OwnerGymDataSection({super.key, required this.gym});
+  final OwnerGymSummary gym;
+  @override
+  Widget build(BuildContext context) => _OwnerSection(
+    title: appStrings.pick('DATA & STORAGE', 'DATOS Y STORAGE'),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${gym.databaseRecords} ${appStrings.pick('tenant data records', 'registros tenant')}',
+        ),
+        Text(
+          '${gym.databaseShare.toStringAsFixed(1)}% ${appStrings.pick('of counted tenant records', 'de los registros tenant contabilizados')}',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          appStrings.pick(
+            'Storage cannot be attributed reliably by gym with the current object paths.',
+            'El storage no puede atribuirse de forma fiable por gimnasio con las rutas actuales.',
+          ),
+          style: AppTypography.helper(context),
+        ),
+      ],
+    ),
+  );
 }
