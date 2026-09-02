@@ -211,12 +211,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onSettings: () => context.push('/settings'),
             onMemberships: () => context.push('/membership'),
             onRecords: () => context.push('/records'),
-            onAttendanceHistory: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    AttendanceHistoryScreen(attendances: _data!.attendances),
-              ),
-            ),
           ),
   );
 }
@@ -231,7 +225,6 @@ class ProfileOverview extends StatelessWidget {
     required this.onSettings,
     required this.onMemberships,
     required this.onRecords,
-    required this.onAttendanceHistory,
     this.nowForTesting,
   });
 
@@ -242,7 +235,6 @@ class ProfileOverview extends StatelessWidget {
   final VoidCallback onSettings;
   final VoidCallback onMemberships;
   final VoidCallback onRecords;
-  final VoidCallback onAttendanceHistory;
   final DateTime? nowForTesting;
 
   String get _displayName {
@@ -361,29 +353,9 @@ class ProfileOverview extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xl),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              appStrings.pick('ATTENDANCE', 'ASISTENCIA'),
-                              style: AppTypography.sectionTitle(context),
-                            ),
-                          ),
-                          TextButton(
-                            key: const ValueKey('profile-attendance-view-all'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              minimumSize: const Size(44, 44),
-                            ),
-                            onPressed: onAttendanceHistory,
-                            child: Text(
-                              appStrings.pick('VIEW ALL', 'VER TODO'),
-                              style: AppTypography.buttonLabel(
-                                context,
-                              ).copyWith(color: AppColors.primary),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        appStrings.pick('ATTENDANCE', 'ASISTENCIA'),
+                        style: AppTypography.sectionTitle(context),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       _AttendanceGrid(

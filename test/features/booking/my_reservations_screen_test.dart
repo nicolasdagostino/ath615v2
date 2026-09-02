@@ -1,4 +1,5 @@
 import 'package:ath615v2/core/strings/app_strings.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/booking/data/my_reservations_data_source.dart';
@@ -112,9 +113,23 @@ void main() {
     final header = find.byType(AppDetailHeader);
     expect(header, findsOneWidget);
     expect(tester.getTopLeft(header).dy, 0);
+    expect(tester.getSize(header).width, 320);
     expect(
       tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
       greaterThanOrEqualTo(47),
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.arrow_back_ios_new_rounded)).color,
+      AppColors.primary,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('reservations-history-chip')));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(tester.getSize(header).width, 320);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.arrow_back_ios_new_rounded)).color,
+      AppColors.primary,
     );
   });
 

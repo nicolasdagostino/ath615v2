@@ -125,11 +125,17 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(appStrings.authNeedHelp),
+                Text(
+                  appStrings.authNeedHelp,
+                  style: const TextStyle(color: Colors.white),
+                ),
                 TextButton(
                   key: const ValueKey('login-contact-us'),
                   onPressed: () => context.push('/help'),
-                  child: Text(appStrings.authContactUs),
+                  child: Text(
+                    appStrings.authContactUs,
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
                 ),
               ],
             ),

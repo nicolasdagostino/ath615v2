@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_system_ui.dart';
 import '../../../../core/widgets/app_detail_header.dart';
 
 class PublicHelpScreen extends StatelessWidget {
@@ -14,9 +16,11 @@ class PublicHelpScreen extends StatelessWidget {
   ).showSnackBar(SnackBar(content: Text(appStrings.contactChannelPending)));
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: Theme.of(context).copyWith(brightness: Brightness.dark),
-    child: Scaffold(
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: darkScreenSystemUiOverlayStyle,
+    child: Theme(
+      data: Theme.of(context).copyWith(brightness: Brightness.dark),
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
@@ -62,6 +66,7 @@ class PublicHelpScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     ),
   );

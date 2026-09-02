@@ -172,6 +172,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
             AppDetailHeader(
               title: appStrings.myUpcomingBookings,
               onBack: () => Navigator.of(context).maybePop(),
+              leadingColor: AppColors.primary,
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(

@@ -25,7 +25,8 @@ void main() {
   }
 
   void expectCoreDashboardComposition() {
-    expect(find.text('ATHLETE 615'), findsOneWidget);
+    expect(find.text('ATHLETE 615'), findsNothing);
+    expect(find.byKey(const ValueKey('app-primary-a615-logo')), findsOneWidget);
     expect(find.text('DASHBOARD'), findsOneWidget);
     expect(find.text('MEMBERS'), findsAtLeastNWidgets(1));
     expect(find.text('MEMBERSHIPS'), findsOneWidget);
@@ -64,6 +65,23 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -1000));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Panel header fills and owns the Dynamic Island safe area', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await pumpDashboard(tester, const Size(390, 844));
+
+    final header = find.byKey(const ValueKey('app-primary-gym-header'));
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(tester.getSize(header).width, 390);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('app-primary-a615-logo'))).dy,
+      greaterThanOrEqualTo(47),
+    );
+    expect(find.text('ATHLETE 615'), findsNothing);
   });
 
   test(

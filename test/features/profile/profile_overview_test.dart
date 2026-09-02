@@ -40,7 +40,6 @@ void main() {
     VoidCallback? onSettings,
     VoidCallback? onMemberships,
     VoidCallback? onRecords,
-    VoidCallback? onAttendanceHistory,
   }) async {
     tester.view.physicalSize = const Size(320, 720);
     tester.view.devicePixelRatio = 1;
@@ -60,7 +59,6 @@ void main() {
             onSettings: onSettings ?? () {},
             onMemberships: onMemberships ?? () {},
             onRecords: onRecords ?? () {},
-            onAttendanceHistory: onAttendanceHistory ?? () {},
             nowForTesting: DateTime(2026, 8, 13),
           ),
         ),
@@ -124,8 +122,10 @@ void main() {
         findsOne,
       );
       expect(find.textContaining('Coming soon'), findsOne);
-      final viewAll = tester.widget<Text>(find.text('VIEW ALL'));
-      expect(viewAll.style?.color, AppColors.primary);
+      expect(
+        find.byKey(const ValueKey('profile-attendance-view-all')),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
 
       await tester.scrollUntilVisible(
@@ -255,14 +255,12 @@ void main() {
   ) async {
     var settingsOpened = false;
     var membershipsOpened = false;
-    var attendanceOpened = false;
     var recordsOpened = false;
     await pumpOverview(
       tester,
       mode: ThemeMode.light,
       onSettings: () => settingsOpened = true,
       onMemberships: () => membershipsOpened = true,
-      onAttendanceHistory: () => attendanceOpened = true,
       onRecords: () => recordsOpened = true,
     );
 
@@ -291,13 +289,10 @@ void main() {
     );
     expect(membershipsOpened, isTrue);
 
-    await tester.scrollUntilVisible(
+    expect(
       find.byKey(const ValueKey('profile-attendance-view-all')),
-      250,
-      scrollable: find.byType(Scrollable).first,
+      findsNothing,
     );
-    await tester.tap(find.byKey(const ValueKey('profile-attendance-view-all')));
-    expect(attendanceOpened, isTrue);
   });
 
   testWidgets('settings uses the lighter outlined Cupertino gear', (

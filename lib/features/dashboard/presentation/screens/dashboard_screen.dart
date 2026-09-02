@@ -3542,7 +3542,7 @@ Widget buildDashboardCompositionForTest() {
       backgroundColor: AppColors.background(context),
       body: Column(
         children: [
-          buildDashboardHeaderForTest(gymName: 'Athlete 615'),
+          buildDashboardHeaderForTest(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(

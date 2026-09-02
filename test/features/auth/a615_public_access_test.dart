@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:ath615v2/core/locale/locale_controller.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
+import 'package:ath615v2/core/theme/app_system_ui.dart';
 import 'package:ath615v2/features/auth/presentation/screens/login_screen.dart';
 import 'package:ath615v2/features/public_access/data/demo_request_repository.dart';
 import 'package:ath615v2/features/public_access/presentation/screens/public_help_screen.dart';
 import 'package:ath615v2/features/public_access/presentation/screens/request_demo_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -101,6 +104,18 @@ void main() {
       expect(find.text('Manage. Train. Grow.'), findsOneWidget);
       expect(find.text('Need help?'), findsOneWidget);
       expect(find.text('Contact us'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text('Need help?')).style?.color,
+        Colors.white,
+      );
+      expect(
+        tester.widget<Text>(find.text('Contact us')).style?.color,
+        AppColors.primary,
+      );
+      final loginOverlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+        find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+      );
+      expect(loginOverlay.value, darkScreenSystemUiOverlayStyle);
       expect(find.textContaining('Google'), findsNothing);
 
       await localeController.setLanguage('es');
@@ -197,14 +212,34 @@ void main() {
   testWidgets('public Help is localized and opens Request Demo without auth', (
     tester,
   ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(tester.view.reset);
     final router = _router(initialLocation: '/help');
     await _pumpRouter(tester, router);
     expect(find.text('HELP'), findsOneWidget);
     expect(find.text('Request a demo'), findsOneWidget);
     expect(find.text('Technical support'), findsOneWidget);
+    final helpOverlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(helpOverlay.value, darkScreenSystemUiOverlayStyle);
+    final helpBackButton = find.ancestor(
+      of: find.byIcon(Icons.arrow_back_ios_new_rounded),
+      matching: find.byType(IconButton),
+    );
+    expect(tester.getTopLeft(helpBackButton).dy, greaterThanOrEqualTo(47));
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.arrow_back_ios_new_rounded)).color,
+      AppColors.primary,
+    );
     await tester.tap(find.byKey(const ValueKey('help-request-demo')));
     await tester.pumpAndSettle();
     expect(find.text('REQUEST A DEMO'), findsOneWidget);
+    final demoOverlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(demoOverlay.value, darkScreenSystemUiOverlayStyle);
     router.pop();
     await tester.pumpAndSettle();
     expect(find.text('HELP'), findsOneWidget);

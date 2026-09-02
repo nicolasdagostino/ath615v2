@@ -19,6 +19,7 @@ class AppDetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.xs,

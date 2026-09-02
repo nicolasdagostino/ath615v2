@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_system_ui.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 
@@ -95,8 +97,8 @@ class AuthFormScaffold extends StatelessWidget {
         ),
       ),
     );
-    return Scaffold(
-      backgroundColor: Colors.black,
+    final scaffold = Scaffold(
+      backgroundColor: photographicBackground ? Colors.black : null,
       body: photographicBackground
           ? Stack(
               fit: StackFit.expand,
@@ -114,6 +116,12 @@ class AuthFormScaffold extends StatelessWidget {
             )
           : content,
     );
+    return photographicBackground
+        ? AnnotatedRegion<SystemUiOverlayStyle>(
+            value: darkScreenSystemUiOverlayStyle,
+            child: scaffold,
+          )
+        : scaffold;
   }
 }
 

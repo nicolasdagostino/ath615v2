@@ -38,6 +38,10 @@ void main() {
       'lib/features/booking/presentation/screens/booking_screen.dart',
     ).readAsStringSync();
     final entryStart = booking.indexOf("ValueKey('booking-my-reservations')");
+    expect(
+      booking.substring(entryStart),
+      contains('builder: (_) => const MyReservationsScreen()'),
+    );
     final entryEnd = booking.indexOf(
       'const SizedBox(height: AppSpacing.md)',
       entryStart,
