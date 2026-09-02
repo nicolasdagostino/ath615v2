@@ -1,4 +1,5 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/attendance_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,11 +47,8 @@ void main() {
           ),
         ]);
 
-        expect(
-          find.byKey(const ValueKey('attendance-history-title')),
-          findsOne,
-        );
-        expect(find.byKey(const ValueKey('secondary-header-back')), findsOne);
+        expect(find.byType(AppDetailHeader), findsOne);
+        expect(find.text('ATTENDANCE'), findsOne);
         expect(find.byType(Divider), findsOne);
         expect(find.text('Attended'), findsNWidgets(2));
         expect(
@@ -66,6 +64,21 @@ void main() {
     await pumpHistory(tester, ThemeMode.light, const []);
     expect(find.byKey(const ValueKey('attendance-history-empty')), findsOne);
     expect(find.byKey(const ValueKey('attendance-history-list')), findsNothing);
+  });
+
+  testWidgets('attendance header owns the notched top safe area', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await pumpHistory(tester, ThemeMode.light, const []);
+
+    final header = find.byType(AppDetailHeader);
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 
   testWidgets('attendance back returns directly to previous profile route', (
@@ -87,7 +100,7 @@ void main() {
     );
     await tester.tap(find.text('PROFILE'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('secondary-header-back')));
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('PROFILE'), findsOne);
   });

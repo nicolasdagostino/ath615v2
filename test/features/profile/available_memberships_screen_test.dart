@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_centered_loading_indicator.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
-import 'package:ath615v2/core/widgets/app_secondary_action_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/available_memberships_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -147,24 +147,40 @@ void main() {
         mode: mode,
       );
       expect(service.loadedTypes, ['subscription']);
-      expect(find.byType(AppSecondaryActionHeader), findsOne);
+      expect(find.byType(AppDetailHeader), findsOne);
       final back = tester.widget<Icon>(
         find.descendant(
-          of: find.byType(AppSecondaryActionHeader),
+          of: find.byType(AppDetailHeader),
           matching: find.byIcon(Icons.arrow_back_ios_new_rounded),
         ),
       );
-      expect(
-        back.color,
-        AppColors.textPrimary(
-          tester.element(find.byType(AppSecondaryActionHeader)),
-        ),
-      );
+      expect(back.color, AppColors.accent);
       expect(find.textContaining('UNLIMITED PERFORMANCE'), findsOne);
       expect(find.text('Unlimited access'), findsOne);
       expect(find.text('30 days'), findsOne);
       expect(find.text('€89.9'), findsOne);
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final type in ['subscription', 'dropin']) {
+    testWidgets('$type header owns the notched top safe area', (tester) async {
+      tester.view.padding = const FakeViewPadding(top: 47);
+      addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+      await _pumpFlow(
+        tester,
+        type: type,
+        service: _FakeAvailableService(
+          plans: [plan(unlimited: type == 'subscription')],
+        ),
+      );
+
+      final header = find.byType(AppDetailHeader);
+      expect(tester.getTopLeft(header).dy, 0);
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+        greaterThanOrEqualTo(47),
+      );
     });
   }
 

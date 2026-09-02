@@ -1,6 +1,6 @@
 import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
-import 'package:ath615v2/core/widgets/app_secondary_action_header.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/membership_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -131,18 +131,16 @@ void main() {
     ];
     await pumpMemberships(tester, source);
 
-    expect(find.byType(AppSecondaryActionHeader), findsOne);
+    expect(find.byType(AppDetailHeader), findsOne);
     final back = tester.widget<Icon>(
       find.descendant(
-        of: find.byType(AppSecondaryActionHeader),
+        of: find.byType(AppDetailHeader),
         matching: find.byIcon(Icons.arrow_back_ios_new_rounded),
       ),
     );
     expect(
       back.color,
-      AppColors.textPrimary(
-        tester.element(find.byType(AppSecondaryActionHeader)),
-      ),
+      AppColors.accent,
     );
     expect(find.byKey(const ValueKey('membership-current-active')), findsOne);
     expect(find.text('UPCOMING'), findsOne);
@@ -169,6 +167,21 @@ void main() {
       findsOne,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('memberships header owns the notched top safe area', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await pumpMemberships(tester, _FakeMemberships());
+
+    final header = find.byType(AppDetailHeader);
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 
   testWidgets('empty current state is clean in light and dark', (tester) async {

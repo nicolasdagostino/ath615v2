@@ -2,6 +2,7 @@ import 'package:ath615v2/core/locale/locale_controller.dart';
 import 'package:ath615v2/core/preferences/app_preferences_controller.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/theme/theme_controller.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/preferences_screen.dart';
 import 'package:ath615v2/features/profile/presentation/screens/settings_resource_screens.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +81,22 @@ void main() {
       ),
     );
     expect(inkWell.onTap, isNull);
+  });
+
+  testWidgets('preferences header owns the notched top safe area', (
+    tester,
+  ) async {
+    await resetPreferences();
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await pumpPreferences(tester);
+
+    final header = find.byType(AppDetailHeader);
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 
   for (final type in SettingsResourceType.values) {

@@ -475,8 +475,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _profileHubBackground(context),
-      body: SafeArea(
-        child: ListView(
+      body: ListView(
           padding: EdgeInsets.zero,
           children: [
             AppDetailHeader(
@@ -484,6 +483,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ? appStrings.personalRecords
                   : appStrings.profileTraining,
               onBack: context.pop,
+              leadingColor: AppColors.primary,
             ),
             _TrainingMenuSection(
               children: [
@@ -511,7 +511,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ],
             ),
           ],
-        ),
       ),
     );
   }

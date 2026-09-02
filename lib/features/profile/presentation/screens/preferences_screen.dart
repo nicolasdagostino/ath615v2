@@ -7,7 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/theme_controller.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
@@ -35,10 +35,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
-    body: SafeArea(
-      child: Column(
+    body: Column(
         children: [
-          AppSecondaryActionHeader(
+          AppDetailHeader(
             title: appStrings.preferences,
             onBack: () => Navigator.of(context).maybePop(),
           ),
@@ -129,7 +128,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             ),
           ),
         ],
-      ),
     ),
   );
 }

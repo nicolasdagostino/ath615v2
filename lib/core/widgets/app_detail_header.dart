@@ -8,11 +8,13 @@ class AppDetailHeader extends StatelessWidget {
     required this.title,
     required this.onBack,
     this.action,
+    this.leadingColor = AppColors.accent,
   });
 
   final String title;
   final VoidCallback onBack;
   final Widget? action;
+  final Color leadingColor;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +46,9 @@ class AppDetailHeader extends StatelessWidget {
                     minHeight: 44,
                   ),
                   onPressed: onBack,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.accent,
+                    color: leadingColor,
                     size: 20,
                   ),
                 ),

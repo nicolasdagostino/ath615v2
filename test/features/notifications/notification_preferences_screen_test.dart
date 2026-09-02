@@ -1,4 +1,5 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/notifications/data/notification_preferences_repository.dart';
 import 'package:ath615v2/features/notifications/presentation/screens/notification_preferences_screen.dart';
 import 'package:flutter/material.dart';
@@ -104,5 +105,20 @@ void main() {
     expect(repository.value.communicationsPushEnabled, isTrue);
     expect(tester.widgetList<Switch>(find.byType(Switch)).first.value, isTrue);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('notification preferences owns the notched top safe area', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await pump(tester, _FakePreferencesRepository());
+
+    final header = find.byType(AppDetailHeader);
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 }

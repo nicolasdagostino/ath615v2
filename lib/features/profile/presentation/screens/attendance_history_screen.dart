@@ -5,7 +5,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 
 class ProfileAttendance {
   const ProfileAttendance({required this.startsAt, required this.className});
@@ -26,26 +26,11 @@ class AttendanceHistoryScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
+      body: Column(
           children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                AppSecondaryActionHeader(
-                  onBack: () => Navigator.of(context).maybePop(),
-                ),
-                IgnorePointer(
-                  child: Text(
-                    appStrings.pick('ATTENDANCE', 'ASISTENCIAS'),
-                    key: const ValueKey('attendance-history-title'),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary(context),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+            AppDetailHeader(
+              title: appStrings.pick('ATTENDANCE', 'ASISTENCIAS'),
+              onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
               child: sorted.isEmpty
@@ -113,7 +98,6 @@ class AttendanceHistoryScreen extends StatelessWidget {
                     ),
             ),
           ],
-        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_large_form_sheet.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import '../../../../core/widgets/app_secondary_action_header.dart';
 import '../membership_request_error.dart';
 
@@ -259,10 +260,9 @@ class _AvailableMembershipsScreenState
         : appStrings.getDropIn;
     return Scaffold(
       backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
+      body: Column(
           children: [
-            AppSecondaryActionHeader(
+            AppDetailHeader(
               title: title,
               onBack: Navigator.of(context).pop,
             ),
@@ -305,7 +305,6 @@ class _AvailableMembershipsScreenState
                     ),
             ),
           ],
-        ),
       ),
     );
   }

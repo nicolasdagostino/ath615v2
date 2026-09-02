@@ -7,7 +7,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 
 const int membershipHistoryPageSize = 15;
 const int membershipUsagePageSize = 15;
@@ -211,10 +211,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
-    body: SafeArea(
-      child: Column(
+    body: Column(
         children: [
-          AppSecondaryActionHeader(
+          AppDetailHeader(
             title: appStrings.myMemberships,
             onBack: context.pop,
           ),
@@ -329,7 +328,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
           ),
         ],
-      ),
     ),
   );
 
