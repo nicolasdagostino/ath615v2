@@ -12,7 +12,7 @@ import '../../../../core/widgets/app_confirmation_dialog.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_keyboard_dismissible.dart';
 import '../../../../core/widgets/app_pickers.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import '../../../auth/data/auth_repository.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -200,10 +200,13 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
     body: AppKeyboardDismissible(
-      child: SafeArea(
-        child: Column(
+      child: Column(
           children: [
-            _AccountHeader(onBack: () => Navigator.of(context).maybePop()),
+            AppDetailHeader(
+              title: appStrings.profileAccount,
+              onBack: () => Navigator.of(context).maybePop(),
+              leadingColor: AppColors.primary,
+            ),
             Expanded(
               child: _profile == null
                   ? const Center(
@@ -228,32 +231,8 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
             ),
           ],
-        ),
       ),
     ),
-  );
-}
-
-class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({required this.onBack});
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    alignment: Alignment.center,
-    children: [
-      AppSecondaryActionHeader(onBack: onBack),
-      IgnorePointer(
-        child: Text(
-          appStrings.profileAccount.toUpperCase(),
-          key: const ValueKey('account-title'),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textPrimary(context),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    ],
   );
 }
 

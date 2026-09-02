@@ -126,4 +126,25 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('settings resources owns the notched top safe area', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsResourceScreen(type: SettingsResourceType.legal),
+      ),
+    );
+    expect(tester.getTopLeft(find.byType(AppDetailHeader)).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
+  });
 }

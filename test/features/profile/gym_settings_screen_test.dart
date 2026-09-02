@@ -1,6 +1,7 @@
 import 'package:ath615v2/core/strings/app_strings.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/gym_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,8 +13,10 @@ void main() {
       (tester) async {
         tester.view.physicalSize = const Size(320, 720);
         tester.view.devicePixelRatio = 1;
+        tester.view.padding = const FakeViewPadding(top: 47);
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(() => tester.view.padding = FakeViewPadding.zero);
         await tester.pumpWidget(
           MaterialApp(
             theme: AppTheme.light,
@@ -66,8 +69,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const ValueKey('gym-information-title')), findsOne);
-        expect(find.byKey(const ValueKey('secondary-header-back')), findsOne);
+        expect(find.byType(AppDetailHeader), findsOne);
+        expect(tester.getTopLeft(find.byType(AppDetailHeader)).dy, 0);
+        expect(
+          tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+          greaterThanOrEqualTo(47),
+        );
+        tester.view.padding = FakeViewPadding.zero;
+        await tester.pump();
         expect(find.byType(AppFormSectionLabel), findsNWidgets(2));
         expect(find.byType(TextField), findsAtLeast(3));
         expect(find.byIcon(Icons.image_outlined), findsOne);
@@ -206,7 +215,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(refreshes, 1);
-    expect(find.byKey(const ValueKey('gym-information-title')), findsOneWidget);
+    expect(find.byType(AppDetailHeader), findsOneWidget);
   });
 
   testWidgets('expired Account Link opens one continuation for same context', (
@@ -225,7 +234,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(continuations, 1);
-    expect(find.byKey(const ValueKey('gym-information-title')), findsOneWidget);
+    expect(find.byType(AppDetailHeader), findsOneWidget);
   });
 }
 

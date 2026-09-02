@@ -6,7 +6,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 
 enum SettingsResourceType { legal, documents, payments }
 
@@ -41,12 +41,12 @@ class SettingsResourceScreen extends StatelessWidget {
     };
     return Scaffold(
       backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
+      body: Column(
           children: [
-            AppSecondaryActionHeader(
+            AppDetailHeader(
               title: title,
               onBack: () => Navigator.of(context).maybePop(),
+              leadingColor: AppColors.primary,
             ),
             Expanded(
               child: ListView(
@@ -105,7 +105,6 @@ class SettingsResourceScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }

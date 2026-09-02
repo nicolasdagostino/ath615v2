@@ -1,4 +1,5 @@
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/data/gym_documents_repository.dart';
 import 'package:ath615v2/features/profile/presentation/screens/gym_documents_screen.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +83,20 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
 }
 
 void main() {
+  testWidgets('gym documents owns the notched top safe area', (tester) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await _pump(
+      tester,
+      GymDocumentsScreen(repository: _FakeDocumentsRepository([])),
+    );
+    expect(tester.getTopLeft(find.byType(AppDetailHeader)).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
+  });
+
   testWidgets('athlete sees pending and accepts current required version', (
     tester,
   ) async {

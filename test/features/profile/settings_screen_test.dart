@@ -1,5 +1,6 @@
 import 'package:ath615v2/core/strings/app_strings.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,15 +74,31 @@ void main() {
     await tester.tap(find.text('OPEN SETTINGS'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('settings-title')), findsOne);
-    final title = tester.widget<Text>(
-      find.byKey(const ValueKey('settings-title')),
-    );
-    expect(title.style?.fontWeight, FontWeight.w600);
-    expect(find.byKey(const ValueKey('secondary-header-back')), findsOne);
-    await tester.tap(find.byKey(const ValueKey('secondary-header-back')));
+    expect(find.byType(AppDetailHeader), findsOne);
+    expect(find.text(appStrings.profileSettings.toUpperCase()), findsOne);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('OPEN SETTINGS'), findsOne);
+  });
+
+  testWidgets('settings header owns the notched top safe area', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SettingsScreen(profileLoaderForTesting: () async => {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byType(AppDetailHeader)).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 
   testWidgets('settings opens the existing change password flow', (

@@ -10,7 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../widgets/change_password_sheet.dart';
 
@@ -98,10 +98,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       value: settingsSystemUiOverlayStyle(isDark: isDark),
       child: Scaffold(
         backgroundColor: AppColors.background(context),
-        body: SafeArea(
-          child: Column(
+        body: Column(
           children: [
-            _SettingsHeader(onBack: () => Navigator.of(context).maybePop()),
+            AppDetailHeader(
+              title: appStrings.profileSettings,
+              onBack: () => Navigator.of(context).maybePop(),
+              leadingColor: AppColors.primary,
+            ),
             Expanded(
               child: _loading
                   ? const Center(
@@ -131,7 +134,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
             ),
           ],
-          ),
         ),
       ),
     );
@@ -145,29 +147,6 @@ SystemUiOverlayStyle settingsSystemUiOverlayStyle({required bool isDark}) =>
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
     );
-
-class _SettingsHeader extends StatelessWidget {
-  const _SettingsHeader({required this.onBack});
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    alignment: Alignment.center,
-    children: [
-      AppSecondaryActionHeader(onBack: onBack),
-      IgnorePointer(
-        child: Text(
-          appStrings.profileSettings.toUpperCase(),
-          key: const ValueKey('settings-title'),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textPrimary(context),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    ],
-  );
-}
 
 class SettingsContent extends StatelessWidget {
   const SettingsContent({

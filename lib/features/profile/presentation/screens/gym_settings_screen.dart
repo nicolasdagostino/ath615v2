@@ -11,7 +11,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const bool stripeConnectSetupEnabled = true;
@@ -580,26 +580,12 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background(context),
-    body: SafeArea(
-      child: Column(
+    body: Column(
         children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              AppSecondaryActionHeader(
-                onBack: () => Navigator.of(context).maybePop(),
-              ),
-              IgnorePointer(
-                child: Text(
-                  appStrings.gymInformation.toUpperCase(),
-                  key: const ValueKey('gym-information-title'),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          AppDetailHeader(
+            title: appStrings.gymInformation,
+            onBack: () => Navigator.of(context).maybePop(),
+            leadingColor: AppColors.primary,
           ),
           Expanded(
             child: _loading
@@ -771,7 +757,6 @@ class _GymSettingsScreenState extends State<GymSettingsScreen>
                   ),
           ),
         ],
-      ),
     ),
   );
 }

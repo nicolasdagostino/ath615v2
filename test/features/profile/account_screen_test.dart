@@ -1,5 +1,7 @@
 import 'package:ath615v2/core/strings/app_strings.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/theme/app_colors.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/profile/presentation/screens/account_screen.dart';
 import 'package:flutter/material.dart';
@@ -95,12 +97,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('account-title')), findsOne);
-    expect(find.byKey(const ValueKey('secondary-header-back')), findsOne);
-    final title = tester.widget<Text>(
-      find.byKey(const ValueKey('account-title')),
+    expect(find.byType(AppDetailHeader), findsOne);
+    expect(
+      find.descendant(
+        of: find.byType(AppDetailHeader),
+        matching: find.text(appStrings.profileAccount.toUpperCase()),
+      ),
+      findsOne,
     );
-    expect(title.style?.fontWeight, FontWeight.w600);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.arrow_back_ios_new_rounded)).color,
+      AppColors.primary,
+    );
 
     await tester.tap(find.byKey(const ValueKey('account-full-name')));
     await tester.pump();
@@ -112,7 +120,7 @@ void main() {
     );
     expect(editable.focusNode.hasFocus, isTrue);
     await tester.tap(
-      find.byKey(const ValueKey('account-title')),
+      find.byType(AppDetailHeader),
       warnIfMissed: false,
     );
     await tester.pump();
@@ -127,5 +135,30 @@ void main() {
     );
     await tester.pump();
     expect(editable.focusNode.hasFocus, isFalse);
+  });
+
+  testWidgets('account header owns the notched top safe area', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccountScreen(
+          profileLoaderForTesting: () async => {
+            'full_name': 'Nicolás',
+            'email': 'nicolas@example.com',
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byType(AppDetailHeader)).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 }
