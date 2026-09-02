@@ -40,6 +40,7 @@ flutter:
     - assets/.env
     - assets/images/logo_negro.png
     - assets/images/card_crossfit.png
+    - assets/images/a615_login_background.webp
 
 
 flutter_launcher_icons:

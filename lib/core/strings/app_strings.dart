@@ -322,7 +322,58 @@ class AppStrings {
   String get authLoginSection => pick('Login', 'Iniciar sesión');
   String get authEmail => pick('Email', 'Email');
   String get authPassword => pick('Password', 'Contraseña');
-  String get authLoginButton => pick('Login', 'Entrar');
+  String get authLoginButton => pick('Sign in', 'Iniciar sesión');
+  String get authPasswordPlaceholder =>
+      pick('Enter your password', 'Ingresa tu contraseña');
+  String get a615Tagline =>
+      pick('Manage. Train. Grow.', 'Gestiona. Entrena. Crece.');
+  String get authNeedHelp => pick('Need help?', '¿Necesitas ayuda?');
+  String get authContactUs => pick('Contact us', 'Contáctanos');
+  String get publicHelpTitle => pick('Help', 'Ayuda');
+  String get publicHelpQuestion =>
+      pick('How can we help you?', '¿En qué podemos ayudarte?');
+  String get requestDemo => pick('Request a demo', 'Solicitar una demo');
+  String get technicalSupport => pick('Technical support', 'Soporte técnico');
+  String get billingHelp => pick('Billing', 'Facturación');
+  String get otherQuestions => pick('Other questions', 'Otras consultas');
+  String get contactChannelPending => pick(
+    'This contact channel will be available soon.',
+    'Este canal de contacto estará disponible próximamente.',
+  );
+  String get demoHeadline =>
+      pick('Request a personalized demo', 'Solicita una demo personalizada');
+  String get demoDescription => pick(
+    "Leave us your details and we'll contact you to show you A615.",
+    'Déjanos tus datos y nos pondremos en contacto contigo para enseñarte A615.',
+  );
+  String get demoGymName => pick('Gym name', 'Nombre del gimnasio');
+  String get demoMemberCount =>
+      pick('Approximate number of members', 'Número aproximado de miembros');
+  String get demoOptionalMessage =>
+      pick('Optional message', 'Mensaje opcional');
+  String get demoPrivacy => pick(
+    "We'll only use your details to contact you about A615.",
+    'Usaremos tus datos únicamente para contactar contigo sobre A615.',
+  );
+  String get demoRequiredError =>
+      pick('This field is required.', 'Este campo es obligatorio.');
+  String get demoEmailError =>
+      pick('Enter a valid email.', 'Introduce un email válido.');
+  String get demoMemberCountError => pick(
+    'Enter a whole number of 0 or more.',
+    'Introduce un número entero igual o mayor que 0.',
+  );
+  String get demoSubmit => pick('Send request', 'Enviar solicitud');
+  String get demoSuccessTitle => pick('Request sent', 'Solicitud enviada');
+  String get demoSuccessBody => pick(
+    "Thanks. We've received your details and we'll contact you.",
+    'Gracias. Hemos recibido tus datos y nos pondremos en contacto contigo.',
+  );
+  String get backToSignIn => pick('Back to sign in', 'Volver al login');
+  String get demoSendError => pick(
+    "We couldn't send your request. Please try again.",
+    'No pudimos enviar tu solicitud. Inténtalo de nuevo.',
+  );
   String get authCreateAccount => pick('Create account', 'Crear cuenta');
   String get authAlreadyHaveAccount =>
       pick('Already have an account?', '¿Ya tienes cuenta?');
@@ -347,7 +398,7 @@ class AppStrings {
   String signUpError(Object e) =>
       pick('Could not create account: $e', 'No se pudo crear la cuenta: $e');
   String get authForgotPassword =>
-      pick('Forgot password?', '¿Olvidaste tu contraseña?');
+      pick('Forgot your password?', '¿Olvidaste tu contraseña?');
   String loginError(Object e) =>
       pick('Invalid email or password.', 'Email o contraseña incorrectos.');
   String get authForgotTitle => pick('Forgot password', 'Recuperar contraseña');

@@ -8,6 +8,8 @@ import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
+import '../../features/public_access/presentation/screens/public_help_screen.dart';
+import '../../features/public_access/presentation/screens/request_demo_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
 import '../../features/onboarding/presentation/screens/scan_gym_qr_screen.dart';
@@ -49,6 +51,14 @@ class AppRouter {
         GoRoute(
           path: '/forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/help',
+          builder: (context, state) => const PublicHelpScreen(),
+        ),
+        GoRoute(
+          path: '/request-demo',
+          builder: (context, state) => const RequestDemoScreen(),
         ),
         GoRoute(
           path: '/reset-password',

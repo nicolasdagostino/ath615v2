@@ -13,6 +13,7 @@ class AuthFormScaffold extends StatelessWidget {
     required this.child,
     this.onBack,
     this.showLogo = false,
+    this.photographicBackground = false,
   });
 
   final String title;
@@ -20,70 +21,98 @@ class AuthFormScaffold extends StatelessWidget {
   final Widget child;
   final VoidCallback? onBack;
   final bool showLogo;
+  final bool photographicBackground;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.all(AppSpacing.screenX),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (onBack != null) ...[
-                    IconButton(
-                      constraints: const BoxConstraints.tightFor(
-                        width: AppSizes.minimumTouchTarget,
-                        height: AppSizes.minimumTouchTarget,
+    final foreground = photographicBackground
+        ? Colors.white
+        : AppColors.textPrimary(context);
+    final content = SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(AppSpacing.screenX),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (onBack != null) ...[
+                  IconButton(
+                    constraints: const BoxConstraints.tightFor(
+                      width: AppSizes.minimumTouchTarget,
+                      height: AppSizes.minimumTouchTarget,
+                    ),
+                    onPressed: onBack,
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                if (showLogo) ...[
+                  Center(
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        photographicBackground || AppColors.isDark(context)
+                            ? Colors.white
+                            : Colors.black,
+                        BlendMode.srcIn,
                       ),
-                      onPressed: onBack,
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
+                      child: Image.asset(
+                        'assets/images/logo_negro.png',
+                        height: 96,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                  if (showLogo) ...[
-                    Center(
-                      child: ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          AppColors.isDark(context)
-                              ? Colors.white
-                              : Colors.black,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset(
-                          'assets/images/logo_negro.png',
-                          height: 96,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                if (title.isNotEmpty)
                   Text(
                     title.toUpperCase(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textPrimary(context),
+                      color: foreground,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(subtitle, style: AppTypography.bodySecondary(context)),
-                  const SizedBox(height: AppSpacing.xl),
-                  child,
-                ],
-              ),
+                if (title.isNotEmpty) const SizedBox(height: AppSpacing.xs),
+                Center(
+                  child: Text(
+                    subtitle,
+                    style: AppTypography.body(
+                      context,
+                    ).copyWith(color: foreground),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                child,
+              ],
             ),
           ),
         ),
       ),
+    );
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: photographicBackground
+          ? Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/a615_login_background.webp',
+                  fit: BoxFit.cover,
+                ),
+                const ColoredBox(color: Color(0xC9000000)),
+                Theme(
+                  data: Theme.of(context).copyWith(brightness: Brightness.dark),
+                  child: content,
+                ),
+              ],
+            )
+          : content,
     );
   }
 }

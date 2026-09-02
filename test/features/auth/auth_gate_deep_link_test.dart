@@ -6,6 +6,8 @@ void main() {
     expect(shouldAuthGateRedirect('/'), isTrue);
     expect(shouldAuthGateRedirect('/membership'), isFalse);
     expect(shouldAuthGateRedirect('/reset-password'), isFalse);
+    expect(shouldAuthGateRedirect('/help'), isFalse);
+    expect(shouldAuthGateRedirect('/request-demo'), isFalse);
     expect(shouldAuthGateRedirect('/gym-settings'), isFalse);
   });
 }

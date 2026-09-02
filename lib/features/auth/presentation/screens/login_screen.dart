@@ -12,7 +12,9 @@ import '../../data/auth_repository.dart';
 import '../widgets/auth_form_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.signInForTesting});
+
+  final Future<void> Function(String email, String password)? signInForTesting;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -36,7 +38,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     setState(() => _loading = true);
     try {
-      await _repo.signIn(email: _email.text.trim(), password: _password.text);
+      await (widget.signInForTesting?.call(
+            _email.text.trim(),
+            _password.text,
+          ) ??
+          _repo.signIn(email: _email.text.trim(), password: _password.text));
       if (!mounted) return;
       context.go(pendingDeepLinkDestination.take() ?? '/');
     } catch (e) {
@@ -52,18 +58,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthFormScaffold(
-      title: appStrings.authLoginTitle,
-      subtitle: appStrings.authLoginSubtitle,
+      title: '',
+      subtitle: appStrings.a615Tagline,
       showLogo: true,
+      photographicBackground: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appStrings.authLoginSection.toUpperCase(),
-            style: authSectionStyle(context),
-          ),
-          const SizedBox(height: AppSpacing.md),
           TextField(
+            key: const ValueKey('login-email'),
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             style: authInputStyle(context),
@@ -75,13 +78,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(
+            key: const ValueKey('login-password'),
             controller: _password,
             obscureText: _obscurePassword,
             style: authInputStyle(context),
             decoration:
                 authFormInput(
                   context,
-                  label: appStrings.authPassword,
+                  label: appStrings.authPasswordPlaceholder,
                   icon: Icons.lock_outline_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
@@ -118,12 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Center(
-            child: TextButton(
-              onPressed: _loading ? null : () => context.push('/signup'),
-              child: Text(
-                appStrings.authDontHaveAccount,
-                style: authLinkStyle(context),
-              ),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(appStrings.authNeedHelp),
+                TextButton(
+                  key: const ValueKey('login-contact-us'),
+                  onPressed: () => context.push('/help'),
+                  child: Text(appStrings.authContactUs),
+                ),
+              ],
             ),
           ),
         ],
