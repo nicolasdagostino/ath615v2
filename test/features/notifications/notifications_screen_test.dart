@@ -139,6 +139,62 @@ void main() {
     expect(repository.markAllCalls, 0);
   });
 
+  testWidgets('admin capability exposes the existing create action', (
+    tester,
+  ) async {
+    var opens = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NotificationsScreen(
+          repository: _FakeNotificationsRepository(),
+          canCreateNotification: true,
+          onCreateNotification: () async => opens += 1,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('messages-create-notification')),
+    );
+    await tester.pump();
+    expect(opens, 1);
+  });
+
+  testWidgets('athlete capability does not expose create action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NotificationsScreen(repository: _FakeNotificationsRepository()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('messages-create-notification')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('create action opens the shared admin communication sheet', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NotificationsScreen(
+          repository: _FakeNotificationsRepository(),
+          canCreateNotification: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('messages-create-notification')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('SEND COMMUNICATION'), findsWidgets);
+    expect(find.byType(ChoiceChip), findsNWidgets(4));
+  });
+
   testWidgets('clear keeps active chip and preserves the other category', (
     tester,
   ) async {

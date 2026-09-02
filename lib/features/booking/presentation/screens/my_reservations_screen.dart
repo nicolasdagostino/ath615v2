@@ -8,7 +8,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
-import '../../../../core/widgets/app_secondary_action_header.dart';
+import '../../../../core/widgets/app_detail_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../data/my_reservations_data_source.dart';
 import '../widgets/class_details_sheet.dart';
@@ -167,10 +167,9 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
     final rows = _showUpcoming ? _upcoming : _history;
     return Scaffold(
       backgroundColor: AppColors.background(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            AppSecondaryActionHeader(
+      body: Column(
+        children: [
+            AppDetailHeader(
               title: appStrings.myUpcomingBookings,
               onBack: () => Navigator.of(context).maybePop(),
             ),
@@ -265,8 +264,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                       },
                     ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

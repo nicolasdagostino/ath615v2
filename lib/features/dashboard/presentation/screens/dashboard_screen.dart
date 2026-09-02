@@ -241,15 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openCommunicationSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const FractionallySizedBox(
-        heightFactor: .9,
-        child: _CommunicationSheet(),
-      ),
-    );
+    await showAdminCommunicationSheet(context);
   }
 
   Future<void> _openCoachClass(Map<String, dynamic> row) async {
@@ -5089,6 +5081,14 @@ class _CommunicationSheetState extends State<_CommunicationSheet> {
 @visibleForTesting
 Widget buildAdminCommunicationSheetForTest() =>
     const FractionallySizedBox(heightFactor: .9, child: _CommunicationSheet());
+
+Future<void> showAdminCommunicationSheet(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => buildAdminCommunicationSheetForTest(),
+    );
 
 class _RecentActivityCard extends StatelessWidget {
   const _RecentActivityCard({required this.activity});

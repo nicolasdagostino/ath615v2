@@ -4,6 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+class _LifecycleProbe extends StatefulWidget {
+  const _LifecycleProbe({required this.label, required this.onInitialize});
+
+  final String label;
+  final VoidCallback onInitialize;
+
+  @override
+  State<_LifecycleProbe> createState() => _LifecycleProbeState();
+}
+
+class _LifecycleProbeState extends State<_LifecycleProbe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInitialize();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(widget.label);
+}
+
 void main() {
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
@@ -57,6 +78,34 @@ void main() {
 
     expect(find.byKey(const ValueKey('screen-messages')), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble_rounded), findsOneWidget);
+  });
+
+  testWidgets('profile remains mounted across tab changes', (tester) async {
+    var profileInitializations = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppShell(
+          initialRoleForTesting: 'athlete',
+          screenBuilderForTesting: (section) => _LifecycleProbe(
+            label: section,
+            onInitialize: () {
+              if (section == 'profile') profileInitializations += 1;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(profileInitializations, 1);
+
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.fitness_center_outlined));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pump();
+
+    expect(profileInitializations, 1);
   });
 
   testWidgets('communication deep link opens messages inside the shell', (

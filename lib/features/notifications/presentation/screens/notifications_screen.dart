@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_primary_gym_header.dart';
 import '../../../../core/widgets/app_section_chip.dart';
 import '../../data/notifications_repository.dart';
 import '../../navigation/notification_destination.dart';
+import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
@@ -24,6 +25,8 @@ class NotificationsScreen extends StatefulWidget {
     this.onOpenMembershipRequests,
     this.workoutDateResolver,
     this.onOpenWorkoutDate,
+    this.canCreateNotification = false,
+    this.onCreateNotification,
   });
 
   final String? initialNotificationId;
@@ -34,6 +37,8 @@ class NotificationsScreen extends StatefulWidget {
   final Future<DateTime?> Function(Map<String, dynamic> data)?
   workoutDateResolver;
   final ValueChanged<DateTime>? onOpenWorkoutDate;
+  final bool canCreateNotification;
+  final Future<void> Function()? onCreateNotification;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -252,7 +257,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: AppColors.background(context),
       body: Column(
         children: [
-          AppPrimaryGymHeader(gymName: widget.gymName),
+          AppPrimaryGymHeader(
+            gymName: widget.gymName,
+            action: widget.canCreateNotification
+                ? IconButton(
+                    key: const ValueKey('messages-create-notification'),
+                    tooltip: appStrings.sendCommunication,
+                    onPressed: () async {
+                      await (widget.onCreateNotification?.call() ??
+                          showAdminCommunicationSheet(context));
+                    },
+                    icon: const Icon(Icons.add_rounded, color: Colors.white),
+                  )
+                : null,
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.screenX,

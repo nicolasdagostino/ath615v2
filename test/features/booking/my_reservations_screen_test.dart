@@ -1,5 +1,6 @@
 import 'package:ath615v2/core/strings/app_strings.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/booking/data/my_reservations_data_source.dart';
 import 'package:ath615v2/features/booking/presentation/screens/my_reservations_screen.dart';
 import 'package:flutter/material.dart';
@@ -98,6 +99,23 @@ void main() {
     await tester.tap(find.text('CROSSFIT'));
     expect(opened?['id'], 'class-0');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('header owns the top safe area on notched devices', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 47);
+    addTearDown(() => tester.view.padding = FakeViewPadding.zero);
+
+    await pump(tester, _FakeReservationsSource());
+
+    final header = find.byType(AppDetailHeader);
+    expect(header, findsOneWidget);
+    expect(tester.getTopLeft(header).dy, 0);
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
+      greaterThanOrEqualTo(47),
+    );
   });
 
   testWidgets('upcoming and history have distinct empty states', (

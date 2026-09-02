@@ -57,6 +57,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  final Set<int> _mountedIndexes = {0, 3};
   String? _role;
   bool _isCoach = false;
   bool _initialSectionResolved = false;
@@ -83,6 +84,7 @@ class _AppShellState extends State<AppShell> {
         initialRole,
         requestedSection: widget.initialSection,
       );
+      _mountedIndexes.add(_index);
       _initialSectionResolved = true;
     }
     if (widget.screenBuilderForTesting == null) {
@@ -98,7 +100,10 @@ class _AppShellState extends State<AppShell> {
     if (widget.initialSection == 'messages' &&
         (oldWidget.initialSection != widget.initialSection ||
             oldWidget.initialNotificationId != widget.initialNotificationId)) {
-      setState(() => _index = 2);
+      setState(() {
+        _index = 2;
+        _mountedIndexes.add(2);
+      });
     }
   }
 
@@ -182,6 +187,7 @@ class _AppShellState extends State<AppShell> {
           _role,
           requestedSection: widget.initialSection,
         );
+        _mountedIndexes.add(_index);
         _initialSectionResolved = true;
       }
     });
@@ -205,7 +211,10 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _openNotifications() {
-    setState(() => _index = 2);
+    setState(() {
+      _index = 2;
+      _mountedIndexes.add(2);
+    });
   }
 
   void _openMembershipRequests() {
@@ -213,6 +222,7 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _dashboardSection = 'membership';
       _index = 4;
+      _mountedIndexes.add(4);
     });
   }
 
@@ -222,6 +232,7 @@ class _AppShellState extends State<AppShell> {
       _dashboardSection = 'members';
       _dashboardMemberId = memberId;
       _index = 4;
+      _mountedIndexes.add(4);
     });
   }
 
@@ -278,6 +289,7 @@ class _AppShellState extends State<AppShell> {
               gymName: _gymName,
               onNotificationsRead: _loadUnreadNotifications,
               onOpenMembershipRequests: _openMembershipRequests,
+              canCreateNotification: canAdminister,
             ),
             ProfileScreen(
               gymName: _gymName,
@@ -378,7 +390,18 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
             ),
-          Expanded(child: screens[_index]),
+          Expanded(
+            child: IndexedStack(
+              index: _index,
+              children: [
+                for (var i = 0; i < screens.length; i++)
+                  if (_mountedIndexes.contains(i))
+                    screens[i]
+                  else
+                    const SizedBox(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: _ShellBottomNav(
@@ -387,6 +410,7 @@ class _AppShellState extends State<AppShell> {
         onSelected: (value) {
           setState(() {
             _index = value;
+            _mountedIndexes.add(value);
             if (canAdminister && value == 4) {
               _dashboardSection = null;
               _dashboardMemberId = null;
