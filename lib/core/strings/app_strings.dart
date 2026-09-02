@@ -41,6 +41,19 @@ class AppStrings {
   String get noBookingsYet => pick('No bookings yet.', 'Aún no hay reservas.');
   String get noWaitlistYet =>
       pick('No one is waiting yet.', 'Aún no hay nadie en espera.');
+  String get classStatusUpcoming => pick('UPCOMING', 'PRÓXIMA');
+  String get classStatusInProgress => pick('IN PROGRESS', 'EN CURSO');
+  String get classStatusCompleted => pick('COMPLETED', 'COMPLETADA');
+  String get firstClassBadge => pick('FIRST CLASS', 'PRIMERA CLASE');
+  String get noMembershipBadge => pick('NO MEMBERSHIP', 'SIN MEMBRESÍA');
+  String creditsLeftBadge(int credits) => pick(
+    '$credits ${credits == 1 ? 'CREDIT' : 'CREDITS'} LEFT',
+    '$credits ${credits == 1 ? 'CRÉDITO RESTANTE' : 'CRÉDITOS RESTANTES'}',
+  );
+  String membershipExpiryBadge(int days) => days == 0
+      ? pick('EXPIRES TODAY', 'VENCE HOY')
+      : pick('EXPIRES IN $days DAYS', 'VENCE EN $days DÍAS');
+  String get staffNoteBadge => pick('NOTE', 'NOTA');
   String get member => pick('Member', 'Miembro');
   String get coachRoleLabel => pick('Coach', 'Coach');
   String get adminRoleLabel => pick('Admin', 'Admin');

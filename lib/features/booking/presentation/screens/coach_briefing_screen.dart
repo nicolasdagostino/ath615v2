@@ -85,7 +85,11 @@ class _CoachBriefingScreenState extends State<CoachBriefingScreen> {
         'starts_at': klass.startsAt.toIso8601String(),
         'duration_minutes': klass.durationMinutes,
         'capacity': klass.capacity,
-        'coach': {'full_name': klass.coachName},
+        'coach_id': klass.coachId,
+        'coach': {
+          'full_name': klass.coachName,
+          'avatar_url': klass.coachAvatarUrl,
+        },
         'programs': {'name': klass.programName},
       },
       actionLabel: '',
@@ -182,18 +186,9 @@ class _CoachClassRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = switch (klass.temporalStatusAt(now)) {
-      CoachClassTemporalStatus.upcoming => appStrings.pick(
-        'UPCOMING',
-        'PRÓXIMA',
-      ),
-      CoachClassTemporalStatus.inProgress => appStrings.pick(
-        'IN PROGRESS',
-        'EN CURSO',
-      ),
-      CoachClassTemporalStatus.completed => appStrings.pick(
-        'COMPLETED',
-        'COMPLETADA',
-      ),
+      CoachClassTemporalStatus.upcoming => appStrings.classStatusUpcoming,
+      CoachClassTemporalStatus.inProgress => appStrings.classStatusInProgress,
+      CoachClassTemporalStatus.completed => appStrings.classStatusCompleted,
     };
     return ListTile(
       key: ValueKey('coach-class-${klass.id}'),

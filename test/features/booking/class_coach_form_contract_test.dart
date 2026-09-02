@@ -53,6 +53,9 @@ void main() {
     ).readAsStringSync();
 
     expect(source, contains('coach_id'));
-    expect(source, contains('coach:profiles!classes_coach_id_fkey(full_name)'));
+    expect(
+      source,
+      contains('coach:profiles!classes_coach_id_fkey(full_name, avatar_url)'),
+    );
   });
 }

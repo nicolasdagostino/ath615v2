@@ -169,7 +169,7 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
         client: Supabase.instance.client,
         data: Map<String, dynamic>.from(message.data),
       );
-      _router.go(destination);
+      goToAuthenticatedDestination(_router, destination);
       return;
     }
 

@@ -8,13 +8,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:ath615v2/core/locale/locale_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
     await initializeDateFormatting('en');
     await initializeDateFormatting('es');
   });
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   Map<String, dynamic> classData({
     Map<String, dynamic>? coach,
@@ -209,7 +213,9 @@ void main() {
       localStartTime: '09:00',
       durationMinutes: 60,
       capacity: 16,
+      coachId: 'coach-1',
       coachName: 'Jess Brown',
+      coachAvatarUrl: 'https://example.com/coach.jpg',
       programName: 'Fresh Start',
       workoutDescription: '5 rounds\n10 pull-ups',
       booked: [
@@ -297,6 +303,112 @@ void main() {
     );
     await tester.pump();
     expect(markedAll, isTrue);
+  });
+
+  testWidgets('Spanish localizes all class intelligence and has no typo', (
+    tester,
+  ) async {
+    await localeController.setLanguage('es');
+    addTearDown(() => localeController.setLanguage('en'));
+    final now = DateTime.now();
+    final intelligence = CoachBriefingClass(
+      id: 'class-1',
+      title: 'Fresh Start',
+      startsAt: now.add(const Duration(hours: 1)),
+      localStartTime: '09:00',
+      durationMinutes: 60,
+      capacity: 16,
+      coachId: 'coach-1',
+      coachName: 'Jess Brown',
+      coachAvatarUrl: 'https://example.com/coach.jpg',
+      programName: 'Fresh Start',
+      workoutDescription: '5 rounds',
+      booked: [
+        CoachBriefingAthlete(
+          bookingId: 'booking-1',
+          userId: 'athlete-1',
+          name: 'Alex Duarte',
+          avatarUrl: null,
+          isGuest: false,
+          attendanceStatus: 'booked',
+          firstClass: true,
+          membershipUsable: false,
+          membershipPlanType: null,
+          creditsRemaining: null,
+          membershipExpiresAt: null,
+        ),
+      ],
+      waitlist: const [],
+    );
+
+    await pumpAt(
+      tester,
+      child: details(
+        bookings: const [
+          {'id': 'booking-1', 'user_id': 'athlete-1', 'status': 'booked'},
+        ],
+        waitlist: const [],
+        intelligence: intelligence,
+        pinnedNotesByMember: const {'athlete-1': 'Prefiere español.'},
+      ),
+    );
+
+    expect(find.text('PRÓXIMA'), findsOneWidget);
+    expect(find.text('PRIMERA CLASE'), findsOneWidget);
+    expect(find.text('SIN MEMBRESÍA'), findsOneWidget);
+    expect(find.text('NOTA'), findsOneWidget);
+    expect(find.textContaining('UNCOMING'), findsNothing);
+    expect(find.text('FIRST CLASS'), findsNothing);
+    expect(find.text('NO MEMBERSHIP'), findsNothing);
+  });
+
+  testWidgets('coach identity keeps the same profile avatar across classes', (
+    tester,
+  ) async {
+    for (final classId in ['class-a', 'class-b']) {
+      await pumpAt(
+        tester,
+        child: details(
+          klass: {
+            ...classData(),
+            'id': classId,
+            'coach': {'full_name': 'Stale Coach', 'avatar_url': null},
+          },
+          bookings: const [],
+          waitlist: const [],
+          profileRows: const {
+            'coach-1': {
+              'full_name': 'Jess Brown',
+              'avatar_url': 'https://example.com/coach.jpg',
+            },
+          },
+        ),
+      );
+      final coach = tester.widget<ClassPersonRow>(
+        find.byKey(const ValueKey('class-detail-coach')),
+      );
+      expect(coach.name, 'Jess Brown');
+      expect(coach.avatarUrl, 'https://example.com/coach.jpg');
+    }
+  });
+
+  testWidgets('coach avatar falls back only when profile has no avatar', (
+    tester,
+  ) async {
+    await pumpAt(
+      tester,
+      child: details(
+        bookings: const [],
+        waitlist: const [],
+        profileRows: const {
+          'coach-1': {'full_name': 'Jess Brown', 'avatar_url': null},
+        },
+      ),
+    );
+    final coach = tester.widget<ClassPersonRow>(
+      find.byKey(const ValueKey('class-detail-coach')),
+    );
+    expect(coach.avatarUrl, isNull);
   });
 
   testWidgets('mark all is absent without an authorized callback', (

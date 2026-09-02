@@ -88,6 +88,12 @@ Future<void> showClassDetailsSheet({
         {'user_id': member.userId, 'position': member.position},
     ];
     profileById = {
+      if (todayClass.coachId != null)
+        todayClass.coachId!: {
+          'id': todayClass.coachId,
+          'full_name': todayClass.coachName,
+          'avatar_url': todayClass.coachAvatarUrl,
+        },
       for (final athlete in todayClass.booked)
         if (athlete.userId != null)
           athlete.userId!: {
@@ -418,9 +424,9 @@ class ClassDetailsView extends StatelessWidget {
         coachMap?['avatar_url']?.toString();
     final temporalStatus = intelligence?.temporalStatusAt(DateTime.now());
     final statusLabel = switch (temporalStatus) {
-      CoachClassTemporalStatus.upcoming => 'UPCOMING',
-      CoachClassTemporalStatus.inProgress => 'IN PROGRESS',
-      CoachClassTemporalStatus.completed => 'COMPLETED',
+      CoachClassTemporalStatus.upcoming => appStrings.classStatusUpcoming,
+      CoachClassTemporalStatus.inProgress => appStrings.classStatusInProgress,
+      CoachClassTemporalStatus.completed => appStrings.classStatusCompleted,
       null => null,
     };
 
@@ -661,20 +667,20 @@ class ClassDetailsView extends StatelessWidget {
 
   List<String> _intelligenceBadges(CoachBriefingAthlete athlete, DateTime now) {
     final badges = <String>[];
-    if (athlete.firstClass) badges.add('FIRST CLASS');
+    if (athlete.firstClass) badges.add(appStrings.firstClassBadge);
     if (athlete.hasLowCredits) {
       final credits = athlete.creditsRemaining!;
-      badges.add('$credits ${credits == 1 ? 'CREDIT' : 'CREDITS'} LEFT');
+      badges.add(appStrings.creditsLeftBadge(credits));
     }
     if (athlete.membershipExpiresWithin(now, const Duration(days: 7))) {
       final remaining = athlete.membershipExpiresAt!.difference(now);
       final days = remaining.inHours <= 24
           ? 0
           : (remaining.inHours / 24).ceil();
-      badges.add(days == 0 ? 'EXPIRES TODAY' : 'EXPIRES IN $days DAYS');
+      badges.add(appStrings.membershipExpiryBadge(days));
     }
     if (!athlete.isGuest && !athlete.membershipUsable) {
-      badges.add('NO MEMBERSHIP');
+      badges.add(appStrings.noMembershipBadge);
     }
     return badges;
   }
@@ -1058,7 +1064,7 @@ class ClassPersonRow extends StatelessWidget {
                         if (staffNote != null)
                           _ClassContextBadge(
                             key: ValueKey('class-detail-note-$name'),
-                            label: 'NOTE',
+                            label: appStrings.staffNoteBadge,
                             icon: Icons.flag_outlined,
                             onTap: () => _showStaffNote(context, staffNote!),
                           ),
@@ -1095,7 +1101,10 @@ class ClassPersonRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('NOTE', style: AppTypography.sectionTitle(context)),
+            Text(
+              appStrings.staffNoteBadge,
+              style: AppTypography.sectionTitle(context),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(note, style: AppTypography.body(context)),
             const SizedBox(height: AppSpacing.md),

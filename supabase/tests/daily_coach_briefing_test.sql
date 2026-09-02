@@ -71,12 +71,15 @@ select set_config('request.jwt.claim.sub','d6200000-0000-0000-0000-000000000002'
 do $$
 declare v jsonb; v_today date := (now() at time zone 'Europe/Madrid')::date;
 begin
-  v := public.get_daily_coach_briefing();
+  v := public.get_daily_coach_briefing_with_coach();
   if v->>'timezone' <> 'Europe/Madrid' then raise exception 'gym timezone missing'; end if;
   if (v->>'local_date')::date <> v_today or v#>>'{classes,0,local_start_time}' <> '07:30' then
     raise exception 'gym-local today/time is not authoritative';
   end if;
   if jsonb_array_length(v->'classes') <> 2 then raise exception 'coach received classes not assigned to them'; end if;
+  if v#>>'{classes,0,coach_id}' <> 'd6200000-0000-0000-0000-000000000002' then
+    raise exception 'coach identity missing from shared briefing';
+  end if;
   if v#>>'{classes,0,title}' <> 'CrossFit' or v#>>'{classes,1,title}' <> 'CrossFit' then
     raise exception 'classes not chronologically ordered or program missing';
   end if;

@@ -19,7 +19,7 @@ class SupabaseMyReservationsDataSource implements MyReservationsDataSource {
   static const _classFields =
       'id,title,starts_at,duration_minutes,capacity,recurring_id,'
       'program_id,coach_id,programs(name,image_url),'
-      'coach:profiles!classes_coach_id_fkey(full_name)';
+      'coach:profiles!classes_coach_id_fkey(full_name,avatar_url)';
 
   String get _userId {
     final id = client.auth.currentUser?.id;

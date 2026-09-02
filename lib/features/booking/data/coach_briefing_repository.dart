@@ -30,7 +30,9 @@ class CoachBriefingClass {
     required this.localStartTime,
     required this.durationMinutes,
     required this.capacity,
+    required this.coachId,
     required this.coachName,
+    required this.coachAvatarUrl,
     required this.programName,
     required this.workoutDescription,
     required this.booked,
@@ -45,7 +47,9 @@ class CoachBriefingClass {
         localStartTime: json['local_start_time']?.toString() ?? '',
         durationMinutes: (json['duration_minutes'] as num?)?.toInt() ?? 60,
         capacity: (json['capacity'] as num?)?.toInt() ?? 0,
+        coachId: json['coach_id']?.toString(),
         coachName: json['coach_name']?.toString(),
+        coachAvatarUrl: json['coach_avatar_url']?.toString(),
         programName: json['program_name']?.toString(),
         workoutDescription: json['workout_description']?.toString(),
         booked: List<Map<String, dynamic>>.from(
@@ -62,7 +66,9 @@ class CoachBriefingClass {
   final String localStartTime;
   final int durationMinutes;
   final int capacity;
+  final String? coachId;
   final String? coachName;
+  final String? coachAvatarUrl;
   final String? programName;
   final String? workoutDescription;
   final List<CoachBriefingAthlete> booked;
@@ -194,7 +200,7 @@ class SupabaseCoachBriefingRepository implements CoachBriefingRepository {
 
   @override
   Future<CoachBriefing> loadToday() async {
-    final result = await _client.rpc('get_daily_coach_briefing');
+    final result = await _client.rpc('get_daily_coach_briefing_with_coach');
     return CoachBriefing.fromJson(Map<String, dynamic>.from(result as Map));
   }
 

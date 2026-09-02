@@ -47,6 +47,24 @@ class PendingDeepLinkDestination {
 
 final pendingDeepLinkDestination = PendingDeepLinkDestination();
 
+String authenticatedRoute({
+  required bool isAuthenticated,
+  required String destination,
+}) => isAuthenticated ? destination : '/login';
+
+void goToAuthenticatedDestination(GoRouter router, String destination) {
+  final isAuthenticated = Supabase.instance.client.auth.currentUser != null;
+  if (!isAuthenticated) {
+    pendingDeepLinkDestination.remember(destination);
+  }
+  router.go(
+    authenticatedRoute(
+      isAuthenticated: isAuthenticated,
+      destination: destination,
+    ),
+  );
+}
+
 String? checkoutReturnDestination(Uri uri) {
   if (uri.scheme.toLowerCase() != 'athletelab' ||
       uri.host.toLowerCase() != 'checkout') {
@@ -102,12 +120,7 @@ class DeepLinkService {
     final connectAction = stripeConnectLinkAction(uri);
     if (connectAction != null) {
       final destination = stripeConnectDestination(connectAction);
-      if (Supabase.instance.client.auth.currentUser == null) {
-        pendingDeepLinkDestination.remember(destination);
-        _router.go('/login');
-      } else {
-        _router.go(destination);
-      }
+      goToAuthenticatedDestination(_router, destination);
       return;
     }
 
@@ -134,7 +147,7 @@ class DeepLinkService {
         client: Supabase.instance.client,
         data: {'workoutId': workoutId},
       );
-      _router.go(destination);
+      goToAuthenticatedDestination(_router, destination);
       return;
     }
 

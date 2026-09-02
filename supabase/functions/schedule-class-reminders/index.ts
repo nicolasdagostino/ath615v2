@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { classReminderCopy } from './logic.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,6 +36,19 @@ serve(async (req) => {
 
       if (bookingsError) throw bookingsError
 
+      const userIds = [...new Set((bookings ?? []).map((booking) => booking.user_id))]
+      const { data: profiles, error: profilesError } = userIds.length === 0
+        ? { data: [], error: null }
+        : await admin
+          .from('profiles')
+          .select('id, preferred_locale')
+          .in('id', userIds)
+
+      if (profilesError) throw profilesError
+      const localeByUserId = new Map(
+        (profiles ?? []).map((profile) => [profile.id, profile.preferred_locale]),
+      )
+
       for (const booking of bookings ?? []) {
         const { data: existing, error: existingError } = await admin
           .from('notifications')
@@ -50,10 +64,14 @@ serve(async (req) => {
         if (existingError) throw existingError
         if ((existing ?? []).length > 0) continue
 
+        const copy = classReminderCopy(
+          localeByUserId.get(booking.user_id),
+          klass.title,
+        )
         const { error: insertError } = await admin.from('notifications').insert({
           user_id: booking.user_id,
-          title: 'Class Reminder',
-          body: `${klass.title ?? 'Your class'} starts in 2 hours. See you soon!`,
+          title: copy.title,
+          body: copy.body,
           type: 'class_reminder',
           data: {
             source: 'class_reminder',
@@ -77,7 +95,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }), {
+    const message = e instanceof Error ? e.message : String(e)
+    return new Response(JSON.stringify({ ok: false, error: message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

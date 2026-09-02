@@ -277,7 +277,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final classes = await _client
           .from('classes')
           .select(
-            'id, title, starts_at, duration_minutes, capacity, recurring_id, created_at, program_id, coach_id, programs(name, image_url), coach:profiles!classes_coach_id_fkey(full_name)',
+            'id, title, starts_at, duration_minutes, capacity, recurring_id, created_at, program_id, coach_id, programs(name, image_url), coach:profiles!classes_coach_id_fkey(full_name, avatar_url)',
           )
           .eq('gym_id', gymId)
           .gte('starts_at', dayStart.toUtc().toIso8601String())

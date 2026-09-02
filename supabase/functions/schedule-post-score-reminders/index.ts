@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { postScoreReminderCopy } from './logic.ts'
 
 function workoutDateFromStartsAt(raw: string) {
   return raw.split('T')[0]
@@ -62,6 +63,19 @@ serve(async (req) => {
 
       if (bookingsError) throw bookingsError
 
+      const userIds = [...new Set((bookings ?? []).map((booking) => booking.user_id))]
+      const { data: profiles, error: profilesError } = userIds.length === 0
+        ? { data: [], error: null }
+        : await admin
+          .from('profiles')
+          .select('id, preferred_locale')
+          .in('id', userIds)
+
+      if (profilesError) throw profilesError
+      const localeByUserId = new Map(
+        (profiles ?? []).map((profile) => [profile.id, profile.preferred_locale]),
+      )
+
       for (const booking of bookings ?? []) {
         const { data: existing, error: existingError } = await admin
           .from('notifications')
@@ -78,10 +92,11 @@ serve(async (req) => {
         if (existingError) throw existingError
         if ((existing ?? []).length > 0) continue
 
+        const copy = postScoreReminderCopy(localeByUserId.get(booking.user_id))
         const { error: insertError } = await admin.from('notifications').insert({
           user_id: booking.user_id,
-          title: 'How did it go?',
-          body: "Share your score and tell us how today's workout felt.",
+          title: copy.title,
+          body: copy.body,
           type: 'post_score_reminder',
           data: {
             source: 'post_score_reminder',
