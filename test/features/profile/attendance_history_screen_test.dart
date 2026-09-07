@@ -1,7 +1,9 @@
+import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/features/profile/presentation/screens/attendance_history_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -79,6 +81,15 @@ void main() {
       tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
       greaterThanOrEqualTo(47),
     );
+    final back = tester.widget<Icon>(
+      find.byIcon(Icons.arrow_back_ios_new_rounded),
+    );
+    expect(back.color, AppColors.primary);
+    final overlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>).last,
+    );
+    expect(overlay.value.statusBarColor, Colors.transparent);
+    expect(overlay.value.statusBarIconBrightness, Brightness.dark);
   });
 
   testWidgets('attendance back returns directly to previous profile route', (

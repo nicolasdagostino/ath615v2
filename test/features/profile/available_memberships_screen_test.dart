@@ -8,6 +8,7 @@ import 'package:ath615v2/core/widgets/app_detail_header.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/profile/presentation/screens/available_memberships_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -154,7 +155,7 @@ void main() {
           matching: find.byIcon(Icons.arrow_back_ios_new_rounded),
         ),
       );
-      expect(back.color, AppColors.accent);
+      expect(back.color, AppColors.primary);
       expect(find.textContaining('UNLIMITED PERFORMANCE'), findsOne);
       expect(find.text('Unlimited access'), findsOne);
       expect(find.text('30 days'), findsOne);
@@ -181,6 +182,11 @@ void main() {
         tester.getTopLeft(find.byIcon(Icons.arrow_back_ios_new_rounded)).dy,
         greaterThanOrEqualTo(47),
       );
+      final overlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+        find.byType(AnnotatedRegion<SystemUiOverlayStyle>).last,
+      );
+      expect(overlay.value.statusBarColor, Colors.transparent);
+      expect(overlay.value.statusBarIconBrightness, Brightness.dark);
     });
   }
 

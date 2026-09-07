@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
+import '../../../../core/theme/app_system_ui.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_detail_header.dart';
 
@@ -209,13 +211,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
       );
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.background(context),
-    body: Column(
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: detailScreenSystemUiOverlayStyle(
+      isDark: Theme.of(context).brightness == Brightness.dark,
+    ),
+    child: Scaffold(
+      backgroundColor: AppColors.background(context),
+      body: Column(
         children: [
           AppDetailHeader(
             title: appStrings.myMemberships,
             onBack: context.pop,
+            leadingColor: AppColors.primary,
           ),
           Expanded(
             child: _loading
@@ -328,6 +335,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
           ),
         ],
+      ),
     ),
   );
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +8,7 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/app_system_ui.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../../../core/widgets/app_large_form_sheet.dart';
@@ -258,13 +260,18 @@ class _AvailableMembershipsScreenState
     final title = _isSubscription
         ? appStrings.getSubscription
         : appStrings.getDropIn;
-    return Scaffold(
-      backgroundColor: AppColors.background(context),
-      body: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: detailScreenSystemUiOverlayStyle(
+        isDark: Theme.of(context).brightness == Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background(context),
+        body: Column(
           children: [
             AppDetailHeader(
               title: title,
               onBack: Navigator.of(context).pop,
+              leadingColor: AppColors.primary,
             ),
             Expanded(
               child: _loading
@@ -305,6 +312,7 @@ class _AvailableMembershipsScreenState
                     ),
             ),
           ],
+        ),
       ),
     );
   }
