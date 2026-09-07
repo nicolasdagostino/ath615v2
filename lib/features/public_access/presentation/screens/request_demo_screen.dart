@@ -151,115 +151,115 @@ class _RequestDemoScreenState extends State<RequestDemoScreen> {
     child: Theme(
       data: Theme.of(context).copyWith(brightness: Brightness.dark),
       child: Scaffold(
-      backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          AppDetailHeader(
-            title: appStrings.requestDemo,
-            onBack: context.pop,
-            leadingColor: AppColors.primary,
-          ),
-          Expanded(
-            child: _success
-                ? _Success(onBack: () => context.go('/login'))
-                : Form(
-                    key: _formKey,
-                    child: SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.all(AppSpacing.screenX),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            appStrings.demoHeadline,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+        backgroundColor: Colors.black,
+        body: Column(
+          children: [
+            AppDetailHeader(
+              title: appStrings.requestDemo,
+              onBack: context.pop,
+              leadingColor: AppColors.primary,
+            ),
+            Expanded(
+              child: _success
+                  ? _Success(onBack: () => context.go('/help'))
+                  : Form(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.all(AppSpacing.screenX),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              appStrings.demoHeadline,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              appStrings.demoDescription,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            _field(
+                              key: const ValueKey('demo-full-name'),
+                              controller: _name,
+                              label: '${appStrings.authFullName} *',
+                              validator: _required,
+                            ),
+                            _field(
+                              key: const ValueKey('demo-email'),
+                              controller: _email,
+                              label: '${appStrings.authEmail} *',
+                              validator: _validEmail,
+                              keyboard: TextInputType.emailAddress,
+                            ),
+                            _field(
+                              key: const ValueKey('demo-phone'),
+                              controller: _phone,
+                              label: appStrings.authPhone,
+                              keyboard: TextInputType.phone,
+                              maxLength: 40,
+                            ),
+                            _field(
+                              key: const ValueKey('demo-gym-name'),
+                              controller: _gym,
+                              label: '${appStrings.demoGymName} *',
+                              validator: _required,
+                            ),
+                            _field(
+                              key: const ValueKey('demo-member-count'),
+                              controller: _members,
+                              label: appStrings.demoMemberCount,
+                              validator: _validMembers,
+                              keyboard: TextInputType.number,
+                              maxLength: 7,
+                            ),
+                            _field(
+                              key: const ValueKey('demo-message'),
+                              controller: _message,
+                              label: appStrings.demoOptionalMessage,
+                              maxLength: 1000,
+                              maxLines: 4,
+                            ),
+                            Text(
+                              appStrings.demoPrivacy,
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 13,
+                              ),
+                            ),
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpacing.sm,
                                 ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            appStrings.demoDescription,
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          _field(
-                            key: const ValueKey('demo-full-name'),
-                            controller: _name,
-                            label: '${appStrings.authFullName} *',
-                            validator: _required,
-                          ),
-                          _field(
-                            key: const ValueKey('demo-email'),
-                            controller: _email,
-                            label: '${appStrings.authEmail} *',
-                            validator: _validEmail,
-                            keyboard: TextInputType.emailAddress,
-                          ),
-                          _field(
-                            key: const ValueKey('demo-phone'),
-                            controller: _phone,
-                            label: appStrings.authPhone,
-                            keyboard: TextInputType.phone,
-                            maxLength: 40,
-                          ),
-                          _field(
-                            key: const ValueKey('demo-gym-name'),
-                            controller: _gym,
-                            label: '${appStrings.demoGymName} *',
-                            validator: _required,
-                          ),
-                          _field(
-                            key: const ValueKey('demo-member-count'),
-                            controller: _members,
-                            label: appStrings.demoMemberCount,
-                            validator: _validMembers,
-                            keyboard: TextInputType.number,
-                            maxLength: 7,
-                          ),
-                          _field(
-                            key: const ValueKey('demo-message'),
-                            controller: _message,
-                            label: appStrings.demoOptionalMessage,
-                            maxLength: 1000,
-                            maxLines: 4,
-                          ),
-                          Text(
-                            appStrings.demoPrivacy,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 13,
-                            ),
-                          ),
-                          if (_error != null)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: AppSpacing.sm,
+                                child: Text(
+                                  _error!,
+                                  key: const ValueKey('demo-error'),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
                               ),
-                              child: Text(
-                                _error!,
-                                key: const ValueKey('demo-error'),
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                            const SizedBox(height: AppSpacing.md),
+                            AppFormSubmitButton(
+                              key: const ValueKey('demo-submit'),
+                              label: appStrings.demoSubmit,
+                              loading: _submitting,
+                              enabled: !_submitting,
+                              accentColor: AppColors.primary,
+                              onPressed: _submit,
                             ),
-                          const SizedBox(height: AppSpacing.md),
-                          AppFormSubmitButton(
-                            key: const ValueKey('demo-submit'),
-                            label: appStrings.demoSubmit,
-                            loading: _submitting,
-                            enabled: !_submitting,
-                            accentColor: AppColors.primary,
-                            onPressed: _submit,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -297,7 +297,7 @@ class _Success extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           FilledButton(
             onPressed: onBack,
-            child: Text(appStrings.backToSignIn.toUpperCase()),
+            child: Text(appStrings.pick('BACK TO HELP', 'VOLVER A AYUDA')),
           ),
         ],
       ),

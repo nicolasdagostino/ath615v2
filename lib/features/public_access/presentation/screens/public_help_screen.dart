@@ -11,62 +11,64 @@ import '../../../../core/widgets/app_detail_header.dart';
 class PublicHelpScreen extends StatelessWidget {
   const PublicHelpScreen({super.key});
 
-  void _unavailable(BuildContext context) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(appStrings.contactChannelPending)));
-
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
     value: darkScreenSystemUiOverlayStyle,
     child: Theme(
       data: Theme.of(context).copyWith(brightness: Brightness.dark),
       child: Scaffold(
-      backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          AppDetailHeader(
-            title: appStrings.publicHelpTitle,
-            onBack: context.pop,
-            leadingColor: AppColors.primary,
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.screenX),
-              children: [
-                Text(
-                  appStrings.publicHelpQuestion,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _HelpOption(
-                  key: const ValueKey('help-request-demo'),
-                  icon: Icons.rocket_launch_outlined,
-                  label: appStrings.requestDemo,
-                  onTap: () => context.push('/request-demo'),
-                ),
-                _HelpOption(
-                  icon: Icons.support_agent,
-                  label: appStrings.technicalSupport,
-                  onTap: () => _unavailable(context),
-                ),
-                _HelpOption(
-                  icon: Icons.receipt_long_outlined,
-                  label: appStrings.billingHelp,
-                  onTap: () => _unavailable(context),
-                ),
-                _HelpOption(
-                  icon: Icons.chat_bubble_outline,
-                  label: appStrings.otherQuestions,
-                  onTap: () => _unavailable(context),
-                ),
-              ],
+        backgroundColor: Colors.black,
+        body: Column(
+          children: [
+            AppDetailHeader(
+              title: appStrings.publicHelpTitle,
+              onBack: context.pop,
+              leadingColor: AppColors.primary,
             ),
-          ),
-        ],
-      ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.screenX),
+                children: [
+                  Text(
+                    appStrings.publicHelpQuestion,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _HelpOption(
+                    key: const ValueKey('help-request-demo'),
+                    icon: Icons.rocket_launch_outlined,
+                    label: appStrings.requestDemo,
+                    onTap: () => context.push('/request-demo'),
+                  ),
+                  _HelpOption(
+                    key: const ValueKey('help-technical-support'),
+                    icon: Icons.support_agent,
+                    label: appStrings.technicalSupport,
+                    onTap: () => context.push('/support'),
+                  ),
+                  _HelpOption(
+                    key: const ValueKey('help-plans-billing'),
+                    icon: Icons.receipt_long_outlined,
+                    label: appStrings.pick(
+                      'Plans & billing',
+                      'Planes y facturación',
+                    ),
+                    onTap: () => context.push('/plans'),
+                  ),
+                  _HelpOption(
+                    key: const ValueKey('help-other-questions'),
+                    icon: Icons.chat_bubble_outline,
+                    label: appStrings.otherQuestions,
+                    onTap: () => context.push('/contact'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );

@@ -10,6 +10,9 @@ import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/public_access/presentation/screens/public_help_screen.dart';
 import '../../features/public_access/presentation/screens/request_demo_screen.dart';
+import '../../features/public_access/presentation/screens/technical_support_screen.dart';
+import '../../features/public_access/presentation/screens/plans_billing_screen.dart';
+import '../../features/public_access/presentation/screens/other_questions_screen.dart';
 import '../../features/home/presentation/screens/app_shell.dart';
 import '../../features/onboarding/presentation/screens/join_gym_screen.dart';
 import '../../features/onboarding/presentation/screens/scan_gym_qr_screen.dart';
@@ -17,6 +20,7 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/notifications/presentation/screens/notification_preferences_screen.dart';
 import '../../features/notifications/navigation/notification_destination.dart';
 import '../../features/owner/presentation/screens/owner_screen.dart';
+import '../../features/owner/presentation/screens/owner_requests_screen.dart';
 import '../../features/profile/presentation/screens/account_screen.dart';
 import '../../features/profile/presentation/screens/training_screen.dart';
 import '../../features/profile/presentation/screens/membership_screen.dart';
@@ -61,12 +65,28 @@ class AppRouter {
           builder: (context, state) => const RequestDemoScreen(),
         ),
         GoRoute(
+          path: '/support',
+          builder: (context, state) => const TechnicalSupportScreen(),
+        ),
+        GoRoute(
+          path: '/plans',
+          builder: (context, state) => const PlansBillingScreen(),
+        ),
+        GoRoute(
+          path: '/contact',
+          builder: (context, state) => const OtherQuestionsScreen(),
+        ),
+        GoRoute(
           path: '/reset-password',
           builder: (context, state) => const ResetPasswordScreen(),
         ),
         GoRoute(
           path: '/owner',
           builder: (context, state) => const OwnerScreen(),
+        ),
+        GoRoute(
+          path: '/owner/requests',
+          builder: (context, state) => const OwnerRequestsScreen(),
         ),
         GoRoute(
           path: '/owner/gym/:id',

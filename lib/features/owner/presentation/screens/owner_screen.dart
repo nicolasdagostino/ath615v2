@@ -280,6 +280,19 @@ class _OwnerScreenState extends State<OwnerScreen> {
           children: [
             OwnerDashboardKpis(summary: _summary),
             const SizedBox(height: AppSpacing.md),
+            Card(
+              child: ListTile(
+                key: const ValueKey('owner-requests-entry'),
+                leading: const Icon(
+                  Icons.inbox_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text(appStrings.pick('Requests', 'Solicitudes')),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/owner/requests'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(

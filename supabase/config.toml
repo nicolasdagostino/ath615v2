@@ -44,3 +44,8 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/stripe-webhook/deno.json"
 entrypoint = "./functions/stripe-webhook/index.ts"
+
+[functions.submit-support-request]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/submit-support-request/index.ts"

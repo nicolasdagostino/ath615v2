@@ -248,7 +248,7 @@ void main() {
     await _pumpRouter(tester, _router(initialLocation: '/help'));
     expect(find.text('AYUDA'), findsOneWidget);
     expect(find.text('Solicitar una demo'), findsOneWidget);
-    expect(find.text('Facturación'), findsOneWidget);
+    expect(find.text('Planes y facturación'), findsOneWidget);
   });
 
   testWidgets('demo validates required, email, and optional member count', (
@@ -305,7 +305,7 @@ void main() {
     repository.completer!.complete();
     await tester.pumpAndSettle();
     expect(find.text('Request sent'), findsOneWidget);
-    expect(find.text('BACK TO SIGN IN'), findsOneWidget);
+    expect(find.text('BACK TO HELP'), findsOneWidget);
   });
 
   testWidgets('demo keeps entered data after human error and supports retry', (
