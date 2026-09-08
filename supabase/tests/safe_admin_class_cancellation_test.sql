@@ -11,6 +11,7 @@ declare
   v_waitlisted uuid := 'ca100000-0000-0000-0000-000000000005';
   v_other_admin uuid := 'ca100000-0000-0000-0000-000000000006';
   v_owner uuid := 'ca100000-0000-0000-0000-000000000007';
+  v_owner_session uuid := 'ca100000-0000-0000-0000-000000000008';
 begin
   insert into auth.users(id,email) values
     (v_admin,'cancel-admin@example.test'),
@@ -35,6 +36,9 @@ begin
     (v_gym_a,v_member_c,'athlete',true,false,now()),
     (v_gym_a,v_waitlisted,'athlete',true,false,now()),
     (v_gym_b,v_other_admin,'admin',true,false,now());
+  insert into public.web_app_session_preferences(
+    session_id,user_id,active_gym_id,selection_required
+  ) values(v_owner_session,v_owner,null,false);
   insert into public.programs(id,gym_id,name,is_active) values
     ('ca200000-0000-0000-0000-000000000001',v_gym_a,'CrossFit',true),
     ('ca200000-0000-0000-0000-000000000002',v_gym_b,'Other',true);
@@ -76,8 +80,16 @@ select set_config('request.jwt.claim.sub','ca100000-0000-0000-0000-000000000001'
 
 -- The owner is authorized even without a duplicate gym_members row.
 select set_config('request.jwt.claim.sub','ca100000-0000-0000-0000-000000000007',true);
+select set_config('request.jwt.claims',jsonb_build_object(
+  'sub','ca100000-0000-0000-0000-000000000007','role','authenticated',
+  'session_id','ca100000-0000-0000-0000-000000000008'
+)::text,true);
+select public.select_owner_effective_gym('ca000000-0000-0000-0000-000000000001');
 select * from public.admin_cancel_class('ca500000-0000-0000-0000-000000000001','single');
 select set_config('request.jwt.claim.sub','ca100000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claims',jsonb_build_object(
+  'sub','ca100000-0000-0000-0000-000000000001','role','authenticated'
+)::text,true);
 
 do $$
 declare v_result record;
