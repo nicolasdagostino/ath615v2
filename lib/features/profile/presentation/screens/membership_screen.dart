@@ -48,7 +48,7 @@ class SupabaseUserMembershipsDataSource implements UserMembershipsDataSource {
   String? get _userId => _requestedUserId ?? client.auth.currentUser?.id;
 
   static const _membershipSelect =
-      'id, credits_remaining, starts_at, expires_at, ends_at, status, '
+      'id, credits_remaining, credits_total, starts_at, expires_at, ends_at, status, '
       'is_active, created_at, membership_plans(name, plan_type, credits)';
 
   @override
@@ -97,6 +97,7 @@ class SupabaseUserMembershipsDataSource implements UserMembershipsDataSource {
           'exhausted',
           'expired',
           'cancelled',
+          'voided',
           'replaced',
         ])
         .order('created_at', ascending: false)
@@ -407,7 +408,8 @@ bool _isUnlimited(Map<String, dynamic> membership) =>
     membership['credits_remaining'] == null;
 
 int? _totalCredits(Map<String, dynamic> membership) =>
-    membershipPlan(membership)['credits'] as int?;
+    (membership['credits_total'] ?? membershipPlan(membership)['credits'])
+        as int?;
 
 int? _remainingCredits(Map<String, dynamic> membership) =>
     membership['credits_remaining'] as int?;
@@ -425,6 +427,7 @@ String _statusLabel(String? status) => switch (status) {
   'exhausted' => appStrings.exhausted,
   'expired' => appStrings.expired,
   'cancelled' => appStrings.cancelled,
+  'voided' => appStrings.pick('Voided', 'Anulada'),
   'replaced' => appStrings.replaced,
   _ => status ?? '—',
 };
@@ -576,6 +579,11 @@ class _MembershipRow extends StatelessWidget {
                     ),
                     style: AppTypography.helper(context),
                   ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    _statusLabel(membership['status']?.toString()),
+                    style: AppTypography.helper(context),
+                  ),
                 ] else ...[
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
@@ -642,11 +650,15 @@ class MemberMembershipsSection extends StatefulWidget {
     required this.memberId,
     this.dataSource,
     this.includeActive = true,
+    this.memberships,
+    this.onMembershipTap,
   });
 
   final String memberId;
   final UserMembershipsDataSource? dataSource;
   final bool includeActive;
+  final List<Map<String, dynamic>>? memberships;
+  final ValueChanged<Map<String, dynamic>>? onMembershipTap;
 
   @override
   State<MemberMembershipsSection> createState() =>
@@ -670,7 +682,40 @@ class _MemberMembershipsSectionState extends State<MemberMembershipsSection> {
   @override
   void initState() {
     super.initState();
-    _loadInitial();
+    if (widget.memberships != null) {
+      _applyMemberships(widget.memberships!);
+    } else {
+      _loadInitial();
+    }
+  }
+
+  void _applyMemberships(List<Map<String, dynamic>> rows) {
+    _active = rows.where((row) => row['status'] == 'active').toList();
+    _scheduled = rows.where((row) => row['status'] == 'scheduled').toList();
+    _history
+      ..clear()
+      ..addAll(
+        rows.where(
+          (row) => const {
+            'exhausted',
+            'expired',
+            'cancelled',
+            'voided',
+            'replaced',
+          }.contains(row['status']),
+        ),
+      );
+    _hasMore = false;
+    _loading = false;
+  }
+
+  @override
+  void didUpdateWidget(covariant MemberMembershipsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.memberships != null &&
+        widget.memberships != oldWidget.memberships) {
+      _applyMemberships(widget.memberships!);
+    }
   }
 
   Future<void> _loadInitial() async {
@@ -708,20 +753,22 @@ class _MemberMembershipsSectionState extends State<MemberMembershipsSection> {
   }
 
   Future<void> _openDetail(Map<String, dynamic> membership) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: Colors.black.withValues(alpha: .55),
-        builder: (_) => FractionallySizedBox(
-          heightFactor: .92,
-          child: MembershipDetailSheet(
-            membership: membership,
-            dataSource: _source,
+      widget.onMembershipTap != null
+      ? Future.sync(() => widget.onMembershipTap!(membership))
+      : showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: .55),
+          builder: (_) => FractionallySizedBox(
+            heightFactor: .92,
+            child: MembershipDetailSheet(
+              membership: membership,
+              dataSource: _source,
+            ),
           ),
-        ),
-      );
+        );
 
   @override
   Widget build(BuildContext context) {

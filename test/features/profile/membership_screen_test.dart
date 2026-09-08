@@ -67,6 +67,7 @@ Map<String, dynamic> membership(
   'expires_at': '2026-02-12T10:00:00Z',
   'created_at': starts,
   'credits_remaining': type == 'unlimited' ? null : remaining,
+  'credits_total': type == 'unlimited' ? null : credits,
   'membership_plans': {
     'name': type == 'unlimited' ? 'Unlimited' : '5 Classes',
     'plan_type': type,
@@ -271,7 +272,11 @@ void main() {
       find.byKey(const ValueKey('memberships-load-more')),
       300,
     );
-    await tester.tap(find.byKey(const ValueKey('memberships-load-more')));
+    tester
+        .widget<OutlinedButton>(
+          find.byKey(const ValueKey('memberships-load-more')),
+        )
+        .onPressed!();
     await tester.pumpAndSettle();
     expect(source.historyOffsets, [0, membershipHistoryPageSize]);
 
@@ -370,4 +375,58 @@ void main() {
     expect(find.byKey(const ValueKey('membership-detail-sheet')), findsOne);
     expect(source.usageMemberships, ['old']);
   });
+
+  testWidgets('voided and cancelled memberships remain visible in history', (
+    tester,
+  ) async {
+    final source = _FakeMemberships(
+      history: [
+        membership('voided', 'voided'),
+        membership('cancelled', 'cancelled'),
+      ],
+    );
+    await pumpMemberships(tester, source);
+    expect(find.byKey(const ValueKey('membership-row-voided')), findsOne);
+    expect(find.byKey(const ValueKey('membership-row-cancelled')), findsOne);
+    expect(find.text('Voided'), findsOne);
+    expect(find.text('Cancelled'), findsOne);
+  });
+
+  testWidgets('historical cards prefer the membership credits snapshot', (
+    tester,
+  ) async {
+    final row = membership('historic', 'expired', credits: 9, remaining: 2)
+      ..['credits_total'] = 5;
+    await pumpMemberships(tester, _FakeMemberships(history: [row]));
+    expect(find.text('3 / 5 used'), findsOne);
+    expect(find.text('7 / 9 used'), findsNothing);
+  });
+
+  testWidgets(
+    'admin preloaded history routes to the supplied operation detail',
+    (tester) async {
+      Map<String, dynamic>? opened;
+      final rows = [
+        membership('active-admin', 'active'),
+        membership('expired-admin', 'expired'),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: MemberMembershipsSection(
+              memberId: 'member-1',
+              memberships: rows,
+              onMembershipTap: (membership) => opened = membership,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('membership-row-expired-admin')),
+      );
+      expect(opened?['id'], 'expired-admin');
+    },
+  );
 }
