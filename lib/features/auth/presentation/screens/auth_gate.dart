@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
+import '../../data/session_access_revalidator.dart';
 
 bool shouldAuthGateRedirect(String currentPath) => currentPath == '/';
 
@@ -39,24 +40,15 @@ class _AuthGateState extends State<AuthGate> {
       return;
     }
 
-    final profile = await client
-        .from('profiles')
-        .select('role, gym_id')
-        .eq('id', user.id)
-        .single();
+    final result = await SessionAccessRevalidator(
+      SupabaseSessionAccessDataSource(client),
+    ).validate(userId: user.id, cachedGymId: null);
 
     if (!mounted) return;
 
-    final role = profile['role']?.toString();
-    final gymId = profile['gym_id']?.toString();
-
-    if (role == 'owner') {
-      context.go('/owner');
-    } else if (gymId == null || gymId.isEmpty) {
-      context.go('/join-gym');
-    } else {
-      context.go('/app');
-    }
+    if (result.state == SessionAccessState.transientFailure) return;
+    recordSessionAccessResult(result);
+    context.go(result.destination ?? '/app');
   }
 
   @override

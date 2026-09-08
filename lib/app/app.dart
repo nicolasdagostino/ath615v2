@@ -14,8 +14,18 @@ import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
 import '../core/preferences/app_preferences_controller.dart';
 import '../features/auth/data/auth_repository.dart';
+import '../features/auth/data/session_access_revalidator.dart';
 import '../features/notifications/data/notifications_repository.dart';
 import '../features/notifications/navigation/notification_destination.dart';
+
+@visibleForTesting
+Future<void> initializeAccessBeforeDeepLinks({
+  required Future<void> Function() revalidateAccess,
+  required Future<void> Function() startDeepLinks,
+}) async {
+  await revalidateAccess();
+  await startDeepLinks();
+}
 
 class AthleteLabApp extends StatefulWidget {
   const AthleteLabApp({super.key});
@@ -24,7 +34,8 @@ class AthleteLabApp extends StatefulWidget {
   State<AthleteLabApp> createState() => _AthleteLabAppState();
 }
 
-class _AthleteLabAppState extends State<AthleteLabApp> {
+class _AthleteLabAppState extends State<AthleteLabApp>
+    with WidgetsBindingObserver {
   late final _router = AppRouter.router;
   late final _deepLinks = DeepLinkService(_router);
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -36,6 +47,10 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   Future<void> _pushWork = Future.value();
   bool _pushSetupScheduled = false;
   bool _pushSetupPending = false;
+  late final SessionAccessRevalidator _accessRevalidator =
+      SessionAccessRevalidator(
+        SupabaseSessionAccessDataSource(Supabase.instance.client),
+      );
 
   String? get _pushPlatform {
     if (kIsWeb) return null;
@@ -222,10 +237,18 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     debugPrint('ATH615 APP INIT');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('ATH615 STARTING DEEPLINK SERVICE');
-      _deepLinks.start();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await initializeAccessBeforeDeepLinks(
+        revalidateAccess: _revalidateAccess,
+        startDeepLinks: () async {
+          if (!mounted) return;
+          debugPrint('ATH615 STARTING DEEPLINK SERVICE');
+          await _deepLinks.start();
+        },
+      );
+      if (!mounted) return;
 
       _initialPushTimer = Timer(const Duration(seconds: 2), () {
         _schedulePushSetup();
@@ -263,7 +286,27 @@ class _AthleteLabAppState extends State<AthleteLabApp> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (shouldRevalidateAccessOnLifecycle(state)) _revalidateAccess();
+  }
+
+  Future<void> _revalidateAccess() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (!mounted || user == null) return;
+    final result = await _accessRevalidator.validate(
+      userId: user.id,
+      cachedGymId: user.userMetadata?['gym_id']?.toString(),
+    );
+    if (!mounted || result.state == SessionAccessState.transientFailure) return;
+    recordSessionAccessResult(result);
+    final destination = accessDestinationOnResume(result);
+    if (destination != null) _router.go(destination);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _initialPushTimer?.cancel();
     _tokenRefreshSubscription?.cancel();
     _authSubscription?.cancel();

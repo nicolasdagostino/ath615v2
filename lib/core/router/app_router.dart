@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/data/auth_repository.dart';
+import '../../features/auth/data/session_access_revalidator.dart';
 import '../../features/auth/presentation/screens/auth_gate.dart';
+import '../../features/auth/presentation/screens/gym_access_disabled_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
@@ -32,6 +34,22 @@ import '../../features/profile/presentation/screens/gym_settings_screen.dart';
 import '../../features/profile/presentation/screens/gym_documents_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
+String? appAccessRedirect({
+  required bool isAuthenticated,
+  required String path,
+  required bool isPublic,
+  required String? accessDestination,
+}) {
+  if (!isAuthenticated && !isPublic) return '/login';
+  if (isAuthenticated &&
+      accessDestination == '/gym-access-disabled' &&
+      path != '/gym-access-disabled' &&
+      !isPublic) {
+    return '/gym-access-disabled';
+  }
+  return null;
+}
+
 class AppRouter {
   static final _rootKey = GlobalKey<NavigatorState>();
 
@@ -42,6 +60,26 @@ class AppRouter {
       navigatorKey: _rootKey,
       initialLocation: '/',
       refreshListenable: _AuthRefresh(authRepo),
+      redirect: (context, state) {
+        final public = <String>{
+          '/',
+          '/login',
+          '/signup',
+          '/forgot-password',
+          '/reset-password',
+          '/help',
+          '/request-demo',
+          '/support',
+          '/plans',
+          '/contact',
+        };
+        return appAccessRedirect(
+          isAuthenticated: authRepo.currentUser != null,
+          path: state.uri.path,
+          isPublic: public.contains(state.uri.path),
+          accessDestination: currentSessionAccessDestination,
+        );
+      },
       routes: [
         GoRoute(path: '/', builder: (context, state) => const AuthGate()),
         GoRoute(
@@ -108,6 +146,10 @@ class AppRouter {
         GoRoute(
           path: '/join-gym',
           builder: (context, state) => const JoinGymScreen(),
+        ),
+        GoRoute(
+          path: '/gym-access-disabled',
+          builder: (context, state) => const GymAccessDisabledScreen(),
         ),
         GoRoute(
           path: '/scan-gym-qr',

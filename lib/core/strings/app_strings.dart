@@ -103,6 +103,17 @@ class AppStrings {
   String get scanQrComingSoon =>
       pick('Scan QR coming soon', 'Escanear QR próximamente');
   String get logout => pick('Log out', 'Cerrar sesión');
+  String get gymAccessDisabledTitle =>
+      pick('Access disabled', 'Acceso desactivado');
+  String get gymAccessDisabledMessage => pick(
+    'Your access to this gym has been disabled.',
+    'Tu acceso a este gimnasio está desactivado.',
+  );
+  String get gymAccessDisabledHelp => pick(
+    'Contact a gym administrator for help.',
+    'Contacta con un administrador del gimnasio para obtener ayuda.',
+  );
+  String get gymAccessDisabledSignOut => pick('Sign out', 'Cerrar sesión');
 
   String get bookingTitle => pick('Booking', 'Reservas');
   String get loadingClasses => pick('Loading classes…', 'Cargando clases…');

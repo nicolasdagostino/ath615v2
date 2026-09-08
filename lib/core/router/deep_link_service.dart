@@ -5,6 +5,7 @@ import 'package:app_links/app_links.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/auth/data/session_access_revalidator.dart';
 import '../../features/notifications/navigation/notification_destination.dart';
 
 enum StripeConnectLinkAction { returnToSettings, refreshOnboarding }
@@ -50,7 +51,8 @@ final pendingDeepLinkDestination = PendingDeepLinkDestination();
 String authenticatedRoute({
   required bool isAuthenticated,
   required String destination,
-}) => isAuthenticated ? destination : '/login';
+  String? accessDestination,
+}) => !isAuthenticated ? '/login' : accessDestination ?? destination;
 
 void goToAuthenticatedDestination(GoRouter router, String destination) {
   final isAuthenticated = Supabase.instance.client.auth.currentUser != null;
@@ -61,6 +63,7 @@ void goToAuthenticatedDestination(GoRouter router, String destination) {
     authenticatedRoute(
       isAuthenticated: isAuthenticated,
       destination: destination,
+      accessDestination: currentSessionAccessDestination,
     ),
   );
 }
@@ -113,7 +116,7 @@ class DeepLinkService {
 
     final checkoutDestination = checkoutReturnDestination(uri);
     if (checkoutDestination != null) {
-      _router.go(checkoutDestination);
+      goToAuthenticatedDestination(_router, checkoutDestination);
       return;
     }
 

@@ -2,9 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ath615v2/core/router/deep_link_service.dart';
+import 'package:ath615v2/features/auth/data/session_access_revalidator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(clearRecordedSessionAccess);
+  tearDown(clearRecordedSessionAccess);
+
   const returnUrl = 'https://athlete615.com/connect/stripe/return';
   const refreshUrl = 'https://athlete615.com/connect/stripe/refresh';
 
@@ -50,6 +54,56 @@ void main() {
 
     expect(pending.take(), '/gym-settings?stripeConnect=return');
     expect(pending.take(), isNull);
+  });
+
+  test(
+    'disabled gym access overrides every protected deep-link destination',
+    () {
+      for (final destination in [
+        '/membership',
+        '/gym-settings?stripeConnect=return',
+        '/workout/workout-1',
+      ]) {
+        expect(
+          authenticatedRoute(
+            isAuthenticated: true,
+            destination: destination,
+            accessDestination: '/gym-access-disabled',
+          ),
+          '/gym-access-disabled',
+        );
+      }
+    },
+  );
+
+  test('reactivation clears the disabled deep-link restriction', () {
+    recordSessionAccessResult(
+      const SessionAccessResult(
+        SessionAccessState.gymAccessDisabled,
+        destination: '/gym-access-disabled',
+      ),
+    );
+    expect(
+      authenticatedRoute(
+        isAuthenticated: true,
+        destination: '/app',
+        accessDestination: currentSessionAccessDestination,
+      ),
+      '/gym-access-disabled',
+    );
+
+    recordSessionAccessResult(
+      const SessionAccessResult(SessionAccessState.valid),
+    );
+    expect(currentSessionAccessDestination, isNull);
+    expect(
+      authenticatedRoute(
+        isAuthenticated: true,
+        destination: '/app',
+        accessDestination: currentSessionAccessDestination,
+      ),
+      '/app',
+    );
   });
 
   test('AASA contains only the Connect app and paths', () {
