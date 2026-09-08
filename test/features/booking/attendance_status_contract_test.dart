@@ -97,15 +97,28 @@ void main() {
     expect(detail, contains('onMarkAllAttended:'));
   });
 
-  test('Dashboard and Booking share the one Class Detail destination', () {
+  test('all class-card entry points share the guarded detail destination', () {
     final booking = File(
       'lib/features/booking/presentation/screens/booking_screen.dart',
     ).readAsStringSync();
     final dashboard = File(
       'lib/features/dashboard/presentation/screens/dashboard_screen.dart',
     ).readAsStringSync();
+    final reservations = File(
+      'lib/features/booking/presentation/screens/my_reservations_screen.dart',
+    ).readAsStringSync();
+    final briefing = File(
+      'lib/features/booking/presentation/screens/coach_briefing_screen.dart',
+    ).readAsStringSync();
+    final detail = File(
+      'lib/features/booking/presentation/widgets/class_details_sheet.dart',
+    ).readAsStringSync();
     expect(booking, contains('showClassDetailsSheet('));
     expect(dashboard, contains('showClassDetailsSheet('));
+    expect(reservations, contains('showClassDetailsSheet('));
+    expect(briefing, contains('showClassDetailsSheet('));
+    expect(detail, contains('runClassDetailPresentationOnce('));
+    expect(detail, contains('_presentClassDetailsSheet('));
     expect(dashboard, contains('onOpenTodayClass: _openCoachClass'));
     expect(dashboard, contains('onOpenTodayClassBriefing: _openCoachClass'));
     expect(dashboard, isNot(contains('class _TodayClassBriefingSheet')));

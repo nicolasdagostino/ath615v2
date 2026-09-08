@@ -42,6 +42,35 @@ class ClassDetailAttendeeActions {
   final bool canMarkAttendance;
 }
 
+/// Keeps Class Detail single-flight across every entry point in the app.
+///
+/// The flag is set before [presentation] is invoked and remains set until the
+/// modal route has completely closed (or presentation throws).
+class ClassDetailPresentationGuard {
+  bool _isActive = false;
+
+  bool get isActive => _isActive;
+
+  Future<bool> run(Future<void> Function() presentation) async {
+    if (_isActive) return false;
+    _isActive = true;
+    try {
+      await presentation();
+      return true;
+    } finally {
+      _isActive = false;
+    }
+  }
+}
+
+final ClassDetailPresentationGuard _classDetailPresentationGuard =
+    ClassDetailPresentationGuard();
+
+@visibleForTesting
+Future<bool> runClassDetailPresentationOnce(
+  Future<void> Function() presentation,
+) => _classDetailPresentationGuard.run(presentation);
+
 Future<void> showClassDetailsSheet({
   required BuildContext context,
   required SupabaseClient client,
@@ -53,6 +82,34 @@ Future<void> showClassDetailsSheet({
   ValueChanged<String>? onMemberTap,
   CoachBriefingRepository? coachRepository,
   CoachBriefingClass? prefetchedIntelligence,
+}) async {
+  await runClassDetailPresentationOnce(
+    () => _presentClassDetailsSheet(
+      context: context,
+      client: client,
+      klass: klass,
+      actionLabel: actionLabel,
+      onAction: onAction,
+      adminActions: adminActions,
+      attendeeActions: attendeeActions,
+      onMemberTap: onMemberTap,
+      coachRepository: coachRepository,
+      prefetchedIntelligence: prefetchedIntelligence,
+    ),
+  );
+}
+
+Future<void> _presentClassDetailsSheet({
+  required BuildContext context,
+  required SupabaseClient client,
+  required Map<String, dynamic> klass,
+  required String actionLabel,
+  required VoidCallback? onAction,
+  required List<ClassDetailAdminAction> adminActions,
+  required ClassDetailAttendeeActions? attendeeActions,
+  required ValueChanged<String>? onMemberTap,
+  required CoachBriefingRepository? coachRepository,
+  required CoachBriefingClass? prefetchedIntelligence,
 }) async {
   final classId = klass['id'].toString();
 
