@@ -28,10 +28,12 @@ import '../../../booking/presentation/booking_occupancy.dart';
 import '../../../booking/data/coach_briefing_repository.dart';
 import '../../../booking/presentation/widgets/class_details_sheet.dart';
 import '../../../members/data/member_coach_repository.dart';
+import '../../../members/data/membership_operations_repository.dart';
 import '../../../members/domain/member_coach_capability.dart';
 import '../../../members/presentation/widgets/member_role_capability_section.dart';
 import '../../../members/presentation/widgets/member_list_row.dart';
 import '../../../members/presentation/widgets/member_filter_chip.dart';
+import '../../../members/presentation/widgets/membership_operations_launcher.dart';
 import '../../../profile/presentation/screens/membership_screen.dart';
 import '../../data/member_staff_notes_repository.dart';
 import '../widgets/member_staff_notes_section.dart';
@@ -56,9 +58,18 @@ class DashboardScreen extends StatefulWidget {
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
+
 enum _DashboardTab { overview, members, plans, analytics }
 
-enum _MemberRoleFilter { all, active, inactive, athlete, coach, admin, withoutPlan }
+enum _MemberRoleFilter {
+  all,
+  active,
+  inactive,
+  athlete,
+  coach,
+  admin,
+  withoutPlan,
+}
 
 bool adminMemberHasActivePlan(Map<String, dynamic> member) =>
     (member['membership_name']?.toString().trim() ?? '').isNotEmpty;
@@ -76,6 +87,56 @@ String adminAccessRequestDisplayName(
   if (fullName.isNotEmpty) return fullName;
   final email = profile?['email']?.toString().trim() ?? '';
   return email.isNotEmpty ? email : fallback;
+}
+
+@immutable
+class AdminRequestIdentity {
+  const AdminRequestIdentity({required this.name, this.email, this.avatarUrl});
+
+  final String name;
+  final String? email;
+  final String? avatarUrl;
+}
+
+AdminRequestIdentity adminRequestIdentity(
+  Map<String, dynamic> request, {
+  Map<String, dynamic>? profile,
+  Map<String, dynamic>? member,
+  required String fallback,
+}) {
+  String? firstValue(Iterable<Object?> values) {
+    for (final value in values) {
+      final normalized = value?.toString().trim() ?? '';
+      if (normalized.isNotEmpty) return normalized;
+    }
+    return null;
+  }
+
+  final email = firstValue([
+    request['member_email'],
+    request['email'],
+    profile?['email'],
+    member?['email'],
+  ]);
+  final name = firstValue([
+    request['member_name'],
+    request['full_name'],
+    profile?['full_name'],
+    member?['full_name'],
+    email,
+  ]);
+  final avatar = firstValue([
+    request['member_avatar_url'],
+    request['avatar_url'],
+    profile?['avatar_url'],
+    member?['avatar_url'],
+  ]);
+
+  return AdminRequestIdentity(
+    name: name ?? fallback,
+    email: email,
+    avatarUrl: avatar,
+  );
 }
 
 DateTime? adminGymMemberCreatedAt(Map<String, dynamic> member) =>
@@ -99,12 +160,35 @@ bool adminMembershipRequestNeedsAction(Map<String, dynamic> request) =>
     request['payment_method'] == 'cash' &&
     request['payment_status'] == 'pending';
 
+@visibleForTesting
+Future<void> completeMembershipRequestApproval({
+  required Future<void> Function() approve,
+  required Future<void> Function() refresh,
+  required Future<void> Function() sendNotification,
+  void Function(Object error, StackTrace stackTrace)? onRefreshError,
+  void Function(Object error, StackTrace stackTrace)? onNotificationError,
+}) async {
+  await approve();
+  try {
+    await refresh();
+  } catch (error, stackTrace) {
+    onRefreshError?.call(error, stackTrace);
+  }
+  try {
+    await sendNotification();
+  } catch (error, stackTrace) {
+    onNotificationError?.call(error, stackTrace);
+  }
+}
+
 class _DashboardScreenState extends State<DashboardScreen> {
   final _search = TextEditingController();
   late final MemberCoachRepository _memberCoachRepository =
       SupabaseMemberCoachRepository(Supabase.instance.client);
   late final MemberStaffNotesRepository _memberStaffNotesRepository =
       SupabaseMemberStaffNotesRepository(Supabase.instance.client);
+  late final MembershipOperationsDataSource _membershipOperationsRepository =
+      SupabaseMembershipOperationsRepository(Supabase.instance.client);
 
   bool _loadingMembers = true;
   String? _membersError;
@@ -431,55 +515,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadMembershipRequests() async {
-    final gymId = _gymId;
-    if (gymId == null) return;
+    if (_gymId == null) return;
 
     try {
-      final requests = await Supabase.instance.client
-          .from('membership_requests')
-          .select(
-            'id, user_id, plan_id, status, payment_method, payment_status, '
-            'amount_total, currency, created_at',
-          )
-          .eq('gym_id', gymId)
-          .eq('status', 'pending')
-          .eq('payment_method', 'cash')
-          .eq('payment_status', 'pending')
-          .order('created_at', ascending: false);
-
-      final plans = await Supabase.instance.client
-          .from('membership_plans')
-          .select('id, name, plan_type, credits, price, currency')
-          .eq('gym_id', gymId);
-
-      final planRows = List<Map<String, dynamic>>.from(plans);
-      final requestRows = List<Map<String, dynamic>>.from(requests)
+      final requests = await Supabase.instance.client.rpc(
+        'list_effective_pending_membership_requests',
+      );
+      final requestRows = List<Map<String, dynamic>>.from(requests as List)
           .where(adminMembershipRequestNeedsAction)
           .map((row) {
-            final userId = row['user_id']?.toString();
-            final planId = row['plan_id']?.toString();
-
-            final member = _members.firstWhere(
-              (m) => m['id']?.toString() == userId,
-              orElse: () => const {},
-            );
-
-            final plan = planRows.firstWhere(
-              (p) => p['id']?.toString() == planId,
-              orElse: () => const {},
+            final identity = adminRequestIdentity(
+              row,
+              fallback: appStrings.member,
             );
 
             return {
               ...row,
-              'member_name':
-                  member['full_name']?.toString() ??
-                  member['email']?.toString() ??
-                  appStrings.member,
-              'plan_name': plan['name']?.toString() ?? appStrings.plan,
-              'plan_type': plan['plan_type']?.toString(),
-              'credits': plan['credits'],
-              'plan_price': plan['price'],
-              'currency': row['currency'] ?? plan['currency'],
+              'id': row['request_id'],
+              'member_name': identity.name,
+              'member_email': identity.email,
+              'member_avatar_url': identity.avatarUrl,
+              'plan_name': row['plan_name'] ?? appStrings.plan,
+              'currency': row['currency'] ?? row['plan_currency'],
             };
           })
           .toList();
@@ -493,47 +550,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadGymJoinRequests() async {
-    final gymId = _gymId;
-    if (gymId == null) return;
+    if (_gymId == null) return;
 
     try {
-      final rows = await Supabase.instance.client
-          .from('gym_join_requests')
-          .select('id, user_id, status, created_at')
-          .eq('gym_id', gymId)
-          .eq('status', 'pending')
-          .order('created_at', ascending: false);
-
-      final requestRows = List<Map<String, dynamic>>.from(rows);
-      final userIds = requestRows
-          .map((row) => row['user_id']?.toString())
-          .whereType<String>()
-          .toList();
-
-      final profiles = userIds.isEmpty
-          ? <Map<String, dynamic>>[]
-          : List<Map<String, dynamic>>.from(
-              await Supabase.instance.client
-                  .from('profiles')
-                  .select('id, full_name, email, phone, birth_date, avatar_url')
-                  .inFilter('id', userIds),
-            );
-
-      final profileById = {
-        for (final profile in profiles) profile['id'].toString(): profile,
-      };
-
-      final requests = requestRows.map((row) {
-        final userId = row['user_id']?.toString();
-        final profile = userId == null ? null : profileById[userId];
+      final rows = await Supabase.instance.client.rpc(
+        'list_effective_gym_join_requests',
+      );
+      final requests = List<Map<String, dynamic>>.from(rows as List).map((row) {
+        final identity = adminRequestIdentity(row, fallback: appStrings.member);
 
         return {
           ...row,
-          'member_name': _requesterName(profile),
-          'member_email': profile?['email']?.toString(),
-          'member_phone': profile?['phone']?.toString(),
-          'member_birth_date': profile?['birth_date']?.toString(),
-          'member_avatar_url': profile?['avatar_url']?.toString(),
+          'id': row['request_id'],
+          'member_name': identity.name,
+          'member_email': identity.email,
+          'member_phone': row['phone']?.toString(),
+          'member_avatar_url': identity.avatarUrl,
         };
       }).toList();
 
@@ -543,10 +575,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       setState(() => _gymJoinRequests = []);
     }
-  }
-
-  String _requesterName(Map<String, dynamic>? profile) {
-    return adminAccessRequestDisplayName(profile, fallback: appStrings.member);
   }
 
   Future<void> _loadRecentActivity() async {
@@ -701,14 +729,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _processingMembershipRequestId = requestId);
 
     try {
-      await Supabase.instance.client.rpc(
-        'confirm_in_person_membership_payment',
-        params: {'p_request_id': requestId, 'p_manual_payment_method': method},
+      await completeMembershipRequestApproval(
+        approve: () async {
+          await Supabase.instance.client.rpc(
+            'confirm_in_person_membership_payment',
+            params: {
+              'p_request_id': requestId,
+              'p_manual_payment_method': method,
+            },
+          );
+        },
+        refresh: _loadDashboardData,
+        onRefreshError: (error, _) {
+          debugPrint('Membership approval refresh failed: $error');
+          if (!mounted) return;
+          setState(
+            () => _membershipRequests.removeWhere(
+              (candidate) => candidate['id']?.toString() == requestId,
+            ),
+          );
+        },
+        sendNotification: () async {
+          await Supabase.instance.client.functions.invoke('send-notifications');
+        },
+        onNotificationError: (error, _) {
+          debugPrint(
+            'Membership approval notification dispatch failed: $error',
+          );
+        },
       );
-
-      await Supabase.instance.client.functions.invoke('send-notifications');
-
-      await _loadDashboardData();
 
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -1244,12 +1293,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final membershipRows = await Supabase.instance.client
         .from('member_memberships')
         .select(
-          'id, credits_remaining, starts_at, expires_at, status, is_active, '
+          'id, credits_remaining, credits_total, starts_at, expires_at, status, is_active, '
           'created_at, membership_plans(name, plan_type, credits)',
         )
         .eq('user_id', memberId)
-        .eq('is_active', true)
-        .inFilter('status', ['active', 'scheduled'])
         .order('created_at', ascending: false);
 
     final memberships = List<Map<String, dynamic>>.from(membershipRows);
@@ -1272,7 +1319,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .cast<Map<String, dynamic>>()
         .firstOrNull;
 
-    membership ??= memberships.firstOrNull;
+    membership ??= memberships
+        .where((row) => row['status'] == 'scheduled')
+        .cast<Map<String, dynamic>>()
+        .firstOrNull;
 
     return {'membership': membership, 'memberships': memberships};
   }
@@ -1344,41 +1394,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (current) {
       final name = member['full_name']?.toString().trim();
       final hasMembership = adminMemberHasActivePlan(member);
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(
-            appStrings.pick(
-              'Deactivate ${name?.isNotEmpty == true ? name : 'member'}',
-              'Desactivar a ${name?.isNotEmpty == true ? name : 'miembro'}',
-            ),
-          ),
-          content: Text(
-            [
-              appStrings.pick(
-                'This athlete will stop counting as an active member and will not be able to use features reserved for active athletes. Their profile and history will be preserved.',
-                'Este atleta dejará de contar como miembro activo y no podrá utilizar las funciones reservadas a atletas activos. Su perfil e historial se conservarán.',
-              ),
-              if (hasMembership)
+      final confirmed =
+          await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: Text(
                 appStrings.pick(
-                  'This athlete has an active membership. It will remain registered, but cannot be used while the athlete is inactive.',
-                  'Este atleta tiene una membresía activa. Seguirá registrada, pero no podrá utilizarla mientras permanezca inactivo.',
+                  'Deactivate ${name?.isNotEmpty == true ? name : 'member'}',
+                  'Desactivar a ${name?.isNotEmpty == true ? name : 'miembro'}',
                 ),
-            ].join('\n\n'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(appStrings.cancel),
+              ),
+              content: Text(
+                [
+                  appStrings.pick(
+                    'This athlete will stop counting as an active member and will not be able to use features reserved for active athletes. Their profile and history will be preserved.',
+                    'Este atleta dejará de contar como miembro activo y no podrá utilizar las funciones reservadas a atletas activos. Su perfil e historial se conservarán.',
+                  ),
+                  if (hasMembership)
+                    appStrings.pick(
+                      'This athlete has an active membership. It will remain registered, but cannot be used while the athlete is inactive.',
+                      'Este atleta tiene una membresía activa. Seguirá registrada, pero no podrá utilizarla mientras permanezca inactivo.',
+                    ),
+                ].join('\n\n'),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text(appStrings.cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.danger,
+                  ),
+                  child: Text(appStrings.deactivateMember.toUpperCase()),
+                ),
+              ],
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-              child: Text(appStrings.deactivateMember.toUpperCase()),
-            ),
-          ],
-        ),
-      ) ?? false;
+          ) ??
+          false;
       if (!confirmed) return;
     }
 
@@ -1779,6 +1833,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return appStrings.expired;
       case 'cancelled':
         return appStrings.cancelled;
+      case 'voided':
+        return appStrings.pick('Voided', 'Anulada');
       case 'replaced':
         return appStrings.replaced;
       default:
@@ -1798,6 +1854,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Icons.event_busy_rounded;
       case 'cancelled':
         return Icons.cancel_rounded;
+      case 'voided':
+        return Icons.block_rounded;
       case 'replaced':
         return Icons.swap_horiz_rounded;
       default:
@@ -1815,6 +1873,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const Color(0xFFE09B2D);
       case 'expired':
       case 'cancelled':
+      case 'voided':
       case 'replaced':
         return AppColors.textSecondary(context);
       default:
@@ -1833,8 +1892,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openMemberMembershipDetails(
-    Map<String, dynamic> membership,
-  ) async {
+    Map<String, dynamic> membership, {
+    Future<void> Function()? onChanged,
+  }) async {
     final planData = membership['membership_plans'];
     final plan = planData is Map
         ? Map<String, dynamic>.from(planData)
@@ -1843,7 +1903,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final status = membership['status']?.toString();
     final planName = plan['name']?.toString() ?? appStrings.plan;
     final remainingCredits = membership['credits_remaining'];
-    final totalCredits = plan['credits'];
+    final totalCredits = membership['credits_total'] ?? plan['credits'];
 
     final creditsLabel = remainingCredits == null
         ? appStrings.unlimited
@@ -1942,6 +2002,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ],
                       ),
+                    ),
+                    MembershipOperationsLauncher(
+                      membershipId: membership['id'].toString(),
+                      status: status ?? '',
+                      dataSource: _membershipOperationsRepository,
+                      onChanged: () async {
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                        await onChanged?.call();
+                      },
                     ),
                   ],
                 ),
@@ -2138,6 +2207,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 final membership =
                     membershipData['membership'] as Map<String, dynamic>?;
+                final memberships = snapshot.hasData
+                    ? List<Map<String, dynamic>>.from(
+                        membershipData['memberships'] as List,
+                      )
+                    : <Map<String, dynamic>>[];
 
                 final membershipPlan = membership?['membership_plans'] as Map?;
                 final membershipPlanName =
@@ -2145,7 +2219,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final membershipStatus =
                     membership?['status']?.toString() ?? '';
                 final membershipRemaining = membership?['credits_remaining'];
-                final membershipTotalCredits = membershipPlan?['credits'];
+                final membershipTotalCredits =
+                    membership?['credits_total'] ?? membershipPlan?['credits'];
 
                 final membershipCreditsLabel = membershipRemaining == null
                     ? appStrings.unlimited
@@ -2170,365 +2245,317 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       bottom: MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: SafeArea(
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.86,
-                      ),
-                      margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
-                      padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface(context),
-                        borderRadius: BorderRadius.circular(AppRadii.sheet),
-                        border: Border.all(
-                          color: AppColors.border(context),
-                          width: 1,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.86,
                         ),
-                      ),
-                      child: ListView(
-                        shrinkWrap: false,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 48,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: AppColors.border(context),
-                                borderRadius: BorderRadius.circular(999),
+                        margin: const EdgeInsets.fromLTRB(16, 72, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface(context),
+                          borderRadius: BorderRadius.circular(AppRadii.sheet),
+                          border: Border.all(
+                            color: AppColors.border(context),
+                            width: 1,
+                          ),
+                        ),
+                        child: ListView(
+                          shrinkWrap: false,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 48,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: AppColors.border(context),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              _MemberAvatar(
-                                name: name,
-                                avatarUrl: member['avatar_url']?.toString(),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: _DashText.title.copyWith(
-                                              color: AppColors.textPrimary(
-                                                context,
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                _MemberAvatar(
+                                  name: name,
+                                  avatarUrl: member['avatar_url']?.toString(),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: _DashText.title.copyWith(
+                                                color: AppColors.textPrimary(
+                                                  context,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: active
-                                                ? AppColors.primary.withValues(
-                                                    alpha: 0.14,
-                                                  )
-                                                : AppColors.surfaceAlt(context),
-                                            borderRadius: BorderRadius.circular(
-                                              999,
+                                          const SizedBox(width: 10),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
                                             ),
-                                            border: Border.all(
+                                            decoration: BoxDecoration(
                                               color: active
                                                   ? AppColors.primary
-                                                        .withValues(alpha: 0.45)
-                                                  : AppColors.border(context),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            (active
-                                                    ? appStrings.active
-                                                    : appStrings.inactive)
-                                                .toUpperCase(),
-                                            style: _DashText.subtle.copyWith(
-                                              color: active
-                                                  ? AppColors.primary
-                                                  : AppColors.textSecondary(
+                                                        .withValues(alpha: 0.14)
+                                                  : AppColors.surfaceAlt(
                                                       context,
                                                     ),
-                                              fontWeight: FontWeight.w700,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                              border: Border.all(
+                                                color: active
+                                                    ? AppColors.primary
+                                                          .withValues(
+                                                            alpha: 0.45,
+                                                          )
+                                                    : AppColors.border(context),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              (active
+                                                      ? appStrings.active
+                                                      : appStrings.inactive)
+                                                  .toUpperCase(),
+                                              style: _DashText.subtle.copyWith(
+                                                color: active
+                                                    ? AppColors.primary
+                                                    : AppColors.textSecondary(
+                                                        context,
+                                                      ),
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      (selectedRole == 'admin'
-                                          ? appStrings.adminRoleLabel
-                                          : selectedRole == 'coach'
-                                          ? appStrings.coachRoleLabel
-                                          : appStrings.member),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: _DashText.subtle.copyWith(
-                                        fontWeight: FontWeight.w600,
+                                        ],
                                       ),
-                                    ),
-                                    if (gymMemberCreatedAt != null) ...[
                                       const SizedBox(height: 4),
                                       Text(
-                                        '${appStrings.memberSince.toUpperCase()} · '
-                                        '${_formatDate(gymMemberCreatedAt.toIso8601String())}',
-                                        key: const ValueKey(
-                                          'member-since-label',
+                                        (selectedRole == 'admin'
+                                            ? appStrings.adminRoleLabel
+                                            : selectedRole == 'coach'
+                                            ? appStrings.coachRoleLabel
+                                            : appStrings.member),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: _DashText.subtle.copyWith(
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        style: AppTypography.helper(context),
                                       ),
+                                      if (gymMemberCreatedAt != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${appStrings.memberSince.toUpperCase()} · '
+                                          '${_formatDate(gymMemberCreatedAt.toIso8601String())}',
+                                          key: const ValueKey(
+                                            'member-since-label',
+                                          ),
+                                          style: AppTypography.helper(context),
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          _MemberOverviewCard(
-                            attendedThisMonth: attendedThisMonth,
-                            noShowsThisMonth: noShowsThisMonth,
-                            lastAttendance: lastAttendance == null
-                                ? appStrings.noAttendancesYet
-                                : _formatDate(lastAttendance),
-                            totalAttended: attendedCount,
-                          ),
-                          const SizedBox(height: 18),
-                          _MemberMilestoneCard(attendedCount: attendedCount),
-                          const SizedBox(height: 18),
-                          _MemberDetailCard(
-                            child: MemberStaffNotesSection(
-                              memberUserId: member['id'].toString(),
-                              repository: _memberStaffNotesRepository,
-                              canManage: true,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          _MemberDetailCard(
-                            child: MemberDocumentsSection(
-                              memberUserId: member['id'].toString(),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          _MemberDetailCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  appStrings.memberDetails.toUpperCase(),
-                                  style: _DashText.section.copyWith(
-                                    color: AppColors.textPrimary(context),
                                   ),
-                                ),
-                                const SizedBox(height: 14),
-                                TextField(
-                                  controller: memberName,
-                                  textCapitalization: TextCapitalization.words,
-                                  style: appFormValueStyle(context),
-                                  decoration: _dashInput(
-                                    context,
-                                    appStrings.fullName,
-                                    Icons.person_outline_rounded,
-                                  ),
-                                  onChanged: (_) =>
-                                      setSheetState(() => memberDirty = true),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                TextField(
-                                  controller: memberEmail,
-                                  readOnly: true,
-                                  style: appFormValueStyle(context),
-                                  decoration: _dashInput(
-                                    context,
-                                    'Email',
-                                    Icons.email_outlined,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                TextField(
-                                  controller: memberPhone,
-                                  keyboardType: TextInputType.phone,
-                                  style: appFormValueStyle(context),
-                                  decoration: _dashInput(
-                                    context,
-                                    appStrings.phone,
-                                    Icons.phone_outlined,
-                                  ),
-                                  onChanged: (_) =>
-                                      setSheetState(() => memberDirty = true),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                TextField(
-                                  controller: memberBirthDate,
-                                  readOnly: true,
-                                  style: appFormValueStyle(context),
-                                  decoration: _dashInput(
-                                    context,
-                                    appStrings.birthDate,
-                                    Icons.calendar_month_outlined,
-                                  ),
-                                  onTap: () async {
-                                    await _pickBirthDate(memberBirthDate);
-                                    setSheetState(() => memberDirty = true);
-                                  },
-                                ),
-                                const SizedBox(height: 4),
-                                Divider(
-                                  color: AppColors.border(context),
-                                  height: 24,
-                                ),
-                                MemberRoleCapabilitySection(
-                                  role: selectedRole,
-                                  isCoach: memberHasCoachCapability(member),
-                                  isUpdatingCoach: updatingCoach,
-                                  onRoleSelected: (role) => _updateMemberRole(
-                                    member: member,
-                                    role: role,
-                                    currentSelectedRole: selectedRole,
-                                    setSheetState: setSheetState,
-                                  ),
-                                  onCoachChanged: (isCoach) async {
-                                    setSheetState(() => updatingCoach = true);
-                                    await _updateMemberCoachCapability(
-                                      member: member,
-                                      isCoach: isCoach,
-                                      setSheetState: setSheetState,
-                                    );
-                                    if (context.mounted) {
-                                      setSheetState(
-                                        () => updatingCoach = false,
-                                      );
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                AppFormSubmitButton(
-                                  key: const ValueKey(
-                                    'member-detail-assign-plan',
-                                  ),
-                                  label: appStrings.saveChanges,
-                                  loading: savingMember,
-                                  enabled: memberDirty && !savingMember,
-                                  accentColor: AppColors.primary,
-                                  onPressed: () async {
-                                    setSheetState(() => savingMember = true);
-                                    try {
-                                      final updated = await Supabase
-                                          .instance
-                                          .client
-                                          .rpc(
-                                            'update_gym_member_profile',
-                                            params: {
-                                              'p_member_id': member['id'],
-                                              'p_full_name': memberName.text
-                                                  .trim(),
-                                              'p_phone': memberPhone.text
-                                                  .trim(),
-                                              'p_birth_date':
-                                                  memberBirthDate.text
-                                                      .trim()
-                                                      .isEmpty
-                                                  ? null
-                                                  : memberBirthDate.text.trim(),
-                                            },
-                                          )
-                                          .single();
-                                      member.addAll(
-                                        Map<String, dynamic>.from(updated),
-                                      );
-                                      if (!context.mounted) return;
-                                      setSheetState(() => memberDirty = false);
-                                      setState(() {});
-                                    } finally {
-                                      if (context.mounted) {
-                                        setSheetState(
-                                          () => savingMember = false,
-                                        );
-                                      }
-                                    }
-                                  },
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          _MemberDetailCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  appStrings.membershipTitle.toUpperCase(),
-                                  style: _DashText.section.copyWith(
-                                    color: AppColors.textPrimary(context),
+                            const SizedBox(height: 18),
+                            _MemberOverviewCard(
+                              attendedThisMonth: attendedThisMonth,
+                              noShowsThisMonth: noShowsThisMonth,
+                              lastAttendance: lastAttendance == null
+                                  ? appStrings.noAttendancesYet
+                                  : _formatDate(lastAttendance),
+                              totalAttended: attendedCount,
+                            ),
+                            const SizedBox(height: 18),
+                            _MemberMilestoneCard(attendedCount: attendedCount),
+                            const SizedBox(height: 18),
+                            _MemberDetailCard(
+                              child: MemberStaffNotesSection(
+                                memberUserId: member['id'].toString(),
+                                repository: _memberStaffNotesRepository,
+                                canManage: true,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            _MemberDetailCard(
+                              child: MemberDocumentsSection(
+                                memberUserId: member['id'].toString(),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            _MemberDetailCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appStrings.memberDetails.toUpperCase(),
+                                    style: _DashText.section.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 14),
-                                if (membership == null)
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surfaceAlt(context),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: AppColors.border(context),
-                                      ),
+                                  const SizedBox(height: 14),
+                                  TextField(
+                                    controller: memberName,
+                                    textCapitalization:
+                                        TextCapitalization.words,
+                                    style: appFormValueStyle(context),
+                                    decoration: _dashInput(
+                                      context,
+                                      appStrings.fullName,
+                                      Icons.person_outline_rounded,
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 44,
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.12,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.card_membership_outlined,
-                                            color: AppColors.primary,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 13),
-                                        Expanded(
-                                          child: Text(
-                                            appStrings.noActivePlan,
-                                            style: _DashText.body.copyWith(
-                                              color: AppColors.textPrimary(
-                                                context,
-                                              ),
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    onChanged: (_) =>
+                                        setSheetState(() => memberDirty = true),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  TextField(
+                                    controller: memberEmail,
+                                    readOnly: true,
+                                    style: appFormValueStyle(context),
+                                    decoration: _dashInput(
+                                      context,
+                                      'Email',
+                                      Icons.email_outlined,
                                     ),
-                                  )
-                                else
-                                  InkWell(
-                                    onTap: () => _openMemberMembershipDetails(
-                                      membership,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  TextField(
+                                    controller: memberPhone,
+                                    keyboardType: TextInputType.phone,
+                                    style: appFormValueStyle(context),
+                                    decoration: _dashInput(
+                                      context,
+                                      appStrings.phone,
+                                      Icons.phone_outlined,
                                     ),
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
+                                    onChanged: (_) =>
+                                        setSheetState(() => memberDirty = true),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  TextField(
+                                    controller: memberBirthDate,
+                                    readOnly: true,
+                                    style: appFormValueStyle(context),
+                                    decoration: _dashInput(
+                                      context,
+                                      appStrings.birthDate,
+                                      Icons.calendar_month_outlined,
+                                    ),
+                                    onTap: () async {
+                                      await _pickBirthDate(memberBirthDate);
+                                      setSheetState(() => memberDirty = true);
+                                    },
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Divider(
+                                    color: AppColors.border(context),
+                                    height: 24,
+                                  ),
+                                  MemberRoleCapabilitySection(
+                                    role: selectedRole,
+                                    isCoach: memberHasCoachCapability(member),
+                                    isUpdatingCoach: updatingCoach,
+                                    onRoleSelected: (role) => _updateMemberRole(
+                                      member: member,
+                                      role: role,
+                                      currentSelectedRole: selectedRole,
+                                      setSheetState: setSheetState,
+                                    ),
+                                    onCoachChanged: (isCoach) async {
+                                      setSheetState(() => updatingCoach = true);
+                                      await _updateMemberCoachCapability(
+                                        member: member,
+                                        isCoach: isCoach,
+                                        setSheetState: setSheetState,
+                                      );
+                                      if (context.mounted) {
+                                        setSheetState(
+                                          () => updatingCoach = false,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  AppFormSubmitButton(
+                                    key: const ValueKey(
+                                      'member-detail-assign-plan',
+                                    ),
+                                    label: appStrings.saveChanges,
+                                    loading: savingMember,
+                                    enabled: memberDirty && !savingMember,
+                                    accentColor: AppColors.primary,
+                                    onPressed: () async {
+                                      setSheetState(() => savingMember = true);
+                                      try {
+                                        final updated = await Supabase
+                                            .instance
+                                            .client
+                                            .rpc(
+                                              'update_gym_member_profile',
+                                              params: {
+                                                'p_member_id': member['id'],
+                                                'p_full_name': memberName.text
+                                                    .trim(),
+                                                'p_phone': memberPhone.text
+                                                    .trim(),
+                                                'p_birth_date':
+                                                    memberBirthDate.text
+                                                        .trim()
+                                                        .isEmpty
+                                                    ? null
+                                                    : memberBirthDate.text
+                                                          .trim(),
+                                              },
+                                            )
+                                            .single();
+                                        member.addAll(
+                                          Map<String, dynamic>.from(updated),
+                                        );
+                                        if (!context.mounted) return;
+                                        setSheetState(
+                                          () => memberDirty = false,
+                                        );
+                                        setState(() {});
+                                      } finally {
+                                        if (context.mounted) {
+                                          setSheetState(
+                                            () => savingMember = false,
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            _MemberDetailCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appStrings.membershipTitle.toUpperCase(),
+                                    style: _DashText.section.copyWith(
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  if (membership == null)
+                                    Container(
                                       width: double.infinity,
-                                      padding: const EdgeInsets.fromLTRB(
-                                        16,
-                                        16,
-                                        14,
-                                        16,
-                                      ),
+                                      padding: const EdgeInsets.all(18),
                                       decoration: BoxDecoration(
                                         color: AppColors.surfaceAlt(context),
                                         borderRadius: BorderRadius.circular(16),
@@ -2537,231 +2564,307 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                       ),
                                       child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
                                         children: [
                                           Container(
-                                            width: 46,
-                                            height: 46,
+                                            width: 44,
+                                            height: 44,
                                             decoration: BoxDecoration(
                                               color: AppColors.primary
                                                   .withValues(alpha: 0.12),
                                               borderRadius:
                                                   BorderRadius.circular(14),
                                             ),
-                                            child: Icon(
-                                              membershipStatus == 'scheduled'
-                                                  ? Icons.schedule_rounded
-                                                  : Icons
-                                                        .check_circle_outline_rounded,
+                                            child: const Icon(
+                                              Icons.card_membership_outlined,
                                               color: AppColors.primary,
-                                              size: 23,
+                                              size: 22,
                                             ),
                                           ),
-                                          const SizedBox(width: 14),
+                                          const SizedBox(width: 13),
                                           Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  membershipPlanName,
-                                                  style: _DashText.title.copyWith(
-                                                    color:
-                                                        AppColors.textPrimary(
-                                                          context,
-                                                        ),
-                                                    fontSize: 20,
-                                                  ),
+                                            child: Text(
+                                              appStrings.noActivePlan,
+                                              style: _DashText.body.copyWith(
+                                                color: AppColors.textPrimary(
+                                                  context,
                                                 ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  membershipStatus ==
-                                                          'scheduled'
-                                                      ? appStrings.scheduled
-                                                            .toUpperCase()
-                                                      : appStrings.active
-                                                            .toUpperCase(),
-                                                  style: _DashText.section
-                                                      .copyWith(
-                                                        color:
-                                                            AppColors.primary,
-                                                      ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  '${_formatDate(membership['starts_at']?.toString())}'
-                                                  ' — '
-                                                  '${_formatDate(membership['expires_at']?.toString())}',
-                                                  style: _DashText.subtle.copyWith(
-                                                    color:
-                                                        AppColors.textSecondary(
-                                                          context,
-                                                        ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 7),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .confirmation_number_outlined,
-                                                      size: 15,
-                                                      color:
-                                                          AppColors.textSecondary(
-                                                            context,
-                                                          ),
-                                                    ),
-                                                    const SizedBox(width: 7),
-                                                    Expanded(
-                                                      child: Text(
-                                                        membershipCreditsLabel,
-                                                        style: _DashText.body
-                                                            .copyWith(
-                                                              color:
-                                                                  AppColors.textPrimary(
-                                                                    context,
-                                                                  ),
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w700,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 12),
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      appStrings.viewDetails
-                                                          .toUpperCase(),
-                                                      style: _DashText.section
-                                                          .copyWith(
-                                                            color: AppColors
-                                                                .primary,
-                                                          ),
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    const Icon(
-                                                      Icons
-                                                          .chevron_right_rounded,
-                                                      color: AppColors.primary,
-                                                      size: 19,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
+                                    )
+                                  else
+                                    InkWell(
+                                      onTap: () => _openMemberMembershipDetails(
+                                        membership,
+                                        onChanged: () async {
+                                          setSheetState(() {
+                                            memberDataFuture = loadMemberData();
+                                          });
+                                        },
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          16,
+                                          14,
+                                          16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surfaceAlt(context),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.border(context),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: 46,
+                                              height: 46,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                              ),
+                                              child: Icon(
+                                                membershipStatus == 'scheduled'
+                                                    ? Icons.schedule_rounded
+                                                    : Icons
+                                                          .check_circle_outline_rounded,
+                                                color: AppColors.primary,
+                                                size: 23,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    membershipPlanName,
+                                                    style: _DashText.title.copyWith(
+                                                      color:
+                                                          AppColors.textPrimary(
+                                                            context,
+                                                          ),
+                                                      fontSize: 20,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    membershipStatus ==
+                                                            'scheduled'
+                                                        ? appStrings.scheduled
+                                                              .toUpperCase()
+                                                        : appStrings.active
+                                                              .toUpperCase(),
+                                                    style: _DashText.section
+                                                        .copyWith(
+                                                          color:
+                                                              AppColors.primary,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(height: 10),
+                                                  Text(
+                                                    '${_formatDate(membership['starts_at']?.toString())}'
+                                                    ' — '
+                                                    '${_formatDate(membership['expires_at']?.toString())}',
+                                                    style: _DashText.subtle
+                                                        .copyWith(
+                                                          color:
+                                                              AppColors.textSecondary(
+                                                                context,
+                                                              ),
+                                                        ),
+                                                  ),
+                                                  const SizedBox(height: 7),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .confirmation_number_outlined,
+                                                        size: 15,
+                                                        color:
+                                                            AppColors.textSecondary(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                      const SizedBox(width: 7),
+                                                      Expanded(
+                                                        child: Text(
+                                                          membershipCreditsLabel,
+                                                          style: _DashText.body
+                                                              .copyWith(
+                                                                color:
+                                                                    AppColors.textPrimary(
+                                                                      context,
+                                                                    ),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        appStrings.viewDetails
+                                                            .toUpperCase(),
+                                                        style: _DashText.section
+                                                            .copyWith(
+                                                              color: AppColors
+                                                                  .primary,
+                                                            ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Icon(
+                                                        Icons
+                                                            .chevron_right_rounded,
+                                                        color:
+                                                            AppColors.primary,
+                                                        size: 19,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 18),
+                                  AppFormSubmitButton(
+                                    label: appStrings.assignPlan,
+                                    loading: false,
+                                    enabled: true,
+                                    accentColor: AppColors.primary,
+                                    icon: Icons.add_card_rounded,
+                                    onPressed: () async {
+                                      final assigned = await _openAssignPlan(
+                                        member['id'].toString(),
+                                      );
+
+                                      if (!assigned || !context.mounted) return;
+
+                                      setSheetState(() {
+                                        memberDataFuture = loadMemberData();
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.lg),
+                                  MemberMembershipsSection(
+                                    memberId: member['id'].toString(),
+                                    includeActive: false,
+                                    memberships: memberships,
+                                    onMembershipTap: (selected) =>
+                                        _openMemberMembershipDetails(
+                                          selected,
+                                          onChanged: () async {
+                                            setSheetState(() {
+                                              memberDataFuture =
+                                                  loadMemberData();
+                                            });
+                                          },
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            Text(
+                              appStrings.recentClasses.toUpperCase(),
+                              style: _DashText.section.copyWith(
+                                color: AppColors.textPrimary(context),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _MemberFilterChip(
+                                    label:
+                                        '${appStrings.all} (${history.length})',
+                                    selected: historyFilter == 'all',
+                                    onTap: () => setSheetState(
+                                      () => historyFilter = 'all',
                                     ),
                                   ),
-                                const SizedBox(height: 18),
-                                AppFormSubmitButton(
-                                  label: appStrings.assignPlan,
-                                  loading: false,
-                                  enabled: true,
-                                  accentColor: AppColors.primary,
-                                  icon: Icons.add_card_rounded,
-                                  onPressed: () async {
-                                    final assigned = await _openAssignPlan(
-                                      member['id'].toString(),
-                                    );
-
-                                    if (!assigned || !context.mounted) return;
-
-                                    setSheetState(() {
-                                      memberDataFuture = loadMemberData();
-                                    });
-                                  },
                                 ),
-                                const SizedBox(height: AppSpacing.lg),
-                                MemberMembershipsSection(
-                                  memberId: member['id'].toString(),
-                                  includeActive: false,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _MemberFilterChip(
+                                    label:
+                                        '${appStrings.attended.toUpperCase()} '
+                                        '(${history.where((h) => h['status'] == 'attended').length})',
+                                    selected: historyFilter == 'attended',
+                                    onTap: () => setSheetState(
+                                      () => historyFilter = 'attended',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _MemberFilterChip(
+                                    label:
+                                        '${appStrings.noShow.toUpperCase()} '
+                                        '(${history.where((h) => h['status'] == 'no_show').length})',
+                                    selected: historyFilter == 'no_show',
+                                    onTap: () => setSheetState(
+                                      () => historyFilter = 'no_show',
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            appStrings.recentClasses.toUpperCase(),
-                            style: _DashText.section.copyWith(
-                              color: AppColors.textPrimary(context),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _MemberFilterChip(
-                                  label:
-                                      '${appStrings.all} (${history.length})',
-                                  selected: historyFilter == 'all',
-                                  onTap: () => setSheetState(
-                                    () => historyFilter = 'all',
+                            const SizedBox(height: 12),
+                            if (!snapshot.hasData)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _MemberFilterChip(
-                                  label:
-                                      '${appStrings.attended.toUpperCase()} '
-                                      '(${history.where((h) => h['status'] == 'attended').length})',
-                                  selected: historyFilter == 'attended',
-                                  onTap: () => setSheetState(
-                                    () => historyFilter = 'attended',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _MemberFilterChip(
-                                  label:
-                                      '${appStrings.noShow.toUpperCase()} '
-                                      '(${history.where((h) => h['status'] == 'no_show').length})',
-                                  selected: historyFilter == 'no_show',
-                                  onTap: () => setSheetState(
-                                    () => historyFilter = 'no_show',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          if (!snapshot.hasData)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            )
-                          else if (filteredHistory.isEmpty)
-                            Text(appStrings.noClasses, style: _DashText.subtle)
-                          else
-                            ...filteredHistory.map((h) {
-                              final klass = h['classes'];
-                              final title =
-                                  klass?['title']?.toString() ??
-                                  appStrings.classFallback;
-                              final startsAt =
-                                  klass?['starts_at']?.toString() ?? '';
-                              final status = h['status']?.toString() ?? '';
+                              )
+                            else if (filteredHistory.isEmpty)
+                              Text(
+                                appStrings.noClasses,
+                                style: _DashText.subtle,
+                              )
+                            else
+                              ...filteredHistory.map((h) {
+                                final klass = h['classes'];
+                                final title =
+                                    klass?['title']?.toString() ??
+                                    appStrings.classFallback;
+                                final startsAt =
+                                    klass?['starts_at']?.toString() ?? '';
+                                final status = h['status']?.toString() ?? '';
 
-                              return _MemberHistoryRow(
-                                title: title,
-                                subtitle: startsAt,
-                                status: status,
-                              );
-                            }),
-                        ],
+                                return _MemberHistoryRow(
+                                  title: title,
+                                  subtitle: startsAt,
+                                  status: status,
+                                );
+                              }),
+                          ],
+                        ),
                       ),
-                    ),
                     ),
                   ),
                 );
@@ -2803,7 +2906,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                   ),
-                const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: AppSpacing.xs),
                   _DashboardTabChip(
                     label: appStrings.members,
                     selected: _selectedTab == _DashboardTab.members,
@@ -2813,7 +2916,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                   ),
-                const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: AppSpacing.xs),
                   _DashboardTabChip(
                     label: appStrings.adminMemberships,
                     selected: _selectedTab == _DashboardTab.plans,
@@ -3011,7 +3114,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 selected:
                                     _roleFilter == _MemberRoleFilter.inactive,
                                 onTap: () => setState(
-                                  () => _roleFilter = _MemberRoleFilter.inactive,
+                                  () =>
+                                      _roleFilter = _MemberRoleFilter.inactive,
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.xs),
@@ -3239,19 +3343,22 @@ class _MembershipOverview extends StatelessWidget {
             final processing = processingRequestId == request['id']?.toString();
             final planName =
                 request['plan_name']?.toString() ?? appStrings.plan;
+            final email = request['member_email']?.toString().trim() ?? '';
             return _ActionRequestRow(
               name: request['member_name']?.toString() ?? appStrings.member,
               subtitle: [
+                if (email.isNotEmpty) email,
                 planName,
                 adminMembershipRequestPriceLabel(request),
                 appStrings.inPersonPayment,
               ].where((value) => value.isNotEmpty).join(' · '),
-              icon: Icons.card_membership_outlined,
+              avatarUrl: request['member_avatar_url']?.toString(),
               approveLabel: appStrings.confirmPaymentAndActivate,
               isProcessing: processing,
               isApproveProcessing: processing,
               isRejectProcessing: processing,
               disabled: processing,
+              loadingColor: AppColors.primary,
               onApprove: () => onApproveRequest(request),
               onReject: () => onRejectRequest(request),
             );
@@ -3265,6 +3372,7 @@ class _MembershipOverview extends StatelessWidget {
 @visibleForTesting
 Widget buildMembershipOverviewForTest({
   List<Map<String, dynamic>> requests = const [],
+  String? processingRequestId,
 }) {
   return _MembershipOverview(
     activeMemberships: 12,
@@ -3273,7 +3381,7 @@ Widget buildMembershipOverviewForTest({
     mostUsedPlan: 'Beach',
     onManagePlans: () {},
     requests: requests,
-    processingRequestId: null,
+    processingRequestId: processingRequestId,
     onApproveRequest: (_) async {},
     onRejectRequest: (_) async {},
   );
@@ -3454,10 +3562,9 @@ class _MemberAvatar extends StatelessWidget {
       size: 42,
       maxInitials: 1,
       borderRadius: BorderRadius.circular(14),
-      textStyle: AppTypography.itemTitle(context).copyWith(
-        color: AppColors.primary,
-        fontWeight: FontWeight.w600,
-      ),
+      textStyle: AppTypography.itemTitle(
+        context,
+      ).copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
     );
   }
 }
@@ -3779,6 +3886,8 @@ Widget buildDashboardOverviewForTest({
   int todayCapacity = 12,
   int todayClasses = 4,
   List<Map<String, dynamic>>? todayClassRows,
+  List<Map<String, dynamic>>? joinRequests,
+  List<Map<String, dynamic>>? membershipRequests,
   Future<void> Function(Map<String, dynamic>)? onOpenTodayClass,
   Future<void> Function(Map<String, dynamic>)? onOpenTodayClassBriefing,
 }) {
@@ -3809,10 +3918,12 @@ Widget buildDashboardOverviewForTest({
             'coach': {'full_name': 'Coach Alex'},
           },
         ],
-    joinRequests: const [
-      {'id': 'request-1', 'member_name': 'Alex Member'},
-    ],
-    membershipRequests: const [],
+    joinRequests:
+        joinRequests ??
+        const [
+          {'id': 'request-1', 'member_name': 'Alex Member'},
+        ],
+    membershipRequests: membershipRequests ?? const [],
     membersWithoutPlan: const [
       {'id': 'member-1', 'full_name': 'Sam Athlete'},
     ],
@@ -4109,14 +4220,16 @@ class _ActionRequiredSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               ...membershipRequests.map((request) {
+                final email = request['member_email']?.toString().trim() ?? '';
                 return _ActionRequestRow(
                   name: request['member_name']?.toString() ?? appStrings.member,
                   subtitle: [
+                    if (email.isNotEmpty) email,
                     _planLabel(request),
                     adminMembershipRequestPriceLabel(request),
                     appStrings.inPersonPayment,
                   ].where((value) => value.isNotEmpty).join(' · '),
-                  icon: Icons.card_membership_outlined,
+                  avatarUrl: request['member_avatar_url']?.toString(),
                   approveLabel: appStrings.confirmPaymentAndActivate,
                   isProcessing: false,
                   isApproveProcessing: false,
@@ -4292,14 +4405,13 @@ class _ActionRequestRow extends StatelessWidget {
     required this.onApprove,
     required this.onReject,
     this.avatarUrl,
-    this.icon,
     this.approveLabel,
+    this.loadingColor,
   });
 
   final String name;
   final String subtitle;
   final String? avatarUrl;
-  final IconData? icon;
   final bool isProcessing;
   final bool isApproveProcessing;
   final bool isRejectProcessing;
@@ -4307,6 +4419,7 @@ class _ActionRequestRow extends StatelessWidget {
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final String? approveLabel;
+  final Color? loadingColor;
 
   Future<void> _openActions(BuildContext context) async {
     await showModalBottomSheet<void>(
@@ -4344,19 +4457,7 @@ class _ActionRequestRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (icon == null)
-            _MemberAvatar(name: name, avatarUrl: avatarUrl)
-          else
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.surface(context),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 19),
-            ),
+          _MemberAvatar(name: name, avatarUrl: avatarUrl),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -4383,9 +4484,12 @@ class _ActionRequestRow extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.xs),
           if (isProcessing || isApproveProcessing || isRejectProcessing)
-            const SizedBox.square(
+            SizedBox.square(
               dimension: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: loadingColor,
+              ),
             )
           else
             AppOutlinedAdminButton(

@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:ath615v2/core/theme/app_colors.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
+import 'package:ath615v2/core/widgets/app_avatar.dart';
 import 'package:ath615v2/core/widgets/app_form_visuals.dart';
 import 'package:ath615v2/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +51,64 @@ void main() {
       'n@example.com',
     );
     expect(adminAccessRequestDisplayName(null, fallback: 'Member'), 'Member');
+  });
+
+  test('request identity is deterministic and never crosses user records', () {
+    const member = {
+      'id': 'member-a',
+      'full_name': 'Member Name',
+      'email': 'member@example.com',
+      'avatar_url': 'member.webp',
+    };
+    const profile = {
+      'id': 'profile-a',
+      'full_name': 'Profile Name',
+      'email': 'profile@example.com',
+      'avatar_url': 'profile.webp',
+    };
+
+    final explicit = adminRequestIdentity(
+      const {
+        'user_id': 'request-user',
+        'member_name': 'Request Name',
+        'member_email': 'request@example.com',
+        'member_avatar_url': 'request.webp',
+      },
+      profile: profile,
+      member: member,
+      fallback: 'Member',
+    );
+    expect(explicit.name, 'Request Name');
+    expect(explicit.email, 'request@example.com');
+    expect(explicit.avatarUrl, 'request.webp');
+
+    final fromProfile = adminRequestIdentity(
+      const {'user_id': 'profile-a'},
+      profile: profile,
+      member: member,
+      fallback: 'Member',
+    );
+    expect(fromProfile.name, 'Profile Name');
+    expect(fromProfile.email, 'profile@example.com');
+
+    final fromMember = adminRequestIdentity(
+      const {'user_id': 'member-a'},
+      member: member,
+      fallback: 'Member',
+    );
+    expect(fromMember.name, 'Member Name');
+    expect(fromMember.avatarUrl, 'member.webp');
+  });
+
+  test('request identity uses email then localized final fallback', () {
+    final emailOnly = adminRequestIdentity(const {
+      'member_email': 'known@example.com',
+    }, fallback: 'Member');
+    expect(emailOnly.name, 'known@example.com');
+    expect(emailOnly.email, 'known@example.com');
+
+    expect(adminRequestIdentity(const {}, fallback: 'Member').name, 'Member');
+    expect(adminRequestIdentity(const {}, fallback: 'Miembro').name, 'Miembro');
   });
 
   testWidgets('today classes expose their program in the real overview', (
@@ -231,6 +291,103 @@ void main() {
     );
   });
 
+  test(
+    'membership approval refreshes before successful push dispatch',
+    () async {
+      final calls = <String>[];
+      final pendingRequests = ['request-1'];
+
+      await completeMembershipRequestApproval(
+        approve: () async => calls.add('approve'),
+        refresh: () async {
+          calls.add('refresh');
+          pendingRequests.clear();
+        },
+        sendNotification: () async => calls.add('push'),
+      );
+
+      expect(calls, ['approve', 'refresh', 'push']);
+      expect(pendingRequests, isEmpty);
+    },
+  );
+
+  test('push failure and timeout do not turn approval into failure', () async {
+    for (final failure in <Object>[
+      StateError('push failed'),
+      TimeoutException('push timed out'),
+    ]) {
+      final calls = <String>[];
+      final pendingRequests = ['request-1'];
+      Object? reportedError;
+
+      await completeMembershipRequestApproval(
+        approve: () async => calls.add('approve'),
+        refresh: () async {
+          calls.add('refresh');
+          pendingRequests.clear();
+        },
+        sendNotification: () async {
+          calls.add('push');
+          throw failure;
+        },
+        onNotificationError: (error, _) => reportedError = error,
+      );
+
+      expect(calls, ['approve', 'refresh', 'push']);
+      expect(pendingRequests, isEmpty);
+      expect(reportedError, same(failure));
+    }
+  });
+
+  test('confirmed approval reconciles locally when refresh fails', () async {
+    final calls = <String>[];
+    final pendingRequests = ['request-1'];
+    Object? reportedError;
+
+    await completeMembershipRequestApproval(
+      approve: () async => calls.add('approve'),
+      refresh: () async {
+        calls.add('refresh');
+        throw StateError('refresh failed');
+      },
+      onRefreshError: (error, _) {
+        reportedError = error;
+        pendingRequests.remove('request-1');
+      },
+      sendNotification: () async => calls.add('push'),
+    );
+
+    expect(calls, ['approve', 'refresh', 'push']);
+    expect(pendingRequests, isEmpty);
+    expect(reportedError, isA<StateError>());
+  });
+
+  test(
+    'RPC failure preserves pending state and never dispatches push',
+    () async {
+      final pendingRequests = ['request-1'];
+      final calls = <String>[];
+
+      await expectLater(
+        completeMembershipRequestApproval(
+          approve: () async {
+            calls.add('approve');
+            throw StateError('approval failed');
+          },
+          refresh: () async {
+            calls.add('refresh');
+            pendingRequests.clear();
+          },
+          sendNotification: () async => calls.add('push'),
+        ),
+        throwsStateError,
+      );
+
+      expect(calls, ['approve']);
+      expect(pendingRequests, ['request-1']);
+    },
+  );
+
   testWidgets('manual request offers explicit payment confirmation', (
     tester,
   ) async {
@@ -259,4 +416,124 @@ void main() {
     expect(find.text('CONFIRM PAYMENT AND ACTIVATE'), findsOneWidget);
     expect(find.text('REJECT'), findsOneWidget);
   });
+
+  testWidgets('membership approval loading uses the A615 primary color', (
+    tester,
+  ) async {
+    const request = {
+      'id': 'request-1',
+      'member_name': 'Laia Member',
+      'plan_name': '5 Classes',
+      'amount_total': 3500,
+      'currency': 'eur',
+    };
+
+    Future<void> pumpOverview({String? processingRequestId}) {
+      return tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: buildMembershipOverviewForTest(
+              requests: const [request],
+              processingRequestId: processingRequestId,
+            ),
+          ),
+        ),
+      );
+    }
+
+    await pumpOverview();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+
+    await pumpOverview(processingRequestId: 'request-1');
+    final loading = tester.widget<CircularProgressIndicator>(
+      find.byType(CircularProgressIndicator),
+    );
+    expect(loading.color, AppColors.primary);
+    expect(loading.strokeWidth, 2);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+
+    await pumpOverview();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+  });
+
+  testWidgets('membership request renders exact identity in management', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: buildMembershipOverviewForTest(
+            requests: const [
+              {
+                'id': 'request-a',
+                'user_id': 'user-a',
+                'member_name': 'Ada Athlete',
+                'member_email': 'ada@example.com',
+                'member_avatar_url': '',
+                'plan_name': 'Pack 5',
+              },
+              {
+                'id': 'request-b',
+                'user_id': 'user-b',
+                'member_name': 'Bea Athlete',
+                'member_email': 'bea@example.com',
+                'member_avatar_url': '',
+                'plan_name': 'Drop-in',
+              },
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ada Athlete'), findsOneWidget);
+    expect(find.textContaining('ada@example.com'), findsOneWidget);
+    expect(find.text('Bea Athlete'), findsOneWidget);
+    expect(find.textContaining('bea@example.com'), findsOneWidget);
+    expect(find.byType(AppAvatar), findsNWidgets(2));
+  });
+
+  testWidgets(
+    'overview action sheet preserves join and membership identities',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: buildDashboardOverviewForTest(
+                joinRequests: const [
+                  {
+                    'id': 'join-a',
+                    'member_name': 'Join Person',
+                    'member_email': 'join@example.com',
+                  },
+                ],
+                membershipRequests: const [
+                  {
+                    'id': 'membership-a',
+                    'member_name': 'Membership Person',
+                    'member_email': 'membership@example.com',
+                    'plan_name': 'Pack 5',
+                  },
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('dashboard-attention')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Join Person'), findsOneWidget);
+      expect(find.textContaining('join@example.com'), findsOneWidget);
+      expect(find.text('Membership Person'), findsOneWidget);
+      expect(find.textContaining('membership@example.com'), findsOneWidget);
+    },
+  );
 }
