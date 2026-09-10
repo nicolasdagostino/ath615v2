@@ -11,8 +11,10 @@ import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import '../../../auth/data/auth_repository.dart';
 import 'attendance_history_screen.dart';
+import 'training_screen.dart';
 
 class ProfileOverviewData {
   const ProfileOverviewData({
@@ -210,7 +212,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onAvatarTap: _uploadAvatar,
             onSettings: () => context.push('/settings'),
             onMemberships: () => context.push('/membership'),
-            onRecords: () => context.push('/records'),
+            onRecords: () => showAppLargeFormSheet<void>(
+              context: context,
+              builder: (_) => const TrainingScreen(recordsOnly: true),
+            ),
           ),
   );
 }

@@ -11,6 +11,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_async_state.dart';
 import '../../../../core/widgets/app_centered_loading_indicator.dart';
 import '../../../../core/widgets/app_confirmation_dialog.dart';
+import '../../../../core/widgets/app_large_form_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/attendance_add_booking_sheets.dart';
@@ -833,10 +834,9 @@ class _BookingScreenState extends State<BookingScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       key: const ValueKey('booking-my-reservations'),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const MyReservationsScreen(),
-                        ),
+                      onPressed: () => showAppLargeFormSheet<void>(
+                        context: context,
+                        builder: (_) => const MyReservationsScreen(),
                       ),
                       icon: const Icon(
                         Icons.event_available_outlined,
