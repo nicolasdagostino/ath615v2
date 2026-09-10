@@ -43,6 +43,7 @@ class SessionAccessResult {
 
 abstract interface class SessionAccessDataSource {
   Future<void> validateAuthUser();
+  Future<void> recoverAuthSession();
   Future<Map<String, dynamic>?> loadProfile(String userId);
   Future<List<Map<String, dynamic>>> loadGymRelations(String userId);
   Future<void> selectGym(String gymId);
@@ -56,6 +57,12 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
 
   @override
   Future<void> validateAuthUser() async => client.auth.getUser();
+
+  @override
+  Future<void> recoverAuthSession() async {
+    await client.auth.refreshSession();
+    await client.auth.getUser();
+  }
 
   @override
   Future<Map<String, dynamic>?> loadProfile(String userId) async => client
@@ -96,9 +103,17 @@ bool isDefinitiveAuthInvalidation(Object error) {
   return message.contains('user not found') ||
       message.contains('user from sub claim') ||
       message.contains('invalid jwt') ||
-      message.contains('jwt expired') ||
       message.contains('session not found') ||
       message.contains('refresh token not found');
+}
+
+bool isRecoverableAccessTokenExpiry(Object error) {
+  if (error is! AuthException) return false;
+  final message = error.message.toLowerCase();
+  return error.statusCode == '401' &&
+      (message.contains('jwt expired') ||
+          message.contains('token has expired') ||
+          message.contains('access token expired'));
 }
 
 class SessionAccessRevalidator {
@@ -122,14 +137,31 @@ class SessionAccessRevalidator {
     try {
       await source.validateAuthUser();
     } catch (error) {
-      if (!isDefinitiveAuthInvalidation(error)) {
-        return const SessionAccessResult(SessionAccessState.transientFailure);
+      if (isRecoverableAccessTokenExpiry(error)) {
+        try {
+          await source.recoverAuthSession();
+        } catch (refreshError) {
+          if (!isDefinitiveAuthInvalidation(refreshError)) {
+            return const SessionAccessResult(
+              SessionAccessState.transientFailure,
+            );
+          }
+          await source.clearLocalSession();
+          return const SessionAccessResult(
+            SessionAccessState.accountInvalid,
+            destination: '/login',
+          );
+        }
+      } else {
+        if (!isDefinitiveAuthInvalidation(error)) {
+          return const SessionAccessResult(SessionAccessState.transientFailure);
+        }
+        await source.clearLocalSession();
+        return const SessionAccessResult(
+          SessionAccessState.accountInvalid,
+          destination: '/login',
+        );
       }
-      await source.clearLocalSession();
-      return const SessionAccessResult(
-        SessionAccessState.accountInvalid,
-        destination: '/login',
-      );
     }
 
     try {

@@ -161,6 +161,40 @@ void main() {
       });
     }
 
+    test('expired access token recovers through the refresh session', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.valid);
+      expect(source.refreshes, 1);
+      expect(source.signOuts, 0);
+    });
+
+    test('invalid refresh token clears the local session', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+        refreshError: const AuthException(
+          'Refresh token not found',
+          statusCode: '401',
+        ),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.accountInvalid);
+      expect(source.refreshes, 1);
+      expect(source.signOuts, 1);
+    });
+
+    test('temporary refresh failure preserves the session', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+        refreshError: TimeoutException('refresh timeout'),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.transientFailure);
+      expect(source.signOuts, 0);
+    });
+
     test('owner remains in owner context without gym relation', () async {
       final result = await _validate(
         _FakeSource(
@@ -204,6 +238,7 @@ Future<SessionAccessResult> _validate(_FakeSource source) =>
 class _FakeSource implements SessionAccessDataSource {
   _FakeSource({
     this.authError,
+    this.refreshError,
     this.profileError,
     Object? profile = _defaultProfile,
     this.relations = const [
@@ -220,10 +255,12 @@ class _FakeSource implements SessionAccessDataSource {
   };
 
   final Object? authError;
+  final Object? refreshError;
   final Object? profileError;
   final Map<String, dynamic>? profile;
   final List<Map<String, dynamic>> relations;
   int authChecks = 0;
+  int refreshes = 0;
   int signOuts = 0;
   final List<String> selectedGyms = [];
 
@@ -231,6 +268,12 @@ class _FakeSource implements SessionAccessDataSource {
   Future<void> validateAuthUser() async {
     authChecks++;
     if (authError != null) throw authError!;
+  }
+
+  @override
+  Future<void> recoverAuthSession() async {
+    refreshes++;
+    if (refreshError != null) throw refreshError!;
   }
 
   @override
