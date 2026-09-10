@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,16 +12,22 @@ enum AppAuthState {
   definitivelyUnauthenticated,
 }
 
+enum AuthRefreshResolution { refreshed, transientFailure, definitiveFailure }
+
 class AppAuthCoordinator extends ChangeNotifier {
   AppAuthState _state = AppAuthState.initializing;
   bool _explicitLogout = false;
   bool _lastHasSession = false;
   bool _lastHasRefreshToken = false;
+  Completer<AuthRefreshResolution>? _refreshResolution;
+  bool _signedOutDuringRefresh = false;
 
   AppAuthState get state => _state;
   bool get hasKnownSession => _lastHasSession;
   bool get isTransitioning =>
       _state == AppAuthState.initializing || _state == AppAuthState.refreshing;
+  bool get isSessionRefreshPending =>
+      _state == AppAuthState.refreshing && _refreshResolution != null;
 
   void initializeFromSession(Session? session) {
     _lastHasSession = session != null;
@@ -32,13 +40,46 @@ class AppAuthCoordinator extends ChangeNotifier {
     );
   }
 
-  void beginRefresh() {
+  void beginRefresh({bool expectsSessionRefresh = false}) {
     if (_state == AppAuthState.definitivelyUnauthenticated) return;
+    if (expectsSessionRefresh && _refreshResolution == null) {
+      _signedOutDuringRefresh = false;
+      _refreshResolution = Completer<AuthRefreshResolution>();
+    }
     _transition(AppAuthState.refreshing, reason: 'revalidation');
+  }
+
+  Future<AuthRefreshResolution> waitForSessionRefresh({
+    required Session? Function() currentSession,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final session = currentSession();
+    if (session != null && !session.isExpired) {
+      _completeRefresh(AuthRefreshResolution.refreshed);
+      return AuthRefreshResolution.refreshed;
+    }
+    final pending = _refreshResolution;
+    if (pending == null) return AuthRefreshResolution.transientFailure;
+    authDiagnostics.log('AUTH_REFRESH_WAIT', const {});
+    try {
+      return await pending.future.timeout(timeout);
+    } on TimeoutException {
+      final latestSession = currentSession();
+      if (latestSession != null && !latestSession.isExpired) {
+        _completeRefresh(AuthRefreshResolution.refreshed);
+        return AuthRefreshResolution.refreshed;
+      }
+      final resolution = _signedOutDuringRefresh && latestSession == null
+          ? AuthRefreshResolution.definitiveFailure
+          : AuthRefreshResolution.transientFailure;
+      _completeRefresh(resolution);
+      return resolution;
+    }
   }
 
   void markAuthenticated({String reason = 'auth_confirmed'}) {
     _explicitLogout = false;
+    _completeRefresh(AuthRefreshResolution.refreshed);
     _transition(AppAuthState.authenticated, reason: reason);
   }
 
@@ -55,6 +96,7 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void markDefinitelyUnauthenticated({required String reason}) {
+    _completeRefresh(AuthRefreshResolution.definitiveFailure);
     _transition(AppAuthState.definitivelyUnauthenticated, reason: reason);
   }
 
@@ -84,6 +126,10 @@ class AppAuthCoordinator extends ChangeNotifier {
       authDiagnostics.log('AUTH_SIGNED_OUT_DURING_REFRESH', {
         'refreshInProgress': AuthDiagnostics.yesNo(refreshInProgress),
       });
+      _signedOutDuringRefresh = true;
+      authDiagnostics.log('AUTH_REFRESH_WAIT', {
+        'reason': 'signed_out_pending_refresh_resolution',
+      });
       _transition(AppAuthState.refreshing, reason: 'signed_out_pending_review');
     }
     _lastHasSession = event.session != null;
@@ -98,6 +144,13 @@ class AppAuthCoordinator extends ChangeNotifier {
       explicitLogout: explicitLogout,
       refreshInProgress: refreshInProgress,
     );
+  }
+
+  void _completeRefresh(AuthRefreshResolution resolution) {
+    final pending = _refreshResolution;
+    _refreshResolution = null;
+    _signedOutDuringRefresh = false;
+    if (pending != null && !pending.isCompleted) pending.complete(resolution);
   }
 
   void _transition(AppAuthState next, {required String reason}) {

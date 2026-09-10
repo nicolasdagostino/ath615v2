@@ -304,7 +304,8 @@ class _AthleteLabAppState extends State<AthleteLabApp>
     if (shouldRevalidateAccessOnLifecycle(state)) {
       final expiresAt = session?.expiresAt;
       final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
-      if (expiresAt != null && expiresAt - now <= 30) {
+      final needsSessionRefresh = expiresAt != null && expiresAt - now <= 30;
+      if (needsSessionRefresh) {
         authDiagnostics.logRefresh(
           event: 'AUTH_REFRESH_START',
           origin: 'unknown_sdk_or_external',
@@ -312,7 +313,9 @@ class _AthleteLabAppState extends State<AthleteLabApp>
           phase: 'resume_auto_refresh_inferred',
         );
       }
-      appAuthCoordinator.beginRefresh();
+      appAuthCoordinator.beginRefresh(
+        expectsSessionRefresh: needsSessionRefresh,
+      );
       _revalidateAccess();
     }
   }
@@ -321,6 +324,32 @@ class _AthleteLabAppState extends State<AthleteLabApp>
     final client = Supabase.instance.client;
     if (appAuthCoordinator.state == AppAuthState.authenticated) {
       appAuthCoordinator.beginRefresh();
+    }
+    if (appAuthCoordinator.isSessionRefreshPending) {
+      authDiagnostics.log('AUTH_REVALIDATION_DEFERRED', {
+        'reason': 'session_refresh_pending',
+      });
+      final resolution = await appAuthCoordinator.waitForSessionRefresh(
+        currentSession: () => client.auth.currentSession,
+      );
+      if (!mounted) return;
+      if (resolution == AuthRefreshResolution.transientFailure) {
+        authDiagnostics.log('AUTH_RECOVERY_WAIT', {
+          'reason': 'refresh_transient_or_pending',
+        });
+        appAuthCoordinator.preserveAfterTransientFailure(
+          sessionPresent: client.auth.currentSession != null,
+        );
+        return;
+      }
+      if (resolution == AuthRefreshResolution.definitiveFailure) {
+        appAuthCoordinator.markDefinitelyUnauthenticated(
+          reason: 'session_refresh_definitive_failure',
+        );
+        return;
+      }
+      authDiagnostics.log('AUTH_REFRESH_COMPLETED', const {});
+      authDiagnostics.log('AUTH_REVALIDATION_AFTER_REFRESH', const {});
     }
     final user = client.auth.currentUser;
     if (!mounted) return;

@@ -53,6 +53,20 @@ void main() {
     expect(pending.take(), isNull);
   });
 
+  test('workout tap remains pending while an expired session refreshes', () {
+    const destination = '/app?section=wod&date=2026-09-02';
+    final pending = PendingDeepLinkDestination()..remember(destination);
+
+    expect(
+      authenticatedRoute(
+        authState: AppAuthState.refreshing,
+        destination: destination,
+      ),
+      '/',
+    );
+    expect(pending.take(), destination);
+  });
+
   test('communication push opens messages inside AppShell', () {
     final app = File('lib/app/app.dart').readAsStringSync();
     expect(app, contains("_router.go('/app?section=messages&notificationId="));
