@@ -52,6 +52,15 @@ void main() {
     );
   });
 
+  test('an already-mounted AppShell reacts to a workout push route', () {
+    final shell = File(
+      'lib/features/home/presentation/screens/app_shell.dart',
+    ).readAsStringSync();
+    expect(shell, contains("widget.initialSection == 'wod'"));
+    expect(shell, contains('_index = 0'));
+    expect(shell, contains("'workouts-\${widget.initialWorkoutDate"));
+  });
+
   test('legacy workout app links resolve a WOD date instead of detail', () {
     final deepLinks = File(
       'lib/core/router/deep_link_service.dart',

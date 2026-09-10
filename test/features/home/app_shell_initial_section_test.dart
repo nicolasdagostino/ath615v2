@@ -149,6 +149,38 @@ void main() {
     expect(initialShellIndexForRole('athlete', requestedSection: 'wod'), 0);
   });
 
+  testWidgets('workout push returns an already-mounted shell to WOD', (
+    tester,
+  ) async {
+    String? section;
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return AppShell(
+              initialRoleForTesting: 'athlete',
+              initialSection: section,
+              initialWorkoutDate: section == 'wod'
+                  ? DateTime(2026, 9, 10)
+                  : null,
+              screenBuilderForTesting: (name) =>
+                  Text(name, key: ValueKey('screen-$name')),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('screen-booking')), findsOneWidget);
+
+    rebuild(() => section = 'wod');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('screen-workouts')), findsOneWidget);
+  });
+
   testWidgets('athlete opens directly on WOD', (tester) async {
     await pumpShell(tester, 'athlete');
 

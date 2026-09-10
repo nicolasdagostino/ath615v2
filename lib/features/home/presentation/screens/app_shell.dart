@@ -97,6 +97,14 @@ class _AppShellState extends State<AppShell> {
   @override
   void didUpdateWidget(covariant AppShell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialSection == 'wod' &&
+        (oldWidget.initialSection != widget.initialSection ||
+            oldWidget.initialWorkoutDate != widget.initialWorkoutDate)) {
+      setState(() {
+        _index = 0;
+        _mountedIndexes.add(0);
+      });
+    }
     if (widget.initialSection == 'messages' &&
         (oldWidget.initialSection != widget.initialSection ||
             oldWidget.initialNotificationId != widget.initialNotificationId)) {
@@ -270,6 +278,9 @@ class _AppShellState extends State<AppShell> {
     final screens = testScreenBuilder == null
         ? <Widget>[
             WorkoutsScreen(
+              key: ValueKey(
+                'workouts-${widget.initialWorkoutDate?.toIso8601String() ?? 'today'}',
+              ),
               gymName: _gymName,
               unreadNotifications: _unreadNotifications,
               onOpenNotifications: _openNotifications,
