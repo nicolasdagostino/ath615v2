@@ -13,6 +13,23 @@ import 'package:google_fonts/google_fonts.dart';
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
+  test('recent activity preserves booking cancellation identity and class', () {
+    final rows = normalizeRecentActivityRows(const [
+      {
+        'kind': 'booking_cancelled',
+        'member_name': 'Nicolás D’Agostino',
+        'class_title': 'CrossFit',
+        'class_starts_at': '2026-09-10T19:30:00Z',
+      },
+    ]);
+    expect(rows.single['status'], 'cancelled');
+    expect(rows.single['member_name'], 'Nicolás D’Agostino');
+    expect(rows.single['classes'], {
+      'title': 'CrossFit',
+      'starts_at': '2026-09-10T19:30:00Z',
+    });
+  });
+
   test('without-plan counter and filter share the exact predicate', () {
     final members = List.generate(28, (index) {
       final withoutPlan = index < 20;

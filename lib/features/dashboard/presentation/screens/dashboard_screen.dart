@@ -139,6 +139,28 @@ AdminRequestIdentity adminRequestIdentity(
   );
 }
 
+@visibleForTesting
+List<Map<String, dynamic>> normalizeRecentActivityRows(
+  Iterable<Map<String, dynamic>> rows,
+) => rows
+    .map((row) {
+      return {
+        ...row,
+        'status': row['kind'] == 'booking_cancelled'
+            ? 'cancelled'
+            : row['kind'] == 'attendance'
+            ? 'attended'
+            : row['kind'] == 'no_show'
+            ? 'no_show'
+            : 'booked',
+        'classes': {
+          'title': row['class_title'],
+          'starts_at': row['class_starts_at'],
+        },
+      };
+    })
+    .toList(growable: false);
+
 DateTime? adminGymMemberCreatedAt(Map<String, dynamic> member) =>
     DateTime.tryParse(member['gym_member_created_at']?.toString() ?? '');
 
@@ -582,38 +604,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (gymId == null) return;
 
     try {
-      final rows = await Supabase.instance.client
-          .from('class_bookings')
-          .select('user_id, status, created_at, classes(title, starts_at)')
-          .neq('status', 'cancelled')
-          .order('created_at', ascending: false)
-          .limit(5);
+      final rows = await Supabase.instance.client.rpc(
+        'list_effective_recent_activity',
+        params: {'p_limit': 5},
+      );
 
-      final activity = List<Map<String, dynamic>>.from(rows)
-          .where((row) {
-            final klass = row['classes'];
-            if (klass is! Map) return false;
-
-            return _members.any((m) {
-              return m['id']?.toString() == row['user_id']?.toString() &&
-                  m['gym_id']?.toString() == gymId;
-            });
-          })
-          .map((row) {
-            final member = _members.firstWhere(
-              (m) => m['id']?.toString() == row['user_id']?.toString(),
-              orElse: () => const {},
-            );
-
-            return {
-              ...row,
-              'member_name':
-                  member['full_name']?.toString() ??
-                  member['email']?.toString() ??
-                  appStrings.member,
-            };
-          })
-          .toList();
+      final activity = normalizeRecentActivityRows(
+        List<Map<String, dynamic>>.from(rows),
+      );
 
       if (!mounted) return;
       setState(() => _recentActivity = activity);
@@ -5217,6 +5215,7 @@ class _RecentActivityCard extends StatelessWidget {
 
     if (status == 'attended') return appStrings.attended;
     if (status == 'no_show') return appStrings.missed;
+    if (status == 'cancelled') return appStrings.cancelled;
     return appStrings.booked;
   }
 
@@ -5225,6 +5224,7 @@ class _RecentActivityCard extends StatelessWidget {
 
     if (status == 'attended') return Icons.check_rounded;
     if (status == 'no_show') return Icons.close_rounded;
+    if (status == 'cancelled') return Icons.event_busy_rounded;
     return Icons.event_available_rounded;
   }
 
