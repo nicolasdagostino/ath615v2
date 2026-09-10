@@ -146,14 +146,12 @@ void main() {
     expect(find.text('A sufficiently detailed question'), findsOneWidget);
   });
   testWidgets(
-    'Public plans show server catalog, limits, unlimited and demo CTA',
+    'Plans and billing is visibly under development without commercial UI',
     (t) async {
       await pump(t, PlansBillingScreen(repository: FakeHelpRepo()));
-      expect(find.textContaining('FREE'), findsOneWidget);
-      expect(find.textContaining('10 active athletes'), findsOneWidget);
-      expect(find.textContaining('Unlimited active athletes'), findsOneWidget);
-      expect(find.byKey(const ValueKey('plans-request-demo')), findsOneWidget);
-      expect(find.textContaining('payment method'), findsNothing);
+      expect(find.text('This section is under development.'), findsOneWidget);
+      expect(find.textContaining('FREE'), findsNothing);
+      expect(find.byKey(const ValueKey('plans-request-demo')), findsNothing);
     },
   );
   testWidgets('new Help Center copy is available in Spanish', (t) async {
@@ -161,6 +159,7 @@ void main() {
     addTearDown(() async => localeController.setLanguage('en'));
     await pump(t, PlansBillingScreen(repository: FakeHelpRepo()));
     expect(find.text('PLANES Y FACTURACIÓN'), findsOneWidget);
-    expect(find.textContaining('Atletas activos ilimitados'), findsOneWidget);
+    expect(find.text('Esta sección está en desarrollo.'), findsOneWidget);
+    expect(find.textContaining('Atletas activos ilimitados'), findsNothing);
   });
 }
