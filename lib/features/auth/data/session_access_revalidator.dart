@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_diagnostics.dart';
+
 enum SessionAccessState {
   valid,
   accountInvalid,
@@ -58,21 +60,28 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
   @override
   Future<void> validateAuthUser() async {
     final session = client.auth.currentSession;
-    debugPrint(
-      'AUTH_REVALIDATE_START session=${session != null} '
-      'expiresAt=${session?.expiresAt} '
-      'hasRefreshToken=${session?.refreshToken?.isNotEmpty == true}',
+    authDiagnostics.logSessionSnapshot(
+      'AUTH_REVALIDATE_START',
+      session: session,
     );
     await client.auth.getUser();
-    debugPrint('AUTH_GET_USER_SUCCESS');
+    authDiagnostics.log('AUTH_GET_USER_SUCCESS', const {});
   }
 
   @override
   Future<void> recoverAuthSession() async {
-    debugPrint('AUTH_REFRESH_START');
+    authDiagnostics.logRefresh(
+      event: 'AUTH_REFRESH_START',
+      origin: 'a615_revalidation',
+      session: client.auth.currentSession,
+    );
     await client.auth.refreshSession();
     await client.auth.getUser();
-    debugPrint('AUTH_REFRESH_SUCCESS');
+    authDiagnostics.logRefresh(
+      event: 'AUTH_REFRESH_SUCCESS',
+      origin: 'a615_revalidation',
+      session: client.auth.currentSession,
+    );
   }
 
   @override
@@ -103,7 +112,7 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
 
   @override
   Future<void> clearLocalSession() => Future<void>.sync(() {
-    debugPrint('AUTH_SIGNOUT_UNRECOVERABLE');
+    authDiagnostics.log('AUTH_SIGNOUT_UNRECOVERABLE', const {});
     return client.auth.signOut(scope: SignOutScope.local);
   });
 }
@@ -143,24 +152,7 @@ bool isDefinitiveRefreshFailure(Object error) {
 }
 
 void logSanitizedAuthFailure(String event, Object error) {
-  if (error is AuthException) {
-    final raw = error.message.toLowerCase();
-    final message = raw.contains('refresh token')
-        ? 'refresh_token_error'
-        : raw.contains('jwt') || raw.contains('access token')
-        ? 'access_token_error'
-        : raw.contains('session')
-        ? 'session_error'
-        : raw.contains('user')
-        ? 'user_error'
-        : 'auth_error';
-    debugPrint(
-      '$event class=${error.runtimeType} status=${error.statusCode} '
-      'code=${error.code ?? 'none'} message=$message',
-    );
-    return;
-  }
-  debugPrint('$event class=${error.runtimeType}');
+  authDiagnostics.logAuthFailure(event, error);
 }
 
 class SessionAccessRevalidator {
@@ -191,12 +183,12 @@ class SessionAccessRevalidator {
           logSanitizedAuthFailure('AUTH_REFRESH_FAIL', refreshError);
           if (!isDefinitiveRefreshFailure(refreshError) &&
               !isDefinitiveAuthInvalidation(refreshError)) {
-            debugPrint('AUTH_REFRESH_TRANSIENT_FAIL');
+            authDiagnostics.log('AUTH_REFRESH_TRANSIENT_FAIL', const {});
             return const SessionAccessResult(
               SessionAccessState.transientFailure,
             );
           }
-          debugPrint('AUTH_REFRESH_UNRECOVERABLE');
+          authDiagnostics.log('AUTH_REFRESH_UNRECOVERABLE', const {});
           await source.clearLocalSession();
           return const SessionAccessResult(
             SessionAccessState.accountInvalid,
@@ -205,10 +197,10 @@ class SessionAccessRevalidator {
         }
       } else {
         if (!isDefinitiveAuthInvalidation(error)) {
-          debugPrint('AUTH_REVALIDATE_TRANSIENT_FAIL');
+          authDiagnostics.log('AUTH_REVALIDATE_TRANSIENT_FAIL', const {});
           return const SessionAccessResult(SessionAccessState.transientFailure);
         }
-        debugPrint('AUTH_REVALIDATE_UNRECOVERABLE');
+        authDiagnostics.log('AUTH_REVALIDATE_UNRECOVERABLE', const {});
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,
@@ -273,7 +265,7 @@ class SessionAccessRevalidator {
     } catch (error) {
       logSanitizedAuthFailure('AUTH_CONTEXT_FAIL', error);
       if (isDefinitiveAuthInvalidation(error)) {
-        debugPrint('AUTH_CONTEXT_UNRECOVERABLE');
+        authDiagnostics.log('AUTH_CONTEXT_UNRECOVERABLE', const {});
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,
