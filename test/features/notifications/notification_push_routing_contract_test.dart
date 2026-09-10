@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ath615v2/core/router/deep_link_service.dart';
+import 'package:ath615v2/features/auth/data/app_auth_coordinator.dart';
 import 'package:ath615v2/features/notifications/navigation/notification_destination.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,7 +19,10 @@ void main() {
   test('foreground workout tap opens the requested WOD destination', () {
     final destination = wodDestination(DateTime(2026, 9, 2));
     expect(
-      authenticatedRoute(isAuthenticated: true, destination: destination),
+      authenticatedRoute(
+        authState: AppAuthState.authenticated,
+        destination: destination,
+      ),
       '/app?section=wod&date=2026-09-02',
     );
   });
@@ -26,7 +30,10 @@ void main() {
   test('background workout tap opens the requested WOD destination', () {
     final destination = wodDestination(DateTime(2026, 9, 2));
     expect(
-      authenticatedRoute(isAuthenticated: true, destination: destination),
+      authenticatedRoute(
+        authState: AppAuthState.authenticated,
+        destination: destination,
+      ),
       '/app?section=wod&date=2026-09-02',
     );
   });
@@ -36,8 +43,11 @@ void main() {
     final pending = PendingDeepLinkDestination()..remember(destination);
 
     expect(
-      authenticatedRoute(isAuthenticated: false, destination: destination),
-      '/login',
+      authenticatedRoute(
+        authState: AppAuthState.initializing,
+        destination: destination,
+      ),
+      '/',
     );
     expect(pending.take(), destination);
     expect(pending.take(), isNull);

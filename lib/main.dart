@@ -8,6 +8,7 @@ import 'core/config/env.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/preferences/app_preferences_controller.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/auth/data/app_auth_coordinator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,9 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
       detectSessionInUri: false,
     ),
+  );
+  appAuthCoordinator.initializeFromSession(
+    Supabase.instance.client.auth.currentSession,
   );
 
   await Firebase.initializeApp();

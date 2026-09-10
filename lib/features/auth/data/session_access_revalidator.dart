@@ -56,12 +56,23 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
   final SupabaseClient client;
 
   @override
-  Future<void> validateAuthUser() async => client.auth.getUser();
+  Future<void> validateAuthUser() async {
+    final session = client.auth.currentSession;
+    debugPrint(
+      'AUTH_REVALIDATE_START session=${session != null} '
+      'expiresAt=${session?.expiresAt} '
+      'hasRefreshToken=${session?.refreshToken?.isNotEmpty == true}',
+    );
+    await client.auth.getUser();
+    debugPrint('AUTH_GET_USER_SUCCESS');
+  }
 
   @override
   Future<void> recoverAuthSession() async {
+    debugPrint('AUTH_REFRESH_START');
     await client.auth.refreshSession();
     await client.auth.getUser();
+    debugPrint('AUTH_REFRESH_SUCCESS');
   }
 
   @override
@@ -91,8 +102,10 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
       client.rpc('select_effective_gym', params: {'p_gym_id': gymId});
 
   @override
-  Future<void> clearLocalSession() =>
-      client.auth.signOut(scope: SignOutScope.local);
+  Future<void> clearLocalSession() => Future<void>.sync(() {
+    debugPrint('AUTH_SIGNOUT_UNRECOVERABLE');
+    return client.auth.signOut(scope: SignOutScope.local);
+  });
 }
 
 bool isDefinitiveAuthInvalidation(Object error) {
@@ -114,6 +127,40 @@ bool isRecoverableAccessTokenExpiry(Object error) {
       (message.contains('jwt expired') ||
           message.contains('token has expired') ||
           message.contains('access token expired'));
+}
+
+bool isDefinitiveRefreshFailure(Object error) {
+  if (error is AuthSessionMissingException) return true;
+  if (error is! AuthException) return false;
+  final status = error.statusCode;
+  if (status != '400' && status != '401' && status != '403') return false;
+  final message = error.message.toLowerCase();
+  return message.contains('refresh token not found') ||
+      message.contains('invalid refresh token') ||
+      message.contains('refresh token has already been used') ||
+      message.contains('auth session missing') ||
+      message.contains('session not found');
+}
+
+void logSanitizedAuthFailure(String event, Object error) {
+  if (error is AuthException) {
+    final raw = error.message.toLowerCase();
+    final message = raw.contains('refresh token')
+        ? 'refresh_token_error'
+        : raw.contains('jwt') || raw.contains('access token')
+        ? 'access_token_error'
+        : raw.contains('session')
+        ? 'session_error'
+        : raw.contains('user')
+        ? 'user_error'
+        : 'auth_error';
+    debugPrint(
+      '$event class=${error.runtimeType} status=${error.statusCode} '
+      'code=${error.code ?? 'none'} message=$message',
+    );
+    return;
+  }
+  debugPrint('$event class=${error.runtimeType}');
 }
 
 class SessionAccessRevalidator {
@@ -141,11 +188,15 @@ class SessionAccessRevalidator {
         try {
           await source.recoverAuthSession();
         } catch (refreshError) {
-          if (!isDefinitiveAuthInvalidation(refreshError)) {
+          logSanitizedAuthFailure('AUTH_REFRESH_FAIL', refreshError);
+          if (!isDefinitiveRefreshFailure(refreshError) &&
+              !isDefinitiveAuthInvalidation(refreshError)) {
+            debugPrint('AUTH_REFRESH_TRANSIENT_FAIL');
             return const SessionAccessResult(
               SessionAccessState.transientFailure,
             );
           }
+          debugPrint('AUTH_REFRESH_UNRECOVERABLE');
           await source.clearLocalSession();
           return const SessionAccessResult(
             SessionAccessState.accountInvalid,
@@ -154,8 +205,10 @@ class SessionAccessRevalidator {
         }
       } else {
         if (!isDefinitiveAuthInvalidation(error)) {
+          debugPrint('AUTH_REVALIDATE_TRANSIENT_FAIL');
           return const SessionAccessResult(SessionAccessState.transientFailure);
         }
+        debugPrint('AUTH_REVALIDATE_UNRECOVERABLE');
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,
@@ -218,7 +271,9 @@ class SessionAccessRevalidator {
         destination: '/app',
       );
     } catch (error) {
+      logSanitizedAuthFailure('AUTH_CONTEXT_FAIL', error);
       if (isDefinitiveAuthInvalidation(error)) {
+        debugPrint('AUTH_CONTEXT_UNRECOVERABLE');
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,

@@ -185,6 +185,19 @@ void main() {
       expect(source.signOuts, 1);
     });
 
+    test('revoked refresh token with Auth 400 clears local session', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+        refreshError: const AuthException(
+          'Invalid Refresh Token: Refresh Token Not Found',
+          statusCode: '400',
+        ),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.accountInvalid);
+      expect(source.signOuts, 1);
+    });
+
     test('temporary refresh failure preserves the session', () async {
       final source = _FakeSource(
         authError: const AuthException('JWT expired', statusCode: '401'),

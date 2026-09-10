@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../features/auth/data/auth_repository.dart';
+import '../../features/auth/data/app_auth_coordinator.dart';
 import '../../features/auth/data/session_access_revalidator.dart';
 import '../../features/auth/presentation/screens/auth_gate.dart';
 import '../../features/auth/presentation/screens/gym_access_disabled_screen.dart';
@@ -35,13 +34,20 @@ import '../../features/profile/presentation/screens/gym_documents_screen.dart';
 import '../../features/workouts/presentation/screens/workout_detail_screen.dart';
 
 String? appAccessRedirect({
-  required bool isAuthenticated,
+  required AppAuthState authState,
   required String path,
   required bool isPublic,
   required String? accessDestination,
 }) {
-  if (!isAuthenticated && !isPublic) return '/login';
-  if (isAuthenticated &&
+  if ((authState == AppAuthState.initializing ||
+          authState == AppAuthState.refreshing) &&
+      !isPublic) {
+    return null;
+  }
+  if (authState == AppAuthState.definitivelyUnauthenticated && !isPublic) {
+    return '/login';
+  }
+  if (authState == AppAuthState.authenticated &&
       accessDestination == '/gym-access-disabled' &&
       path != '/gym-access-disabled' &&
       !isPublic) {
@@ -54,12 +60,10 @@ class AppRouter {
   static final _rootKey = GlobalKey<NavigatorState>();
 
   static GoRouter get router {
-    final authRepo = AuthRepository(Supabase.instance.client);
-
     return GoRouter(
       navigatorKey: _rootKey,
       initialLocation: '/',
-      refreshListenable: _AuthRefresh(authRepo),
+      refreshListenable: appAuthCoordinator,
       redirect: (context, state) {
         final public = <String>{
           '/',
@@ -73,12 +77,19 @@ class AppRouter {
           '/plans',
           '/contact',
         };
-        return appAccessRedirect(
-          isAuthenticated: authRepo.currentUser != null,
+        final destination = appAccessRedirect(
+          authState: appAuthCoordinator.state,
           path: state.uri.path,
           isPublic: public.contains(state.uri.path),
           accessDestination: currentSessionAccessDestination,
         );
+        if (destination == '/login') {
+          debugPrint('ROUTER_LOGIN_REDIRECT:definitively_unauthenticated');
+        } else if (appAuthCoordinator.isTransitioning &&
+            !public.contains(state.uri.path)) {
+          debugPrint('ROUTER_PRESERVE:${appAuthCoordinator.state.name}');
+        }
+        return destination;
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => const AuthGate()),
@@ -235,11 +246,5 @@ class AppRouter {
         ),
       ],
     );
-  }
-}
-
-class _AuthRefresh extends ChangeNotifier {
-  _AuthRefresh(AuthRepository authRepository) {
-    authRepository.authStateChanges.listen((_) => notifyListeners());
   }
 }

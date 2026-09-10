@@ -27,17 +27,38 @@ class _FakeDemoRepository implements DemoRequestRepository {
   }
 }
 
+class _FakeEmailStore implements RememberedEmailStore {
+  _FakeEmailStore([this.value]);
+  String? value;
+  int clears = 0;
+
+  @override
+  Future<void> clear() async {
+    clears++;
+    value = null;
+  }
+
+  @override
+  Future<String?> read() async => value;
+
+  @override
+  Future<void> save(String email) async => value = email;
+}
+
 GoRouter _router({
   String initialLocation = '/login',
   Future<void> Function(String, String)? signIn,
   DemoRequestRepository? demoRepository,
+  RememberedEmailStore? emailStore,
 }) => GoRouter(
   initialLocation: initialLocation,
   routes: [
     GoRoute(
       path: '/login',
-      builder: (_, _) =>
-          LoginScreen(signInForTesting: signIn ?? (_, _) async {}),
+      builder: (_, _) => LoginScreen(
+        signInForTesting: signIn ?? (_, _) async {},
+        emailStore: emailStore,
+      ),
     ),
     GoRoute(
       path: '/forgot-password',
@@ -160,6 +181,67 @@ void main() {
     await tester.pumpAndSettle();
     expect(email, 'person@example.com');
     expect(password, 'secret');
+  });
+
+  testWidgets('remember email saves normalized email but never password', (
+    tester,
+  ) async {
+    final store = _FakeEmailStore();
+    final router = _router(emailStore: store);
+    await _pumpRouter(tester, router);
+    await tester.enterText(_field('login-email'), ' Person@Example.COM ');
+    await tester.enterText(_field('login-password'), 'not-persisted');
+    await tester.tap(_field('login-remember-email'));
+    await tester.pump();
+    await tester.tap(find.text('SIGN IN'));
+    await tester.pumpAndSettle();
+    expect(store.value, 'person@example.com');
+    expect(store.value, isNot(contains('not-persisted')));
+  });
+
+  testWidgets('remember email defaults unchecked with no stored value', (
+    tester,
+  ) async {
+    await _pumpRouter(tester, _router(emailStore: _FakeEmailStore()));
+    expect(
+      tester.widget<CheckboxListTile>(_field('login-remember-email')).value,
+      isFalse,
+    );
+    expect(
+      tester.widget<TextField>(_field('login-email')).controller?.text,
+      isEmpty,
+    );
+  });
+
+  testWidgets('remembered email preloads and disabling removes it', (
+    tester,
+  ) async {
+    final store = _FakeEmailStore('remembered@example.com');
+    await _pumpRouter(tester, _router(emailStore: store));
+    expect(
+      tester.widget<TextField>(_field('login-email')).controller?.text,
+      'remembered@example.com',
+    );
+    final checkbox = tester.widget<CheckboxListTile>(
+      _field('login-remember-email'),
+    );
+    expect(checkbox.value, isTrue);
+    checkbox.onChanged!(false);
+    await tester.pump();
+    expect(store.value, isNull);
+    expect(store.clears, 1);
+  });
+
+  testWidgets('login fields expose platform autofill hints', (tester) async {
+    await _pumpRouter(tester, _router());
+    expect(
+      tester.widget<TextField>(_field('login-email')).autofillHints,
+      contains(AutofillHints.email),
+    );
+    expect(
+      tester.widget<TextField>(_field('login-password')).autofillHints,
+      contains(AutofillHints.password),
+    );
   });
 
   testWidgets('login is scrollable with keyboard and a simulated notch', (

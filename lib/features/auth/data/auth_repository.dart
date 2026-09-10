@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'app_auth_coordinator.dart';
+
 class AuthRepository {
   AuthRepository(this._client);
 
@@ -16,6 +18,7 @@ class AuthRepository {
 
   Future<void> signIn({required String email, required String password}) async {
     await _client.auth.signInWithPassword(email: email, password: password);
+    appAuthCoordinator.markAuthenticated(reason: 'explicit_sign_in');
   }
 
   Future<void> signUp({
@@ -73,6 +76,8 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    debugPrint('AUTH_SIGNOUT_EXPLICIT');
+    appAuthCoordinator.beginExplicitLogout();
     _isSigningOut = true;
     try {
       await _removeCurrentDeviceToken();
@@ -102,6 +107,8 @@ class AuthRepository {
 
   Future<void> deleteMyAccount() async {
     await _client.functions.invoke('delete-my-account');
+    debugPrint('AUTH_SIGNOUT_DELETED_USER');
+    appAuthCoordinator.beginExplicitLogout(reason: 'account_deleted');
     await _client.auth.signOut();
   }
 }

@@ -332,6 +332,8 @@ class AppStrings {
       pick('Login to your gym account.', 'Accede a tu cuenta del gym.');
   String get authLoginSection => pick('Login', 'Iniciar sesión');
   String get authEmail => pick('Email', 'Email');
+  String get authRememberEmail =>
+      pick('Remember my email', 'Recordar mi email');
   String get authPassword => pick('Password', 'Contraseña');
   String get authLoginButton => pick('Sign in', 'Iniciar sesión');
   String get authPasswordPlaceholder =>

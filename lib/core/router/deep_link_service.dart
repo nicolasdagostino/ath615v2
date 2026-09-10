@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/data/session_access_revalidator.dart';
+import '../../features/auth/data/app_auth_coordinator.dart';
 import '../../features/notifications/navigation/notification_destination.dart';
 
 enum StripeConnectLinkAction { returnToSettings, refreshOnboarding }
@@ -49,19 +50,23 @@ class PendingDeepLinkDestination {
 final pendingDeepLinkDestination = PendingDeepLinkDestination();
 
 String authenticatedRoute({
-  required bool isAuthenticated,
+  required AppAuthState authState,
   required String destination,
   String? accessDestination,
-}) => !isAuthenticated ? '/login' : accessDestination ?? destination;
+}) => switch (authState) {
+  AppAuthState.initializing || AppAuthState.refreshing => '/',
+  AppAuthState.definitivelyUnauthenticated => '/login',
+  AppAuthState.authenticated => accessDestination ?? destination,
+};
 
 void goToAuthenticatedDestination(GoRouter router, String destination) {
-  final isAuthenticated = Supabase.instance.client.auth.currentUser != null;
-  if (!isAuthenticated) {
+  final authState = appAuthCoordinator.state;
+  if (authState != AppAuthState.authenticated) {
     pendingDeepLinkDestination.remember(destination);
   }
   router.go(
     authenticatedRoute(
-      isAuthenticated: isAuthenticated,
+      authState: authState,
       destination: destination,
       accessDestination: currentSessionAccessDestination,
     ),

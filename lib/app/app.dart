@@ -14,6 +14,7 @@ import '../core/theme/theme_controller.dart';
 import '../core/locale/locale_controller.dart';
 import '../core/preferences/app_preferences_controller.dart';
 import '../features/auth/data/auth_repository.dart';
+import '../features/auth/data/app_auth_coordinator.dart';
 import '../features/auth/data/session_access_revalidator.dart';
 import '../features/notifications/data/notifications_repository.dart';
 import '../features/notifications/navigation/notification_destination.dart';
@@ -256,6 +257,7 @@ class _AthleteLabAppState extends State<AthleteLabApp>
 
       _authSubscription = Supabase.instance.client.auth.onAuthStateChange
           .listen((state) {
+            appAuthCoordinator.observeAuthEvent(state);
             final authenticated =
                 state.event == AuthChangeEvent.initialSession ||
                 state.event == AuthChangeEvent.signedIn;
@@ -287,21 +289,55 @@ class _AthleteLabAppState extends State<AthleteLabApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (shouldRevalidateAccessOnLifecycle(state)) _revalidateAccess();
+    debugPrint('AUTH_LIFECYCLE:${state.name}');
+    if (shouldRevalidateAccessOnLifecycle(state)) {
+      appAuthCoordinator.beginRefresh();
+      _revalidateAccess();
+    }
   }
 
   Future<void> _revalidateAccess() async {
     final client = Supabase.instance.client;
+    if (appAuthCoordinator.state == AppAuthState.authenticated) {
+      appAuthCoordinator.beginRefresh();
+    }
     final user = client.auth.currentUser;
-    if (!mounted || user == null) return;
+    if (!mounted) return;
+    if (user == null) {
+      debugPrint('AUTH_SESSION_MISSING');
+      if (appAuthCoordinator.state == AppAuthState.refreshing) {
+        appAuthCoordinator.preserveAfterTransientFailure(sessionPresent: false);
+      }
+      return;
+    }
+    debugPrint('AUTH_SESSION_PRESENT');
     final result = await _accessRevalidator.validate(
       userId: user.id,
       cachedGymId: user.userMetadata?['gym_id']?.toString(),
     );
-    if (!mounted || result.state == SessionAccessState.transientFailure) return;
+    if (!mounted) return;
+    if (result.state == SessionAccessState.transientFailure) {
+      appAuthCoordinator.preserveAfterTransientFailure(
+        sessionPresent: client.auth.currentSession != null,
+      );
+      return;
+    }
+    if (result.state == SessionAccessState.accountInvalid) {
+      appAuthCoordinator.markDefinitelyUnauthenticated(
+        reason: 'auth_revalidation_failed',
+      );
+    } else {
+      appAuthCoordinator.markAuthenticated(reason: 'access_revalidated');
+    }
+    debugPrint('AUTH_REVALIDATE_RESULT:${result.state.name}');
     recordSessionAccessResult(result);
     final destination = accessDestinationOnResume(result);
-    if (destination != null) _router.go(destination);
+    if (destination != null) {
+      _router.go(destination);
+    } else {
+      final pending = pendingDeepLinkDestination.take();
+      if (pending != null) _router.go(pending);
+    }
   }
 
   @override

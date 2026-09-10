@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ath615v2/core/router/deep_link_service.dart';
 import 'package:ath615v2/features/auth/data/session_access_revalidator.dart';
+import 'package:ath615v2/features/auth/data/app_auth_coordinator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -66,7 +67,7 @@ void main() {
       ]) {
         expect(
           authenticatedRoute(
-            isAuthenticated: true,
+            authState: AppAuthState.authenticated,
             destination: destination,
             accessDestination: '/gym-access-disabled',
           ),
@@ -85,7 +86,7 @@ void main() {
     );
     expect(
       authenticatedRoute(
-        isAuthenticated: true,
+        authState: AppAuthState.authenticated,
         destination: '/app',
         accessDestination: currentSessionAccessDestination,
       ),
@@ -98,7 +99,7 @@ void main() {
     expect(currentSessionAccessDestination, isNull);
     expect(
       authenticatedRoute(
-        isAuthenticated: true,
+        authState: AppAuthState.authenticated,
         destination: '/app',
         accessDestination: currentSessionAccessDestination,
       ),
