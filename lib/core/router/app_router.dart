@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/data/app_auth_coordinator.dart';
-import '../../features/auth/data/auth_diagnostics.dart';
 import '../../features/auth/data/session_access_revalidator.dart';
 import '../../features/auth/presentation/screens/auth_gate.dart';
 import '../../features/auth/presentation/screens/gym_access_disabled_screen.dart';
@@ -84,22 +83,6 @@ class AppRouter {
           isPublic: public.contains(state.uri.path),
           accessDestination: currentSessionAccessDestination,
         );
-        if (destination == '/login') {
-          authDiagnostics.logRouter(
-            event: 'ROUTER_LOGIN_REDIRECT',
-            reason: 'definitively_unauthenticated',
-            state: appAuthCoordinator.state.name,
-            hasSession: appAuthCoordinator.hasKnownSession,
-          );
-        } else if (appAuthCoordinator.isTransitioning &&
-            !public.contains(state.uri.path)) {
-          authDiagnostics.logRouter(
-            event: 'ROUTER_PRESERVE',
-            reason: appAuthCoordinator.state.name,
-            state: appAuthCoordinator.state.name,
-            hasSession: appAuthCoordinator.hasKnownSession,
-          );
-        }
         return destination;
       },
       routes: [

@@ -9,7 +9,6 @@ import 'core/locale/locale_controller.dart';
 import 'core/preferences/app_preferences_controller.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/data/app_auth_coordinator.dart';
-import 'features/auth/data/auth_diagnostics.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,11 +22,6 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
       detectSessionInUri: false,
     ),
-  );
-  await authDiagnostics.initialize(
-    supabaseUrl: Env.supabaseUrl,
-    session: Supabase.instance.client.auth.currentSession,
-    coordinatorState: appAuthCoordinator.state.name,
   );
   appAuthCoordinator.initializeFromSession(
     Supabase.instance.client.auth.currentSession,

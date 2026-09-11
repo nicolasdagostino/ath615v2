@@ -1,8 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'auth_diagnostics.dart';
-
 enum SessionAccessState {
   valid,
   accountInvalid,
@@ -59,29 +57,13 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
 
   @override
   Future<void> validateAuthUser() async {
-    final session = client.auth.currentSession;
-    authDiagnostics.logSessionSnapshot(
-      'AUTH_REVALIDATE_START',
-      session: session,
-    );
     await client.auth.getUser();
-    authDiagnostics.log('AUTH_GET_USER_SUCCESS', const {});
   }
 
   @override
   Future<void> recoverAuthSession() async {
-    authDiagnostics.logRefresh(
-      event: 'AUTH_REFRESH_START',
-      origin: 'a615_revalidation',
-      session: client.auth.currentSession,
-    );
     await client.auth.refreshSession();
     await client.auth.getUser();
-    authDiagnostics.logRefresh(
-      event: 'AUTH_REFRESH_SUCCESS',
-      origin: 'a615_revalidation',
-      session: client.auth.currentSession,
-    );
   }
 
   @override
@@ -111,10 +93,8 @@ class SupabaseSessionAccessDataSource implements SessionAccessDataSource {
       client.rpc('select_effective_gym', params: {'p_gym_id': gymId});
 
   @override
-  Future<void> clearLocalSession() => Future<void>.sync(() {
-    authDiagnostics.log('AUTH_SIGNOUT_UNRECOVERABLE', const {});
-    return client.auth.signOut(scope: SignOutScope.local);
-  });
+  Future<void> clearLocalSession() =>
+      client.auth.signOut(scope: SignOutScope.local);
 }
 
 bool isDefinitiveAuthInvalidation(Object error) {
@@ -151,10 +131,6 @@ bool isDefinitiveRefreshFailure(Object error) {
       message.contains('session not found');
 }
 
-void logSanitizedAuthFailure(String event, Object error) {
-  authDiagnostics.logAuthFailure(event, error);
-}
-
 class SessionAccessRevalidator {
   SessionAccessRevalidator(this.source);
 
@@ -180,15 +156,12 @@ class SessionAccessRevalidator {
         try {
           await source.recoverAuthSession();
         } catch (refreshError) {
-          logSanitizedAuthFailure('AUTH_REFRESH_FAIL', refreshError);
           if (!isDefinitiveRefreshFailure(refreshError) &&
               !isDefinitiveAuthInvalidation(refreshError)) {
-            authDiagnostics.log('AUTH_REFRESH_TRANSIENT_FAIL', const {});
             return const SessionAccessResult(
               SessionAccessState.transientFailure,
             );
           }
-          authDiagnostics.log('AUTH_REFRESH_UNRECOVERABLE', const {});
           await source.clearLocalSession();
           return const SessionAccessResult(
             SessionAccessState.accountInvalid,
@@ -197,10 +170,8 @@ class SessionAccessRevalidator {
         }
       } else {
         if (!isDefinitiveAuthInvalidation(error)) {
-          authDiagnostics.log('AUTH_REVALIDATE_TRANSIENT_FAIL', const {});
           return const SessionAccessResult(SessionAccessState.transientFailure);
         }
-        authDiagnostics.log('AUTH_REVALIDATE_UNRECOVERABLE', const {});
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,
@@ -263,9 +234,7 @@ class SessionAccessRevalidator {
         destination: '/app',
       );
     } catch (error) {
-      logSanitizedAuthFailure('AUTH_CONTEXT_FAIL', error);
       if (isDefinitiveAuthInvalidation(error)) {
-        authDiagnostics.log('AUTH_CONTEXT_UNRECOVERABLE', const {});
         await source.clearLocalSession();
         return const SessionAccessResult(
           SessionAccessState.accountInvalid,

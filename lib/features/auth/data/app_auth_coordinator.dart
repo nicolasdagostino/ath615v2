@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'auth_diagnostics.dart';
-
 enum AppAuthState {
   initializing,
   refreshing,
@@ -17,21 +15,16 @@ enum AuthRefreshResolution { refreshed, transientFailure, definitiveFailure }
 class AppAuthCoordinator extends ChangeNotifier {
   AppAuthState _state = AppAuthState.initializing;
   bool _explicitLogout = false;
-  bool _lastHasSession = false;
-  bool _lastHasRefreshToken = false;
   Completer<AuthRefreshResolution>? _refreshResolution;
   bool _signedOutDuringRefresh = false;
 
   AppAuthState get state => _state;
-  bool get hasKnownSession => _lastHasSession;
   bool get isTransitioning =>
       _state == AppAuthState.initializing || _state == AppAuthState.refreshing;
   bool get isSessionRefreshPending =>
       _state == AppAuthState.refreshing && _refreshResolution != null;
 
   void initializeFromSession(Session? session) {
-    _lastHasSession = session != null;
-    _lastHasRefreshToken = session?.refreshToken?.isNotEmpty == true;
     _transition(
       session == null
           ? AppAuthState.definitivelyUnauthenticated
@@ -60,7 +53,6 @@ class AppAuthCoordinator extends ChangeNotifier {
     }
     final pending = _refreshResolution;
     if (pending == null) return AuthRefreshResolution.transientFailure;
-    authDiagnostics.log('AUTH_REFRESH_WAIT', const {});
     try {
       return await pending.future.timeout(timeout);
     } on TimeoutException {
@@ -86,13 +78,7 @@ class AppAuthCoordinator extends ChangeNotifier {
   void preserveAfterTransientFailure({required bool sessionPresent}) {
     if (sessionPresent) {
       markAuthenticated(reason: 'refresh_transient_session_preserved');
-      return;
     }
-    authDiagnostics.logTransition(
-      from: _state.name,
-      to: _state.name,
-      reason: 'transient_session_null',
-    );
   }
 
   void markDefinitelyUnauthenticated({required String reason}) {
@@ -106,11 +92,6 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void observeAuthEvent(AuthState event) {
-    final stateBefore = _state;
-    final hasSessionBefore = _lastHasSession;
-    final hasRefreshTokenBefore = _lastHasRefreshToken;
-    final explicitLogout = _explicitLogout;
-    final refreshInProgress = _state == AppAuthState.refreshing;
     if (event.session != null &&
         (event.event == AuthChangeEvent.initialSession ||
             event.event == AuthChangeEvent.signedIn ||
@@ -123,27 +104,9 @@ class AppAuthCoordinator extends ChangeNotifier {
             _state == AppAuthState.definitivelyUnauthenticated)) {
       markDefinitelyUnauthenticated(reason: 'confirmed_signed_out');
     } else if (event.event == AuthChangeEvent.signedOut) {
-      authDiagnostics.log('AUTH_SIGNED_OUT_DURING_REFRESH', {
-        'refreshInProgress': AuthDiagnostics.yesNo(refreshInProgress),
-      });
       _signedOutDuringRefresh = true;
-      authDiagnostics.log('AUTH_REFRESH_WAIT', {
-        'reason': 'signed_out_pending_refresh_resolution',
-      });
       _transition(AppAuthState.refreshing, reason: 'signed_out_pending_review');
     }
-    _lastHasSession = event.session != null;
-    _lastHasRefreshToken = event.session?.refreshToken?.isNotEmpty == true;
-    authDiagnostics.logAuthEvent(
-      event: event.event.name,
-      stateBefore: stateBefore.name,
-      hasSessionBefore: hasSessionBefore,
-      hasRefreshTokenBefore: hasRefreshTokenBefore,
-      stateAfter: _state.name,
-      sessionAfter: event.session,
-      explicitLogout: explicitLogout,
-      refreshInProgress: refreshInProgress,
-    );
   }
 
   void _completeRefresh(AuthRefreshResolution resolution) {
@@ -154,14 +117,8 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void _transition(AppAuthState next, {required String reason}) {
-    final previous = _state;
-    if (previous == next) return;
+    if (_state == next) return;
     _state = next;
-    authDiagnostics.logTransition(
-      from: previous.name,
-      to: next.name,
-      reason: reason,
-    );
     notifyListeners();
   }
 }

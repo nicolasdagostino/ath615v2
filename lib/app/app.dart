@@ -15,7 +15,6 @@ import '../core/locale/locale_controller.dart';
 import '../core/preferences/app_preferences_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/auth/data/app_auth_coordinator.dart';
-import '../features/auth/data/auth_diagnostics.dart';
 import '../features/auth/data/session_access_revalidator.dart';
 import '../features/notifications/data/notifications_repository.dart';
 import '../features/notifications/navigation/notification_destination.dart';
@@ -268,7 +267,7 @@ class _AthleteLabAppState extends State<AthleteLabApp>
               _schedulePushSetup();
             },
             onError: (Object error) {
-              authDiagnostics.logAuthFailure('AUTH_SDK_STREAM_ERROR', error);
+              debugPrint('Unexpected auth stream error: ${error.runtimeType}');
             },
           );
 
@@ -296,23 +295,10 @@ class _AthleteLabAppState extends State<AthleteLabApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final session = Supabase.instance.client.auth.currentSession;
-    authDiagnostics.logLifecycle(
-      lifecycleState: state.name,
-      session: session,
-      coordinatorState: appAuthCoordinator.state.name,
-    );
     if (shouldRevalidateAccessOnLifecycle(state)) {
       final expiresAt = session?.expiresAt;
       final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
       final needsSessionRefresh = expiresAt != null && expiresAt - now <= 30;
-      if (needsSessionRefresh) {
-        authDiagnostics.logRefresh(
-          event: 'AUTH_REFRESH_START',
-          origin: 'unknown_sdk_or_external',
-          session: session,
-          phase: 'resume_auto_refresh_inferred',
-        );
-      }
       appAuthCoordinator.beginRefresh(
         expectsSessionRefresh: needsSessionRefresh,
       );
@@ -326,17 +312,11 @@ class _AthleteLabAppState extends State<AthleteLabApp>
       appAuthCoordinator.beginRefresh();
     }
     if (appAuthCoordinator.isSessionRefreshPending) {
-      authDiagnostics.log('AUTH_REVALIDATION_DEFERRED', {
-        'reason': 'session_refresh_pending',
-      });
       final resolution = await appAuthCoordinator.waitForSessionRefresh(
         currentSession: () => client.auth.currentSession,
       );
       if (!mounted) return;
       if (resolution == AuthRefreshResolution.transientFailure) {
-        authDiagnostics.log('AUTH_RECOVERY_WAIT', {
-          'reason': 'refresh_transient_or_pending',
-        });
         appAuthCoordinator.preserveAfterTransientFailure(
           sessionPresent: client.auth.currentSession != null,
         );
@@ -348,19 +328,15 @@ class _AthleteLabAppState extends State<AthleteLabApp>
         );
         return;
       }
-      authDiagnostics.log('AUTH_REFRESH_COMPLETED', const {});
-      authDiagnostics.log('AUTH_REVALIDATION_AFTER_REFRESH', const {});
     }
     final user = client.auth.currentUser;
     if (!mounted) return;
     if (user == null) {
-      authDiagnostics.log('AUTH_SESSION_MISSING', const {});
       if (appAuthCoordinator.state == AppAuthState.refreshing) {
         appAuthCoordinator.preserveAfterTransientFailure(sessionPresent: false);
       }
       return;
     }
-    authDiagnostics.log('AUTH_SESSION_PRESENT', const {});
     final result = await _accessRevalidator.validate(
       userId: user.id,
       cachedGymId: user.userMetadata?['gym_id']?.toString(),
@@ -379,9 +355,6 @@ class _AthleteLabAppState extends State<AthleteLabApp>
     } else {
       appAuthCoordinator.markAuthenticated(reason: 'access_revalidated');
     }
-    authDiagnostics.log('AUTH_REVALIDATE_RESULT', {
-      'result': result.state.name,
-    });
     recordSessionAccessResult(result);
     final destination = accessDestinationOnResume(result);
     if (destination != null) {

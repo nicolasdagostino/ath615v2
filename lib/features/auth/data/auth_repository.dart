@@ -76,7 +76,6 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
-    debugPrint('AUTH_SIGNOUT_EXPLICIT');
     appAuthCoordinator.beginExplicitLogout();
     _isSigningOut = true;
     try {
@@ -107,7 +106,6 @@ class AuthRepository {
 
   Future<void> deleteMyAccount() async {
     await _client.functions.invoke('delete-my-account');
-    debugPrint('AUTH_SIGNOUT_DELETED_USER');
     appAuthCoordinator.beginExplicitLogout(reason: 'account_deleted');
     await _client.auth.signOut();
   }
