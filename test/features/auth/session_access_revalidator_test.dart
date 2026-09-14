@@ -198,10 +198,63 @@ void main() {
       expect(source.signOuts, 1);
     });
 
+    test('invalid grant from refresh clears local session', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+        refreshError: const AuthException(
+          'Refresh rejected',
+          statusCode: '400',
+          code: 'invalid_grant',
+        ),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.accountInvalid);
+      expect(source.signOuts, 1);
+    });
+
     test('temporary refresh failure preserves the session', () async {
       final source = _FakeSource(
         authError: const AuthException('JWT expired', statusCode: '401'),
         refreshError: TimeoutException('refresh timeout'),
+      );
+      final result = await _validate(source);
+      expect(result.state, SessionAccessState.transientFailure);
+      expect(source.signOuts, 0);
+    });
+
+    for (final error in <Object>[
+      Exception('SocketException: offline'),
+      const AuthException('server unavailable', statusCode: '500'),
+      AuthRetryableFetchException(message: 'temporary transport failure'),
+    ]) {
+      test('recoverable refresh failure does not sign out: $error', () async {
+        final source = _FakeSource(
+          authError: const AuthException('JWT expired', statusCode: '401'),
+          refreshError: error,
+        );
+        final result = await _validate(source);
+        expect(result.state, SessionAccessState.transientFailure);
+        expect(source.signOuts, 0);
+      });
+    }
+
+    test(
+      'generic Auth 400 without invalidation evidence is transient',
+      () async {
+        final source = _FakeSource(
+          authError: const AuthException('JWT expired', statusCode: '401'),
+          refreshError: const AuthException('Bad request', statusCode: '400'),
+        );
+        final result = await _validate(source);
+        expect(result.state, SessionAccessState.transientFailure);
+        expect(source.signOuts, 0);
+      },
+    );
+
+    test('local missing session during refresh is transient', () async {
+      final source = _FakeSource(
+        authError: const AuthException('JWT expired', statusCode: '401'),
+        refreshError: AuthSessionMissingException(),
       );
       final result = await _validate(source);
       expect(result.state, SessionAccessState.transientFailure);

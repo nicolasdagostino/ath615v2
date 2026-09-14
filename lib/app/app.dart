@@ -312,8 +312,14 @@ class _AthleteLabAppState extends State<AthleteLabApp>
       appAuthCoordinator.beginRefresh();
     }
     if (appAuthCoordinator.isSessionRefreshPending) {
-      final resolution = await appAuthCoordinator.waitForSessionRefresh(
+      final resolution = await appAuthCoordinator.resolveSessionRefresh(
         currentSession: () => client.auth.currentSession,
+        refreshSession: () async {
+          await client.auth.refreshSession();
+        },
+        isDefinitiveFailure: (error) =>
+            isDefinitiveRefreshFailure(error) ||
+            isDefinitiveAuthInvalidation(error),
       );
       if (!mounted) return;
       if (resolution == AuthRefreshResolution.transientFailure) {

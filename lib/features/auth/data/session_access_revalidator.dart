@@ -119,14 +119,21 @@ bool isRecoverableAccessTokenExpiry(Object error) {
 }
 
 bool isDefinitiveRefreshFailure(Object error) {
-  if (error is AuthSessionMissingException) return true;
+  // A local missing-session exception can be observed while GoTrue is replacing
+  // an expired session during refresh. It is not proof of server revocation.
+  if (error is AuthSessionMissingException) return false;
   if (error is! AuthException) return false;
   final status = error.statusCode;
   if (status != '400' && status != '401' && status != '403') return false;
   final message = error.message.toLowerCase();
+  final code = error.code?.toLowerCase();
+  if (code == 'invalid_grant') return true;
   return message.contains('refresh token not found') ||
       message.contains('invalid refresh token') ||
+      message.contains('refresh token already used') ||
       message.contains('refresh token has already been used') ||
+      message.contains('refresh token revoked') ||
+      message.contains('session revoked') ||
       message.contains('auth session missing') ||
       message.contains('session not found');
 }
