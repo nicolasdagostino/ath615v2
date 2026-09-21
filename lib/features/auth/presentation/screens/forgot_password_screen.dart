@@ -53,6 +53,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthFormScaffold(
+      matchSystemOverlayToBackground: true,
       title: appStrings.authForgotTitle,
       subtitle: appStrings.authForgotSubtitle,
       onBack: () => context.pop(),

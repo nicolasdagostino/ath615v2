@@ -383,6 +383,7 @@ class _MembershipOperationFormState extends State<MembershipOperationForm> {
       cancelLabel: appStrings.pick('BACK', 'VOLVER'),
       destructive:
           widget.operation != MembershipAdminOperation.changeExpiration,
+      actionColor: _isExpiration ? AppColors.primary : null,
       icon: _isExpiration
           ? Icons.event_repeat_rounded
           : Icons.warning_amber_rounded,
@@ -465,7 +466,26 @@ class _MembershipOperationFormState extends State<MembershipOperationForm> {
   }
 
   @override
-  Widget build(BuildContext context) => AppKeyboardDismissible(
+  Widget build(BuildContext context) {
+    if (!_isExpiration) return _buildForm(context);
+    final theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(
+          primary: AppColors.primary,
+          secondary: AppColors.primary,
+        ),
+        inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+          focusedBorder: theme.inputDecorationTheme.focusedBorder?.copyWith(
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+          ),
+        ),
+      ),
+      child: Builder(builder: _buildForm),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) => AppKeyboardDismissible(
     child: Material(
       color: AppColors.surface(context),
       borderRadius: const BorderRadius.vertical(

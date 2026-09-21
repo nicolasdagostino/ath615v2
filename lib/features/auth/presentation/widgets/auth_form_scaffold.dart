@@ -16,6 +16,7 @@ class AuthFormScaffold extends StatelessWidget {
     this.onBack,
     this.showLogo = false,
     this.photographicBackground = false,
+    this.matchSystemOverlayToBackground = false,
   });
 
   final String title;
@@ -24,6 +25,7 @@ class AuthFormScaffold extends StatelessWidget {
   final VoidCallback? onBack;
   final bool showLogo;
   final bool photographicBackground;
+  final bool matchSystemOverlayToBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -116,9 +118,13 @@ class AuthFormScaffold extends StatelessWidget {
             )
           : content,
     );
-    return photographicBackground
+    return photographicBackground || matchSystemOverlayToBackground
         ? AnnotatedRegion<SystemUiOverlayStyle>(
-            value: darkScreenSystemUiOverlayStyle,
+            value: photographicBackground
+                ? darkScreenSystemUiOverlayStyle
+                : detailScreenSystemUiOverlayStyle(
+                    isDark: AppColors.isDark(context),
+                  ),
             child: scaffold,
           )
         : scaffold;

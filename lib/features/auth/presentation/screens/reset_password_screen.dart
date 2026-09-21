@@ -61,6 +61,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return AnimatedBuilder(
       animation: _recovery,
       builder: (context, _) => AuthFormScaffold(
+        matchSystemOverlayToBackground: true,
         title: appStrings.authSetNewPasswordTitle,
         subtitle: appStrings.authSetNewPasswordSubtitleReady,
         child: Column(

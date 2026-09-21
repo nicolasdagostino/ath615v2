@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:ath615v2/core/theme/app_colors.dart';
+import 'package:ath615v2/core/widgets/app_confirmation_dialog.dart';
+
 import 'package:ath615v2/core/locale/locale_controller.dart';
 import 'package:ath615v2/core/theme/app_theme.dart';
 import 'package:ath615v2/features/members/data/membership_operations_repository.dart';
@@ -256,6 +259,75 @@ void main() {
       findsOne,
     );
   });
+
+  testWidgets(
+    'expiration uses neutral borders and cyan focus and confirmation',
+    (tester) async {
+      final source = _FakeOperations(preview());
+      await _pumpForm(
+        tester,
+        operation: MembershipAdminOperation.changeExpiration,
+        source: source,
+      );
+      final reason = find.byKey(const ValueKey('membership-operation-reason'));
+      final theme = Theme.of(tester.element(reason));
+      expect(
+        theme.inputDecorationTheme.enabledBorder!.borderSide.color,
+        AppColors.border(tester.element(reason)),
+      );
+      expect(
+        theme.inputDecorationTheme.focusedBorder!.borderSide.color,
+        AppColors.primary,
+      );
+      expect(theme.colorScheme.primary, AppColors.primary);
+      await chooseReason(tester, 'Injury');
+      await tester.tap(
+        find.byKey(const ValueKey('membership-expiration-picker')),
+      );
+      await tester.pumpAndSettle();
+      final calendar = tester.widget<CalendarDatePicker>(
+        find.byType(CalendarDatePicker),
+      );
+      calendar.onDateChanged(calendar.initialDate!);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('membership-operation-submit')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('membership-operation-submit')),
+      );
+      await tester.pumpAndSettle();
+      final dialog = find.byType(AppConfirmationDialog);
+      expect(dialog, findsOneWidget);
+      final button = tester.widget<FilledButton>(
+        find.descendant(of: dialog, matching: find.byType(FilledButton)),
+      );
+      expect(button.style!.backgroundColor!.resolve({}), AppColors.primary);
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: dialog,
+          matching: find.byIcon(Icons.event_repeat_rounded),
+        ),
+      );
+      expect(icon.color, AppColors.primary);
+      final container = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.descendant(
+                of: dialog,
+                matching: find.byIcon(Icons.event_repeat_rounded),
+              ),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(
+        (container.decoration! as BoxDecoration).color,
+        AppColors.primary.withValues(alpha: 0.12),
+      );
+      expect(source.expirationCalls, 0);
+    },
+  );
 
   test('human errors cover chained Unlimited and invalid expiration', () {
     expect(

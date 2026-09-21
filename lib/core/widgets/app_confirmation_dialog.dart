@@ -12,6 +12,7 @@ Future<bool> showAppConfirmationDialog({
   required String cancelLabel,
   bool destructive = true,
   IconData? icon,
+  Color? actionColor,
 }) async {
   final result = await showDialog<bool>(
     context: context,
@@ -23,6 +24,7 @@ Future<bool> showAppConfirmationDialog({
       cancelLabel: cancelLabel,
       destructive: destructive,
       icon: icon,
+      actionColor: actionColor,
     ),
   );
   return result == true;
@@ -58,6 +60,7 @@ class AppConfirmationDialog extends StatelessWidget {
     this.destructive = true,
     this.icon,
     this.showCancel = true,
+    this.actionColor,
   });
 
   final String title;
@@ -67,10 +70,12 @@ class AppConfirmationDialog extends StatelessWidget {
   final bool destructive;
   final IconData? icon;
   final bool showCancel;
+  final Color? actionColor;
 
   @override
   Widget build(BuildContext context) {
-    final actionColor = destructive ? AppColors.danger : AppColors.accent;
+    final actionColor =
+        this.actionColor ?? (destructive ? AppColors.danger : AppColors.accent);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       backgroundColor: Colors.transparent,
