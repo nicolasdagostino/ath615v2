@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,7 @@ import 'core/locale/locale_controller.dart';
 import 'core/preferences/app_preferences_controller.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/data/app_auth_coordinator.dart';
+import 'features/auth/data/password_recovery_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,11 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
       detectSessionInUri: false,
     ),
+  );
+  // Resolve recovery intent before any protected route can be built.
+  await initializePasswordRecovery(
+    Supabase.instance.client,
+    initialUri: await AppLinks().getInitialLink(),
   );
   appAuthCoordinator.initializeFromSession(
     Supabase.instance.client.auth.currentSession,

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/strings/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
-import '../../data/auth_repository.dart';
+import '../../data/password_recovery_controller.dart';
 import '../widgets/auth_form_scaffold.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+  const ResetPasswordScreen({super.key, this.controller});
+
+  final PasswordRecoveryController? controller;
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -19,18 +20,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
-  bool _loading = false;
-  bool _sessionReady = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-  AuthRepository get _repo => AuthRepository(Supabase.instance.client);
-
-  @override
-  void initState() {
-    super.initState();
-    _waitForSession();
-  }
+  PasswordRecoveryController get _recovery =>
+      widget.controller ?? passwordRecoveryController;
 
   @override
   void dispose() {
@@ -39,130 +32,133 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _waitForSession() async {
-    for (var i = 0; i < 20; i++) {
-      if (Supabase.instance.client.auth.currentSession != null) {
-        if (mounted) setState(() => _sessionReady = true);
-        return;
-      }
-
-      await Future<void>.delayed(const Duration(milliseconds: 250));
-    }
-
-    if (mounted) setState(() => _sessionReady = false);
+  Future<void> _submit() async {
+    final result = await _recovery.submit(
+      _password.text,
+      _confirmPassword.text,
+    );
+    if (!mounted) return;
+    final message = switch (result) {
+      PasswordReplacementResult.success => appStrings.passwordUpdated,
+      PasswordReplacementResult.mismatch => appStrings.authPasswordsDoNotMatch,
+      PasswordReplacementResult.invalidPassword =>
+        appStrings.authPasswordPolicy,
+      PasswordReplacementResult.unavailable => appStrings.authRecoveryInvalid,
+      PasswordReplacementResult.failed => appStrings.passwordUpdateError(null),
+    };
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+    if (result == PasswordReplacementResult.success) context.go('/');
   }
 
-  Future<void> _submit() async {
-    if (!_sessionReady) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(appStrings.authSessionNotReady)));
-      return;
-    }
-
-    if (_password.text != _confirmPassword.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appStrings.authPasswordsDoNotMatch)),
-      );
-      return;
-    }
-
-    setState(() => _loading = true);
-
-    try {
-      await _repo.updatePassword(_password.text);
-
-      if (!mounted) return;
-
-      context.go('/');
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appStrings.passwordUpdateError(e))),
-      );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  Future<void> _requestAnotherLink() async {
+    if (await _recovery.cancel() && mounted) context.go('/forgot-password');
   }
 
   @override
   Widget build(BuildContext context) {
-    return AuthFormScaffold(
-      title: appStrings.authSetNewPasswordTitle,
-      subtitle: _sessionReady
-          ? appStrings.authSetNewPasswordSubtitleReady
-          : appStrings.authSetNewPasswordSubtitleWaiting,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appStrings.authNewPasswordSection.toUpperCase(),
-            style: authSectionStyle(context),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _password,
-            obscureText: _obscurePassword,
-            style: authInputStyle(context),
-            decoration:
-                authFormInput(
-                  context,
-                  label: appStrings.authNewPasswordSection,
-                  icon: Icons.lock_outline_rounded,
-                ).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+    return AnimatedBuilder(
+      animation: _recovery,
+      builder: (context, _) => AuthFormScaffold(
+        title: appStrings.authSetNewPasswordTitle,
+        subtitle: appStrings.authSetNewPasswordSubtitleReady,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_recovery.phase == RecoveryPhase.exchanging)
+              const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
+            else if (!_recovery.ready)
+              Text(appStrings.authRecoveryInvalid)
+            else ...[
+              Text(
+                appStrings.authNewPasswordSection.toUpperCase(),
+                style: authSectionStyle(context),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const ValueKey('recovery-password'),
+                controller: _password,
+                enabled: !_recovery.submitting,
+                autocorrect: false,
+                enableSuggestions: false,
+                obscureText: _obscurePassword,
+                style: authInputStyle(context),
+                decoration:
+                    authFormInput(
+                      context,
+                      label: appStrings.authNewPasswordSection,
+                      icon: Icons.lock_outline_rounded,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        color: AppColors.textSecondary(context),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
-                    color: AppColors.textSecondary(context),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _confirmPassword,
-            obscureText: _obscureConfirmPassword,
-            style: authInputStyle(context),
-            decoration:
-                authFormInput(
-                  context,
-                  label: appStrings.authConfirmPassword,
-                  icon: Icons.lock_outline_rounded,
-                ).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('recovery-confirmation'),
+                controller: _confirmPassword,
+                enabled: !_recovery.submitting,
+                autocorrect: false,
+                enableSuggestions: false,
+                obscureText: _obscureConfirmPassword,
+                style: authInputStyle(context),
+                decoration:
+                    authFormInput(
+                      context,
+                      label: appStrings.authConfirmPassword,
+                      icon: Icons.lock_outline_rounded,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        color: AppColors.textSecondary(context),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
                     ),
-                    color: AppColors.textSecondary(context),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
+              ),
+              const SizedBox(height: 18),
+              if (_recovery.submitting)
+                const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              else
+                AppFormSubmitButton(
+                  label: appStrings.authSavePassword,
+                  loading: false,
+                  enabled: _recovery.ready,
+                  accentColor: AppColors.primary,
+                  onPressed: _submit,
                 ),
-          ),
-          const SizedBox(height: 18),
-          AppFormSubmitButton(
-            label: _sessionReady
-                ? appStrings.authSavePassword
-                : appStrings.authWaitingForSession,
-            loading: _loading,
-            enabled: _sessionReady && !_loading,
-            accentColor: AppColors.primary,
-            onPressed: _submit,
-          ),
-        ],
+            ],
+            if (_recovery.phase != RecoveryPhase.exchanging &&
+                !_recovery.submitting)
+              TextButton(
+                onPressed: _requestAnotherLink,
+                child: Text(appStrings.authRequestAnotherLink),
+              ),
+          ],
+        ),
       ),
     );
   }

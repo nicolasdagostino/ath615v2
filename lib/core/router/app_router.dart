@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/data/app_auth_coordinator.dart';
+import 'deep_link_service.dart';
 import '../../features/auth/data/session_access_revalidator.dart';
 import '../../features/auth/presentation/screens/auth_gate.dart';
 import '../../features/auth/presentation/screens/gym_access_disabled_screen.dart';
@@ -39,6 +40,9 @@ String? appAccessRedirect({
   required bool isPublic,
   required String? accessDestination,
 }) {
+  if (authState == AppAuthState.passwordRecoveryRequired) {
+    return path == '/reset-password' ? null : '/reset-password';
+  }
   if ((authState == AppAuthState.initializing ||
           authState == AppAuthState.refreshing) &&
       !isPublic) {
@@ -63,6 +67,7 @@ class AppRouter {
     return GoRouter(
       navigatorKey: _rootKey,
       initialLocation: '/',
+      overridePlatformDefaultLocation: true,
       refreshListenable: appAuthCoordinator,
       redirect: (context, state) {
         final public = <String>{
@@ -77,6 +82,10 @@ class AppRouter {
           '/plans',
           '/contact',
         };
+        if (appAuthCoordinator.requiresPasswordRecovery &&
+            !public.contains(state.uri.path)) {
+          pendingDeepLinkDestination.remember(state.uri.toString());
+        }
         final destination = appAccessRedirect(
           authState: appAuthCoordinator.state,
           path: state.uri.path,

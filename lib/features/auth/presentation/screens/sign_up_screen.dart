@@ -8,6 +8,7 @@ import '../../../../core/theme/app_design_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_form_visuals.dart';
 import '../../data/auth_repository.dart';
+import '../../data/password_policy.dart';
 import '../widgets/auth_form_scaffold.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool get _canSubmit {
     return _fullName.text.trim().length >= 3 &&
         _email.text.trim().contains('@') &&
-        _password.text.length >= 6 &&
+        meetsPasswordPolicy(_password.text) &&
         _password.text == _confirmPassword.text &&
         !_loading;
   }

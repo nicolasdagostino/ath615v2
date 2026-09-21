@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_auth_coordinator.dart';
+import 'password_recovery_controller.dart';
 
 class AuthRepository {
   AuthRepository(this._client);
@@ -81,6 +82,9 @@ class AuthRepository {
     try {
       await _removeCurrentDeviceToken();
       await _client.auth.signOut();
+      if (passwordRecoveryInitialized) {
+        await passwordRecoveryController.clearAfterExplicitLogout();
+      }
     } finally {
       _isSigningOut = false;
     }

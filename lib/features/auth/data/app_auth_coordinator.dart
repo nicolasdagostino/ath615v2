@@ -7,6 +7,7 @@ enum AppAuthState {
   initializing,
   refreshing,
   authenticated,
+  passwordRecoveryRequired,
   definitivelyUnauthenticated,
 }
 
@@ -15,16 +16,35 @@ enum AuthRefreshResolution { refreshed, transientFailure, definitiveFailure }
 class AppAuthCoordinator extends ChangeNotifier {
   AppAuthState _state = AppAuthState.initializing;
   bool _explicitLogout = false;
+  int _revision = 0;
   Completer<AuthRefreshResolution>? _refreshResolution;
   Future<AuthRefreshResolution>? _sessionRefreshWork;
 
   AppAuthState get state => _state;
+  int get revision => _revision;
+  bool get requiresPasswordRecovery =>
+      _state == AppAuthState.passwordRecoveryRequired;
+
+  void requirePasswordRecovery() {
+    _explicitLogout = false;
+    if (!requiresPasswordRecovery) _revision++;
+    _transition(AppAuthState.passwordRecoveryRequired, reason: 'recovery');
+  }
+
+  // Only the recovery controller calls this after confirmed password replacement.
+  void completePasswordRecovery() {
+    if (!requiresPasswordRecovery) return;
+    _revision++;
+    _transition(AppAuthState.authenticated, reason: 'password_replaced');
+  }
+
   bool get isTransitioning =>
       _state == AppAuthState.initializing || _state == AppAuthState.refreshing;
   bool get isSessionRefreshPending =>
       _state == AppAuthState.refreshing && _refreshResolution != null;
 
   void initializeFromSession(Session? session) {
+    if (requiresPasswordRecovery) return;
     _transition(
       session == null
           ? AppAuthState.definitivelyUnauthenticated
@@ -34,6 +54,7 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void beginRefresh({bool expectsSessionRefresh = false}) {
+    if (requiresPasswordRecovery) return;
     if (_state == AppAuthState.definitivelyUnauthenticated) return;
     if (expectsSessionRefresh && _refreshResolution == null) {
       _refreshResolution = Completer<AuthRefreshResolution>();
@@ -116,6 +137,7 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void markAuthenticated({String reason = 'auth_confirmed'}) {
+    if (requiresPasswordRecovery) return;
     _explicitLogout = false;
     _completeRefresh(AuthRefreshResolution.refreshed);
     _transition(AppAuthState.authenticated, reason: reason);
@@ -128,6 +150,7 @@ class AppAuthCoordinator extends ChangeNotifier {
   }
 
   void markDefinitelyUnauthenticated({required String reason}) {
+    _revision++;
     _completeRefresh(AuthRefreshResolution.definitiveFailure);
     _transition(AppAuthState.definitivelyUnauthenticated, reason: reason);
   }
@@ -144,12 +167,17 @@ class AppAuthCoordinator extends ChangeNotifier {
       }
       return;
     }
+    if (event.event == AuthChangeEvent.passwordRecovery &&
+        event.session != null) {
+      requirePasswordRecovery();
+      return;
+    }
+    if (requiresPasswordRecovery) return;
     if (event.session != null &&
         (event.event == AuthChangeEvent.initialSession ||
             event.event == AuthChangeEvent.signedIn ||
             event.event == AuthChangeEvent.tokenRefreshed ||
-            event.event == AuthChangeEvent.userUpdated ||
-            event.event == AuthChangeEvent.passwordRecovery)) {
+            event.event == AuthChangeEvent.userUpdated)) {
       markAuthenticated(reason: event.event.name);
     } else if (event.event == AuthChangeEvent.signedOut &&
         (_explicitLogout ||

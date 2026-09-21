@@ -10,7 +10,9 @@ import '../../data/auth_repository.dart';
 import '../widgets/auth_form_scaffold.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  const ForgotPasswordScreen({super.key, this.requestReset});
+
+  final Future<void> Function(String email)? requestReset;
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -29,9 +31,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _submit() async {
+    if (_loading) return;
     setState(() => _loading = true);
     try {
-      await _repo.resetPassword(_email.text.trim());
+      await (widget.requestReset?.call(_email.text.trim()) ??
+          _repo.resetPassword(_email.text.trim()));
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

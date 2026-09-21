@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:app_links/app_links.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/data/session_access_revalidator.dart';
+import '../../features/auth/data/password_recovery_controller.dart';
 import '../../features/auth/data/app_auth_coordinator.dart';
 import '../../features/notifications/navigation/notification_destination.dart';
 
@@ -56,6 +56,7 @@ String authenticatedRoute({
 }) => switch (authState) {
   AppAuthState.initializing || AppAuthState.refreshing => '/',
   AppAuthState.definitivelyUnauthenticated => '/login',
+  AppAuthState.passwordRecoveryRequired => '/reset-password',
   AppAuthState.authenticated => accessDestination ?? destination,
 };
 
@@ -84,6 +85,18 @@ String? checkoutReturnDestination(Uri uri) {
   return '/membership?checkout=$status';
 }
 
+String? workoutDeepLinkId(Uri uri) {
+  final id =
+      uri.queryParameters['id'] ??
+      uri.queryParameters['workoutId'] ??
+      uri.queryParameters['workout_id'];
+  // Custom-scheme links put "workout" in the host; HTTPS links use the path.
+  final destination = '${uri.host}${uri.path}'.toLowerCase();
+  return destination.contains('workout') && id != null && id.isNotEmpty
+      ? id
+      : null;
+}
+
 class DeepLinkService {
   DeepLinkService(this._router);
 
@@ -93,31 +106,24 @@ class DeepLinkService {
   StreamSubscription<Uri>? _linkSub;
 
   Future<void> start() async {
-    debugPrint('ATH615 DEEPLINK SERVICE STARTED');
-
     final initialUri = await _appLinks.getInitialLink();
-    debugPrint('ATH615 INITIAL LINK => $initialUri');
 
     if (initialUri != null) {
       await _handle(initialUri);
     }
 
-    _linkSub = _appLinks.uriLinkStream.listen(
-      (uri) async {
-        debugPrint('ATH615 STREAM LINK => $uri');
-        await _handle(uri);
-      },
-      onError: (e) {
-        debugPrint('ATH615 STREAM ERROR => $e');
-      },
-    );
+    _linkSub = _appLinks.uriLinkStream.listen((uri) async {
+      await _handle(uri);
+    }, onError: (Object _) {});
   }
 
   Future<void> _handle(Uri uri) async {
-    final raw = uri.toString();
-    final lower = raw.toLowerCase();
-
-    debugPrint('ATH615 DEEPLINK RAW => $raw');
+    if (isPasswordRecoveryCallback(uri)) {
+      final work = passwordRecoveryController.handleCallback(uri);
+      _router.go('/reset-password');
+      await work;
+      return;
+    }
 
     final checkoutDestination = checkoutReturnDestination(uri);
     if (checkoutDestination != null) {
@@ -132,71 +138,14 @@ class DeepLinkService {
       return;
     }
 
-    final isAuthLink =
-        lower.contains('reset-password') ||
-        lower.contains('type=invite') ||
-        lower.contains('type=recovery') ||
-        lower.contains('access_token') ||
-        lower.contains('refresh_token') ||
-        lower.contains('code=');
-
-    debugPrint('ATH615 IS AUTH LINK => $isAuthLink');
-
-    final workoutId =
-        uri.queryParameters['id'] ??
-        uri.queryParameters['workoutId'] ??
-        uri.queryParameters['workout_id'];
-
-    final isWorkoutLink =
-        lower.contains('workout') && workoutId != null && workoutId.isNotEmpty;
-
-    if (isWorkoutLink) {
+    final workoutId = workoutDeepLinkId(uri);
+    if (workoutId != null) {
       final destination = await resolveWorkoutDestination(
         client: Supabase.instance.client,
         data: {'workoutId': workoutId},
       );
       goToAuthenticatedDestination(_router, destination);
       return;
-    }
-
-    if (!isAuthLink) return;
-
-    final fragmentParams = uri.fragment.isEmpty
-        ? <String, String>{}
-        : Uri.splitQueryString(uri.fragment);
-
-    final queryParams = uri.queryParameters;
-
-    final accessToken =
-        queryParams['access_token'] ?? fragmentParams['access_token'];
-    final refreshToken =
-        queryParams['refresh_token'] ?? fragmentParams['refresh_token'];
-    final code = queryParams['code'] ?? fragmentParams['code'];
-
-    final authType = queryParams['type'] ?? fragmentParams['type'] ?? '';
-
-    try {
-      final auth = Supabase.instance.client.auth;
-
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        debugPrint('ATH615 DEEPLINK => setSession with refresh_token');
-        await auth.setSession(refreshToken, accessToken: accessToken);
-        debugPrint('ATH615 DEEPLINK SESSION OK');
-      } else if (code != null && code.isNotEmpty) {
-        debugPrint('ATH615 DEEPLINK => exchangeCodeForSession');
-        await auth.exchangeCodeForSession(code);
-        debugPrint('ATH615 DEEPLINK SESSION OK');
-      } else {
-        debugPrint('ATH615 DEEPLINK SESSION ERROR => no refresh_token or code');
-      }
-    } catch (e) {
-      debugPrint('ATH615 DEEPLINK SESSION ERROR => $e');
-    }
-
-    if (authType == 'recovery' || authType == 'invite') {
-      _router.go('/reset-password');
-    } else {
-      _router.go('/');
     }
   }
 

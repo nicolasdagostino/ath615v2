@@ -36,6 +36,11 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _redirect() async {
     if (!mounted || _redirecting || appAuthCoordinator.isTransitioning) return;
+    if (appAuthCoordinator.requiresPasswordRecovery) {
+      context.go('/reset-password');
+      return;
+    }
+    final revision = appAuthCoordinator.revision;
     _redirecting = true;
 
     final currentPath = GoRouter.of(
@@ -67,6 +72,10 @@ class _AuthGateState extends State<AuthGate> {
     ).validate(userId: user.id, cachedGymId: null);
 
     if (!mounted) return;
+    if (revision != appAuthCoordinator.revision) {
+      _redirecting = false;
+      return;
+    }
 
     if (result.state == SessionAccessState.transientFailure) {
       appAuthCoordinator.preserveAfterTransientFailure(

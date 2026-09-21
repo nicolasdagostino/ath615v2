@@ -421,50 +421,39 @@ class AppStrings {
   );
   String get authResetLink => pick('Reset link', 'Enlace de recuperación');
   String get authSendResetLink => pick('Send reset link', 'Enviar enlace');
-  String get authPasswordEmailSent =>
-      pick('Password email sent.', 'Email de recuperación enviado.');
-  String resetPasswordError(Object e) {
-    final message = e.toString();
-    if (message.contains('account_not_found')) {
-      return pick(
-        'No account found with this email.',
-        'No existe una cuenta registrada con este email.',
-      );
-    }
-    if (message.contains('over_email_send_rate_limit') ||
-        message.contains('email rate limit exceeded') ||
-        message.contains('statusCode: 429')) {
-      return pick(
-        'Too many reset emails requested. Please wait a few minutes and try again.',
-        'Has solicitado demasiados emails de recuperación. Espera unos minutos e inténtalo de nuevo.',
-      );
-    }
-    return pick(
-      'We could not send the reset email. Please try again.',
-      'No pudimos enviar el email de recuperación. Inténtalo de nuevo.',
-    );
-  }
+  String get authPasswordEmailSent => pick(
+    "If an account exists for that email, you'll receive a password reset link.",
+    'Si existe una cuenta asociada a ese email, recibirás un enlace para restablecer tu contraseña.',
+  );
+  String resetPasswordError(Object e) => pick(
+    'We could not process the request. Please try again.',
+    'No pudimos procesar la solicitud. Inténtalo de nuevo.',
+  );
 
   String get authSetNewPasswordTitle =>
-      pick('Set new password', 'Nueva contraseña');
-  String get authSetNewPasswordSubtitleReady =>
-      pick('Create your new password.', 'Crea tu nueva contraseña.');
-  String get authSetNewPasswordSubtitleWaiting =>
-      pick('Opening secure invitation...', 'Abriendo invitación segura...');
+      pick('Create new password', 'Crear nueva contraseña');
+  String get authSetNewPasswordSubtitleReady => pick(
+    'Enter a new password for your account.',
+    'Introduce una nueva contraseña para tu cuenta.',
+  );
   String get authNewPasswordSection => pick('New password', 'Nueva contraseña');
   String get authConfirmPassword =>
       pick('Confirm password', 'Confirmar contraseña');
   String get authPasswordsDoNotMatch =>
       pick('Passwords do not match.', 'Las contraseñas no coinciden.');
   String get authSavePassword => pick('Save password', 'Guardar contraseña');
-  String get authWaitingForSession =>
-      pick('Waiting for session...', 'Esperando sesión...');
-  String get authSessionNotReady => pick(
-    'Session not ready. Please open the email link again.',
-    'La sesión no está lista. Abre nuevamente el enlace del email.',
+  String get authPasswordPolicy =>
+      pick('Use at least 6 characters.', 'Usa al menos 6 caracteres.');
+  String get authRecoveryInvalid => pick(
+    'This reset link is invalid or has expired. Request a new link.',
+    'Este enlace no es válido o ha caducado. Solicita uno nuevo.',
   );
-  String passwordUpdateError(Object e) =>
-      pick('Password update error: $e', 'Error al actualizar contraseña: $e');
+  String get authRequestAnotherLink =>
+      pick('Request a new reset link', 'Solicitar un nuevo enlace');
+  String passwordUpdateError(Object? e) => pick(
+    'We could not update your password. Please try again.',
+    'No pudimos actualizar tu contraseña. Inténtalo de nuevo.',
+  );
 
   String get profileLogoutConfirm => pick(
     'Are you sure you want to log out?',
@@ -1587,8 +1576,10 @@ class AppStrings {
 
   String get profileDeleteAccount => pick('Delete account', 'Eliminar cuenta');
 
-  String get passwordUpdated =>
-      pick('Password updated.', 'Contraseña actualizada.');
+  String get passwordUpdated => pick(
+    'Password updated successfully.',
+    'Contraseña actualizada correctamente.',
+  );
   String get gymNameUpdated =>
       pick('Gym name updated.', 'Nombre del gym actualizado.');
   String get gymInformationUpdated =>

@@ -69,7 +69,23 @@ void main() {
 
   test('communication push opens messages inside AppShell', () {
     final app = File('lib/app/app.dart').readAsStringSync();
-    expect(app, contains("_router.go('/app?section=messages&notificationId="));
+    expect(app, contains("'/app?section=messages&notificationId="));
+    expect(app, contains('goToAuthenticatedDestination('));
+    const destination = '/app?section=messages&notificationId=synthetic';
+    expect(
+      authenticatedRoute(
+        authState: AppAuthState.authenticated,
+        destination: destination,
+      ),
+      destination,
+    );
+    expect(
+      authenticatedRoute(
+        authState: AppAuthState.passwordRecoveryRequired,
+        destination: destination,
+      ),
+      '/reset-password',
+    );
     expect(
       app,
       isNot(contains("_router.push('/notifications?notificationId=")),
@@ -92,5 +108,16 @@ void main() {
     expect(deepLinks, contains('resolveWorkoutDestination('));
     expect(deepLinks, contains("data: {'workoutId': workoutId}"));
     expect(deepLinks, isNot(contains("_router.push('/workout/")));
+    expect(
+      workoutDeepLinkId(Uri.parse('athletelab://workout?id=synthetic')),
+      'synthetic',
+    );
+    expect(
+      workoutDeepLinkId(
+        Uri.parse('https://athlete615.com/workout?workoutId=synthetic'),
+      ),
+      'synthetic',
+    );
+    expect(workoutDeepLinkId(Uri.parse('athletelab://workout')), isNull);
   });
 }

@@ -15,6 +15,7 @@ import '../core/locale/locale_controller.dart';
 import '../core/preferences/app_preferences_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/auth/data/app_auth_coordinator.dart';
+import '../features/auth/data/password_recovery_controller.dart';
 import '../features/auth/data/session_access_revalidator.dart';
 import '../features/notifications/data/notifications_repository.dart';
 import '../features/notifications/navigation/notification_destination.dart';
@@ -190,13 +191,16 @@ class _AthleteLabAppState extends State<AthleteLabApp>
     }
 
     if (type == 'membership_request') {
-      _router.go('/app?section=membership');
+      goToAuthenticatedDestination(_router, '/app?section=membership');
       return;
     }
 
     if (notificationId != null && notificationId.toString().trim().isNotEmpty) {
       final encodedId = Uri.encodeQueryComponent(notificationId.toString());
-      _router.go('/app?section=messages&notificationId=$encodedId');
+      goToAuthenticatedDestination(
+        _router,
+        '/app?section=messages&notificationId=$encodedId',
+      );
     }
   }
 
@@ -239,7 +243,25 @@ class _AthleteLabAppState extends State<AthleteLabApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    debugPrint('ATH615 APP INIT');
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (state) {
+        passwordRecoveryController.observeAuthEvent(state);
+        final authenticated =
+            state.event == AuthChangeEvent.initialSession ||
+            state.event == AuthChangeEvent.signedIn;
+        if (!authenticated ||
+            state.session == null ||
+            appAuthCoordinator.requiresPasswordRecovery) {
+          return;
+        }
+        _initialPushTimer?.cancel();
+        _schedulePushSetup();
+      },
+      onError: (Object error) {
+        debugPrint('Unexpected auth stream error: ${error.runtimeType}');
+      },
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await initializeAccessBeforeDeepLinks(
         revalidateAccess: _revalidateAccess,
@@ -254,22 +276,6 @@ class _AthleteLabAppState extends State<AthleteLabApp>
       _initialPushTimer = Timer(const Duration(seconds: 2), () {
         _schedulePushSetup();
       });
-
-      _authSubscription = Supabase.instance.client.auth.onAuthStateChange
-          .listen(
-            (state) {
-              appAuthCoordinator.observeAuthEvent(state);
-              final authenticated =
-                  state.event == AuthChangeEvent.initialSession ||
-                  state.event == AuthChangeEvent.signedIn;
-              if (!authenticated || state.session == null) return;
-              _initialPushTimer?.cancel();
-              _schedulePushSetup();
-            },
-            onError: (Object error) {
-              debugPrint('Unexpected auth stream error: ${error.runtimeType}');
-            },
-          );
 
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((token) {
@@ -307,6 +313,16 @@ class _AthleteLabAppState extends State<AthleteLabApp>
   }
 
   Future<void> _revalidateAccess() async {
+    if (appAuthCoordinator.requiresPasswordRecovery) {
+      await passwordRecoveryController.revalidate();
+      if (mounted &&
+          appAuthCoordinator.state ==
+              AppAuthState.definitivelyUnauthenticated) {
+        _router.go('/login');
+      }
+      return;
+    }
+    final revision = appAuthCoordinator.revision;
     final client = Supabase.instance.client;
     if (appAuthCoordinator.state == AppAuthState.authenticated) {
       appAuthCoordinator.beginRefresh();
@@ -321,7 +337,7 @@ class _AthleteLabAppState extends State<AthleteLabApp>
             isDefinitiveRefreshFailure(error) ||
             isDefinitiveAuthInvalidation(error),
       );
-      if (!mounted) return;
+      if (!mounted || revision != appAuthCoordinator.revision) return;
       if (resolution == AuthRefreshResolution.transientFailure) {
         appAuthCoordinator.preserveAfterTransientFailure(
           sessionPresent: client.auth.currentSession != null,
@@ -347,7 +363,7 @@ class _AthleteLabAppState extends State<AthleteLabApp>
       userId: user.id,
       cachedGymId: user.userMetadata?['gym_id']?.toString(),
     );
-    if (!mounted) return;
+    if (!mounted || revision != appAuthCoordinator.revision) return;
     if (result.state == SessionAccessState.transientFailure) {
       appAuthCoordinator.preserveAfterTransientFailure(
         sessionPresent: client.auth.currentSession != null,
